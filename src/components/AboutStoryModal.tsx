@@ -1,0 +1,926 @@
+// AboutStoryModal - Interactive cinematic storytelling about "radikal"
+// Features: full background image with blur/sepia, GSAP clipPath text animations
+// dust particles, film grain, tutorial, countdown
+
+'use client';
+
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useTheme } from '@/hooks/useTheme';
+
+interface AboutStoryModalProps {
+  onComplete: () => void;
+  onSkip: () => void;
+}
+
+type LanguageKey = 'de' | 'en' | 'ro' | 'ru';
+
+// Complete Story Content with multilingual support
+const storyContent = {
+  introTitle: { de: 'RADIKALITÄT', en: 'RADICALITY', ro: 'RADICALITATE', ru: 'РАДИКАЛЬНОСТЬ' },
+  introSubtitle: { de: 'Die Essenz der Wurzel', en: 'The Essence of the Root', ro: 'Esența Rădăcinii', ru: 'Сущность Корня' },
+  skipInfoMobile: { de: 'Zum Überspringen tippen Sie auf ÜBERSPRINGEN', en: 'Tap SKIP to skip', ro: 'Atingeți SARI PESTE pentru a sări', ru: 'Нажмите ПРОПУСТИТЬ для пропуска' },
+  skipInfoDesktop: { de: 'Zum Überspringen drücken Sie ESC oder klicken Sie auf ÜBERSPRINGEN', en: 'Press ESC or click SKIP to skip', ro: 'Apăsați ESC sau click pe SARI PESTE pentru a sări', ru: 'Нажмите ESC или кликните ПРОПУСТИТЬ для пропуска' },
+  readingTime: { de: 'Geschätzte Lesezeit: 8-10 Minuten', en: 'Estimated reading time: 8-10 minutes', ro: 'Timp estimat de citire: 8-10 minute', ru: 'Примерное время чтения: 8-10 минут' },
+  skipButton: { de: 'ÜBERSPRINGEN', en: 'SKIP', ro: 'SARI PESTE', ru: 'ПРОПУСТИТЬ' },
+  startingIn: { de: 'Beginnt in', en: 'Starting in', ro: 'Începe în', ru: 'Начало через' },
+  tutorial: {
+    tap: { de: 'TIPPEN', en: 'TAP', ro: 'APASĂ', ru: 'НАЖМИ' },
+    tapDesc: { de: 'Tippen zum Pausieren/Fortsetzen', en: 'Tap anywhere to pause/play', ro: 'Apasă oriunde pentru pauză/redare', ru: 'Нажмите для паузы/воспроизведения' },
+    swipe: { de: 'WISCHEN', en: 'SWIPE', ro: 'GLISEAZĂ', ru: 'СВАЙП' },
+    swipeDesc: { de: 'Nach links oder rechts wischen zum Navigieren', en: 'Swipe left or right to navigate', ro: 'Glisează stânga sau dreapta pentru navigare', ru: 'Свайп влево или вправо для навигации' },
+    space: { de: 'LEERTASTE', en: 'SPACE', ro: 'SPAȚIU', ru: 'ПРОБЕЛ' },
+    spaceDesc: { de: 'Drücken zum Pausieren oder Fortsetzen', en: 'Press to pause or play', ro: 'Apasă pentru pauză sau redare', ru: 'Нажмите для паузы или воспроизведения' },
+    arrows: { de: 'PFEILE', en: 'ARROWS', ro: 'SĂGEȚI', ru: 'СТРЕЛКИ' },
+    arrowsDesc: { de: 'Zwischen Szenen navigieren', en: 'Navigate between scenes', ro: 'Navighează între scene', ru: 'Навигация между сценами' },
+    fullscreen: { de: 'VOLLBILD', en: 'FULLSCREEN', ro: 'ECRAN COMPLET', ru: 'ПОЛНЫЙ ЭКРАН' },
+    fullscreenDesc: { de: 'F drücken für Vollbildmodus', en: 'Press F for fullscreen mode', ro: 'Apasă F pentru ecran complet', ru: 'Нажмите F для полноэкранного режима' },
+    start: { de: 'BEGINNEN', en: 'BEGIN', ro: 'ÎNCEPE', ru: 'НАЧАТЬ' },
+    tapToContinue: { de: 'TIPPEN ZUM FORTFAHREN', en: 'TAP TO CONTINUE', ro: 'APASĂ PENTRU A CONTINUA', ru: 'НАЖМИТЕ ДЛЯ ПРОДОЛЖЕНИЯ' },
+    pressAnyKey: { de: 'BELIEBIGE TASTE DRÜCKEN', en: 'PRESS ANY KEY', ro: 'APASĂ ORICE TASTĂ', ru: 'НАЖМИТЕ ЛЮБУЮ КЛАВИШУ' }
+  },
+  paused: { de: 'PAUSIERT', en: 'PAUSED', ro: 'PAUZĂ', ru: 'ПАУЗА' },
+  theEnd: { de: 'ENDE', en: 'THE END', ro: 'SFÂRȘIT', ru: 'КОНЕЦ' },
+  experienceAgain: { de: 'ERNEUT ERLEBEN', en: 'EXPERIENCE AGAIN', ro: 'RETRĂIEȘTE', ru: 'ПЕРЕЖИТЬ СНОВА' },
+  share: { de: 'TEILEN', en: 'SHARE', ro: 'DISTRIBUIE', ru: 'ПОДЕЛИТЬСЯ' },
+  continueToAbout: { de: 'WEITER ZUR SEITE', en: 'CONTINUE TO PAGE', ro: 'CONTINUĂ LA PAGINĂ', ru: 'ПЕРЕЙТИ НА СТРАНИЦУ' },
+  redirecting: { de: 'Weiterleitung in', en: 'Redirecting in', ro: 'Redirecționare în', ru: 'Перенаправление через' },
+  seconds: { de: 'Sekunden', en: 'seconds', ro: 'secunde', ru: 'секунд' }
+};
+
+// Story phrases with main and sub text - normal case, not uppercase
+const getStoryPhrases = (lang: LanguageKey) => [
+  { main: { de: 'Die Macht der Worte:', en: 'The Power of Words:', ro: 'Puterea cuvintelor:', ru: 'Сила слов:' }[lang], sub: { de: 'Warum "radikal" Angst macht', en: 'Why "radical" causes fear', ro: 'De ce "radical" provoacă frică', ru: 'Почему "радикальный" вызывает страх' }[lang] },
+  { main: { de: 'Als ich zum ersten Mal mit jemandem über das Wort „radikal" sprach, bekam ich eine ziemlich negative und distanzierte Reaktion.', en: 'When I first spoke to someone about the word "radical," I received a rather negative and distant reaction.', ro: 'Când am vorbit pentru prima dată cu cineva despre cuvântul „radical", am primit o reacție destul de negativă și distantă.', ru: 'Когда я впервые заговорил с кем-то о слове «радикальный», я получил довольно негативную и отстранённую реакцию.' }[lang], sub: null },
+  { main: { de: 'Die Menschen haben oft Angst vor dem Wort „radikal", weil es in unserer modernen Welt fast ausschließlich im negativen Kontext verwendet wird.', en: 'People are often afraid of the word "radical" because in our modern world, it is used almost exclusively in a negative context.', ro: 'Oamenii se tem adesea de cuvântul „radical", pentru că în lumea noastră modernă, este folosit aproape exclusiv într-un context negativ.', ru: 'Люди часто боятся слова «радикальный», потому что в нашем современном мире оно используется почти исключительно в негативном контексте.' }[lang], sub: null },
+  { main: { de: 'Dieses Missverständnis hat historische und gesellschaftliche Gründe:', en: 'This misunderstanding has historical and social reasons:', ro: 'Această neînțelegere are motive istorice și sociale:', ru: 'Это недоразумение имеет исторические и социальные причины:' }[lang], sub: null },
+  { main: { de: 'Negative Konnotation durch Extremismus: Politische und religiöse Gruppen, die extreme Taten begehen, werden als "radikal" bezeichnet.', en: 'Negative connotation through extremism: Political and religious groups that commit extreme acts are labeled as "radical."', ro: 'Conotație negativă prin extremism: Grupurile politice și religioase care comit acte extreme sunt etichetate drept „radicale".', ru: 'Негативная коннотация через экстремизм: Политические и религиозные группы, совершающие экстремальные действия, называются «радикальными».' }[lang], sub: null },
+  { main: { de: 'Angst vor Veränderung: "Radikal" bedeutet eine grundlegende Veränderung. Viele Menschen empfinden tiefgreifende, schnelle Veränderungen als beängstigend.', en: 'Fear of change: "Radical" means a fundamental change. Many people find profound, rapid changes frightening.', ro: 'Frica de schimbare: „Radical" înseamnă o schimbare fundamentală. Mulți oameni consideră schimbările profunde și rapide ca fiind înspăimântătoare.', ru: 'Страх перемен: «Радикальный» означает фундаментальное изменение. Многие люди воспринимают глубокие, быстрые изменения как пугающие.' }[lang], sub: null },
+  { main: { de: 'Die ursprüngliche Bedeutung "zur Wurzel gehörend" (vom lateinischen "radix") wurde durch die Bedeutung "bis zum Äußersten gehend" ersetzt.', en: 'The original meaning "belonging to the root" (from Latin "radix") has been replaced by the meaning "going to the extreme."', ro: 'Sensul original „aparținând rădăcinii" (din latinescul „radix") a fost înlocuit cu sensul „mergând la extrem".', ru: 'Первоначальное значение «принадлежащий корню» (от латинского «radix») было заменено значением «идущий до крайности».' }[lang], sub: null },
+  { main: { de: 'Biblische Radikalität bedeutet, das Leben von Grund auf nach Gottes Willen auszurichten – eine kompromisslose Hingabe an des Vaters Wort.', en: 'Biblical radicality means aligning life fundamentally according to God\'s will – an uncompromising devotion to the Father\'s Word.', ro: 'Radicalitatea biblică înseamnă alinierea vieții în mod fundamental după voia lui Dumnezeu – un devotament fără compromis față de Cuvântul Tatălui.', ru: 'Библейская радикальность означает фундаментальное выстраивание жизни по воле Божьей – бескомпромиссную преданность Слову Отца.' }[lang], sub: null },
+  { main: { de: 'War Jesus Christus radikal?', en: 'Was Jesus Christ radical?', ro: 'A fost Isus Cristos radical?', ru: 'Был ли Иисус Христос радикальным?' }[lang], sub: null },
+  { main: { de: '1. Keine Neutralität', en: '1. No neutrality', ro: '1. Nicio neutralitate', ru: '1. Никакой нейтральности' }[lang], sub: null },
+  { main: { de: '„Wer nicht für mich ist, der ist gegen mich; und wer nicht mit mir sammelt, der zerstreut."', en: '"Whoever is not with me is against me, and whoever does not gather with me scatters."', ro: '„Cine nu este cu Mine este împotriva Mea; și cine nu adună cu Mine risipește."', ru: '«Кто не со Мною, тот против Меня; и кто не собирает со Мною, тот расточает.»' }[lang], sub: { de: 'Matthäus 12,30', en: 'Matthew 12:30', ro: 'Matei 12:30', ru: 'Матфея 12:30' }[lang] },
+  { main: { de: 'Jesus fordert eine Entscheidung, die keine Mittelwege erlaubt. Neutralität existiert im Reich Gottes nicht.', en: 'Jesus demands a decision that allows no middle ground. Neutrality does not exist in the Kingdom of God.', ro: 'Isus cere o decizie care nu permite căi de mijloc. Neutralitatea nu există în Împărăția lui Dumnezeu.', ru: 'Иисус требует решения, которое не допускает компромиссов. Нейтралитета в Царстве Божьем не существует.' }[lang], sub: null },
+  { main: { de: '2. Gewalt oder Gehorsam?', en: '2. Violence or obedience?', ro: '2. Violență sau ascultare?', ru: '2. Насилие или послушание?' }[lang], sub: null },
+  { main: { de: '„Schafft das weg von hier! Macht nicht das Haus meines Vaters zu einem Kaufhaus!"', en: '"Take these things away; do not make my Father\'s house a house of trade!"', ro: '„Luați acestea de aici! Nu faceți din casa Tatălui Meu o casă de negustorie!"', ru: '«Возьмите это отсюда и дом Отца Моего не делайте домом торговли.»' }[lang], sub: { de: 'Johannes 2:14-16', en: 'John 2:14-16', ro: 'Ioan 2:14-16', ru: 'Иоанна 2:14-16' }[lang] },
+  { main: { de: 'Seine "Radikalität" war keine Revolution durch Gewalt, sondern eine Erneuerung durch das Wort Gottes.', en: 'His "radicality" was not a revolution through violence, but a renewal through the Word of God.', ro: '„Radicalitatea" Sa nu a fost o revoluție prin violență, ci o reînnoire prin Cuvântul lui Dumnezeu.', ru: 'Его «радикальность» была не революцией через насилие, а обновлением через Слово Божье.' }[lang], sub: null },
+  { main: { de: '3. Spirituelle Familie', en: '3. Spiritual family', ro: '3. Familie spirituală', ru: '3. Духовная семья' }[lang], sub: null },
+  { main: { de: '„Wer den Willen meines Vaters im Himmel tut, der ist mir Bruder und Schwester und Mutter."', en: '"Whoever does the will of my Father in heaven is my brother and sister and mother."', ro: '„Oricine face voia Tatălui Meu care este în ceruri, acela Îmi este frate, soră și mamă."', ru: '«Кто будет исполнять волю Отца Моего Небесного, тот Мне брат, и сестра, и матерь.»' }[lang], sub: { de: 'Matthäus 12:48-50', en: 'Matthew 12:48-50', ro: 'Matei 12:48-50', ru: 'Матфея 12:48-50' }[lang] },
+  { main: { de: '4. Sich selbst verleugnen', en: '4. Deny yourself', ro: '4. Să te lepezi de tine', ru: '4. Отречься от себя' }[lang], sub: null },
+  { main: { de: '„Wenn jemand mir nachkommen will, so verleugne er sich selbst und nehme sein Kreuz auf sich und folge mir nach."', en: '"If anyone would come after me, let him deny himself and take up his cross and follow me."', ro: '„Dacă voiește cineva să vină după Mine, să se lepede de sine, să-și ia crucea și să Mă urmeze."', ru: '«Если кто хочет идти за Мною, отвергнись себя, и возьми крест свой, и следуй за Мною.»' }[lang], sub: { de: 'Matthäus 16:24-25', en: 'Matthew 16:24-25', ro: 'Matei 16:24-25', ru: 'Матфея 16:24-25' }[lang] },
+  { main: { de: '5. Keine Toleranz gegenüber Sünde', en: '5. No tolerance for sin', ro: '5. Nicio toleranță față de păcat', ru: '5. Никакой терпимости к греху' }[lang], sub: null },
+  { main: { de: '„Wenn dir aber dein rechtes Auge ein Ärgernis ist, so reiß es aus und wirf es von dir!"', en: '"If your right eye causes you to sin, pluck it out and cast it from you!"', ro: '„Dacă ochiul tău cel drept te face să cazi în păcat, scoate-l și leapădă-l de la tine!"', ru: '«Если же правый глаз твой соблазняет тебя, вырви его и брось от себя!»' }[lang], sub: { de: 'Matthäus 5:29-30', en: 'Matthew 5:29-30', ro: 'Matei 5:29-30', ru: 'Матфея 5:29-30' }[lang] },
+  { main: { de: '6. Kein Kompromiss', en: '6. No compromise', ro: '6. Niciun compromis', ru: '6. Никаких компромиссов' }[lang], sub: null },
+  { main: { de: '„Meint ihr, dass ich gekommen sei, Frieden auf Erden zu geben? Nein, sondern vielmehr Spaltung!"', en: '"Do you think I came to give peace on earth? No, but rather division!"', ro: '„Credeți că am venit să aduc pace pe pământ? Nu, ci mai degrabă dezbinare!"', ru: '«Думаете ли вы, что Я пришёл дать мир земле? Нет, но разделение!»' }[lang], sub: { de: 'Lukas 12:51-52', en: 'Luke 12:51-52', ro: 'Luca 12:51-52', ru: 'Луки 12:51-52' }[lang] },
+  { main: { de: '7. Keine zweite Chance', en: '7. No second chance', ro: '7. Nicio a doua șansă', ru: '7. Никакого второго шанса' }[lang], sub: null },
+  { main: { de: '„Geht hinweg von mir, ihr Verfluchten, in das ewige Feuer!"', en: '"Depart from me, you cursed, into the eternal fire!"', ro: '„Duceți-vă de la Mine, blestemaților, în focul cel veșnic!"', ru: '«Идите от Меня, проклятые, в огонь вечный!»' }[lang], sub: { de: 'Matthäus 25:41', en: 'Matthew 25:41', ro: 'Matei 25:41', ru: 'Матфея 25:41' }[lang] },
+  { main: { de: '8. Kompromisslose Heiligkeit', en: '8. Uncompromising holiness', ro: '8. Sfințenie fără compromis', ru: '8. Бескомпромиссная святость' }[lang], sub: null },
+  { main: { de: '„Weil du aber lau bist und weder kalt noch heiß, werde ich dich ausspeien aus meinem Mund."', en: '"Because you are lukewarm, and neither cold nor hot, I will spit you out of my mouth."', ro: '„Fiindcă ești căldicel, nici rece, nici în clocot, am să te vărs din gura Mea."', ru: '«Как ты тёпл, а не горяч и не холоден, то извергну тебя из уст Моих.»' }[lang], sub: { de: 'Offenbarung 3:15-16', en: 'Revelation 3:15-16', ro: 'Apocalipsa 3:15-16', ru: 'Откровение 3:15-16' }[lang] },
+  { main: { de: 'Waren die Apostel radikal?', en: 'Were the apostles radical?', ro: 'Au fost apostolii radicali?', ru: 'Были ли апостолы радикальными?' }[lang], sub: null },
+  { main: { de: 'Petrus und Paulus zeigten radikalen Gehorsam gegenüber der neuen Offenbarung Gottes.', en: 'Peter and Paul showed radical obedience to the new revelation of God.', ro: 'Petru și Pavel au arătat ascultare radicală față de noua revelație a lui Dumnezeu.', ru: 'Пётр и Павел проявили радикальное послушание новому откровению Бога.' }[lang], sub: null },
+  { main: { de: '„Wenn jemand euch etwas anderes als Evangelium verkündigt, der sei verflucht!"', en: '"If anyone preaches another gospel, let him be accursed!"', ro: '„Dacă vă propovăduiește cineva o altă Evanghelie, să fie anatema!"', ru: '«Кто благовествует вам не то, да будет анафема!»' }[lang], sub: { de: 'Galater 1:8-9', en: 'Galatians 1:8-9', ro: 'Galateni 1:8-9', ru: 'Галатам 1:8-9' }[lang] },
+  { main: { de: 'Fazit', en: 'Conclusion', ro: 'Concluzie', ru: 'Заключение' }[lang], sub: null },
+  { main: { de: 'Ich hoffe, Sie haben nun ein tieferes Verständnis dafür gewonnen, was es bedeutet, biblisch "radikal" zu sein.', en: 'I hope you have now gained a deeper understanding of what it means to be biblically "radical."', ro: 'Sper că acum ați câștigat o înțelegere mai profundă a ceea ce înseamnă să fii „radical" din punct de vedere biblic.', ru: 'Я надеюсь, что теперь вы обрели более глубокое понимание того, что значит быть библейски «радикальным».' }[lang], sub: null },
+  { main: { de: 'Es geht nicht um Extremismus im weltlichen Sinne, sondern um eine leidenschaftliche Rückkehr zu den Wurzeln des Glaubens.', en: 'It is not about extremism in the worldly sense, but about a passionate return to the roots of faith.', ro: 'Nu este vorba despre extremism în sensul lumesc, ci despre o întoarcere pasionată la rădăcinile credinței.', ru: 'Речь не об экстремизме в мирском смысле, а о страстном возвращении к корням веры.' }[lang], sub: null },
+  { main: { de: '„Meine Lehre ist nicht von mir, sondern von dem, der mich gesandt hat."', en: '"My doctrine is not mine, but His who sent me."', ro: '„Învățătura Mea nu este a Mea, ci a Celui ce M-a trimis."', ru: '«Моё учение — не Моё, но Пославшего Меня.»' }[lang], sub: { de: 'Johannes 7:16-18', en: 'John 7:16-18', ro: 'Ioan 7:16-18', ru: 'Иоанна 7:16-18' }[lang] }
+];
+
+export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalProps) {
+  const container = useRef<HTMLDivElement>(null);
+  const lightRef = useRef<HTMLDivElement>(null);
+  
+  const { language } = useLanguage();
+  const { theme } = useTheme();
+  const lang = (language || 'de') as LanguageKey;
+  const isDark = theme === 'dark';
+  
+  // States
+  const [currentScreen, setCurrentScreen] = useState<'intro' | 'tutorial' | 'story' | 'end'>('intro');
+  const [introCountdown, setIntroCountdown] = useState(10);
+  const [currentPhrase, setCurrentPhrase] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isPaused, setIsPaused] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const [showEndScreen, setShowEndScreen] = useState(false);
+  
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const lastTap = useRef(0);
+  const phraseRef = useRef<HTMLDivElement>(null);
+  const subRef = useRef<HTMLParagraphElement>(null);
+  const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const phraseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const phrases = getStoryPhrases(lang);
+
+  // Text color based on theme
+  const textColor = isDark ? 'text-white' : 'text-gray-900';
+  const textColorMuted = isDark ? 'text-gray-300' : 'text-gray-700';
+  const textColorSubtle = isDark ? 'text-gray-400' : 'text-gray-600';
+  const bgColor = isDark ? 'bg-[#1a1a1a]' : 'bg-gray-100';
+
+  // Tutorial steps
+  const tutorialSteps = isMobile ? [
+    { icon: 'tap', title: storyContent.tutorial.tap[lang], desc: storyContent.tutorial.tapDesc[lang] },
+    { icon: 'swipe', title: storyContent.tutorial.swipe[lang], desc: storyContent.tutorial.swipeDesc[lang] },
+    { icon: 'start', title: storyContent.tutorial.start[lang], desc: storyContent.tutorial.tapToContinue[lang] }
+  ] : [
+    { icon: 'space', title: storyContent.tutorial.space[lang], desc: storyContent.tutorial.spaceDesc[lang] },
+    { icon: 'arrows', title: storyContent.tutorial.arrows[lang], desc: storyContent.tutorial.arrowsDesc[lang] },
+    { icon: 'fullscreen', title: storyContent.tutorial.fullscreen[lang], desc: storyContent.tutorial.fullscreenDesc[lang] },
+    { icon: 'start', title: storyContent.tutorial.start[lang], desc: storyContent.tutorial.pressAnyKey[lang] }
+  ];
+
+  // Hide footer and navigation when modal is open
+  // Footer und Navigation ausblenden wenn Modal geöffnet ist
+  // Ascunde footer-ul și navigația când modalul este deschis
+  useEffect(() => {
+    const footer = document.querySelector('footer');
+    const nav = document.querySelector('nav');
+    if (footer) (footer as HTMLElement).style.display = 'none';
+    if (nav) (nav as HTMLElement).style.display = 'none';
+    
+    // Completely lock the body scroll
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    document.documentElement.style.overflow = 'hidden';
+    
+    return () => {
+      if (footer) (footer as HTMLElement).style.display = '';
+      if (nav) (nav as HTMLElement).style.display = '';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Check for reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    const handleChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Preloader
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Intro countdown (from 8 to 0)
+  useEffect(() => {
+    if (currentScreen === 'intro' && !isLoading && introCountdown > 0) {
+      const timer = setTimeout(() => setIntroCountdown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (currentScreen === 'intro' && introCountdown === 0) {
+      setCurrentScreen('tutorial');
+    }
+  }, [currentScreen, isLoading, introCountdown]);
+
+  // Advance tutorial
+  const advanceTutorial = useCallback(() => {
+    if (tutorialStep < tutorialSteps.length - 1) {
+      setTutorialStep(prev => prev + 1);
+    } else {
+      setCurrentScreen('story');
+    }
+  }, [tutorialStep, tutorialSteps.length]);
+
+  // Skip to next phrase
+  const skipToNext = useCallback(() => {
+    setCurrentPhrase(prev => {
+      const next = prev + 1;
+      if (next >= phrases.length) {
+        setShowEndScreen(true);
+        setIsPaused(true);
+        return prev;
+      }
+      return next;
+    });
+  }, [phrases.length]);
+
+  // Skip to previous phrase
+  const skipToPrevious = useCallback(() => {
+    setCurrentPhrase(prev => Math.max(prev - 1, 0));
+  }, []);
+
+  // Toggle pause
+  const togglePause = useCallback(() => {
+    setIsPaused(prev => !prev);
+  }, []);
+
+  // Toggle fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      container.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  // Restart
+  const restart = useCallback(() => {
+    setShowEndScreen(false);
+    setCurrentScreen('intro');
+    setIntroCountdown(10);
+    setCurrentPhrase(0);
+    setProgress(0);
+    setRedirectCountdown(5);
+    setIsPaused(false);
+  }, []);
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') {
+        onSkip();
+        return;
+      }
+      if (currentScreen === 'intro') {
+        setCurrentScreen('tutorial');
+        return;
+      }
+      if (currentScreen === 'tutorial') {
+        advanceTutorial();
+        return;
+      }
+      if (showEndScreen) {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          onComplete();
+        }
+        return;
+      }
+      if (currentScreen === 'story') {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          togglePause();
+        } else if (e.code === 'ArrowRight') {
+          skipToNext();
+        } else if (e.code === 'ArrowLeft') {
+          skipToPrevious();
+        } else if (e.code === 'KeyF') {
+          toggleFullscreen();
+        } else if (e.code === 'KeyR') {
+          restart();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentScreen, showEndScreen, advanceTutorial, togglePause, skipToNext, skipToPrevious, toggleFullscreen, restart, onSkip, onComplete]);
+
+  // Touch handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (currentScreen === 'intro') {
+      setCurrentScreen('tutorial');
+      return;
+    }
+    if (currentScreen === 'tutorial') {
+      advanceTutorial();
+      return;
+    }
+    if (currentScreen !== 'story') return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchEndX - touchStartX.current;
+    const diffY = touchEndY - touchStartY.current;
+    const threshold = 50;
+
+    if (Math.abs(diffX) > threshold && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX > 0) {
+        skipToPrevious();
+      } else {
+        skipToNext();
+      }
+    } else if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20) {
+      const now = Date.now();
+      if (now - lastTap.current < 300) {
+        onSkip();
+      } else {
+        togglePause();
+      }
+      lastTap.current = now;
+    }
+  }, [currentScreen, advanceTutorial, skipToNext, skipToPrevious, togglePause, onSkip]);
+
+  // Mouse parallax effect - throttled to reduce re-renders
+  useEffect(() => {
+    if (prefersReducedMotion || isMobile) return;
+    let lastUpdate = 0;
+    const handleMouseMove = (e: MouseEvent) => {
+      const now = Date.now();
+      // Only update every 100ms to reduce re-renders
+      if (now - lastUpdate < 100) return;
+      lastUpdate = now;
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      setMousePos({ x, y });
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [prefersReducedMotion, isMobile]);
+
+  // Redirect countdown on end screen
+  useEffect(() => {
+    if (showEndScreen && redirectCountdown > 0) {
+      const timer = setTimeout(() => setRedirectCountdown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (showEndScreen && redirectCountdown === 0) {
+      onComplete();
+    }
+  }, [showEndScreen, redirectCountdown, onComplete]);
+
+  // Dust particles removed for better performance - using CSS instead
+  // Film grain removed for better performance - saves ~800MB memory
+
+  // GSAP word-by-word animation - insurrection.photo style
+  // Each word fades in with stagger, holds, then fades out in reverse
+  useEffect(() => {
+    if (currentScreen !== 'story' || isLoading || showEndScreen) return;
+
+    const phraseEl = phraseRef.current;
+    if (!phraseEl) return;
+
+    // Get all word spans
+    const mainWords = phraseEl.querySelectorAll('.word-main');
+    const subWords = phraseEl.querySelectorAll('.word-sub');
+    const allWords = [...Array.from(mainWords), ...Array.from(subWords)];
+
+    if (allWords.length === 0) return;
+
+    // Kill any existing timeline
+    if (timelineRef.current) {
+      timelineRef.current.kill();
+    }
+
+    // Set initial state - all words invisible
+    gsap.set(allWords, { opacity: 0, y: 15, filter: 'blur(8px)' });
+    if (subWords.length > 0) {
+      gsap.set(subWords, { opacity: 0, y: 12, filter: 'blur(6px)' });
+    }
+
+    const tl = gsap.timeline({ paused: false });
+    timelineRef.current = tl;
+
+    // Calculate stagger timing
+    const wordCount = mainWords.length;
+    const revealPerWord = prefersReducedMotion ? 0.03 : Math.min(0.12, 2.0 / Math.max(wordCount, 1));
+    const totalRevealTime = wordCount * revealPerWord;
+    const holdTime = prefersReducedMotion ? 2 : 5.5;
+
+    // --- PHASE 1: Words appear one by one (like someone typing/writing) ---
+    tl.to(mainWords, {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      duration: 0.6,
+      stagger: {
+        each: revealPerWord,
+        ease: 'power2.out'
+      },
+      ease: 'power2.out'
+    }, 0);
+
+    // Sub text appears after main, slightly delayed
+    if (subWords.length > 0) {
+      tl.to(subWords, {
+        opacity: 0.65,
+        y: 0,
+        filter: 'blur(0px)',
+        duration: 0.8,
+        stagger: {
+          each: 0.06,
+          ease: 'power2.out'
+        },
+        ease: 'power2.out'
+      }, totalRevealTime + 0.3);
+    }
+
+    // --- PHASE 2: Hold (time to read) ---
+    const holdStart = totalRevealTime + (subWords.length > 0 ? 1.2 : 0.6);
+    
+    // --- PHASE 3: Words disappear in REVERSE order (like backspace) ---
+    const disappearStart = holdStart + holdTime;
+    
+    // Sub text fades out first (reverse stagger)
+    if (subWords.length > 0) {
+      tl.to(subWords, {
+        opacity: 0,
+        y: -10,
+        filter: 'blur(6px)',
+        duration: 0.5,
+        stagger: {
+          each: 0.04,
+          from: 'end',
+          ease: 'power1.in'
+        },
+        ease: 'power2.in'
+      }, disappearStart);
+    }
+
+    // Main words fade out in reverse (last word first, like backspace)
+    tl.to(mainWords, {
+      opacity: 0,
+      y: -12,
+      filter: 'blur(8px)',
+      duration: 0.5,
+      stagger: {
+        each: Math.min(0.08, 1.5 / Math.max(wordCount, 1)),
+        from: 'end',
+        ease: 'power1.in'
+      },
+      ease: 'power2.in'
+    }, disappearStart + (subWords.length > 0 ? 0.3 : 0));
+
+    // Calculate total timeline duration
+    const totalDuration = tl.duration();
+    
+    // Advance to next phrase after timeline completes
+    const onComplete = () => {
+      setCurrentPhrase(prev => {
+        const next = prev + 1;
+        if (next >= phrases.length) {
+          setShowEndScreen(true);
+          setIsPaused(true);
+          return prev;
+        }
+        return next;
+      });
+    };
+
+    tl.call(onComplete, [], totalDuration + 0.2);
+
+    // Progress tracking - smooth, driven by timeline position
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+    }
+    progressTimerRef.current = setInterval(() => {
+      if (timelineRef.current && !isPaused) {
+        const elapsed = timelineRef.current.time();
+        const dur = timelineRef.current.duration();
+        const phraseProgress = dur > 0 ? elapsed / dur : 0;
+        const overallProgress = ((currentPhrase + phraseProgress) / phrases.length) * 100;
+        setProgress(Math.min(overallProgress, 100));
+      }
+    }, 200);
+
+    return () => {
+      if (timelineRef.current) {
+        timelineRef.current.kill();
+        timelineRef.current = null;
+      }
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    };
+  }, [currentScreen, isLoading, currentPhrase, showEndScreen, phrases.length, prefersReducedMotion]);
+
+  // Pause/resume GSAP timeline
+  useEffect(() => {
+    if (timelineRef.current) {
+      if (isPaused) {
+        timelineRef.current.pause();
+      } else {
+        timelineRef.current.resume();
+      }
+    }
+  }, [isPaused]);
+
+  // Animate light glow with GSAP
+  useGSAP(() => {
+    if (currentScreen !== 'story' || isLoading || prefersReducedMotion) return;
+    
+    gsap.to(lightRef.current, {
+      scale: 1.4, opacity: 0.6, duration: 6, repeat: -1, yoyo: true, ease: "sine.inOut"
+    });
+  }, { dependencies: [currentScreen, isLoading, prefersReducedMotion] });
+
+  // Loading screen
+  if (isLoading) {
+    return (
+      <div className={`fixed inset-0 ${bgColor} flex items-center justify-center z-[9999]`}>
+        <div className="text-center">
+          <div className={`w-12 h-12 border-2 ${isDark ? 'border-gray-600 border-t-gray-300' : 'border-gray-300 border-t-gray-600'} rounded-full animate-spin mb-4 mx-auto`} />
+          <p className={`font-cinzel ${textColorSubtle} text-lg tracking-[0.3em]`}>
+            {lang === 'de' ? 'Laden' : lang === 'ro' ? 'Încărcare' : lang === 'ru' ? 'Загрузка' : 'Loading'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Intro screen with full background image
+  if (currentScreen === 'intro') {
+    return (
+      <div 
+        className="fixed inset-0 z-[9999] cursor-pointer overflow-hidden"
+        onClick={() => setCurrentScreen('tutorial')}
+        onTouchEnd={handleTouchEnd}
+        style={{ height: '100dvh' }}
+      >
+        {/* Full background image with blur and sepia */}
+        <div className="absolute inset-0">
+          <Image 
+            src="/tree_beside_water.jpg" 
+            alt="Background" 
+            fill 
+            className="object-cover"
+            style={{ filter: 'blur(8px) sepia(0.4) brightness(0.5)' }}
+            priority
+          />
+        </div>
+
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/40" />
+
+        {/* Skip button */}
+        <button 
+          onClick={(e) => { e.stopPropagation(); onSkip(); }}
+          className="fixed top-4 right-4 md:top-6 md:right-6 text-white/60 hover:text-white text-sm tracking-[0.2em] transition-colors z-[210]"
+        >
+          {storyContent.skipButton[lang]}
+        </button>
+
+        {/* Content - centered using flex with fixed viewport height */}
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 py-4 md:py-8 overflow-hidden">
+          {/* Card with image - smaller on mobile to fit viewport */}
+          <div className="mb-4 md:mb-6 w-48 h-32 sm:w-64 sm:h-44 md:w-80 md:h-52 relative rounded-lg overflow-hidden shadow-2xl border border-white/20 flex-shrink-0">
+            <Image 
+              src="/tree_beside_water.jpg" 
+              alt="Root" 
+              fill 
+              className="object-cover"
+              style={{ filter: 'sepia(0.2) brightness(0.9)' }}
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          </div>
+
+          {/* Title - larger on mobile, auto-shrink for long translations (e.g. Russian) */}
+          <h1 
+            className={`font-cinzel text-white md:text-5xl md:tracking-[0.2em] mb-2 md:mb-3 text-center uppercase drop-shadow-lg flex-shrink-0 w-full px-4 ${
+              lang === 'ru' 
+                ? 'text-[clamp(1.4rem,7vw,1.875rem)] sm:text-4xl tracking-[0.06em] sm:tracking-[0.15em]' 
+                : 'text-3xl sm:text-4xl tracking-[0.15em]'
+            }`}
+          >
+            {storyContent.introTitle[lang]}
+          </h1>
+
+          {/* Subtitle - larger on mobile */}
+          <p className="font-cinzel text-white/70 text-lg sm:text-xl md:text-xl tracking-[0.08em] md:tracking-[0.1em] mb-4 md:mb-6 italic flex-shrink-0">
+            {storyContent.introSubtitle[lang]}
+          </p>
+
+          {/* Reading time and skip info - larger on mobile */}
+          <div className="text-center text-white/80 text-base md:text-base tracking-wider space-y-1 md:space-y-2 max-w-xl flex-shrink-0">
+            <p className="font-medium">{storyContent.readingTime[lang]}</p>
+            <p className="text-white/60 text-sm md:text-sm">{isMobile ? storyContent.skipInfoMobile[lang] : storyContent.skipInfoDesktop[lang]}</p>
+          </div>
+
+          {/* Countdown - larger on mobile */}
+          <div className="mt-4 md:mt-8 text-center flex-shrink-0">
+            <p className="text-white/50 text-sm md:text-sm tracking-[0.2em] mb-1">{storyContent.startingIn[lang]}</p>
+            <p className="font-cinzel text-3xl sm:text-4xl md:text-5xl text-white font-bold animate-pulse">
+              {introCountdown}
+            </p>
+          </div>
+
+          {/* Tap to continue - bolder and more visible */}
+          <p className="text-white/70 text-sm md:text-sm font-bold tracking-[0.2em] mt-4 md:mt-6 animate-pulse flex-shrink-0">
+            {isMobile ? storyContent.tutorial.tapToContinue[lang] : storyContent.tutorial.pressAnyKey[lang]}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Tutorial screen
+  if (currentScreen === 'tutorial') {
+    const step = tutorialSteps[tutorialStep];
+    return (
+      <div 
+        className={`fixed inset-0 ${bgColor} flex items-center justify-center z-[9999] cursor-pointer overflow-hidden`}
+        onClick={advanceTutorial}
+        onTouchEnd={(e) => { e.preventDefault(); advanceTutorial(); }}
+        style={{ height: '100dvh' }}
+      >
+        {/* Skip button */}
+        <button 
+          onClick={(e) => { e.stopPropagation(); setCurrentScreen('story'); }}
+          className={`fixed top-4 right-4 md:top-6 md:right-6 ${textColorSubtle} hover:${textColor} text-sm tracking-[0.2em] transition-colors z-[210]`}
+        >
+          {storyContent.skipButton[lang]}
+        </button>
+
+        <div className="font-cinzel text-center px-8 max-w-lg">
+          {/* Progress dots */}
+          <div className="flex justify-center gap-2 mb-12">
+            {tutorialSteps.map((_, i) => (
+              <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                i === tutorialStep 
+                  ? (isDark ? 'bg-white w-6' : 'bg-gray-800 w-6')
+                  : i < tutorialStep 
+                    ? (isDark ? 'bg-white/60' : 'bg-gray-600') 
+                    : (isDark ? 'bg-white/20' : 'bg-gray-300')
+              }`} />
+            ))}
+          </div>
+
+          {/* Icon */}
+          <div className="mb-8">
+            {step.icon === 'tap' && (
+              <div className={`w-20 h-20 mx-auto border-2 ${isDark ? 'border-white/40' : 'border-gray-400'} rounded-full flex items-center justify-center animate-pulse`}>
+                <div className={`w-3 h-3 ${isDark ? 'bg-white' : 'bg-gray-800'} rounded-full`} />
+              </div>
+            )}
+            {step.icon === 'swipe' && (
+              <div className="flex items-center justify-center gap-4">
+                <svg className={`w-8 h-8 ${isDark ? 'text-white/60' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                <div className={`w-12 h-12 border-2 ${isDark ? 'border-white/40' : 'border-gray-400'} rounded-full`} />
+                <svg className={`w-8 h-8 ${isDark ? 'text-white/60' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+              </div>
+            )}
+            {step.icon === 'space' && (
+              <div className={`w-32 h-12 mx-auto border-2 ${isDark ? 'border-white/40' : 'border-gray-400'} rounded-lg flex items-center justify-center`}>
+                <span className={`${isDark ? 'text-white/60' : 'text-gray-600'} tracking-[0.2em] text-sm`}>SPACE</span>
+              </div>
+            )}
+            {step.icon === 'arrows' && (
+              <div className="flex items-center justify-center gap-4">
+                <div className={`w-12 h-12 border-2 ${isDark ? 'border-white/40' : 'border-gray-400'} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-6 h-6 ${isDark ? 'text-white/60' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </div>
+                <div className={`w-12 h-12 border-2 ${isDark ? 'border-white/40' : 'border-gray-400'} rounded-lg flex items-center justify-center`}>
+                  <svg className={`w-6 h-6 ${isDark ? 'text-white/60' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </div>
+              </div>
+            )}
+            {step.icon === 'fullscreen' && (
+              <div className={`w-12 h-12 mx-auto border-2 ${isDark ? 'border-white/40' : 'border-gray-400'} rounded-lg flex items-center justify-center`}>
+                <span className={`${isDark ? 'text-white/60' : 'text-gray-600'} text-xl`}>F</span>
+              </div>
+            )}
+            {step.icon === 'start' && (
+              <div className={`w-20 h-20 mx-auto border-2 ${isDark ? 'border-white' : 'border-gray-800'} rounded-full flex items-center justify-center animate-pulse`}>
+                <svg className={`w-8 h-8 ${isDark ? 'text-white' : 'text-gray-800'} ml-1`} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            )}
+          </div>
+
+          {/* Text */}
+          <h2 className={`${textColor} text-3xl md:text-4xl tracking-[0.2em] mb-4 uppercase`}>{step.title}</h2>
+          <p className={`${textColorMuted} text-lg tracking-wider`}>{step.desc}</p>
+          
+          {/* Tap to continue */}
+          <p className={`${textColorSubtle} text-sm tracking-[0.2em] mt-16 animate-pulse`}>
+            {isMobile ? storyContent.tutorial.tapToContinue[lang] : storyContent.tutorial.pressAnyKey[lang]}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Story screen with GSAP clipPath animations
+  return (
+    <div 
+      ref={container} 
+      className={`font-cinzel fixed inset-0 w-full h-full overflow-hidden flex items-center justify-center touch-none z-[9999]`}
+      style={{ 
+        background: isDark 
+          ? 'radial-gradient(ellipse at center, #0d0a08 0%, #030303 60%, #000000 100%)'
+          : 'radial-gradient(ellipse at center, #f5f5f5 0%, #e5e5e5 60%, #d5d5d5 100%)'
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Background image - only in dark mode */}
+      {isDark && (
+        <div className="absolute inset-0 z-0">
+          <Image 
+            src="/tree_beside_water.jpg" 
+            alt="Background" 
+            fill 
+            className="object-cover"
+            style={{ 
+              filter: 'blur(12px) sepia(0.5) brightness(0.15)'
+            }}
+            priority
+          />
+          <div className="absolute inset-0 bg-black/60" />
+        </div>
+      )}
+
+      {/* Animated light with parallax */}
+      <div ref={lightRef} className="absolute z-[1] pointer-events-none transition-transform duration-300" style={{ 
+        width: 'min(1000px, 150vw)', height: 'min(1000px, 150vh)',
+        background: isDark
+          ? 'radial-gradient(ellipse at center, rgba(200,180,140,0.2) 0%, rgba(120,100,70,0.1) 35%, rgba(0,0,0,0) 70%)'
+          : 'radial-gradient(ellipse at center, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 70%)',
+        filter: 'blur(100px)', left: '50%', top: '50%',
+        transform: `translate(calc(-50% + ${mousePos.x * 30}px), calc(-50% + ${mousePos.y * 30}px))`, opacity: 0.5
+      }} />
+
+      {/* Vignette */}
+      <div className="absolute inset-0 pointer-events-none z-20" style={{ 
+        background: isDark
+          ? 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.9) 100%)'
+          : 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.08) 100%)'
+      }} />
+
+      {/* Skip button */}
+      <button 
+        onClick={onSkip} 
+        className={`fixed top-4 right-4 md:top-6 md:right-6 z-[120] ${isDark ? 'text-white/40 hover:text-white' : 'text-gray-400 hover:text-gray-800'} transition-colors duration-200 text-xs tracking-[0.25em] uppercase`}
+      >
+        {storyContent.skipButton[lang]}
+      </button>
+
+      {/* Fullscreen button (desktop) */}
+      {!isMobile && (
+        <button 
+          onClick={toggleFullscreen}
+          className={`fixed top-4 left-4 md:top-6 md:left-6 z-[120] ${isDark ? 'text-white/40 hover:text-white' : 'text-gray-400 hover:text-gray-800'} transition-colors duration-200`}
+        >
+          {isFullscreen ? (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+          ) : (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          )}
+        </button>
+      )}
+
+      {/* Scene indicator */}
+      <div className={`fixed bottom-4 md:bottom-3 left-1/2 -translate-x-1/2 z-[110] ${isDark ? 'text-white/40' : 'text-gray-400'} text-[10px] md:text-xs tracking-[0.3em] font-light`}>
+        {currentPhrase + 1} / {phrases.length}
+      </div>
+
+      {/* Progress bar */}
+      <div className={`fixed bottom-0 left-0 right-0 h-[4px] md:h-[3px] ${isDark ? 'bg-white/10' : 'bg-gray-200'} z-[110] flex justify-center overflow-hidden`}>
+        <div 
+          className={`h-full ${isDark ? 'bg-white' : 'bg-gray-700'} transition-[width] duration-100 ease-linear`}
+          style={{ 
+            width: `${progress}%`,
+            boxShadow: isDark ? '0 0 10px rgba(255,255,255,0.8)' : '0 0 6px rgba(0,0,0,0.2)'
+          }} 
+        />
+      </div>
+
+      {/* Center controls */}
+      <div className="fixed bottom-12 md:bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-4 md:gap-6 z-[110]">
+        <button onClick={skipToPrevious} className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${isDark ? 'text-white/40 hover:text-white' : 'text-gray-400 hover:text-gray-800'} transition-colors`}>
+          <svg className="w-6 h-6 md:w-7 md:h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        
+        <button onClick={togglePause} className={`w-10 h-10 md:w-11 md:h-11 flex items-center justify-center ${isDark ? 'text-white/60 hover:text-white border-white/20 hover:border-white/40' : 'text-gray-500 hover:text-gray-900 border-gray-300 hover:border-gray-500'} transition-all duration-200 border rounded-full backdrop-blur-sm`}>
+          {isPaused ? (
+            <svg className="w-4 h-4 md:w-5 md:h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          ) : (
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          )}
+        </button>
+        
+        <button onClick={skipToNext} className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${isDark ? 'text-white/40 hover:text-white' : 'text-gray-400 hover:text-gray-800'} transition-colors`}>
+          <svg className="w-6 h-6 md:w-7 md:h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+      </div>
+
+      {/* Pause indicator - positioned to not overlap with skip button */}
+      {isPaused && !showEndScreen && (
+        <div className={`fixed top-14 left-1/2 -translate-x-1/2 md:top-8 md:left-8 md:translate-x-0 ${isDark ? 'text-white/40' : 'text-gray-400'} text-xs md:text-sm tracking-widest z-[110] flex items-center gap-2`}>
+          <span className={`w-2 h-2 ${isDark ? 'bg-white/40' : 'bg-gray-400'} rounded-full animate-pulse`} />
+          {storyContent.paused[lang]}
+        </div>
+      )}
+
+      {/* End screen */}
+      {showEndScreen && (
+        <div className={`fixed inset-0 ${isDark ? 'bg-black/90' : 'bg-white/95'} z-[200] flex items-center justify-center animate-fade-in`}>
+          <div className="font-cinzel text-center px-8">
+            <h1 className={`${isDark ? 'text-white' : 'text-gray-900'} text-4xl md:text-6xl tracking-[0.3em] mb-8 animate-pulse uppercase`}>
+              {storyContent.theEnd[lang]}
+            </h1>
+            
+            <p className={`${isDark ? 'text-white/60' : 'text-gray-600'} text-lg tracking-wider mb-8`}>
+              {storyContent.redirecting[lang]} {redirectCountdown} {storyContent.seconds[lang]}...
+            </p>
+            
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+              <button 
+                onClick={restart}
+                className={`px-8 py-3 border ${isDark ? 'border-white/30 text-white/60 hover:text-white hover:border-white/60' : 'border-gray-300 text-gray-500 hover:text-gray-900 hover:border-gray-600'} transition-colors tracking-[0.2em] text-sm uppercase`}
+              >
+                {storyContent.experienceAgain[lang]}
+              </button>
+              <button 
+                onClick={() => navigator.share?.({ title: 'RADIKAL', text: 'Biblical Radicality', url: window.location.href }).catch(() => {})}
+                className={`px-8 py-3 border ${isDark ? 'border-white/30 text-white/60 hover:text-white hover:border-white/60' : 'border-gray-300 text-gray-500 hover:text-gray-900 hover:border-gray-600'} transition-colors tracking-[0.2em] text-sm uppercase flex items-center gap-2`}
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+                {storyContent.share[lang]}
+              </button>
+              <button 
+                onClick={onComplete}
+                className={`px-8 py-3 border ${isDark ? 'border-white/30 text-white/60 hover:text-white hover:border-white/60' : 'border-gray-300 text-gray-500 hover:text-gray-900 hover:border-gray-600'} transition-colors tracking-[0.2em] text-sm uppercase`}
+              >
+                {storyContent.continueToAbout[lang]}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Current phrase - GSAP word-by-word animation (insurrection.photo style) */}
+      {phrases[currentPhrase] && (
+        <div 
+          ref={phraseRef}
+          key={currentPhrase}
+          className="absolute flex flex-col items-center justify-center z-30 px-4 sm:px-6 md:px-8 max-w-[95vw] md:max-w-4xl lg:max-w-5xl"
+          style={{ 
+            transform: `translate(${mousePos.x * 8}px, ${mousePos.y * 8}px)`,
+          }}
+        >
+          <p 
+            className={`${isDark ? 'text-white' : 'text-gray-900'} text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-[0.05em] md:tracking-[0.1em] text-center leading-relaxed`}
+            style={{ 
+              fontWeight: 300, 
+              textShadow: isDark 
+                ? '0 0 2px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.15)'
+                : '0 0 1px rgba(0,0,0,0.1)',
+            }}
+          >
+            {phrases[currentPhrase].main.split(' ').map((word, i) => (
+              <span 
+                key={i} 
+                className="word-main inline-block mr-[0.3em]"
+                style={{ opacity: 0, willChange: 'opacity, transform, filter' }}
+              >
+                {word}
+              </span>
+            ))}
+          </p>
+          {phrases[currentPhrase].sub && (
+            <p 
+              ref={subRef}
+              className={`${isDark ? 'text-white/60' : 'text-gray-600'} text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.05em] text-center mt-3 md:mt-6 italic`}
+              style={{ 
+                fontWeight: 300, 
+                textShadow: isDark ? '0 0 2px rgba(255,255,255,0.4)' : 'none',
+              }}
+            >
+              {phrases[currentPhrase].sub!.split(' ').map((word, i) => (
+                <span 
+                  key={i} 
+                  className="word-sub inline-block mr-[0.3em]"
+                  style={{ opacity: 0, willChange: 'opacity, transform, filter' }}
+                >
+                  {word}
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Minimal CSS helpers */}
+      <style jsx>{`
+        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+        .animate-fade-in { animation: fade-in 1s ease-out forwards; }
+      `}</style>
+    </div>
+  );
+}

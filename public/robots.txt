@@ -1,0 +1,20 @@
+# Robots.txt for RADIKAL Blog
+# Erlaubt alle Suchmaschinen-Crawler
+# Permite toate crawlerele motoarelor de căutare
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://radikal.vercel.app/sitemap.xml
+
+# Disallow admin pages from indexing
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/*
+Disallow: /auth/*
+
+# Allow blog content
+Allow: /blogs/*
+Allow: /about
+Allow: /contact

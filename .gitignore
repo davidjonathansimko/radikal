@@ -1,0 +1,104 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+build/
+dist/
+.swc/
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS files
+Desktop.ini
+ehthumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Tutorial & documentation files (not needed for deployment)
+TUTORIAL_*.md
+STEP_*.md
+DEPLOYMENT_GUIDE.md
+IMPROVEMENTS*.md
+IMBUNATATIRI*.md
+OPTIMIZATIONS_IMPLEMENTED.md
+BLOG_TRANSLATION_OPTIONS.md
+DEEPL_API_TUTORIAL.md
+EMAIL_SETUP_CHECKDOMAIN.md
+GITHUB_VERCEL_ANLEITUNG.md
+SUPABASE_STORAGE_SETUP.md
+NEWSLETTER_EDGE_FUNCTION.md
+NEWSLETTER_SETUP.sql
+NEWSLETTER_SIMPLE_SETUP.sql
+COMMENT_FEATURES_SETUP.sql
+BOOKMARKS_SETUP.sql
+DATABASE_OPTIMIZATION.sql
+ANALYTICS_*.sql
+DEEPL_CACHE_SETUP.sql
+FIX_CONTACT_TABLE.sql
+database_schema.sql
+aboutmodalbeispielcode.md
+RADIKAL2_SETTINGS_COPY.md
+TYPOGRAPHY_SYSTEM_RADIKAL.md
+UX_UI_RECOMMENDATIONS.md
+
+# Instruction and info files
+Befehl*.txt
+"Befehl Modal About/"
+"Befehle neu/"
+"INFOS CODE Gespeichert.txt"
+"radikal über page text und titel, was bedeutet radikal.txt"
+imbunatatiri_pana_acum.md
+
+# Tutorial backup folder
+"11.12.2025_Tutorial Complet RADIKAL,mit Infos und Hilfe/"
+
+# Backup archives
+*.zip
+
+# PDF files (not source code)
+*.pdf
+
+# SQL setup files
+*.sql
+
+# Release instructions (personal)
+release.md
+
+# Jest config (not needed for production)
+jest.config.js
+jest.setup.js
+
+# Misc
+*.tgz
+.vercel

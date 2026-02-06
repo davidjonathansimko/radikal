@@ -1,0 +1,465 @@
+/* Print-Friendly CSS / Druckfreundliche CSS / CSS pentru Imprimare */
+/* Styles for printing blog posts beautifully - respects theme */
+/* Stile für schönes Drucken von Blog-Posts - respektiert Theme */
+/* Stiluri pentru imprimarea frumoasă a postărilor de blog - respectă tema */
+
+/* Print styles - automatically applied when printing */
+@media print {
+  /* Hide ALL non-essential elements - only blog content prints */
+  nav:not(:first-of-type),
+  footer,
+  .no-print,
+  .navigation,
+  .share-buttons,
+  .share-section,
+  .comments-section,
+  .related-posts,
+  .newsletter-subscribe,
+  .reading-progress,
+  .scroll-to-top,
+  .toast-container,
+  .search-modal,
+  .bookmark-button,
+  .emoji-reactions,
+  .table-of-contents,
+  .floating-toc,
+  .mobile-menu,
+  .theme-toggle,
+  .language-switcher,
+  .post-actions,
+  .back-button,
+  .reading-controls,
+  .noise-overlay,
+  #blog-background-overlay,
+  .CircularReadingProgress,
+  [class*="CircularReading"],
+  .fixed:not(article):not(header):not(.blog-content-backdrop):not(#blog-content),
+  /* Hide tags in PDF / Tags im PDF ausblenden / Ascunde tag-urile în PDF */
+  .tags,
+  .tag,
+  [class*="tags"],
+  [class*="tag-"],
+  a[href*="/tags/"],
+  span.tag,
+  div.tags,
+  .flex.flex-wrap.gap-2,
+  header .flex.items-center.gap-2 a,
+  /* Hide Next.js dev indicator / Next.js-Entwicklerindikator ausblenden / Ascunde indicatorul de dezvoltare Next.js */
+  #__next-build-indicator,
+  [data-nextjs-dialog],
+  [data-nextjs-toast],
+  nextjs-portal,
+  #__next-route-announcer__,
+  [class*="nextjs"],
+  [id*="__next"],
+  body > div:last-child > div:first-child {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Ensure buttons are hidden but content shows */
+  button {
+    display: none !important;
+  }
+
+  /* Hide relative time like "vor 5 Monaten" and reading time with tags */
+  .relative-time,
+  time[datetime]:not(.print-date),
+  header time:not(.print-date),
+  .text-sm.text-gray-500:not(h1):not(h2):not(.prose *),
+  .text-gray-400:not(.prose *),
+  [class*="relative-time"],
+  article header > div:first-child time,
+  article header > div.text-sm,
+  /* Hide the reading time and tags line / Lesezeit und Tags-Zeile ausblenden / Ascunde linia cu timp de citire și tag-uri */
+  article header > div:nth-child(2),
+  .reading-time-tags,
+  header .flex.items-center.text-sm {
+    display: none !important;
+  }
+
+  /* Page setup with margins - NO headers/footers from browser */
+  @page {
+    size: A4;
+    margin: 2cm 2cm 2cm 2cm;
+  }
+
+  /* First page - slightly different margin */
+  @page :first {
+    margin-top: 1.5cm;
+  }
+
+  /* CRITICAL: Prevent text from being cut mid-sentence */
+  /* WICHTIG: Verhindere dass Text mitten im Satz abgeschnitten wird */
+  /* IMPORTANT: Împiedică tăierea textului în mijlocul propoziției */
+  
+  /* Force all text elements to avoid page breaks inside */
+  p, li, blockquote {
+    orphans: 8 !important;
+    widows: 8 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* Make spans behave as block elements within paragraphs for better text flow */
+  .prose p span,
+  #blog-content p span,
+  article p span {
+    display: inline !important;
+  }
+  
+  /* Ensure entire paragraphs stay together - stronger rules */
+  .prose p,
+  article p,
+  #blog-content p,
+  .blog-content-backdrop p {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: block !important;
+    orphans: 8 !important;
+    widows: 8 !important;
+  }
+  
+  /* Wrap content in a way that respects page breaks */
+  .prose,
+  #blog-content,
+  article .prose {
+    overflow: visible !important;
+  }
+
+  /* Never break inside these elements */
+  .prose p,
+  .prose li,
+  .prose blockquote,
+  article p,
+  article li,
+  article blockquote {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    orphans: 5 !important;
+    widows: 5 !important;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Keep paragraphs together */
+  .prose p {
+    page-break-inside: avoid !important;
+  }
+
+  /* Light mode print */
+  body:not(.dark) {
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body:not(.dark) h1, body:not(.dark) h2, body:not(.dark) h3 {
+    color: black !important;
+  }
+
+  body:not(.dark) p, body:not(.dark) span, body:not(.dark) div {
+    color: #1a1a1a !important;
+  }
+
+  /* Dark mode print - keeps dark theme */
+  body.dark {
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
+    background: #0a0a0a !important;
+    color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.dark h1, body.dark h2, body.dark h3 {
+    color: white !important;
+  }
+
+  body.dark p, body.dark span, body.dark div {
+    color: #e5e5e5 !important;
+  }
+
+  body.dark article,
+  body.dark main,
+  body.dark .blog-content-backdrop,
+  body.dark .prose,
+  body.dark #blog-content {
+    background: #0a0a0a !important;
+  }
+
+  /* Force article and main content to be visible */
+  article,
+  main,
+  .blog-content-backdrop,
+  .prose,
+  #blog-content,
+  #blog-content > .prose,
+  #blog-content > .prose > div {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Proper page layout - centered and clean */
+  article {
+    margin: 0 auto !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Ensure header with title shows */
+  article header,
+  article header h1 {
+    display: block !important;
+    visibility: visible !important;
+    text-align: center !important;
+    margin-bottom: 1cm !important;
+  }
+
+  /* Blog title styling - centered and prominent */
+  article header h1,
+  h1.print-title {
+    font-size: 24pt !important;
+    font-weight: bold !important;
+    margin-bottom: 16pt !important;
+    color: black !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Main content styling - only show blog content */
+  .blog-content-backdrop,
+  .blog-content,
+  .prose,
+  article {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  /* Blog content text must be visible */
+  .prose p,
+  .prose div,
+  .prose span,
+  #blog-content p,
+  #blog-content div,
+  #blog-content span,
+  .blog-content-backdrop p,
+  .blog-content-backdrop div {
+    display: block !important;
+    visibility: visible !important;
+    color: black !important;
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
+  }
+
+  /* Featured image styling */
+  article header img,
+  .featured-image,
+  header img {
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 12pt 0 !important;
+    page-break-inside: avoid !important;
+    border-radius: 8pt !important;
+  }
+
+  /* Blog header - date, title, metadata */
+  header {
+    margin-bottom: 20pt !important;
+  }
+
+  /* Heading styles */
+  h1 {
+    font-size: 22pt !important;
+    margin-bottom: 8pt !important;
+    page-break-after: avoid !important;
+    font-weight: bold !important;
+  }
+
+  h2 {
+    font-size: 16pt !important;
+    margin-top: 16pt !important;
+    margin-bottom: 6pt !important;
+    page-break-after: avoid !important;
+  }
+
+  h3 {
+    font-size: 13pt !important;
+    margin-top: 12pt !important;
+    margin-bottom: 4pt !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Metadata (reading time, date) */
+  time, .reading-time {
+    font-size: 10pt !important;
+    color: #666 !important;
+    margin-bottom: 12pt !important;
+    display: inline-block !important;
+  }
+
+  /* Paragraph styling */
+  p {
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
+    margin-bottom: 10pt !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* Don't show link URLs in print - cleaner look */
+  a[href]:after {
+    content: none !important;
+  }
+
+  /* Image styling - featured image */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Code blocks */
+  pre, code {
+    background: #f5f5f5 !important;
+    border: 1px solid #ddd !important;
+    font-size: 10pt !important;
+    page-break-inside: avoid !important;
+  }
+
+  pre {
+    padding: 10pt !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Blockquotes */
+  blockquote {
+    border-left: 3pt solid #333 !important;
+    padding-left: 12pt !important;
+    margin-left: 0 !important;
+    font-style: italic !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Tables */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    page-break-inside: avoid !important;
+  }
+
+  th, td {
+    border: 1pt solid #333 !important;
+    padding: 6pt !important;
+    text-align: left !important;
+  }
+
+  th {
+    background: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+
+  /* Lists */
+  ul, ol {
+    margin-left: 20pt !important;
+    margin-bottom: 10pt !important;
+  }
+
+  li {
+    margin-bottom: 4pt !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always !important;
+  }
+
+  /* Header on each page */
+  @page {
+    margin: 1in;
+  }
+
+  @page :first {
+    margin-top: 0.5in;
+  }
+
+  /* Blog post header */
+  .blog-header {
+    border-bottom: 2pt solid black !important;
+    padding-bottom: 12pt !important;
+    margin-bottom: 18pt !important;
+  }
+
+  /* Author info */
+  .author-info {
+    font-size: 10pt !important;
+    color: #666 !important;
+  }
+
+  /* Date */
+  time {
+    font-size: 10pt !important;
+    color: #666 !important;
+  }
+
+  /* Tags */
+  .tags {
+    margin-top: 12pt !important;
+    font-size: 10pt !important;
+  }
+
+  .tag {
+    border: 1pt solid #999 !important;
+    padding: 2pt 6pt !important;
+    margin-right: 4pt !important;
+    background: none !important;
+  }
+
+  /* Footer with website URL */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10pt;
+    color: #666;
+    border-top: 1pt solid #ddd;
+    padding-top: 6pt;
+  }
+}
+
+/* Print button component styles */
+.print-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.print-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dark .print-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

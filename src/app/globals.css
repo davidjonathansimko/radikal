@@ -1,0 +1,1501 @@
+﻿/* Global styles for the Radikal blog application / Globale Stile für die Radikal-Blog-Anwendung */
+/* This file contains all global CSS including Tailwind imports and custom styles */
+/* Diese Datei enthält alle globalen CSS einschließlich Tailwind-Importe und benutzerdefinierten Stilen */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== SEARCH MODAL BLUR EFFECT ===== */
+/* When search modal is open, blur the entire page content */
+/* Wenn das Such-Modal geöffnet ist, wird der gesamte Seiteninhalt unscharf */
+/* Când modal-ul de căutare e deschis, aplica blur pe tot conținutul paginii */
+body.search-modal-open main,
+body.search-modal-open nav,
+body.search-modal-open footer,
+body.search-modal-open .noise-overlay {
+  filter: blur(8px) brightness(0.7);
+  transition: filter 0.3s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+body.search-modal-open {
+  overflow: hidden;
+}
+
+/* Import print styles / Druckstile importieren / Importă stiluri imprimare */
+@import '../styles/print.css';
+
+/* Custom CSS variables for consistent theming / Benutzerdefinierte CSS-Variablen für konsistente Themenerstellung */
+/* Dark theme (default) */
+:root {
+  --primary-color: #ffffff;
+  --secondary-color: #f3f4f6;
+  --accent-color: #3b82f6;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --background-overlay: rgba(0, 0, 0, 0.4);
+  --bg-color: #000000;
+  --fg-color: #ffffff;
+  --font-cinzel: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --font-body: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --font-blog: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Light theme */
+.light {
+  --primary-color: #000000;
+  --secondary-color: #1f2937;
+  --accent-color: #2563eb;
+  --text-primary: #000000;
+  --text-secondary: rgba(0, 0, 0, 0.8);
+  --background-overlay: rgba(255, 255, 255, 0.4);
+  --bg-color: #ffffff;
+  --fg-color: #000000;
+}
+
+/* Base styles / Grundstile */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Theme-aware body styles */
+body {
+  background-color: var(--bg-color);
+  color: var(--fg-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  /* EB Garamond for body text - has proper lowercase letters */
+  /* Cinzel is now ONLY for headings (h1-h6) */
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-feature-settings: 'liga', 'kern';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===== TYPOGRAPHY SYSTEM ===== */
+/* Cinzel ONLY for headings, Cormorant Garamond for everything else */
+/* Cinzel NUR für Überschriften, Cormorant Garamond für alles andere */
+/* Cinzel DOAR pentru titluri, Cormorant Garamond pentru restul */
+
+/* Body text uses EB Garamond (has proper lowercase) */
+* {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+}
+
+/* Cinzel font class - explicit override */
+.font-cinzel {
+  font-family: 'Cinzel', Georgia, 'Times New Roman', serif !important;
+}
+
+/* Headings - Cinzel font with perfect spacing */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cinzel', Georgia, 'Times New Roman', serif !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.75rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  letter-spacing: -0.025em;
+}
+
+h3 {
+  font-size: clamp(1.25rem, 3vw, 1.875rem);
+  letter-spacing: -0.02em;
+}
+
+h4 {
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  letter-spacing: -0.015em;
+}
+
+h5, h6 {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  letter-spacing: -0.01em;
+}
+
+/* Body text - EB Garamond for proper lowercase letters */
+/* Fließtext - EB Garamond für richtige Kleinbuchstaben */
+/* Text body - EB Garamond pentru litere mici normale */
+p, li, span, div {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  line-height: 1.75;
+  letter-spacing: 0;
+}
+
+/* Prose content - Optimal reading experience with Montserrat for blogs */
+/* Blog-Inhalt - Optimale Leseerfahrung mit Montserrat für Blogs */
+/* Conținut blog - Experiență de citire optimă cu Montserrat pentru bloguri */
+.prose, article, .blog-content {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(1rem, 1.1vw, 1.125rem);
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+}
+
+.prose p, article p {
+  margin-bottom: 1.5em;
+  text-wrap: pretty;
+}
+
+.prose h1, .prose h2, .prose h3, article h1, article h2, article h3 {
+  margin-top: 2em;
+  margin-bottom: 0.75em;
+}
+
+/* Blockquotes - Biblical verses styling with Cinzel */
+blockquote, .verse, .bible-verse {
+  font-family: 'Cinzel', Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 1.1em;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  padding-left: 1.5rem;
+  border-left: 3px solid currentColor;
+  opacity: 0.9;
+}
+
+/* Welcome Modal blockquote - no left border, centered text */
+/* Welcome Modal Blockquote - keine linke Linie, zentrierter Text */
+/* Welcome Modal blockquote - fără linie stânga, text centrat */
+.fixed blockquote {
+  border-left: none;
+  padding-left: 0;
+  text-align: center;
+}
+
+/* ===== DROP CAP / LITERĂ INIȚIALĂ MARE ===== */
+/* Classic drop cap effect for blog content / Klassischer Drop Cap Effekt / Efect literă inițială decorativă */
+
+/* Drop cap for first paragraph in blog content */
+.blog-drop-cap::first-letter,
+.drop-cap::first-letter {
+  font-family: 'Cinzel', Georgia, 'Times New Roman', serif !important;
+  float: left;
+  font-size: 5.5em;
+  line-height: 0.85;
+  padding-right: 0.12em;
+  margin-right: 0.05em;
+  margin-top: 0.05em;
+  font-weight: 600;
+  color: inherit;
+}
+
+/* First paragraph with drop cap - text indent for lines below the large letter */
+.blog-drop-cap,
+.drop-cap {
+  text-indent: 0;
+  margin-left: 0;
+}
+
+/* Paragraph indent for all paragraphs after the first one / Texteinzug für alle Absätze nach dem ersten / Aliniat pentru toate paragrafele după primul */
+.paragraph-indent {
+  text-indent: 2em;
+}
+
+/* Drop cap with decorative quotes for biblical verses */
+.bible-drop-cap::first-letter {
+  font-family: 'Cinzel', Georgia, 'Times New Roman', serif !important;
+  float: left;
+  font-size: 6em;
+  line-height: 0.8;
+  padding-right: 0.1em;
+  margin-right: 0.05em;
+  margin-top: 0.05em;
+  font-weight: 600;
+  color: inherit;
+}
+
+/* Smaller drop cap variant */
+.drop-cap-small::first-letter {
+  font-family: 'Cinzel', Georgia, 'Times New Roman', serif !important;
+  float: left;
+  font-size: 3.5em;
+  line-height: 0.9;
+  padding-right: 0.1em;
+  margin-right: 0.05em;
+  font-weight: 600;
+}
+
+/* Drop cap with accent color - dark mode */
+.drop-cap-accent::first-letter {
+  font-family: 'Cinzel', Georgia, 'Times New Roman', serif !important;
+  float: left;
+  font-size: 5.5em;
+  line-height: 0.85;
+  padding-right: 0.12em;
+  margin-right: 0.05em;
+  margin-top: 0.05em;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+/* Light mode adjustments for drop caps */
+.light .drop-cap-accent::first-letter {
+  color: #dc2626;
+}
+
+/* Responsive drop cap sizes */
+@media (max-width: 640px) {
+  .blog-drop-cap::first-letter,
+  .drop-cap::first-letter {
+    font-size: 4em;
+    line-height: 0.9;
+    padding-right: 0.1em;
+  }
+  
+  .bible-drop-cap::first-letter {
+    font-size: 4.5em;
+    line-height: 0.85;
+  }
+  
+  .drop-cap-small::first-letter {
+    font-size: 3em;
+  }
+  
+  .drop-cap-accent::first-letter {
+    font-size: 4em;
+  }
+}
+
+/* Code and monospace */
+code, pre, .mono {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 0.9em;
+  letter-spacing: 0;
+}
+
+/* Small text */
+small, .text-sm, .text-xs {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.025em;
+  line-height: 1.5;
+}
+
+/* Labels and captions - EB Garamond styling */
+label, figcaption, .caption {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-size: 0.875rem;
+  letter-spacing: 0.03em;
+  font-weight: 500;
+}
+
+/* Form elements - EB Garamond font */
+input, textarea, select, button {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+}
+
+/* Links with smooth underline animation */
+a {
+  text-decoration: none;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.prose a, article a {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s ease;
+}
+
+.prose a:hover, article a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Dark theme (default) body colors */
+html:not(.light) body,
+html.dark body {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/* Light theme body colors */
+html.light body {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Custom scrollbar styling / Benutzerdefinierte Scrollbar-Gestaltung */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Light theme scrollbar */
+.light ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Noise/Grain texture overlay - like insurrection.photo */
+/* This overlay is on top of EVERYTHING including images */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+.light .noise-overlay {
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+}
+
+/* Custom animations / Benutzerdefinierte Animationen */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Toast notification progress bar animation */
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.animate-shrink {
+  animation: shrink linear forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Utility classes / Utility-Klassen */
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.8s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.8s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* Text reveal animation - like insurrection.photo story */
+@keyframes textReveal {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes textRevealSlow {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(15px) scale(0.98);
+  }
+  60% {
+    opacity: 0.7;
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Popup fade-in effect - combines fade + scale from center */
+@keyframes popupFadeIn {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.92) translateY(10px);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(3px);
+    transform: scale(0.98) translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes popupFadeInSlow {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(0.88) translateY(15px);
+  }
+  40% {
+    opacity: 0.4;
+    filter: blur(5px);
+    transform: scale(0.95) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-textReveal {
+  animation: textReveal 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-textRevealSlow {
+  animation: textRevealSlow 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-popupFadeIn {
+  animation: popupFadeIn 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-popupFadeInSlow {
+  animation: popupFadeInSlow 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Text background shadow for readability over images */
+.text-shadow-readable {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.light .text-shadow-readable {
+  text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8), 0 4px 20px rgba(255, 255, 255, 0.6);
+}
+
+/* Blog content backdrop for better readability - more transparent / lesbarer Hintergrund - transparenter / fundal citibil - mai transparent */
+.blog-content-backdrop {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.55));
+  backdrop-filter: blur(2px);
+  border-radius: 1rem;
+  padding: 2rem;
+}
+
+.light .blog-content-backdrop {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.7));
+}
+
+/* Glass morphism effect / Glasmorphismus-Effekt */
+/* Updated: Dark blue-black shadow for better consistency in dark/light mode */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(10, 15, 30, 0.5), 0 4px 16px 0 rgba(20, 30, 60, 0.3);
+}
+
+/* Light mode glass effect */
+.light .glass-effect {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(10, 15, 40, 0.15), 0 4px 16px 0 rgba(20, 30, 60, 0.1);
+}
+
+/* Text selection styling / Textauswahl-Gestaltung */
+::selection {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+::-moz-selection {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+/* Light theme text selection */
+.light ::selection {
+  background: rgba(0, 0, 0, 0.3);
+  color: black;
+}
+
+.light ::-moz-selection {
+  background: rgba(0, 0, 0, 0.3);
+  color: black;
+}
+
+/* Focus styles for accessibility / Fokusstile für Barrierefreiheit */
+.focus-visible:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Button hover effects / Button-Hover-Effekte */
+.btn-primary {
+  @apply px-6 py-3 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition-all duration-300 border border-white/30 hover:border-white/50;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white font-medium rounded-md transition-all duration-200 border border-white/20 hover:border-white/40;
+}
+
+/* Card component styling / Karten-Komponenten-Gestaltung */
+.card {
+  @apply bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl;
+}
+
+.card-hover {
+  @apply hover:bg-white/15 hover:border-white/30 hover:shadow-2xl hover:scale-105 transition-all duration-300;
+}
+
+/* Typography enhancements / Typografie-Verbesserungen */
+.text-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Loading spinner / Lade-Spinner */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile responsive adjustments / Mobile responsive Anpassungen */
+@media (max-width: 768px) {
+  .mobile-padding {
+    @apply px-4;
+  }
+  
+  .mobile-text {
+    @apply text-sm;
+  }
+  
+  .mobile-hidden {
+    @apply hidden;
+  }
+}
+
+/* Tablet responsive adjustments / Tablet responsive Anpassungen */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet-padding {
+    @apply px-6;
+  }
+}
+
+/* Desktop enhancements / Desktop-Verbesserungen */
+@media (min-width: 1024px) {
+  .desktop-padding {
+    @apply px-8;
+  }
+}
+
+/* High contrast mode support / Unterstützung für hohen Kontrast */
+@media (prefers-contrast: high) {
+  .glass-effect {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid white;
+  }
+}
+
+/* Reduced motion preferences / Einstellungen für reduzierte Bewegung */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles / Druckstile */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Theme-specific styles / Themenspezifische Stile */
+
+/* Dark theme (default) / Dunkles Theme (Standard) */
+.dark {
+  --bg-primary: #000000;
+  --bg-secondary: #1a1a1a;
+  --bg-glass: rgba(31, 41, 55, 0.3);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --border-color: rgba(255, 255, 255, 0.2);
+  --overlay-bg: rgba(0, 0, 0, 0.4);
+}
+
+/* Light theme / Helles Theme */
+.light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-glass: rgba(0, 0, 0, 0.05);
+  --text-primary: #1a1a1a;
+  --text-secondary: rgba(0, 0, 0, 0.8);
+  --text-muted: rgba(0, 0, 0, 0.6);
+  --border-color: rgba(0, 0, 0, 0.2);
+  --overlay-bg: rgba(255, 255, 255, 0.4);
+}
+
+/* Apply theme variables to body */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light theme text overrides for better visibility */
+.light {
+  color: #1a1a1a !important;
+}
+
+.light h1, .light h2, .light h3, .light h4, .light h5, .light h6 {
+  color: #1a1a1a !important;
+}
+
+.light p, .light span, .light div, .light a, .light button, .light label {
+  color: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Force ALL text colors in light mode */
+.light .text-white,
+.light .text-white\/90,
+.light .text-white\/80,
+.light .text-white\/70,
+.light .text-white\/60,
+.light .text-white\/50,
+.light .text-white\/40,
+.light .text-white\/30,
+.light .text-white\/20 {
+  color: #1a1a1a !important;
+}
+
+/* Light theme specific text overrides */
+.light .text-blue-400 {
+  color: #2563eb !important;
+}
+
+.light .text-blue-300 {
+  color: #3b82f6 !important;
+}
+
+.light .text-gray-400 {
+  color: #6b7280 !important;
+}
+
+.light .text-gray-300 {
+  color: #9ca3af !important;
+}
+
+/* Navigation and interactive elements */
+.light nav,
+.light nav * {
+  color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.light button,
+.light button * {
+  color: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Placeholder text in light mode */
+.light .placeholder-white\/40,
+.light .placeholder-white\/50,
+.light .placeholder-white\/60 {
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Light theme navigation colors */
+.light .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Light theme glass effects - updated with dark blue-black shadow */
+.light .glass-effect {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(10, 15, 40, 0.15), 0 4px 16px 0 rgba(20, 30, 60, 0.1);
+}
+
+.light .glass-effect:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 40px 0 rgba(10, 15, 40, 0.2), 0 6px 20px 0 rgba(20, 30, 60, 0.12);
+}
+
+/* Black & White theme (high contrast minimal) / Schwarz-Weiß-Theme */
+
+/* Global music player styles - Mobile-friendly with expandable controls */
+.global-music-player {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 60;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(15px); /* Increased from 12px to 15px (25% more blur) */
+  border-radius: 9999px;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.global-music-player.collapsed {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.global-music-player.expanded {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.global-music-player:hover {
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(18px); /* Increased hover blur as well */
+  box-shadow: 0 4px 16px -2px rgba(0,0,0,0.5);
+}
+
+.music-icon {
+  font-size: 16px;
+  color: rgba(255,255,255,0.85);
+  font-weight: bold;
+}
+
+.music-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.music-controls.hidden {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.music-controls.visible {
+  opacity: 1;
+  width: auto;
+}
+
+.global-music-player button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.85);
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.global-music-player button:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+.global-music-player .play-btn {
+  font-size: 14px;
+}
+
+.global-music-player .volume-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.global-music-player input[type=range] {
+  width: 60px;
+  height: 4px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.global-music-player .song-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  min-width: 60px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .global-music-player {
+    right: 15px;
+    bottom: 15px;
+  }
+  
+  .global-music-player.collapsed {
+    padding: 6px 10px;
+  }
+  
+  .global-music-player.expanded {
+    min-width: 180px;
+    padding: 5px 8px;
+  }
+  
+  .global-music-player input[type=range] {
+    width: 50px;
+  }
+}
+
+/* Glass effect with theme support - updated with dark blue-black shadow */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(10, 15, 30, 0.5), 0 4px 16px 0 rgba(20, 30, 60, 0.3);
+}
+
+.glass-effect:hover {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 12px 40px 0 rgba(10, 15, 30, 0.6), 0 6px 20px 0 rgba(20, 30, 60, 0.35);
+}
+
+/* Update button styles for light theme */
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background-color: #1f2937;
+  color: white;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+  background-color: #111827;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background-color: #4b5563;
+  color: white;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #374151;
+}
+
+/* Light theme specific overrides */
+.light .btn-primary {
+  background-color: #3b82f6;
+}
+
+.light .btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.light .btn-secondary {
+  background-color: #6b7280;
+}
+
+.light .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+/* Animation for floating geometric shapes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.1;
+  }
+  25% {
+    transform: translateY(-20px) rotate(45deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-15px) rotate(90deg);
+    opacity: 0.2;
+  }
+  75% {
+    transform: translateY(-25px) rotate(135deg);
+    opacity: 0.25;
+  }
+}
+
+/* Hide Navigation and Footer when modal is active */
+body.modal-active nav,
+body.modal-active footer {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* ========================================
+   MOBILE OPTIMIZATIONS / MOBIL-OPTIMIERUNGEN / OPTIMIZĂRI MOBIL
+   ======================================== */
+
+/* Touch-friendly button interactions */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets on mobile */
+  button, 
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Active state feedback for touch */
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+}
+
+/* Ripple effect for buttons */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.4s, opacity 0.6s;
+}
+
+.btn-ripple:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* Smooth skeleton loading animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.light .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.05) 25%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.05) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Gradient progress bar for TTS */
+.tts-progress-gradient {
+  background: linear-gradient(90deg, #ef4444 0%, #f97316 50%, #eab308 100%);
+}
+
+/* Safe area insets for notched devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-all {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+}
+
+/* Better scrolling on mobile */
+.scroll-smooth-mobile {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* ===== PARALLAX EFFECTS ===== */
+/* Parallax scrolling effects for backgrounds */
+/* Parallax-Scroll-Effekte für Hintergründe */
+/* Efecte parallax pentru fundaluri */
+
+.parallax-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.parallax-bg {
+  position: absolute;
+  top: -20%;
+  left: 0;
+  right: 0;
+  bottom: -20%;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  will-change: transform;
+  z-index: -1;
+}
+
+/* Parallax layers with different speeds */
+.parallax-slow {
+  transform: translateY(calc(var(--scroll-y, 0) * 0.1));
+}
+
+.parallax-medium {
+  transform: translateY(calc(var(--scroll-y, 0) * 0.3));
+}
+
+.parallax-fast {
+  transform: translateY(calc(var(--scroll-y, 0) * 0.5));
+}
+
+/* ===== TEXT REVEAL ANIMATIONS ===== */
+/* Cinematic text reveal effects */
+/* Kinematische Textaufdeckungseffekte */
+/* Efecte cinematice de revelare text */
+
+.text-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.text-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.text-reveal-left {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.text-reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.text-reveal-right {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.text-reveal-right.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.text-reveal-scale {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.text-reveal-scale.revealed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Staggered reveal for children */
+.stagger-reveal > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.stagger-reveal.revealed > *:nth-child(1) { transition-delay: 0s; }
+.stagger-reveal.revealed > *:nth-child(2) { transition-delay: 0.1s; }
+.stagger-reveal.revealed > *:nth-child(3) { transition-delay: 0.2s; }
+.stagger-reveal.revealed > *:nth-child(4) { transition-delay: 0.3s; }
+.stagger-reveal.revealed > *:nth-child(5) { transition-delay: 0.4s; }
+.stagger-reveal.revealed > *:nth-child(6) { transition-delay: 0.5s; }
+.stagger-reveal.revealed > *:nth-child(7) { transition-delay: 0.6s; }
+.stagger-reveal.revealed > *:nth-child(8) { transition-delay: 0.7s; }
+
+.stagger-reveal.revealed > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== HOVER MICRO-INTERACTIONS ===== */
+/* Subtle hover effects for interactive elements */
+/* Subtile Hover-Effekte für interaktive Elemente */
+/* Efecte subtile hover pentru elemente interactive */
+
+/* Card lift effect */
+.hover-lift {
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.25);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 12px 40px -12px rgba(255, 255, 255, 0.1);
+}
+
+/* Glow effect */
+.hover-glow {
+  transition: box-shadow 0.3s ease-out;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.dark .hover-glow:hover {
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+}
+
+/* Scale bounce effect */
+.hover-bounce {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-bounce:hover {
+  transform: scale(1.05);
+}
+
+.hover-bounce:active {
+  transform: scale(0.98);
+}
+
+/* Underline slide effect */
+.hover-underline {
+  position: relative;
+}
+
+.hover-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width 0.3s ease-out;
+}
+
+.hover-underline:hover::after {
+  width: 100%;
+}
+
+/* Icon rotate effect */
+.hover-rotate {
+  transition: transform 0.3s ease-out;
+}
+
+.hover-rotate:hover {
+  transform: rotate(15deg);
+}
+
+/* Button press effect */
+.hover-press {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.hover-press:hover {
+  transform: translateY(-2px);
+}
+
+.hover-press:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Shine effect on hover */
+.hover-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease-out;
+}
+
+.hover-shine:hover::before {
+  left: 100%;
+}
+
+/* Border glow effect */
+.hover-border-glow {
+  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+
+.hover-border-glow:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #ffffff;
+  }
+  
+  .light {
+    --text-primary: #000000;
+    --text-secondary: #000000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .parallax-bg {
+    background-attachment: scroll;
+  }
+  
+  .text-reveal,
+  .text-reveal-left,
+  .text-reveal-right,
+  .text-reveal-scale {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ===== MODAL FULLSCREEN FIX ===== */
+/* Forțează modale să fie fullscreen fără grey bar */
+/* Forces modals to be true fullscreen without grey bar */
+/* Erzwingt Vollbild für Modals ohne grauen Balken */
+
+/* Fix for all fullscreen modals - z-index 9999 */
+.fixed.z-\[9999\] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Body lock when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+}
+
+html.modal-open {
+  overflow: hidden !important;
+}
+

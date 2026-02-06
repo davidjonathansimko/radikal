@@ -1,0 +1,1430 @@
+// Individual blog post page / Einzelne Blog-Post-Seite / Pagină postare blog individuală
+// This displays a single blog post with comments and sharing functionality
+// Dies zeigt einen einzelnen Blog-Post mit Kommentaren und Teilen-Funktionalität
+// Aceasta afișează o singură postare de blog cu comentarii și funcționalitate de distribuire
+
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import { useParams } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
+import { de, enUS, ro, ru } from 'date-fns/locale';
+import { BlogPost, Comment } from '@/types';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useTheme } from '@/hooks/useTheme';
+import { useRouteProtection } from '@/hooks/useRouteProtection';
+import { useTranslation } from '@/hooks/useTranslation';
+import { createClient } from '@/lib/supabase';
+import ReadingProgress, { CircularReadingProgress } from '@/components/ReadingProgress';
+import { calculateReadingTime, getShortReadingTime } from '@/utils/readingTime';
+import { ReadingModeToggle, FontSizeControls, useReadingMode } from '@/components/ReadingMode';
+import { BlogPostSchema, BreadcrumbSchema } from '@/components/schema';
+import { 
+  FaShare, 
+  FaWhatsapp, 
+  FaTelegram, 
+  FaEnvelope,
+  FaTwitter,
+  FaArrowLeft,
+  FaClock,
+  FaLink,
+  FaDiscord,
+  FaCheck,
+  FaSms
+} from 'react-icons/fa';
+import { TfiComment } from 'react-icons/tfi';
+import { CiHeart } from 'react-icons/ci';
+
+// Dynamic imports for heavy components (loaded only when needed)
+const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ssr: false });
+const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
+const BookmarkButton = dynamic(() => import('@/components/BookmarkButton'), { ssr: false });
+const RelatedPosts = dynamic(() => import('@/components/RelatedPosts'), { ssr: false });
+const EmojiReactions = dynamic(() => import('@/components/EmojiReactions'), { ssr: false });
+const PrintButton = dynamic(() => import('@/components/PrintButton'), { ssr: false });
+const FloatingTableOfContents = dynamic(() => import('@/components/TableOfContents').then(m => ({ default: m.FloatingTableOfContents })), { ssr: false });
+const TextToSpeech = dynamic(() => import('@/components/TextToSpeech'), { ssr: false });
+const ReadingSettings = dynamic(() => import('@/components/ReadingSettings'), { ssr: false });
+const SocialShare = dynamic(() => import('@/components/social/SocialShare'), { ssr: false });
+const ArticleNavigation = dynamic(() => import('@/components/ArticleNavigation'), { ssr: false });
+
+export default function BlogPostPage() {
+  // Protect this route - redirect to home if modal not completed / Diese Route schützen - zur Startseite weiterleiten wenn Modal nicht abgeschlossen / Protejează această rută - redirecționează la pagină principală dacă modalul nu este finalizat
+  const { isAllowed, isChecking } = useRouteProtection();
+  
+  // Get route parameters, language and theme context / Route-Parameter, Sprach- und Themenkontext abrufen / Obține parametrii rutei, contextul limbii și temei
+  const { slug } = useParams();
+  const { language } = useLanguage();
+  const { theme } = useTheme();
+  
+  // Reading mode for font size adjustments / Lesemodus für Schriftgrößenanpassungen / Mod citire pentru ajustări dimensiune font
+  const { fontSize } = useReadingMode();
+  
+  // Component state / Komponentenstatus / Stare componentă
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isLiked, setIsLiked] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  
+  // State for intro modal
+  const [showIntroModal, setShowIntroModal] = useState(false);
+  const [introModalCompleted, setIntroModalCompleted] = useState(false);
+  
+  // 🌐 DeepL Translation hook and state / DeepL Übersetzungs-Hook und Status / Hook și stare traducere DeepL
+  const { translate, translateBatch, isTranslating } = useTranslation();
+  const [translatedTitle, setTranslatedTitle] = useState<string>('');
+  const [translatedContent, setTranslatedContent] = useState<string>('');
+  const [translatedExcerpt, setTranslatedExcerpt] = useState<string>('');
+  const [translatedTags, setTranslatedTags] = useState<string[]>([]);
+  
+  // 🌐 DeepL: State for translated comments with "show original" option
+  const [translatedComments, setTranslatedComments] = useState<Map<string, string>>(new Map());
+  const [showOriginalComment, setShowOriginalComment] = useState<Set<string>>(new Set());
+  
+  // 💬 YouTube-style comment features state / YouTube-Stil Kommentar-Features-Status / Stare funcționalități comentarii stil YouTube
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [loginPopupMessage, setLoginPopupMessage] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [showReportModal, setShowReportModal] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [commentLikes, setCommentLikes] = useState<Map<string, { likes: number; dislikes: number; userReaction: 'like' | 'dislike' | null }>>(new Map());
+  
+  // State for article navigation (prev/next) / Status für Artikelnavigation (vorheriger/nächster) / Stare pentru navigare articol (anterior/următor)
+  const [prevArticle, setPrevArticle] = useState<{ slug: string; title: string } | null>(null);
+  const [nextArticle, setNextArticle] = useState<{ slug: string; title: string } | null>(null);
+  
+  // Supabase client / Supabase-Client / Client Supabase
+  const supabase = createClient();
+
+  // Load blog post and comments / Blog-Post und Kommentare laden / Încărcă postarea de blog și comentariile
+  useEffect(() => {
+    if (slug) {
+      loadBlogPost();
+      loadComments();
+      checkUserAuth();
+    }
+  }, [slug]); // Load blog post when slug changes / Blog-Post laden wenn Slug sich ändert / Încărcă postarea de blog când slug-ul se schimbă
+
+  // Dynamic blog background image feature / Dynamische Blog-Hintergrundbild-Funktion / Funcție imagine fundal dinamică pentru blog
+  // When user enters a blog to read it, the blog's image becomes the background / Wenn Benutzer einen Blog betritt um ihn zu lesen, wird das Blog-Bild zum Hintergrund / Când utilizatorul intră pe un blog pentru a-l citi, imaginea blogului devine fundalul
+  useEffect(() => {
+    if (post?.image_url) {
+      console.log('🎨 Setting blog background image:', post.image_url);
+      
+      // Apply the blog's image as full screen background / Blog-Bild als Vollbild-Hintergrund anwenden / Aplică imaginea blogului ca fundal pe ecran complet
+      document.body.style.backgroundImage = `url('${post.image_url}')`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
+      document.body.style.backgroundAttachment = 'fixed';
+      document.body.style.backgroundRepeat = 'no-repeat';
+      // Override body background color to ensure smooth transitions / Körper-Hintergrundfarbe überschreiben für sanfte Übergänge / Suprescrie culoarea de fundal a corpului pentru tranziții line
+      document.body.style.backgroundColor = 'transparent';
+      
+      // Remove existing overlay first / Existierendes Overlay zuerst entfernen / Elimină întâi overlay-ul existent
+      const existingOverlay = document.getElementById('blog-background-overlay');
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+      
+      // Add dark overlay for text readability (theme-aware) / Dunkles Overlay für Textlesbarkeit hinzufügen (themenabhängig) / Adaugă overlay întunecat pentru lizibilitatea textului (adaptabil la temă)
+      const overlay = document.createElement('div');
+      overlay.id = 'blog-background-overlay';
+      
+      // Theme-aware overlay color - improved visibility
+      // Dark mode: darker overlay (0.5) for white text visibility
+      // Light mode: lighter overlay (0.6) for black text visibility
+      const overlayColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.6)';
+      
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: ${overlayColor};
+        z-index: -1;
+        pointer-events: none;
+        transition: background 0.3s ease;
+      `;
+      document.body.appendChild(overlay);
+      
+      console.log(`✅ Blog background applied successfully with ${theme} theme overlay`);
+    }
+
+    // Cleanup when leaving the blog / Aufräumen beim Verlassen des Blogs / Curățare când se părăsește blogul
+    return () => {
+      console.log('🧹 Cleaning up blog background...');
+      
+      // Reset background to default / Hintergrund auf Standard zurücksetzen / Resetează fundalul la implicit
+      document.body.style.backgroundImage = '';
+      document.body.style.backgroundSize = '';
+      document.body.style.backgroundPosition = '';
+      document.body.style.backgroundAttachment = '';
+      document.body.style.backgroundRepeat = '';
+      document.body.style.backgroundColor = ''; // Reset background color
+      
+      // Remove overlay / Overlay entfernen / Elimină overlay-ul
+      const overlay = document.getElementById('blog-background-overlay');
+      if (overlay) {
+        overlay.remove();
+      }
+      
+      console.log('✅ Background reset to default');
+    };
+  }, [post, theme]); // Update when post or theme changes / Aktualisieren wenn Post oder Theme sich ändert / Actualizează când postarea sau tema se schimbă
+
+  // Load blog post data / Blog-Post-Daten laden / Încărcă datele postării de blog
+  const loadBlogPost = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('slug', slug)
+        .eq('published', true)
+        .single();
+
+      if (error) {
+        console.error('Error loading post:', error);
+        return;
+      }
+
+      setPost(data);
+      
+      // Load previous and next articles for navigation / Vorherige und nächste Artikel für Navigation laden / Încarcă articolele anterioare și următoare pentru navigare
+      await loadAdjacentArticles(data.created_at);
+      
+      // Check if intro modal should be shown
+      // Show modal every time the blog is accessed (not just once per session)
+      if (data.show_intro_modal && (data.modal_question || data.modal_title)) {
+        setShowIntroModal(true);
+      } else {
+        setIntroModalCompleted(true);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load adjacent articles for prev/next navigation / Benachbarte Artikel für Vor-/Zurück-Navigation laden / Încarcă articolele adiacente pentru navigare anterior/următor
+  const loadAdjacentArticles = async (currentCreatedAt: string) => {
+    try {
+      // Get previous article (older) / Vorherigen Artikel abrufen (älter) / Obține articolul anterior (mai vechi)
+      const { data: prevData } = await supabase
+        .from('blog_posts')
+        .select('slug, title')
+        .eq('published', true)
+        .lt('created_at', currentCreatedAt)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (prevData) {
+        setPrevArticle({ slug: prevData.slug, title: prevData.title });
+      }
+
+      // Get next article (newer) / Nächsten Artikel abrufen (neuer) / Obține articolul următor (mai nou)
+      const { data: nextData } = await supabase
+        .from('blog_posts')
+        .select('slug, title')
+        .eq('published', true)
+        .gt('created_at', currentCreatedAt)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (nextData) {
+        setNextArticle({ slug: nextData.slug, title: nextData.title });
+      }
+    } catch (error) {
+      console.error('Error loading adjacent articles:', error);
+    }
+  };
+
+  // Handle intro modal completion
+  const handleIntroModalComplete = () => {
+    setShowIntroModal(false);
+    setIntroModalCompleted(true);
+  };
+
+  // Load comments for this post / Kommentare für diesen Post laden / Încărcă comentariile pentru această postare
+  const loadComments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id', slug) // Assuming we use slug as post identifier
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading comments:', error);
+        return;
+      }
+
+      setComments(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  // Check user authentication / Benutzer-Authentifizierung prüfen / Verifică autentificarea utilizatorului
+  const checkUserAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    
+    if (user && slug) {
+      // Check if user has liked this post / Prüfen, ob Benutzer diesen Post geliked hat / Verifică dacă utilizatorul a apăsat like la această postare
+      const { data } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('post_id', slug)
+        .eq('user_id', user.id)
+        .single();
+      
+      setIsLiked(!!data);
+    }
+  };
+
+  // 🌐 DeepL AUTO-TRANSLATION: Translate blog content when language changes
+  // 🌐 DeepL AUTO-ÜBERSETZUNG: Blog-Inhalt automatisch übersetzen wenn Sprache sich ändert
+  // 🌐 DeepL TRADUCERE AUTOMATĂ: Traduce conținutul blogului când limba se schimbă
+  useEffect(() => {
+    const translateContent = async () => {
+      if (!post || language === 'ro') {
+        // Reset to original if Romanian / Auf Original zurücksetzen wenn Rumänisch / Resetează la original dacă este Română
+        setTranslatedTitle('');
+        setTranslatedContent('');
+        setTranslatedExcerpt('');
+        return;
+      }
+
+      console.log(`🌐 DeepL: Translating blog "${post.title}" to ${language}...`);
+
+      try {
+        // Translate title, content, excerpt and tags in parallel / Titel, Inhalt, Auszug und Tags parallel übersetzen / Traduce titlul, conținutul, rezumatul și tag-urile în paralel
+        const tagsToTranslate = Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : []);
+        
+        const [title, content, excerpt, tags] = await Promise.all([
+          translate(post.title, language),
+          translate(post.content, language),
+          translate(post.excerpt, language),
+          tagsToTranslate.length > 0 ? translateBatch(tagsToTranslate, language) : Promise.resolve([]),
+        ]);
+
+        setTranslatedTitle(title);
+        setTranslatedContent(content);
+        setTranslatedExcerpt(excerpt);
+        setTranslatedTags(tags);
+
+        console.log('✅ DeepL: Blog content translated successfully');
+      } catch (error) {
+        console.error('❌ DeepL: Failed to translate blog content:', error);
+      }
+    };
+
+    translateContent();
+  }, [post, language, translate, translateBatch]);
+
+  // 🌐 DeepL: Auto-translate comments when language changes (auto-detect source language)
+  // Comments can be in ANY language, so we use DeepL's auto-detect feature
+  // Kommentare können in JEDER Sprache sein, also verwenden wir DeepL's Auto-Erkennung
+  // Comentariile pot fi în ORICE limbă, deci folosim funcția de auto-detectare a DeepL
+  useEffect(() => {
+    const translateCommentsContent = async () => {
+      if (comments.length === 0) {
+        setTranslatedComments(new Map());
+        return;
+      }
+
+      console.log(`🌐 DeepL: Translating ${comments.length} comments to ${language} (auto-detect source)...`);
+
+      try {
+        const commentTexts = comments.map(c => c.content);
+        // Use auto-detect (4th parameter = true) since comments can be in any language
+        // Auto-Erkennung verwenden (4. Parameter = true) da Kommentare in jeder Sprache sein können
+        // Folosește auto-detectare (al 4-lea parametru = true) deoarece comentariile pot fi în orice limbă
+        const translated = await translateBatch(commentTexts, language, 'ro', true);
+        
+        const newMap = new Map<string, string>();
+        comments.forEach((comment, index) => {
+          newMap.set(comment.id, translated[index] || comment.content);
+        });
+        
+        setTranslatedComments(newMap);
+        console.log('✅ DeepL: Comments translated successfully');
+      } catch (error) {
+        console.error('❌ DeepL: Failed to translate comments:', error);
+      }
+    };
+
+    translateCommentsContent();
+  }, [comments, language, translateBatch]);
+
+  // Toggle showing original comment / Original-Kommentar umschalten / Comută afișarea comentariului original
+  const toggleShowOriginal = (commentId: string) => {
+    setShowOriginalComment(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
+  };
+
+  // Get comment text (translated or original) / Kommentartext abrufen (übersetzt oder original) / Obține textul comentariului (tradus sau original)
+  // Now works for ALL languages including Romanian (auto-detect source)
+  // Funktioniert jetzt für ALLE Sprachen inklusive Rumänisch (Auto-Erkennung Quelle)
+  // Acum funcționează pentru TOATE limbile inclusiv română (auto-detectare sursă)
+  const getCommentText = (comment: Comment) => {
+    if (showOriginalComment.has(comment.id)) return comment.content;
+    return translatedComments.get(comment.id) || comment.content;
+  };
+
+  // Get display text (translated or original) / Anzeigetext abrufen (übersetzt oder original) / Obține textul pentru afișare (tradus sau original)
+  const displayTitle = language === 'ro' ? post?.title : (translatedTitle || post?.title);
+  const displayContent = language === 'ro' ? post?.content : (translatedContent || post?.content);
+  const displayExcerpt = language === 'ro' ? post?.excerpt : (translatedExcerpt || post?.excerpt);
+  const displayTags = language === 'ro' ? (post?.tags || []) : (translatedTags.length > 0 ? translatedTags : (post?.tags || []));
+
+  // 💬 Show login required popup / Login-erforderlich-Popup anzeigen / Afișează popup autentificare necesară
+  const showLoginRequired = (action: 'like' | 'dislike' | 'reply' | 'bloglike') => {
+    const messages = {
+      like: {
+        de: 'Du musst angemeldet sein, um Kommentare zu liken.',
+        en: 'You must be logged in to like comments.',
+        ro: 'Trebuie să fii autentificat pentru a da like la comentarii.',
+        ru: 'Вы должны войти, чтобы ставить лайки комментариям.'
+      },
+      dislike: {
+        de: 'Du musst angemeldet sein, um Kommentare zu disliken.',
+        en: 'You must be logged in to dislike comments.',
+        ro: 'Trebuie să fii autentificat pentru a da dislike la comentarii.',
+        ru: 'Вы должны войти, чтобы ставить дизлайки комментариям.'
+      },
+      reply: {
+        de: 'Du musst angemeldet sein, um auf Kommentare zu antworten.',
+        en: 'You must be logged in to reply to comments.',
+        ro: 'Trebuie să fii autentificat pentru a răspunde la comentarii.',
+        ru: 'Вы должны войти, чтобы отвечать на комментарии.'
+      },
+      bloglike: {
+        de: 'Du musst angemeldet sein, um diesen Beitrag zu liken.',
+        en: 'You must be logged in to like this post.',
+        ro: 'Trebuie să fii autentificat pentru a da like la această postare.',
+        ru: 'Вы должны войти, чтобы поставить лайк этому посту.'
+      }
+    };
+    setLoginPopupMessage(messages[action][language as keyof typeof messages.like]);
+    setShowLoginPopup(true);
+    setTimeout(() => setShowLoginPopup(false), 3000);
+  };
+
+  // 👍 Handle comment like/dislike / Kommentar-Like/Dislike behandeln / Gestionează like/dislike comentariu
+  const handleCommentReaction = async (commentId: string, isLike: boolean) => {
+    if (!user) {
+      showLoginRequired(isLike ? 'like' : 'dislike');
+      return;
+    }
+    
+    // For now, just update local state - full DB implementation requires the SQL tables
+    // Für jetzt nur lokalen Status aktualisieren - volle DB-Implementierung erfordert SQL-Tabellen
+    // Deocamdată actualizăm doar starea locală - implementarea completă DB necesită tabelele SQL
+    setCommentLikes(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(commentId) || { likes: 0, dislikes: 0, userReaction: null };
+      
+      if (current.userReaction === (isLike ? 'like' : 'dislike')) {
+        // Remove reaction / Reaktion entfernen / Elimină reacția
+        newMap.set(commentId, {
+          likes: isLike ? current.likes - 1 : current.likes,
+          dislikes: !isLike ? current.dislikes - 1 : current.dislikes,
+          userReaction: null
+        });
+      } else {
+        // Add or change reaction / Reaktion hinzufügen oder ändern / Adaugă sau schimbă reacția
+        newMap.set(commentId, {
+          likes: isLike ? current.likes + 1 : (current.userReaction === 'like' ? current.likes - 1 : current.likes),
+          dislikes: !isLike ? current.dislikes + 1 : (current.userReaction === 'dislike' ? current.dislikes - 1 : current.dislikes),
+          userReaction: isLike ? 'like' : 'dislike'
+        });
+      }
+      return newMap;
+    });
+  };
+
+  // 💬 Handle reply to comment / Auf Kommentar antworten / Răspunde la comentariu
+  const handleReply = (commentId: string) => {
+    if (!user) {
+      showLoginRequired('reply');
+      return;
+    }
+    setReplyingTo(replyingTo === commentId ? null : commentId);
+    setReplyContent('');
+  };
+
+  // 📨 Submit reply / Antwort absenden / Trimite răspunsul
+  const submitReply = async (parentId: string) => {
+    if (!replyContent.trim() || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: slug,
+          user_id: user.id,
+          content: replyContent.trim(),
+          author_email: user.email,
+          author_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          parent_id: parentId
+        });
+      
+      if (error) throw error;
+      
+      setReplyContent('');
+      setReplyingTo(null);
+      loadComments(); // Reload comments to show the new reply
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+    }
+  };
+
+  // 🚨 Submit report / Meldung absenden / Trimite raportarea
+  const submitReport = async (commentId: string) => {
+    if (!reportReason.trim() || !user) return;
+    
+    try {
+      // Send email report / E-Mail-Bericht senden / Trimite raport pe email
+      const reportedComment = comments.find(c => c.id === commentId);
+      
+      await fetch('/api/send-report-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commentId,
+          commentContent: reportedComment?.content,
+          commentAuthor: reportedComment?.author_name || reportedComment?.author_email,
+          reporterEmail: user.email,
+          reason: reportReason,
+          blogSlug: slug,
+          language
+        })
+      });
+      
+      setReportReason('');
+      setShowReportModal(null);
+      
+      // Show success message / Erfolgsmeldung anzeigen / Afișează mesaj de succes
+      alert(language === 'de' ? 'Deine Meldung wurde gesendet.' : 
+            language === 'en' ? 'Your report has been sent.' : 
+            language === 'ro' ? 'Raportarea ta a fost trimisă.' : 
+            'Ваша жалоба отправлена.');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+    }
+  };
+
+  // Handle post like / Post-Like behandeln / Gestionează like-ul postării
+  const handleLike = async () => {
+    if (!user) {
+      showLoginRequired('bloglike');
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        // Remove like / Like entfernen / Elimină like-ul
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('post_id', slug)
+          .eq('user_id', user.id);
+        setIsLiked(false);
+      } else {
+        // Add like / Like hinzufügen / Adaugă like
+        await supabase
+          .from('likes')
+          .insert({ post_id: slug, user_id: user.id });
+        setIsLiked(true);
+      }
+    } catch (error) {
+      console.error('Error handling like:', error);
+    }
+  };
+
+  // Handle comment submission / Kommentar-Einreichung behandeln / Gestionează trimiterea comentariului
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      alert('Bitte melden Sie sich an, um einen Kommentar zu schreiben.');
+      window.location.href = '/auth/login';
+      return;
+    }
+
+    if (!newComment.trim()) {
+      alert('Bitte geben Sie einen Kommentar ein.');
+      return;
+    }
+
+    // Add loading state / Ladezustand hinzufügen / Adaugă stare de încărcare
+    const submitButton = e.target as HTMLFormElement;
+    const button = submitButton.querySelector('button[type="submit"]') as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Wird gepostet...';
+    }
+
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: slug,
+          user_id: user.id,
+          content: newComment,
+          author_email: user.email,
+          author_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymer Benutzer'
+        });
+
+      if (error) {
+        console.error('Error submitting comment:', error);
+        alert('Fehler beim Senden des Kommentars. Bitte versuchen Sie es erneut.');
+        return;
+      }
+
+      setNewComment('');
+      await loadComments(); // Reload comments / Kommentare neu laden / Reîncărcă comentariile
+      alert('Kommentar erfolgreich gepostet!');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+    } finally {
+      // Reset button state / Button-Status zurücksetzen / Resetează starea butonului
+      if (button) {
+        button.disabled = false;
+        button.textContent = language === 'de' ? 'Kommentar abschicken' : 
+                            language === 'en' ? 'Submit Comment' : 
+                            language === 'ro' ? 'Trimite Comentariu' : 
+                            'Отправить комментарий';
+      }
+    }
+  };
+
+  // Share functionality / Teilen-Funktionalität / Funcționalitate de distribuire
+  // State for copied link feedback
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [discordCopied, setDiscordCopied] = useState(false);
+  
+  const sharePost = (platform: string) => {
+    if (!post) return;
+    
+    const url = window.location.href;
+    // Use DeepL translated text for sharing / DeepL-übersetzten Text zum Teilen verwenden / Folosește textul tradus de DeepL pentru distribuire
+    const title = displayTitle || post.title;
+    const text = displayExcerpt || post.excerpt;
+
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${title} - ${text} ${url}`)}`);
+        break;
+      case 'telegram':
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
+        break;
+      case 'email':
+        window.open(`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`);
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
+        break;
+      case 'sms':
+        // SMS share - opens native SMS app on mobile
+        window.open(`sms:?body=${encodeURIComponent(`${title}\n${url}`)}`);
+        break;
+      case 'discord':
+        // Discord doesn't have a direct share URL
+        // Copy text to clipboard and open Discord web app so user can paste it
+        navigator.clipboard.writeText(`**${title}**\n${text}\n${url}`);
+        setDiscordCopied(true);
+        setTimeout(() => setDiscordCopied(false), 2000);
+        // Open Discord web app after small delay so user sees the "copied" feedback
+        setTimeout(() => {
+          window.open('https://discord.com/channels/@me', '_blank');
+        }, 500);
+        break;
+      case 'copylink':
+        navigator.clipboard.writeText(url);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+        break;
+    }
+  };
+
+  // Format date / Datum formatieren / Formatează data
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const locale = language === 'de' ? de : language === 'ro' ? ro : language === 'ru' ? ru : enUS;
+    return formatDistanceToNow(date, { addSuffix: true, locale });
+  };
+
+  // Show loading while checking access / Ladeindikator anzeigen während Zugriff geprüft wird / Afișează încărcare în timp ce se verifică accesul
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-gray-300 dark:border-white/30 border-t-gray-900 dark:border-t-white/80 rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-700 dark:text-white/60">
+            {language === 'de' ? 'Wird geladen...' : 
+             language === 'en' ? 'Loading...' : 
+             language === 'ro' ? 'Se încarcă...' : 
+             'Загрузка...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render page if access not allowed / Seite nicht rendern wenn Zugriff nicht erlaubt / Nu reda pagina dacă accesul nu este permis
+  if (!isAllowed) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  if (!post) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            {language === 'de' ? 'Blog-Post nicht gefunden' : 
+             language === 'en' ? 'Blog post not found' : 
+             language === 'ro' ? 'Postarea blog nu a fost găsită' : 
+             'Запись блога не найдена'}
+          </h1>
+          <Link href="/blogs" className="btn-primary">
+            {language === 'de' ? 'Zurück zu den Blogs' : 
+             language === 'en' ? 'Back to Blogs' : 
+             language === 'ro' ? 'Înapoi la Bloguri' : 
+             'Обратно к блогам'}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show intro modal if needed
+  if (showIntroModal && post) {
+    return (
+      <BlogIntroModal 
+        post={post} 
+        onComplete={handleIntroModalComplete} 
+      />
+    );
+  }
+
+  return (
+    <article className="min-h-screen pt-6 sm:pt-12 pb-12">
+      {/* JSON-LD Schema for SEO / JSON-LD Schema für SEO / Schema JSON-LD pentru SEO */}
+      <BlogPostSchema
+        title={displayTitle || post.title}
+        description={displayExcerpt || post.excerpt}
+        authorName="D.S."
+        datePublished={post.created_at}
+        dateModified={post.updated_at || post.created_at}
+        image={post.image_url || '/exampleblog002.jpg'}
+        url={`https://radikal-blog.vercel.app/blogs/${slug}`}
+      />
+      <BreadcrumbSchema 
+        items={[
+          { name: 'Home', url: 'https://radikal-blog.vercel.app' },
+          { name: 'Blogs', url: 'https://radikal-blog.vercel.app/blogs' },
+          { name: displayTitle || post.title, url: `https://radikal-blog.vercel.app/blogs/${slug}` }
+        ]}
+      />
+      
+      {/* Reading Progress Bar - white/black based on theme / Lesefortschrittsbalken - weiß/schwarz basierend auf Theme / Bară progres citire - alb/negru bazat pe temă */}
+      <ReadingProgress 
+        targetId="blog-content"
+        height={3}
+      />
+      
+      {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
+      <CircularReadingProgress />
+      
+      {/* Floating Table of Contents for desktop / Schwebendes Inhaltsverzeichnis für Desktop / Cuprins flotant pentru desktop */}
+      <FloatingTableOfContents contentSelector="#blog-content" />
+      
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back button - hidden in print / Zurück-Button - versteckt beim Drucken / Buton înapoi - ascuns la printare */}
+        <Link 
+          href="/blogs"
+          className="back-button inline-flex items-center gap-2 text-gray-800 dark:text-white/80 hover:text-gray-600 dark:hover:text-white mb-4 sm:mb-8 transition-colors duration-200"
+        >
+          <FaArrowLeft />
+          <span>
+            {language === 'de' ? 'Zurück zu den Blogs' : 
+             language === 'en' ? 'Back to Blogs' : 
+             language === 'ro' ? 'Înapoi la Bloguri' : 
+             'Обратно к блогам'}
+          </span>
+        </Link>
+
+        {/* Post header with theme-aware text colors / Post-Kopf mit themenabhängigen Textfarben / Antet postare cu culori text adaptate la temă */}
+        <header className="mb-8">
+          {/* 🌐 DeepL Translation indicator / DeepL Übersetzungsindikator / Indicator traducere DeepL */}
+          {isTranslating && language !== 'ro' && (
+            <div className="fixed top-20 right-4 bg-blue-500/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-pulse">
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <span className="text-sm font-medium">
+                {language === 'de' ? 'Übersetze Inhalt...' : 
+                 language === 'en' ? 'Translating content...' : 
+                 'Перевод содержимого...'}
+              </span>
+            </div>
+          )}
+
+          {/* 1. Featured image FIRST / Hauptbild ZUERST / Imagine principală PRIMA */}
+          {post.image_url && (
+            <div className="mb-6 rounded-2xl overflow-hidden animate-fadeIn">
+              <Image
+                src={post.image_url}
+                alt={displayTitle || post.title}
+                width={1200}
+                height={600}
+                className="w-full h-64 sm:h-96 object-cover"
+              />
+            </div>
+          )}
+
+          {/* 2. Post metadata UNDER image / Metadaten UNTER Bild / Metadate SUB imagine */}
+          {/* Fluid flex-stretch layout - auto-adapts to screen size */}
+          {/* Mobile: clamp 360→13px, 390→14px, 400→15px, bolder text. Desktop (sm+): original text-base */}
+          <div className="flex items-stretch gap-3 xs:gap-4 text-gray-600 dark:text-white/60 mb-3 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+            {/* Left side - date + reading time stretch to fill available space */}
+            <div className="flex-1 flex items-center min-w-0 text-[clamp(0.85rem,calc(-0.15rem+5vw),0.9375rem)] sm:text-base font-semibold xs:font-medium sm:font-normal">
+              <time dateTime={post.created_at} className="whitespace-nowrap">
+                {formatDate(post.created_at)}
+              </time>
+              
+              {/* Separator dot with spacing */}
+              <span className="flex-shrink-0 opacity-60 mx-2 sm:mx-3">&nbsp;·&nbsp;</span>
+              
+              {/* Reading time / Lesezeit / Timp de citire */}
+              {/* Short version on <360px (for Russian etc.), full on xs+ */}
+              <span className="flex items-center gap-1 xs:gap-1.5 whitespace-nowrap">
+                <FaClock className="text-[0.7em] flex-shrink-0" />
+                <span className="xs:hidden">{getShortReadingTime(calculateReadingTime(post.content || '', language).minutes, language)}</span>
+                <span className="hidden xs:inline">{calculateReadingTime(post.content || '', language).text}</span>
+              </span>
+            </div>
+            
+            {/* Bookmark button - right side, flex-none (fixed), smaller only on tiny screens */}
+            <div className="flex-none">
+              <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-2 !py-1 !text-[0.7rem] !gap-1.5 xs:!px-3 xs:!py-1.5 xs:!text-xs sm:!px-4 sm:!py-2 sm:!text-sm sm:!gap-2" />
+            </div>
+          </div>
+
+          {/* Row 2 - Tags on separate line, bolder on mobile */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex gap-2 flex-wrap mb-4 sm:mb-6 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+              {(translatedTags.length > 0 ? translatedTags : (Array.isArray(post.tags) ? post.tags : [post.tags])).slice(0, 2).map((tag, idx) => (
+                <span 
+                  key={idx}
+                  className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white/80 rounded-full text-xs sm:text-sm font-medium sm:font-normal whitespace-nowrap max-w-[90px] sm:max-w-none truncate"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* 3. Title AFTER metadata / Titel NACH Metadaten / Titlu DUPĂ metadate */}
+          <h1 className="text-[clamp(1.5rem,6vw,2.25rem)] sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8 animate-fadeIn tracking-wide">
+            {displayTitle}
+          </h1>
+        </header>
+
+        {/* Post content with proper light/dark mode contrast and readable backdrop / Post-Inhalt mit richtigen Hell/Dunkel-Modus-Kontrast und lesbarem Hintergrund / Conținut postare cu contrast corect mod luminos/întunecat și fundal lizibil */}
+        <div id="blog-content" className="blog-content-backdrop mb-12 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
+          {/* Reading controls toolbar - all in one row on desktop */}
+          {/* Desktop: FontSize + TTS + PDF + Focus in single row */}
+          {/* Mobile: 2 rows with visible text labels */}
+          <div className="reading-controls mb-6 pb-4 border-b border-gray-300 dark:border-white/20">
+            {/* Desktop: Single row with all controls - NO wrap */}
+            <div className="hidden md:flex items-center gap-2">
+              <FontSizeControls />
+              <div className="flex-1">
+                <TextToSpeech 
+                  text={displayContent || post.content || ''} 
+                  compact
+                />
+              </div>
+              <PrintButton variant="icon" showLabel />
+              <ReadingModeToggle />
+            </div>
+            
+            {/* Mobile layout: responsive rows */}
+            <div className="md:hidden flex flex-col gap-2">
+              {/* <360px: Row 1 = FontSize + Focus, Row 2 = PDF + TTS */}
+              {/* ≥360px: Row 1 = FontSize + PDF + Focus, Row 2 = TTS */}
+              <div className="flex items-center justify-between gap-1">
+                <FontSizeControls />
+                <div className="flex items-center gap-1">
+                  {/* PDF only visible ≥360px in row 1 */}
+                  <div className="hidden xs:block">
+                    <PrintButton variant="icon" showLabel />
+                  </div>
+                  <ReadingModeToggle />
+                </div>
+              </div>
+              {/* Row 2: PDF (<360px only) + TTS */}
+              <div className="flex items-center gap-2 w-full">
+                <div className="xs:hidden flex-shrink-0">
+                  <PrintButton variant="icon" showLabel />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <TextToSpeech 
+                    text={displayContent || post.content || ''} 
+                    compact
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="prose prose-lg prose-gray dark:prose-invert max-w-none">
+            <div 
+              className="text-gray-800 dark:text-white/95 leading-relaxed transition-all duration-200"
+              style={{ fontSize: `${fontSize}%` }}
+            >
+              {/* Apply Drop Cap effect to first paragraph / Drop Cap Effekt auf ersten Absatz anwenden / Aplică efectul Drop Cap la primul paragraf */}
+              {displayContent && displayContent.split('\n\n').map((paragraph, index) => {
+                // First paragraph gets drop cap effect / Erster Absatz bekommt Drop Cap Effekt / Primul paragraf primește efectul Drop Cap
+                if (index === 0 && paragraph.trim()) {
+                  return (
+                    <p key={index} className="blog-drop-cap mb-6 text-justify">
+                      {paragraph}
+                    </p>
+                  );
+                }
+                // Second paragraph (first after drop cap) gets indent / Zweiter Absatz bekommt Einzug / Al doilea paragraf primește aliniat
+                if (index === 1 && paragraph.trim()) {
+                  return (
+                    <p key={index} className="mb-4 text-justify paragraph-indent">
+                      {paragraph}
+                    </p>
+                  );
+                }
+                // Other paragraphs render normally without indent / Andere Absätze normal ohne Einzug rendern / Celelalte paragrafe normale fără aliniat
+                if (paragraph.trim()) {
+                  return (
+                    <p key={index} className="mb-4 text-justify">
+                      {paragraph}
+                    </p>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </div>
+        </div>
+        
+        {/* Emoji Reactions / Emoji-Reaktionen / Reacții Emoji */}
+        <div className="emoji-reactions mb-8 animate-fadeIn" style={{ animationDelay: '0.65s' }}>
+          <EmojiReactions postId={post.id} />
+        </div>
+
+        {/* Post actions with share buttons / Post-Aktionen mit Teilen-Buttons / Acțiuni postare cu butoane distribuire */}
+        <div className="post-actions flex flex-wrap items-center justify-between gap-4 py-6 border-t border-b border-gray-300 dark:border-white/20 mb-12 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
+          {/* Like button with theme-aware colors / Like-Button mit themenabhängigen Farben / Buton like cu culori adaptate la temă */}
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              isLiked 
+                ? 'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30' 
+                : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-red-600 dark:hover:text-red-400'
+            }`}
+          >
+            <CiHeart className={isLiked ? 'fill-current' : ''} />
+            <span>
+              {language === 'de' ? 'Gefällt mir' : 
+               language === 'en' ? 'Like' : 
+               language === 'ro' ? 'Îmi place' : 
+               'Нравится'}
+            </span>
+          </button>
+
+          {/* Share buttons with complete sentence / Teilen-Buttons mit vollständigem Satz / Butoane distribuire cu propoziție completă */}
+          <div className="flex flex-col gap-2">
+            <span className="text-gray-600 dark:text-white/60">
+              {language === 'de' ? 'Teile diesen Artikel:' : 
+               language === 'en' ? 'Share this article:' : 
+               language === 'ro' ? 'Distribuie acest articol:' : 
+               'Поделиться статьёй:'}
+            </span>
+            <div className="flex items-center gap-1.5 xs:gap-2 flex-nowrap xs:flex-wrap">
+            <button
+              onClick={() => sharePost('whatsapp')}
+              className="w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
+              title="WhatsApp"
+            >
+              <FaWhatsapp className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
+            </button>
+            <button
+              onClick={() => sharePost('telegram')}
+              className="w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
+              title="Telegram"
+            >
+              <FaTelegram className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
+            </button>
+            <button
+              onClick={() => sharePost('email')}
+              className="w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
+              title="Email"
+            >
+              <FaEnvelope className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
+            </button>
+            <button
+              onClick={() => sharePost('twitter')}
+              className="w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
+              title="Twitter / X"
+            >
+              <FaTwitter className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
+            </button>
+            <button
+              onClick={() => sharePost('discord')}
+              className={`hidden xs:flex w-9 h-9 items-center justify-center rounded-lg transition-colors duration-200 ${
+                discordCopied 
+                  ? 'bg-gray-300 dark:bg-white/20 text-gray-900 dark:text-white' 
+                  : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white'
+              }`}
+              title='Discord'
+            >
+             <FaDiscord className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => sharePost('copylink')}
+              className={`w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg transition-colors duration-200 ${
+                linkCopied 
+                  ? 'bg-gray-300 dark:bg-white/20 text-gray-900 dark:text-white' 
+                  : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white'
+              }`}
+              title={language === 'de' ? 'Link kopieren' : 
+                     language === 'en' ? 'Copy Link' : 
+                     language === 'ro' ? 'Copiază Link' : 
+                     'Копировать ссылку'}
+            >
+              {linkCopied ? <FaCheck className="w-3.5 h-3.5 xs:w-4 xs:h-4" /> : <FaLink className="w-3.5 h-3.5 xs:w-4 xs:h-4" />}
+            </button>
+            {/* SMS share button - mobile only */}
+            <button
+              onClick={() => sharePost('sms')}
+              className="w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 md:hidden"
+              title={language === 'de' ? 'Als SMS senden' : 
+                     language === 'en' ? 'Send as SMS' : 
+                     language === 'ro' ? 'Trimite ca SMS' : 
+                     'Отправить как SMS'}
+            >
+              <FaSms className="w-4 h-4" />
+            </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Comments section / Kommentarbereich / Secțiune comentarii */}
+        <section id="comments" className="comments-section animate-fadeIn" style={{ animationDelay: '1s' }}>
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <TfiComment />
+            {language === 'de' ? 'Kommentare' : 
+             language === 'en' ? 'Comments' : 
+             language === 'ro' ? 'Comentarii' : 
+             'Комментарии'} ({comments.length})
+          </h2>
+
+          {/* Comment form / Kommentar-Formular / Formular comentariu */}
+          {user ? (
+            <form onSubmit={handleCommentSubmit} className="mb-8">
+              <div className="glass-effect rounded-xl p-4">
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder={language === 'de' ? 'Schreibe einen Kommentar...' : 
+                              language === 'en' ? 'Write a comment...' : 
+                              language === 'ro' ? 'Scrie un comentariu...' : 
+                              'Напишите комментарий...'}
+                  className="w-full bg-transparent text-white placeholder-white/60 border-none resize-none focus:outline-none min-h-[100px]"
+                  maxLength={1000}
+                />
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-white/60 text-sm">
+                    {newComment.length}/1000
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={!newComment.trim()}
+                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {language === 'de' ? 'Kommentar veröffentlichen' : 
+                     language === 'en' ? 'Post Comment' : 
+                     language === 'ro' ? 'Publică Comentariul' : 
+                     'Опубликовать комментарий'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <div className="glass-effect rounded-xl p-6 text-center mb-8">
+              <p className="text-white/80 mb-4">
+                {language === 'de' ? 'Melde dich an, um einen Kommentar zu schreiben' : 
+                 language === 'en' ? 'Login to comment' : 
+                 language === 'ro' ? 'Conectează-te pentru a comenta' : 
+                 'Войдите, чтобы комментировать'}
+              </p>
+              <Link href="/auth/login" className="btn-primary">
+                {language === 'de' ? 'Anmelden' : 
+                 language === 'en' ? 'Login' : 
+                 language === 'ro' ? 'Conectare' : 
+                 'Войти'}
+              </Link>
+            </div>
+          )}
+
+          {/* Comments list / Kommentarliste / Listă comentarii - YouTube Style */}
+          <div className="space-y-6">
+            {comments.map((comment) => {
+              // Generate avatar color based on username - DARKER colors to match RADIKAL
+              // Avatar-Farbe basierend auf Benutzername generieren - DUNKLER Farben für RADIKAL
+              // Generează culoare avatar bazată pe username - culori MAI ÎNCHISE pentru RADIKAL
+              const userName = comment.author_name || comment.author_email?.split('@')[0] || 'Anonym';
+              const initial = userName.charAt(0).toUpperCase();
+              const avatarColors = [
+                'bg-red-700', 'bg-blue-700', 'bg-green-700', 'bg-purple-700', 
+                'bg-rose-700', 'bg-amber-700', 'bg-indigo-700', 'bg-teal-700',
+                'bg-emerald-700', 'bg-cyan-700', 'bg-violet-700', 'bg-fuchsia-700'
+              ];
+              const colorIndex = userName.charCodeAt(0) % avatarColors.length;
+              const avatarColor = avatarColors[colorIndex];
+              
+              // Get like/dislike data for this comment
+              const likeData = commentLikes.get(comment.id) || { likes: 0, dislikes: 0, userReaction: null };
+              
+              // Calculate relative time
+              const getRelativeTime = (dateString: string) => {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+                
+                if (diffInSeconds < 60) return language === 'de' ? 'gerade eben' : language === 'en' ? 'just now' : language === 'ro' ? 'chiar acum' : 'только что';
+                if (diffInSeconds < 3600) {
+                  const mins = Math.floor(diffInSeconds / 60);
+                  return language === 'de' ? `vor ${mins} Min.` : language === 'en' ? `${mins}m ago` : language === 'ro' ? `acum ${mins} min` : `${mins} мин. назад`;
+                }
+                if (diffInSeconds < 86400) {
+                  const hours = Math.floor(diffInSeconds / 3600);
+                  return language === 'de' ? `vor ${hours} Std.` : language === 'en' ? `${hours}h ago` : language === 'ro' ? `acum ${hours} ore` : `${hours} ч. назад`;
+                }
+                if (diffInSeconds < 604800) {
+                  const days = Math.floor(diffInSeconds / 86400);
+                  return language === 'de' ? `vor ${days} Tag${days > 1 ? 'en' : ''}` : language === 'en' ? `${days}d ago` : language === 'ro' ? `acum ${days} zi${days > 1 ? 'le' : ''}` : `${days} дн. назад`;
+                }
+                if (diffInSeconds < 2592000) {
+                  const weeks = Math.floor(diffInSeconds / 604800);
+                  return language === 'de' ? `vor ${weeks} Woche${weeks > 1 ? 'n' : ''}` : language === 'en' ? `${weeks}w ago` : language === 'ro' ? `acum ${weeks} săpt.` : `${weeks} нед. назад`;
+                }
+                if (diffInSeconds < 31536000) {
+                  const months = Math.floor(diffInSeconds / 2592000);
+                  return language === 'de' ? `vor ${months} Monat${months > 1 ? 'en' : ''}` : language === 'en' ? `${months}mo ago` : language === 'ro' ? `acum ${months} lun${months > 1 ? 'i' : 'ă'}` : `${months} мес. назад`;
+                }
+                const years = Math.floor(diffInSeconds / 31536000);
+                return language === 'de' ? `vor ${years} Jahr${years > 1 ? 'en' : ''}` : language === 'en' ? `${years}y ago` : language === 'ro' ? `acum ${years} an${years > 1 ? 'i' : ''}` : `${years} г. назад`;
+              };
+
+              return (
+                <div key={comment.id} className="flex gap-3">
+                  {/* Avatar - YouTube Style with darker colors */}
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold text-sm shadow-lg`}>
+                    {initial}
+                  </div>
+                  
+                  {/* Comment Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Username and Time */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-white text-sm hover:text-white/80 cursor-pointer">
+                        @{userName.toLowerCase().replace(/\s+/g, '')}
+                      </span>
+                      <span className="text-white/50 text-xs">
+                        {getRelativeTime(comment.created_at)}
+                      </span>
+                      {/* Translation indicator */}
+                      {showOriginalComment.has(comment.id) && (
+                        <span className="text-xs text-white/40 italic">
+                          ({language === 'de' ? 'Original' : language === 'ro' ? 'Original' : language === 'en' ? 'Original' : 'Оригинал'})
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Comment Text */}
+                    <p className="text-white/90 text-sm leading-relaxed mb-2">
+                      {getCommentText(comment)}
+                    </p>
+                    
+                    {/* Action Buttons - YouTube Style */}
+                    <div className="flex items-center gap-1 -ml-2 flex-wrap">
+                      {/* Like Button with count */}
+                      <button 
+                        onClick={() => handleCommentReaction(comment.id, true)}
+                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-200 group/like ${
+                          likeData.userReaction === 'like' 
+                            ? 'text-blue-400 bg-blue-500/10' 
+                            : 'text-white/60 hover:bg-white/10'
+                        }`}
+                        title={language === 'de' ? 'Gefällt mir' : language === 'en' ? 'Like' : language === 'ro' ? 'Îmi place' : 'Нравится'}
+                      >
+                        <svg className={`w-4 h-4 group-hover/like:scale-110 transition-transform ${likeData.userReaction === 'like' ? 'fill-current' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z" />
+                        </svg>
+                        {likeData.likes > 0 && <span className="text-xs">{likeData.likes}</span>}
+                      </button>
+                      
+                      {/* Dislike Button */}
+                      <button 
+                        onClick={() => handleCommentReaction(comment.id, false)}
+                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-200 group/dislike ${
+                          likeData.userReaction === 'dislike' 
+                            ? 'text-red-400 bg-red-500/10' 
+                            : 'text-white/60 hover:bg-white/10'
+                        }`}
+                        title={language === 'de' ? 'Gefällt mir nicht' : language === 'en' ? 'Dislike' : language === 'ro' ? 'Nu îmi place' : 'Не нравится'}
+                      >
+                        <svg className={`w-4 h-4 group-hover/dislike:scale-110 transition-transform ${likeData.userReaction === 'dislike' ? 'fill-current' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 15h2.25m8.024-9.75c.011.05.028.1.052.148.591 1.2.924 2.55.924 3.977a8.96 8.96 0 01-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96a8.95 8.95 0 00.303-.54m.023-8.25H16.48a4.5 4.5 0 01-1.423-.23l-3.114-1.04a4.5 4.5 0 00-1.423-.23H6.504c-.618 0-1.217.247-1.605.729A11.95 11.95 0 002.25 12c0 .434.023.863.068 1.285C2.427 14.306 3.346 15 4.372 15h3.126c.618 0 .991.724.725 1.282A7.471 7.471 0 007.5 19.5a2.25 2.25 0 002.25 2.25.75.75 0 00.75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 002.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384" />
+                        </svg>
+                      </button>
+                      
+                      {/* Reply Button */}
+                      <button 
+                        onClick={() => handleReply(comment.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                          replyingTo === comment.id 
+                            ? 'text-blue-400 bg-blue-500/10' 
+                            : 'text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        {language === 'de' ? 'Antworten' : language === 'en' ? 'Reply' : language === 'ro' ? 'Răspunde' : 'Ответить'}
+                      </button>
+                      
+                      {/* Translation Toggle - YouTube Style */}
+                      {translatedComments.has(comment.id) && (
+                        <button
+                          onClick={() => toggleShowOriginal(comment.id)}
+                          className="px-3 py-1.5 rounded-full text-blue-400 hover:bg-blue-500/10 text-xs font-medium transition-all duration-200 flex items-center gap-1.5"
+                        >
+                          {showOriginalComment.has(comment.id) ? (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                              </svg>
+                              {language === 'de' ? 'Übersetzung' : language === 'ro' ? 'Traducere' : language === 'en' ? 'Translation' : 'Перевод'}
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                              </svg>
+                              {language === 'de' ? 'Original' : language === 'ro' ? 'Original' : language === 'en' ? 'Original' : 'Оригинал'}
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Reply Form - appears when replying */}
+                    {replyingTo === comment.id && (
+                      <div className="mt-3 pl-4 border-l-2 border-white/20">
+                        <textarea
+                          value={replyContent}
+                          onChange={(e) => setReplyContent(e.target.value)}
+                          placeholder={language === 'de' ? 'Antwort schreiben...' : 
+                                      language === 'en' ? 'Write a reply...' : 
+                                      language === 'ro' ? 'Scrie un răspuns...' : 
+                                      'Написать ответ...'}
+                          className="w-full bg-white/5 text-white placeholder-white/40 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[80px]"
+                          maxLength={500}
+                        />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button
+                            onClick={() => setReplyingTo(null)}
+                            className="px-4 py-1.5 rounded-full text-white/60 hover:bg-white/10 text-xs font-medium transition-all"
+                          >
+                            {language === 'de' ? 'Abbrechen' : language === 'en' ? 'Cancel' : language === 'ro' ? 'Anulează' : 'Отмена'}
+                          </button>
+                          <button
+                            onClick={() => submitReply(comment.id)}
+                            disabled={!replyContent.trim()}
+                            className="px-4 py-1.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {language === 'de' ? 'Antworten' : language === 'en' ? 'Reply' : language === 'ro' ? 'Răspunde' : 'Ответить'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Three dots menu - Always visible / Immer sichtbar / Mereu vizibil */}
+                  <div className="relative flex-shrink-0">
+                    <button 
+                      onClick={() => setActiveMenu(activeMenu === comment.id ? null : comment.id)}
+                      className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white/60 transition-all duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      </svg>
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {activeMenu === comment.id && (
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-gray-900 rounded-lg shadow-xl py-1 z-50 border border-white/10">
+                        <button
+                          onClick={() => {
+                            setActiveMenu(null);
+                            if (!user) {
+                              showLoginRequired('reply');
+                            } else {
+                              setShowReportModal(comment.id);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-red-400 transition-colors flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
+                          </svg>
+                          {language === 'de' ? 'Melden' : language === 'en' ? 'Report' : language === 'ro' ? 'Raportează' : 'Пожаловаться'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            
+            {comments.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                  </svg>
+                </div>
+                <p className="text-white/60 text-sm">
+                  {language === 'de' ? 'Noch keine Kommentare. Sei der Erste!' : 
+                   language === 'en' ? 'No comments yet. Be the first!' : 
+                   language === 'ro' ? 'Încă nu există comentarii. Fii primul!' : 
+                   'Пока нет комментариев. Будь первым!'}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Article Navigation (Previous/Next) - ABOVE Related Posts / Artikelnavigation (Vorheriger/Nächster) - ÜBER Ähnliche Beiträge / Navigare Articol (Anterior/Următor) - DEASUPRA Postărilor Similare */}
+        <div className="article-navigation animate-fadeIn" style={{ animationDelay: '1.05s' }}>
+          <ArticleNavigation 
+            prevArticle={prevArticle}
+            nextArticle={nextArticle}
+          />
+        </div>
+
+        {/* Related Posts - after article navigation / Ähnliche Beiträge - nach Artikelnavigation / Postări similare - după navigare articol */}
+        <div className="related-posts mt-8 animate-fadeIn" style={{ animationDelay: '1.1s' }}>
+          <RelatedPosts 
+            currentPostId={post.id} 
+            currentTags={Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : [])} 
+          />
+        </div>
+      </div>
+      
+      {/* Login Required Popup / Login-erforderlich-Popup / Popup autentificare necesară */}
+      {/* Centered on screen for both desktop and mobile */}
+      {showLoginPopup && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+          <div className="bg-gray-900 dark:bg-gray-800 text-white px-6 py-4 rounded-xl shadow-2xl border border-white/20 flex flex-col sm:flex-row items-center gap-3 max-w-sm w-full pointer-events-auto animate-fadeIn">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <svg className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="text-sm font-medium">{loginPopupMessage}</span>
+            </div>
+            <Link href="/auth/login" className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors text-center">
+              {language === 'de' ? 'Anmelden' : language === 'en' ? 'Login' : language === 'ro' ? 'Conectare' : 'Войти'}
+            </Link>
+          </div>
+        </div>
+      )}
+      
+      {/* Report Modal / Melden-Modal / Modal raportare */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
+              </svg>
+              {language === 'de' ? 'Kommentar melden' : 
+               language === 'en' ? 'Report Comment' : 
+               language === 'ro' ? 'Raportează comentariul' : 
+               'Пожаловаться на комментарий'}
+            </h3>
+            <p className="text-white/60 text-sm mb-4">
+              {language === 'de' ? 'Bitte beschreibe, warum du diesen Kommentar meldest:' : 
+               language === 'en' ? 'Please describe why you are reporting this comment:' : 
+               language === 'ro' ? 'Te rugăm să descrii de ce raportezi acest comentariu:' : 
+               'Пожалуйста, опишите, почему вы жалуетесь на этот комментарий:'}
+            </p>
+            <textarea
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              placeholder={language === 'de' ? 'Grund der Meldung...' : 
+                          language === 'en' ? 'Reason for report...' : 
+                          language === 'ro' ? 'Motivul raportării...' : 
+                          'Причина жалобы...'}
+              className="w-full bg-white/5 text-white placeholder-white/40 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-500 min-h-[120px] border border-white/10"
+              maxLength={500}
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowReportModal(null);
+                  setReportReason('');
+                }}
+                className="px-4 py-2 rounded-lg text-white/60 hover:bg-white/10 text-sm font-medium transition-all"
+              >
+                {language === 'de' ? 'Abbrechen' : language === 'en' ? 'Cancel' : language === 'ro' ? 'Anulează' : 'Отмена'}
+              </button>
+              <button
+                onClick={() => submitReport(showReportModal)}
+                disabled={!reportReason.trim()}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {language === 'de' ? 'Melden' : language === 'en' ? 'Report' : language === 'ro' ? 'Raportează' : 'Пожаловаться'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}

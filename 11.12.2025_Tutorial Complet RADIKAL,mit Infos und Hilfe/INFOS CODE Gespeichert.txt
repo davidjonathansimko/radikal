@@ -1,0 +1,19 @@
+1. Translation Keys Fixed ✅
+Problem: You saw "responseTime", "responseTimeValue", "location" instead of proper text. Solution: I replaced the complex translation calls with direct language checks:
+
+
+// Before: {t('contact.responseTime') || (language === 'de' ? 'Antwortzeit' : 'Response Time')}
+// After: {language === 'de' ? 'Antwortzeit' : 'Response Time'}
+
+
+
+
+
+3. Mobile Menu Text Color Fixed ✅
+Problem: Black text on dark background in hamburger menu. Solution: Added theme-aware text colors:
+
+
+// Now uses theme-conditional classes:
+theme === 'dark' 
+  ? 'text-white/80 hover:text-white hover:bg-white/10'
+  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
