@@ -93,13 +93,70 @@ const translations = {
   },
 };
 
-// Language code mapping for voice selection
+// Language code mapping for voice selection - extended with many more languages
 const langCodeMap: Record<string, string[]> = {
   de: ['de-DE', 'de-AT', 'de-CH', 'de'],
-  en: ['en-US', 'en-GB', 'en-AU', 'en'],
+  en: ['en-US', 'en-GB', 'en-AU', 'en-IN', 'en-NZ', 'en'],
   ro: ['ro-RO', 'ro'],
   ru: ['ru-RU', 'ru'],
+  fr: ['fr-FR', 'fr-CA', 'fr-BE', 'fr'],
+  es: ['es-ES', 'es-MX', 'es-AR', 'es-US', 'es'],
+  it: ['it-IT', 'it'],
+  pt: ['pt-BR', 'pt-PT', 'pt'],
+  nl: ['nl-NL', 'nl-BE', 'nl'],
+  pl: ['pl-PL', 'pl'],
+  uk: ['uk-UA', 'uk'],
+  tr: ['tr-TR', 'tr'],
+  hu: ['hu-HU', 'hu'],
+  cs: ['cs-CZ', 'cs'],
+  sv: ['sv-SE', 'sv'],
+  da: ['da-DK', 'da'],
+  no: ['nb-NO', 'nn-NO', 'no-NO', 'no'],
+  fi: ['fi-FI', 'fi'],
+  el: ['el-GR', 'el'],
+  ja: ['ja-JP', 'ja'],
+  ko: ['ko-KR', 'ko'],
+  zh: ['zh-CN', 'zh-TW', 'zh-HK', 'zh'],
+  ar: ['ar-SA', 'ar-EG', 'ar'],
+  hi: ['hi-IN', 'hi'],
+  bg: ['bg-BG', 'bg'],
+  hr: ['hr-HR', 'hr'],
+  sk: ['sk-SK', 'sk'],
 };
+
+// Friendly language names for the selector
+const langNames: Record<string, string> = {
+  de: '🇩🇪 Deutsch',
+  en: '🇬🇧 English',
+  ro: '🇷🇴 Română',
+  ru: '🇷🇺 Русский',
+  fr: '🇫🇷 Français',
+  es: '🇪🇸 Español',
+  it: '🇮🇹 Italiano',
+  pt: '🇧🇷 Português',
+  nl: '🇳🇱 Nederlands',
+  pl: '🇵🇱 Polski',
+  uk: '🇺🇦 Українська',
+  tr: '🇹🇷 Türkçe',
+  hu: '🇭🇺 Magyar',
+  cs: '🇨🇿 Čeština',
+  sv: '🇸🇪 Svenska',
+  da: '🇩🇰 Dansk',
+  no: '🇳🇴 Norsk',
+  fi: '🇫🇮 Suomi',
+  el: '🇬🇷 Ελληνικά',
+  ja: '🇯🇵 日本語',
+  ko: '🇰🇷 한국어',
+  zh: '🇨🇳 中文',
+  ar: '🇸🇦 العربية',
+  hi: '🇮🇳 हिन्दी',
+  bg: '🇧🇬 Български',
+  hr: '🇭🇷 Hrvatski',
+  sk: '🇸🇰 Slovenčina',
+};
+
+// Maximum characters per chunk to avoid browser TTS limits
+const MAX_CHUNK_SIZE = 3000;
 
 export default function TextToSpeech({
   text,
@@ -110,8 +167,11 @@ export default function TextToSpeech({
   const { language } = useLanguage();
   const t = translations[language as keyof typeof translations] || translations.de;
   
-  // Use app language if no lang prop provided
-  const effectiveLang = lang || (language === 'de' ? 'de-DE' : language === 'en' ? 'en-US' : language === 'ro' ? 'ro-RO' : language === 'ru' ? 'ru-RU' : 'de-DE');
+  // Voice language override - user can pick any language for TTS voice
+  const [voiceLanguage, setVoiceLanguage] = useState<string>(language);
+  
+  // Use voiceLanguage for TTS (overridable by user)
+  const effectiveLang = lang || (voiceLanguage === 'de' ? 'de-DE' : voiceLanguage === 'en' ? 'en-US' : voiceLanguage === 'ro' ? 'ro-RO' : voiceLanguage === 'ru' ? 'ru-RU' : langCodeMap[voiceLanguage]?.[0] || 'de-DE');
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -123,22 +183,83 @@ export default function TextToSpeech({
   const [showSettings, setShowSettings] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(0);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
   
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const cleanedTextRef = useRef<string>('');
+  const chunksRef = useRef<string[]>([]);
+  const currentChunkRef = useRef<number>(0);
+  const isSpeakingRef = useRef<boolean>(false);
 
   // Clean text for speech (remove markdown, HTML, etc.)
   const cleanText = useCallback((rawText: string): string => {
     return rawText
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/<br\s*\/?>/gi, ' ') // Replace <br> with space
+      .replace(/<\/?(p|div|h[1-6]|li|ul|ol|blockquote|section|article|header|footer|tr|td|th)[^>]*>/gi, ' ') // Block-level tags → space
+      .replace(/<[^>]*>/g, '') // Remove remaining HTML tags
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert markdown links to text
       .replace(/[#*_`~]/g, '') // Remove markdown formatting
+      .replace(/&nbsp;/g, ' ') // HTML entities
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&[a-zA-Z]+;/g, ' ') // Remove other HTML entities
       .replace(/\n{3,}/g, '\n\n') // Reduce multiple newlines
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
   }, []);
 
-  // Load available voices based on selected language
+  // Split text into chunks at sentence boundaries to avoid browser TTS limits
+  const splitIntoChunks = useCallback((fullText: string): string[] => {
+    if (fullText.length <= MAX_CHUNK_SIZE) {
+      return [fullText];
+    }
+    
+    const chunks: string[] = [];
+    let remaining = fullText;
+    
+    while (remaining.length > 0) {
+      if (remaining.length <= MAX_CHUNK_SIZE) {
+        chunks.push(remaining);
+        break;
+      }
+      
+      // Find the best split point (sentence end) within MAX_CHUNK_SIZE
+      let splitAt = MAX_CHUNK_SIZE;
+      
+      // Try to split at sentence end (. ! ? followed by space)
+      const searchWindow = remaining.substring(Math.floor(MAX_CHUNK_SIZE * 0.6), MAX_CHUNK_SIZE);
+      const sentenceEndMatch = searchWindow.match(/[.!?]\s/g);
+      
+      if (sentenceEndMatch) {
+        // Find last sentence end in the window
+        const lastEnd = searchWindow.lastIndexOf(sentenceEndMatch[sentenceEndMatch.length - 1]);
+        if (lastEnd >= 0) {
+          splitAt = Math.floor(MAX_CHUNK_SIZE * 0.6) + lastEnd + 2; // +2 to include the punctuation and space
+        }
+      } else {
+        // Fallback: split at last space
+        const lastSpace = remaining.lastIndexOf(' ', MAX_CHUNK_SIZE);
+        if (lastSpace > MAX_CHUNK_SIZE * 0.3) {
+          splitAt = lastSpace + 1;
+        }
+      }
+      
+      chunks.push(remaining.substring(0, splitAt).trim());
+      remaining = remaining.substring(splitAt).trim();
+    }
+    
+    return chunks;
+  }, []);
+
+  // Sync voiceLanguage when app language changes
+  useEffect(() => {
+    setVoiceLanguage(language);
+  }, [language]);
+
+  // Load available voices based on selected voice language
   useEffect(() => {
     if (!('speechSynthesis' in window)) {
       setIsSupported(false);
@@ -148,18 +269,35 @@ export default function TextToSpeech({
     const loadVoices = () => {
       const availableVoices = speechSynthesis.getVoices();
       
-      // Debug: Log all available voices to console
-      if (availableVoices.length > 0) {
-        console.log(`[TTS] Available voices for ${language}:`, 
-          availableVoices.map(v => `${v.name} (${v.lang})`).join(', ')
-        );
-      }
+      if (availableVoices.length === 0) return;
       
-      // Get language codes for current language
-      const langCodes = langCodeMap[language] || langCodeMap.de;
+      // Detect all available languages from system voices
+      const detectedLangs = new Set<string>();
+      availableVoices.forEach(v => {
+        const baseLang = v.lang.split('-')[0].toLowerCase();
+        if (langCodeMap[baseLang]) {
+          detectedLangs.add(baseLang);
+        }
+      });
+      // Always include the 4 main app languages
+      ['de', 'en', 'ro', 'ru'].forEach(l => detectedLangs.add(l));
+      // Sort: main languages first, then alphabetical
+      const mainLangs = ['de', 'en', 'ro', 'ru'];
+      const sortedLangs = [...detectedLangs].sort((a, b) => {
+        const aMain = mainLangs.indexOf(a);
+        const bMain = mainLangs.indexOf(b);
+        if (aMain >= 0 && bMain >= 0) return aMain - bMain;
+        if (aMain >= 0) return -1;
+        if (bMain >= 0) return 1;
+        return (langNames[a] || a).localeCompare(langNames[b] || b);
+      });
+      setAvailableLanguages(sortedLangs);
+      
+      // Get language codes for current voice language
+      const langCodes = langCodeMap[voiceLanguage] || langCodeMap.de;
       const primaryLangCode = langCodes[0].split('-')[0]; // e.g., 'ro' from 'ro-RO'
       
-      // Filter for voices matching the current language - check multiple patterns
+      // Filter for voices matching the voice language - check multiple patterns
       const matchingVoices = availableVoices.filter((v) => {
         const voiceLang = v.lang.toLowerCase();
         const voiceName = v.name.toLowerCase();
@@ -172,14 +310,35 @@ export default function TextToSpeech({
           'ro': ['romanian', 'română', 'romana', 'ro-'],
           'de': ['german', 'deutsch', 'de-'],
           'en': ['english', 'en-'],
-          'ru': ['russian', 'русский', 'ru-']
+          'ru': ['russian', 'русский', 'ru-'],
+          'fr': ['french', 'français', 'fr-'],
+          'es': ['spanish', 'español', 'es-'],
+          'it': ['italian', 'italiano', 'it-'],
+          'pt': ['portuguese', 'português', 'pt-'],
+          'nl': ['dutch', 'nl-'],
+          'pl': ['polish', 'polski', 'pl-'],
+          'uk': ['ukrainian', 'uk-'],
+          'tr': ['turkish', 'tr-'],
+          'hu': ['hungarian', 'hu-'],
+          'cs': ['czech', 'cs-'],
+          'sv': ['swedish', 'sv-'],
+          'da': ['danish', 'da-'],
+          'no': ['norwegian', 'nb-', 'nn-'],
+          'fi': ['finnish', 'fi-'],
+          'el': ['greek', 'el-'],
+          'ja': ['japanese', 'ja-'],
+          'ko': ['korean', 'ko-'],
+          'zh': ['chinese', 'zh-'],
+          'ar': ['arabic', 'ar-'],
+          'hi': ['hindi', 'hi-'],
+          'bg': ['bulgarian', 'bg-'],
+          'hr': ['croatian', 'hr-'],
+          'sk': ['slovak', 'sk-'],
         };
         
         const keywords = langKeywords[primaryLangCode] || [];
         return keywords.some(kw => voiceName.includes(kw) || voiceLang.includes(kw));
       });
-      
-      console.log(`[TTS] Matching voices for ${language}:`, matchingVoices.length);
       
       // Sort: prefer exact matches, then local, then others
       const sortedVoices = matchingVoices.sort((a, b) => {
@@ -195,15 +354,12 @@ export default function TextToSpeech({
       });
       
       // If no matching voices found, show ALL available voices so user can choose
-      // This is important for languages like Romanian that may not have native voices
       let finalVoices: SpeechSynthesisVoice[] = sortedVoices;
       let isFallback = false;
       
       if (sortedVoices.length === 0) {
         isFallback = true;
-        // Show all available voices grouped by language
         finalVoices = availableVoices.sort((a, b) => {
-          // Prefer local voices
           if (a.localService && !b.localService) return -1;
           if (!a.localService && b.localService) return 1;
           return a.lang.localeCompare(b.lang);
@@ -233,67 +389,155 @@ export default function TextToSpeech({
     return () => {
       speechSynthesis.removeEventListener('voiceschanged', loadVoices);
     };
-  }, [language]); // Re-load voices when language changes
+  }, [voiceLanguage]); // Re-load voices when voice language changes
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      isSpeakingRef.current = false;
       speechSynthesis.cancel();
     };
   }, []);
+
+  // Chrome bug workaround: Chrome pauses speech after ~15 seconds
+  // Periodically call resume() to keep it going
+  // Only on desktop Chrome — mobile browsers can break from pause/resume
+  useEffect(() => {
+    if (!isPlaying || isPaused) return;
+    
+    // Skip keep-alive on mobile — it can cause TTS to stop entirely
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (isMobile) return;
+    
+    const keepAlive = setInterval(() => {
+      if (speechSynthesis.speaking && !speechSynthesis.paused) {
+        speechSynthesis.pause();
+        speechSynthesis.resume();
+      }
+    }, 10000); // Every 10 seconds
+    
+    return () => clearInterval(keepAlive);
+  }, [isPlaying, isPaused]);
+
+  // Speak a single chunk and return a promise
+  const speakChunk = useCallback((chunkText: string, chunkIndex: number, totalChunks: number, totalLength: number, offsetBefore: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const utterance = new SpeechSynthesisUtterance(chunkText);
+      utterance.lang = effectiveLang;
+      utterance.rate = rate;
+      utterance.pitch = 1;
+      
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+
+      // Track progress within the full text
+      utterance.onboundary = (event) => {
+        if (event.name === 'word') {
+          const actualPosition = offsetBefore + event.charIndex;
+          setCurrentPosition(actualPosition);
+          const progressPercent = (actualPosition / totalLength) * 100;
+          setProgress(progressPercent);
+        }
+      };
+
+      utterance.onend = () => {
+        resolve();
+      };
+
+      utterance.onerror = (event) => {
+        if (event.error === 'interrupted') {
+          reject(new Error('interrupted'));
+        } else if (event.error === 'canceled') {
+          reject(new Error('canceled'));
+        } else {
+          console.error(`[TTS] Chunk ${chunkIndex + 1}/${totalChunks} error:`, event.error);
+          // On error, try to continue with next chunk instead of stopping
+          resolve();
+        }
+      };
+
+      utteranceRef.current = utterance;
+      speechSynthesis.speak(utterance);
+    });
+  }, [effectiveLang, rate, selectedVoice]);
 
   const startSpeaking = useCallback((fromPosition: number = 0) => {
     const cleanedText = cleanText(text);
     cleanedTextRef.current = cleanedText;
     
-    if (!cleanedText) return;
+    if (!cleanedText) {
+      console.warn('[TTS] No text to speak after cleaning');
+      return;
+    }
 
-    // Cancel any ongoing speech
-    speechSynthesis.cancel();
+    const wasSpeaking = speechSynthesis.speaking || speechSynthesis.pending;
+    
+    // Only cancel if something is actually playing — calling cancel() on mobile
+    // when nothing is playing can block the next speak() call
+    if (wasSpeaking) {
+      speechSynthesis.cancel();
+    }
+    isSpeakingRef.current = true;
 
     // Get text from position
     const textToSpeak = cleanedText.substring(fromPosition);
     
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.lang = effectiveLang;
-    utterance.rate = rate;
-    utterance.pitch = 1;
+    // Split into chunks to avoid browser TTS limits
+    const chunks = splitIntoChunks(textToSpeak);
+    chunksRef.current = chunks;
+    currentChunkRef.current = 0;
     
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    console.log(`[TTS] Starting speech: ${cleanedText.length} chars, ${chunks.length} chunks (from pos ${fromPosition})${isMobile ? ' [mobile]' : ''}`);
 
-    // Track progress
-    utterance.onboundary = (event) => {
-      if (event.name === 'word') {
-        const actualPosition = fromPosition + event.charIndex;
-        setCurrentPosition(actualPosition);
-        const progressPercent = (actualPosition / cleanedText.length) * 100;
-        setProgress(progressPercent);
-      }
-    };
-
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setIsPaused(false);
-      setProgress(0);
-      setCurrentPosition(0);
-    };
-
-    utterance.onerror = (event) => {
-      // 'interrupted' is not a real error - it happens when user stops/cancels playback
-      if (event.error !== 'interrupted') {
-        console.error('[TTS] Error:', event.error);
-      }
-      setIsPlaying(false);
-      setIsPaused(false);
-    };
-
-    utteranceRef.current = utterance;
-    speechSynthesis.speak(utterance);
     setIsPlaying(true);
     setIsPaused(false);
-  }, [text, effectiveLang, rate, selectedVoice, cleanText]);
+
+    // Play chunks sequentially
+    const playChunks = async () => {
+      let offsetBefore = fromPosition;
+      
+      for (let i = 0; i < chunks.length; i++) {
+        if (!isSpeakingRef.current) break; // User stopped
+        
+        currentChunkRef.current = i;
+        
+        try {
+          await speakChunk(chunks[i], i, chunks.length, cleanedText.length, offsetBefore);
+          offsetBefore += chunks[i].length;
+        } catch (err: unknown) {
+          const error = err as Error;
+          if (error.message === 'interrupted' || error.message === 'canceled') {
+            // User cancelled — stop the loop
+            break;
+          }
+          console.warn(`[TTS] Chunk ${i} error:`, error.message);
+        }
+        
+        // Small delay between chunks on mobile for stability
+        if (isMobile && i < chunks.length - 1 && isSpeakingRef.current) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      
+      // Only reset if we finished naturally (not interrupted)
+      if (isSpeakingRef.current) {
+        isSpeakingRef.current = false;
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(0);
+        setCurrentPosition(0);
+      }
+    };
+
+    // If we had to cancel ongoing speech, delay slightly for mobile compatibility
+    if (wasSpeaking) {
+      setTimeout(() => playChunks(), 250);
+    } else {
+      playChunks();
+    }
+  }, [text, effectiveLang, rate, selectedVoice, cleanText, splitIntoChunks, speakChunk]);
 
   const pauseSpeaking = () => {
     speechSynthesis.pause();
@@ -306,6 +550,7 @@ export default function TextToSpeech({
   };
 
   const stopSpeaking = () => {
+    isSpeakingRef.current = false;
     speechSynthesis.cancel();
     setIsPlaying(false);
     setIsPaused(false);
@@ -379,7 +624,7 @@ export default function TextToSpeech({
             title={isPlaying ? (isPaused ? t.resume : t.pause) : t.play}
           >
             <span className="text-sm">{isPlaying && !isPaused ? '⏸️' : '🔊'}</span>
-            <span className="text-xs sm:text-sm font-semibold">{t.listenBlog}</span>
+            <span className="text-[10px] xs:text-xs sm:text-sm font-semibold">{t.listenBlog}</span>
           </button>
           
           {/* Progress bar - only when playing */}
@@ -412,13 +657,38 @@ export default function TextToSpeech({
             title={t.voiceSettings}
           >
             <span className="text-sm">⚙️</span>
-            <span className="text-xs sm:text-sm font-medium">{t.voiceSettings}</span>
+            <span className="text-[10px] xs:text-xs sm:text-sm font-medium">{t.voiceSettings}</span>
           </button>
         </div>
         
         {/* Compact settings panel - dark theme */}
         {showSettings && (
           <div className="mt-2 p-3 bg-gray-900 rounded-lg border border-gray-700 space-y-3">
+            {/* Voice Language selector */}
+            {availableLanguages.length > 1 && (
+              <div>
+                <label className="text-gray-400 text-xs block mb-1">
+                  🌐 {language === 'de' ? 'Vorlesesprache' : language === 'en' ? 'Reading Language' : language === 'ro' ? 'Limba de citire' : 'Язык чтения'}
+                </label>
+                <select
+                  value={voiceLanguage}
+                  onChange={(e) => {
+                    setVoiceLanguage(e.target.value);
+                    if (isPlaying) {
+                      stopSpeaking();
+                    }
+                  }}
+                  className="w-full bg-gray-800 text-white text-xs rounded p-1.5 border border-gray-600"
+                >
+                  {availableLanguages.map((langKey) => (
+                    <option key={langKey} value={langKey}>
+                      {langNames[langKey] || langKey}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
             {/* Speed */}
             <div>
               <label className="text-gray-400 text-xs block mb-1">
@@ -561,6 +831,31 @@ export default function TextToSpeech({
       {/* Settings panel */}
       {showSettings && (
         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 space-y-4">
+          {/* Voice Language selector */}
+          {availableLanguages.length > 1 && (
+            <div>
+              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
+                🌐 {language === 'de' ? 'Vorlesesprache' : language === 'en' ? 'Reading Language' : language === 'ro' ? 'Limba de citire' : 'Язык чтения'}
+              </label>
+              <select
+                value={voiceLanguage}
+                onChange={(e) => {
+                  setVoiceLanguage(e.target.value);
+                  if (isPlaying) {
+                    stopSpeaking();
+                  }
+                }}
+                className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 border border-gray-300 dark:border-gray-600"
+              >
+                {availableLanguages.map((langKey) => (
+                  <option key={langKey} value={langKey}>
+                    {langNames[langKey] || langKey}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Speed control */}
           <div>
             <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">

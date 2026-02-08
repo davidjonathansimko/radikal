@@ -633,16 +633,45 @@ const translations = {
 // Create language context / Sprachkontext erstellen
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
+// Auto-detect language from browser/system settings
+// Sprache automatisch aus Browser/System-Einstellungen erkennen
+// Detectare automată a limbii din setările browser/sistem
+function detectBrowserLanguage(): Language {
+  if (typeof navigator === 'undefined') return 'de';
+  
+  // Check navigator.languages (array of preferred languages) then navigator.language
+  const browserLanguages = navigator.languages?.length 
+    ? navigator.languages 
+    : [navigator.language];
+  
+  for (const lang of browserLanguages) {
+    const code = lang.toLowerCase().split('-')[0]; // 'de-DE' -> 'de'
+    if (code === 'de') return 'de';
+    if (code === 'en') return 'en';
+    if (code === 'ro' || code === 'mo') return 'ro'; // 'mo' is Moldavian
+    if (code === 'ru') return 'ru';
+  }
+  
+  return 'de'; // Default to German
+}
+
 // Language provider component / Sprachanbieter-Komponente
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('de');
   const [mounted, setMounted] = useState(false);
 
-  // Load saved language from localStorage - Now supports 4 languages / Gespeicherte Sprache aus localStorage laden - Unterstützt jetzt 4 Sprachen
+  // Load saved language from localStorage, or auto-detect from browser
+  // Gespeicherte Sprache aus localStorage laden, oder automatisch aus Browser erkennen
+  // Încarcă limba salvată din localStorage, sau detectează automat din browser
   useEffect(() => {
     const savedLanguage = localStorage.getItem('radikal-language') as Language;
     if (savedLanguage && (savedLanguage === 'de' || savedLanguage === 'en' || savedLanguage === 'ro' || savedLanguage === 'ru')) {
       setLanguage(savedLanguage);
+    } else {
+      // No saved preference - auto-detect from browser/system language
+      const detected = detectBrowserLanguage();
+      setLanguage(detected);
+      localStorage.setItem('radikal-language', detected);
     }
     setMounted(true);
   }, []);

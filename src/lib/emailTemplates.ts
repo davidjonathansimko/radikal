@@ -3,12 +3,23 @@
 // Professionelle HTML-E-Mail-Vorlagen für alle Kommunikation
 // Șabloane email HTML profesionale pentru toată comunicarea
 
-// Base email template wrapper
+// Base email template wrapper - multilingual support
+// Basis E-Mail-Vorlagen-Wrapper - mehrsprachige Unterstützung
+// Wrapper șablon email de bază - suport multilingv
 export function getEmailWrapper(content: string, options: {
   title?: string;
   previewText?: string;
   unsubscribeUrl?: string;
+  language?: 'de' | 'en' | 'ro' | 'ru';
 } = {}): string {
+  const lang = options.language || 'de';
+  const footerTexts = {
+    de: { blog: 'Christlicher Blog', privacy: 'Datenschutz', imprint: 'Impressum', unsubscribe: 'Newsletter abbestellen', rights: 'Alle Rechte vorbehalten.' },
+    en: { blog: 'Christian Blog', privacy: 'Privacy Policy', imprint: 'Legal Notice', unsubscribe: 'Unsubscribe from newsletter', rights: 'All rights reserved.' },
+    ro: { blog: 'Blog Creștin', privacy: 'Politica de Confidențialitate', imprint: 'Informații Legale', unsubscribe: 'Dezabonare newsletter', rights: 'Toate drepturile rezervate.' },
+    ru: { blog: 'Христианский Блог', privacy: 'Политика Конфиденциальности', imprint: 'Правовая Информация', unsubscribe: 'Отписаться от рассылки', rights: 'Все права защищены.' },
+  };
+  const ft = footerTexts[lang] || footerTexts.de;
   return `
 <!DOCTYPE html>
 <html lang="de">
@@ -92,20 +103,20 @@ export function getEmailWrapper(content: string, options: {
           <tr>
             <td style="padding: 30px; background-color: #0f0f0f; text-align: center;">
               <p style="margin: 0 0 10px 0; font-size: 12px; color: #666666;">
-                RADIKAL - Christlicher Blog
+                RADIKAL - ${ft.blog}
               </p>
               <p style="margin: 0 0 10px 0; font-size: 12px; color: #666666;">
                 <a href="https://radikal-magazin.de" style="color: #dc2626; text-decoration: none;">Website</a> · 
-                <a href="https://radikal-magazin.de/datenschutz" style="color: #dc2626; text-decoration: none;">Datenschutz</a> · 
-                <a href="https://radikal-magazin.de/impressum" style="color: #dc2626; text-decoration: none;">Impressum</a>
+                <a href="https://radikal-magazin.de/datenschutz" style="color: #dc2626; text-decoration: none;">${ft.privacy}</a> · 
+                <a href="https://radikal-magazin.de/impressum" style="color: #dc2626; text-decoration: none;">${ft.imprint}</a>
               </p>
               ${options.unsubscribeUrl ? `
               <p style="margin: 15px 0 0 0; font-size: 11px; color: #666666;">
-                <a href="${options.unsubscribeUrl}" style="color: #666666; text-decoration: underline;">Newsletter abbestellen</a>
+                <a href="${options.unsubscribeUrl}" style="color: #666666; text-decoration: underline;">${ft.unsubscribe}</a>
               </p>
               ` : ''}
               <p style="margin: 15px 0 0 0; font-size: 11px; color: #444444;">
-                © ${new Date().getFullYear()} RADIKAL. Alle Rechte vorbehalten.
+                © ${new Date().getFullYear()} RADIKAL. ${ft.rights}
               </p>
             </td>
           </tr>

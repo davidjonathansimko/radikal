@@ -16,17 +16,17 @@ import { useGSAP } from '@gsap/react';
 // Bible verses in all 4 languages from BibleQuotes.tsx
 const bibleVerses = {
   
-  en: 'If the Church is at home in the world,it-s because the world is at home in the Church.',
-  de: 'Wenn die Gemeinde in der Welt zu Hause ist, dann nur weil die Welt in der Gemeinde zu Hause ist.',
-  ro: 'Dacă Biserica este acasă în lume,este din cauza căci lumea este acasă în Biserică.',
-  ru: 'Если Церковь дома в мире,то потому что мир дома в Церкви.'
+  en: 'If the World is at home in the Church, it-s because the Church is at home in the World.',
+  de: 'Wenn die Welt in der Gemeinde zu Hause ist, dann nur weil die Gemeinde in der Welt zu Hause ist.',
+  ro: 'Dacă lumea este acasă în Biserică, este din cauza căci Biserica este acasă în lume.',
+  ru: 'Если мир находится в церкви, то это потому что церковь находится в мире.'
 };
 
 const bibleReferences = {
-  de: 'Belüge dich nicht selbst.',
-  en: "Don't lie to yourself.",
-  ro: 'Nu te minți pe tine însuți.',
-  ru: 'Не обманывай себя.'
+  de: '...',
+  en: "...",
+  ro: '...',
+  ru: '...'
 };
 
 const translations = {
@@ -48,12 +48,6 @@ const translations = {
     ro: 'Autentificare sau Înregistrare',
     ru: 'Войти или Зарегистрироваться'
   },
-  continueAsGuest: {
-    de: 'Als Besucher fortfahren',
-    en: 'Continue as Visitor',
-    ro: 'Continuă ca și Vizitator',
-    ru: 'Продолжить как гость'
-  },
   changeLanguage: {
     de: 'Wählen Sie eine andere Sprache',
     en: 'Choose Another Language',
@@ -64,6 +58,8 @@ const translations = {
 
 interface WelcomeModalProps {
   onComplete: (language: 'de' | 'en' | 'ro' | 'ru', isGuest: boolean) => void;
+  // Note: isGuest is kept for backward compatibility but guest option is removed from UI
+  // Users must register/login to access RADIKAL
 }
 
 export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
@@ -259,21 +255,23 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
     if (selectedLanguage) {
       // Save language preference in localStorage for when they return after login
       localStorage.setItem('radikalSelectedLanguage', selectedLanguage);
+      // Clean up body styles and classes before navigating away
+      // Otherwise modal-active stays on body and hides nav/footer after login
+      document.body.classList.remove('modal-active', 'modal-open');
+      document.documentElement.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.documentElement.style.overflow = '';
       // Redirect to login page
       router.push('/auth/login');
     }
   };
 
-  // Handle continue as guest
-  const handleContinueAsGuest = () => {
-    if (selectedLanguage) {
-      // Mark modal as seen in this session
-      sessionStorage.setItem('radikalModalSeen', 'true');
-      // Language already saved in handleLanguageSelection
-      // Complete the modal
-      onComplete(selectedLanguage, true);
-    }
-  };
+
 
   return (
     <div 
@@ -553,20 +551,6 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                     <div className="text-4xl mb-3" style={{ color: textColor }}>⌘</div>
                     <div className="text-xl md:text-2xl font-bold transition-colors" style={{ color: textColor }}>
                       {translations.loginOption[selectedLanguage]}
-                    </div>
-                  </div>
-                </button>
-
-                {/* Continue as Guest Button */}
-                <button
-                  onClick={handleContinueAsGuest}
-                  className="group w-full max-w-md rounded-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl backdrop-blur-sm"
-                  style={{ backgroundColor: bgTransparent, borderWidth: '2px', borderStyle: 'solid', borderColor: borderColor }}
-                >
-                  <div className="text-center">
-                    <div className="text-4xl mb-3" style={{ color: textColor }}>→</div>
-                    <div className="text-xl md:text-2xl font-bold transition-colors" style={{ color: textColor }}>
-                      {translations.continueAsGuest[selectedLanguage]}
                     </div>
                   </div>
                 </button>

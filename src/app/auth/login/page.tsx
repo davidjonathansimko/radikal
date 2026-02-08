@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
-import { FaGithub, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaGoogle, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function LoginPage() {
   // Get language context and router / Sprachkontext und Router abrufen
@@ -68,14 +68,14 @@ export default function LoginPage() {
     }
   };
 
-  // Handle GitHub login / GitHub-Anmeldung behandeln
-  const handleGithubLogin = async () => {
+  // Handle Google login / Google-Anmeldung behandeln
+  const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
+        provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -85,7 +85,10 @@ export default function LoginPage() {
         setError(error.message);
       }
     } catch (err) {
-      setError('Ein Fehler ist bei der GitHub-Anmeldung aufgetreten.');
+      setError(language === 'de' ? 'Ein Fehler ist bei der Google-Anmeldung aufgetreten.' :
+              language === 'en' ? 'An error occurred during Google login.' :
+              language === 'ro' ? 'A apărut o eroare la autentificarea cu Google.' :
+              'Произошла ошибка при входе через Google.');
     } finally {
       setLoading(false);
     }
@@ -160,18 +163,14 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* GitHub login button / GitHub-Anmelde-Button */}
+          {/* Google login button / Google-Anmelde-Button */}
           <button
-            onClick={handleGithubLogin}
+            onClick={handleGoogleLogin}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 dark:bg-gray-600 bg-gray-400 hover:bg-gray-300 text-white font-medium rounded-lg transition-colors duration-200 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaGithub className="text-xl" />
-            {/* 
-              EXPLANATION: Replace t('auth.signInWithGithub') with user-friendly text
-              Users should see "Sign in with GitHub" not "signInWithGithub"
-            */}
-            <span>{language === 'de' ? 'Mit GitHub anmelden' : language === 'en' ? 'Sign in with GitHub' : language === 'ro' ? 'Conectare cu GitHub' : 'Войти с GitHub'}</span>
+            <FaGoogle className="text-xl" />
+            <span>{language === 'de' ? 'Mit Google anmelden' : language === 'en' ? 'Sign in with Google' : language === 'ro' ? 'Conectare cu Google' : 'Войти с Google'}</span>
           </button>
 
           {/* Divider / Trenner */}
@@ -270,7 +269,7 @@ export default function LoginPage() {
             <button
               onClick={handlePasswordReset}
               disabled={loading}
-              className="w-full text-sm font-medium dark text-blue-100 : text-gray-800  hover:text-white transition-colors duration-200 disabled:opacity-50"
+              className="w-full text-sm font-medium text-gray-800 dark:text-white hover:text-gray-600 dark:hover:text-white/80 transition-colors duration-200 disabled:opacity-50"
             >
               {language === 'de' ? 'Passwort vergessen?' : 
                language === 'en' ? 'Forgot password?' : 

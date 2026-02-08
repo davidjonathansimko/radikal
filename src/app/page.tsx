@@ -30,6 +30,11 @@ export default function HomePage() {
   const [showModal, setShowModal] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   
+  // Splash screen state - shows the logo on every app re-entry
+  // Splash-Bildschirm-Status - zeigt das Logo bei jedem App-Wiedereinstieg
+  // Stare ecran splash - arată logo-ul la fiecare reintrare în aplicație
+  const [showSplash, setShowSplash] = useState(false);
+  
   // State for scroll button visibility
   const [showScrollButton, setShowScrollButton] = useState(true);
   
@@ -62,6 +67,12 @@ export default function HomePage() {
             // User has already selected a language, apply it / Benutzer hat bereits eine Sprache ausgewählt, anwenden / Utilizatorul a selectat deja o limbă, aplică-o
             setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
             setShowModal(false);
+            // Show splash logo for returning users
+            const splashShown = sessionStorage.getItem('radikalSplashShown');
+            if (!splashShown) {
+              setShowSplash(true);
+              sessionStorage.setItem('radikalSplashShown', 'true');
+            }
           } else {
             // Logged-in user but no language saved yet - show modal / Eingeloggter Benutzer aber noch keine Sprache gespeichert - Modal anzeigen / Utilizator autentificat dar fără limbă salvată încă - afișează modalul
             setShowModal(true);
@@ -92,6 +103,15 @@ export default function HomePage() {
     checkSession();
   }, [supabase.auth, setLanguage]);
 
+  // Splash screen timer - show logo for 2.5 seconds then fade out
+  // Splash-Bildschirm-Timer - Logo 2,5 Sekunden zeigen, dann ausblenden
+  // Timer ecran splash - arată logo 2,5 secunde apoi dispare
+  useEffect(() => {
+    if (!showSplash) return;
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    return () => clearTimeout(timer);
+  }, [showSplash]);
+
   // Monitor language changes in modal (for immediate application) / Sprachänderungen im Modal überwachen (für sofortige Anwendung) / Monitorizează schimbările de limbă în modal (pentru aplicare imediată)
   useEffect(() => {
     if (showModal) {
@@ -121,6 +141,16 @@ export default function HomePage() {
     document.body.classList.remove('modal-active');
   };
 
+  // Always clean up modal-active class when homepage doesn't need modal
+  // This fixes nav/footer disappearing after login redirect from WelcomeModal
+  // Immer modal-active-Klasse bereinigen wenn Homepage kein Modal braucht
+  // Întotdeauna curăță clasa modal-active când pagina principală nu are nevoie de modal
+  useEffect(() => {
+    if (!showModal && !isCheckingSession) {
+      document.body.classList.remove('modal-active');
+    }
+  }, [showModal, isCheckingSession]);
+
   // Show nothing while checking session / Nichts anzeigen während Sitzung geprüft wird / Nu afișa nimic în timp ce se verifică sesiunea
   if (isCheckingSession) {
     return (
@@ -139,6 +169,26 @@ export default function HomePage() {
       document.body.classList.add('modal-active');
     }
     return <WelcomeModal onComplete={handleModalComplete} />;
+  }
+
+  // Show splash logo for returning users (logged-in users re-entering the app)
+  // Splash-Logo für wiederkehrende Benutzer anzeigen
+  // Arată logo splash pentru utilizatorii care se întorc
+  if (showSplash) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-white dark:bg-black flex items-center justify-center animate-fadeIn">
+        <div className="text-center">
+          <Image
+            src={theme === 'dark' ? '/radikal.logo.weiß.hintergrund.png' : '/radikal.logo.schwarz.hintergrund.png'}
+            alt="Radikal Logo"
+            width={280}
+            height={280}
+            className="mx-auto rounded-sm"
+            priority
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -209,18 +259,18 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Section Title */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
-            {language === 'de' ? 'Über Uns' : language === 'en' ? 'About Us' : language === 'ro' ? 'Despre Noi' : 'О Нас'}
+            {language === 'de' ? 'Über ' : language === 'en' ? 'About ' : language === 'ro' ? 'Despre ' : 'О '}
           </h2>
           
           {/* Description */}
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' 
-              ? 'RADIKAL ist eine Plattform für tiefgreifende christliche Reflexionen. Wir glauben, dass der Glaube nicht lauwarm sein sollte, sondern radikal und transformierend. Hier findest du Gedanken, Geschichten und Inspiration für deine geistliche Reise.'
+              ? <>Ich blickte oft mit Bewunderung, aber mit noch tieferem Schmerz in meiner Seele um mich her und fragte mich: &quot;Warum wagt es niemand mehr, die Wahrheit auszusprechen? Und natürlich meine ich damit uns Christen und unsere Gemeinden.&quot;<br/>Aus diesem Schmerz wurde RADIKAL geboren. Selbst meine eigene Meinung ist mir absolut bedeutungslos, wenn sie nicht zu hundert Prozent mit dem Wort Gottes übereinstimmt.</>
               : language === 'en'
-              ? 'RADIKAL is a platform for profound Christian reflections. We believe that faith should not be lukewarm, but radical and transforming. Here you will find thoughts, stories, and inspiration for your spiritual journey.'
+              ? <>I often looked around with admiration, but with even deeper pain in my soul, asking myself: &quot;Why does no one dare to speak the truth anymore? And of course, I mean us Christians and our churches.&quot;<br/><br/>Out of this pain, RADIKAL was born. Even my own opinion is absolutely meaningless to me if it does not align one hundred percent with the Word of God.</>
               : language === 'ro'
-              ? 'RADIKAL este o platformă pentru reflecții creștine profunde. Credem că credința nu ar trebui să fie călduță, ci radicală și transformatoare. Aici vei găsi gânduri, povești și inspirație pentru călătoria ta spirituală.'
-              : 'RADIKAL - это платформа для глубоких христианских размышлений. Мы верим, что вера не должна быть теплой, а радикальной и преобразующей. Здесь вы найдете мысли, истории и вдохновение для вашего духовного пути.'}
+              ? <>Adesea mă uitam în jur cu admirație, dar cu o durere și mai profundă în suflet, întrebându-mă: &quot;De ce nu mai îndrăznește nimeni să spună adevărul? Și bineînțeles, mă refer la noi, creștinii și bisericile noastre.&quot;<br/><br/>Din această durere, s-a născut RADIKAL. Chiar și propria mea opinie este absolut lipsită de sens pentru mine dacă nu se aliniază sută la sută cu Cuvântul lui Dumnezeu.</>
+              : <>Я часто смотрел вокруг с восхищением, но с еще более глубокой болью в душе, задавая себе вопрос: &quot;Почему никто больше не осмеливается говорить правду? И, конечно же, я имею в виду нас, христиан и наши церкви.&quot;<br/><br/>Из этой боли родился RADIKAL. Даже мое собственное мнение абсолютно бессмысленно для меня, если оно не соответствует на сто процентов Слову Божьему.</>}
           </p>
 
           {/* Question mark icon for Mehr erfahren */}
@@ -251,18 +301,18 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Section Title */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
-            {language === 'de' ? 'Unsere Blogs' : language === 'en' ? 'Our Blogs' : language === 'ro' ? 'Blogurile Noastre' : 'Наши Блоги'}
+            {language === 'de' ? ' Blogs' : language === 'en' ? ' Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги'}
           </h2>
           
           {/* Description */}
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' 
-              ? 'Entdecke unsere Sammlung von Artikeln, Geschichten und Reflexionen. Jeder Beitrag ist eine Einladung, tiefer über Glauben, Hoffnung und Liebe nachzudenken.'
+              ? 'Wir haben verlernt, selbst zu prüfen, und folgen zu oft nur menschlichen Meinungen. Bevor du liest: Schlag deine Bibel auf.'
               : language === 'en'
-              ? 'Discover our collection of articles, stories, and reflections. Each post is an invitation to think more deeply about faith, hope, and love.'
+              ? 'We have unlearned how to examine for ourselves and too often just follow human opinions. Before you read: Open your Bible.'
               : language === 'ro'
-              ? 'Descoperă colecția noastră de articole, povești și reflecții. Fiecare postare este o invitație să gândești mai profund despre credință, speranță și dragoste.'
-              : 'Откройте для себя нашу коллекцию статей, историй и размышлений. Каждая публикация - это приглашение глубже задуматься о вере, надежде и любви.'}
+              ? 'Am uitat să examinăm singuri și prea des urmăm doar opinii umane. Înainte să citești: Deschide-ți Biblia.'
+              : 'Мы забыли, как проверять сами, и слишком часто просто следуем человеческим мнениям. Прежде чем читать: Открой свою Библию.'}
           </p>
 
           {/* Edit/write icon for Alle Blogs ansehen */}
@@ -299,12 +349,12 @@ export default function HomePage() {
           {/* Description */}
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' 
-              ? 'Hast du Fragen, Anregungen oder möchtest einfach nur Hallo sagen? Wir freuen uns, von dir zu hören! Schreib uns eine Nachricht.'
+              ? 'Hast du Fragen? Schreib uns eine Nachricht.'
               : language === 'en'
-              ? 'Do you have questions, suggestions, or just want to say hello? We would love to hear from you! Send us a message.'
+              ? 'Do you have questions? Send us a message.'
               : language === 'ro'
-              ? 'Ai întrebări, sugestii sau vrei doar să spui bună? Ne-ar plăcea să auzim de la tine! Trimite-ne un mesaj.'
-              : 'У вас есть вопросы, предложения или вы просто хотите поздороваться? Мы будем рады услышать от вас! Отправьте нам сообщение.'}
+              ? 'Ai întrebări? Trimite-ne un mesaj.'
+              : 'У вас есть вопросы? Отправьте нам сообщение.'}
           </p>
 
           {/* Mail/contact icon for Kontaktiere uns */}

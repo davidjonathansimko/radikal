@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
-import { FaGithub, FaEnvelope, FaEye, FaEyeSlash, FaUser } from 'react-icons/fa';
+import { FaGoogle, FaEnvelope, FaEye, FaEyeSlash, FaUser } from 'react-icons/fa';
 
 export default function SignupPage() {
   // Get language context and router / Sprachkontext und Router abrufen
@@ -111,29 +111,29 @@ export default function SignupPage() {
       }
 
       if (data.user) {
-        setMessage(language === 'de'  ? 'Registrierung erfolgreich! Bitte überprüfe deine E-Mail zur Bestätigung.' :
-        language === 'en' ? 'Registration successful! Please check your email for confirmation.' :
-        language === 'ro' ? 'Înregistrare reușită! Te rugăm să verifici-ți emailul pentru confirmare.' :
-        'Регистрация прошла успешно! Пожалуйста, проверьте свою электронную почту для подтверждения.');
+        setMessage(language === 'de'  ? '🎉 Willkommen bei RADIKAL! Deine Registrierung war erfolgreich. Bitte überprüfe deine E-Mail, um dein Konto zu bestätigen.' :
+        language === 'en' ? '🎉 Welcome to RADIKAL! Your registration was successful. Please check your email to confirm your account.' :
+        language === 'ro' ? '🎉 Bine ai venit la RADIKAL! Înregistrarea ta a fost cu succes. Te rugăm să verifici emailul pentru a confirma contul.' :
+        '🎉 Добро пожаловать в RADIKAL! Регистрация прошла успешно. Пожалуйста, проверьте вашу электронную почту для подтверждения аккаунта.');
       }
     } catch (err) {
-      setError(language === 'de' ? 'Ein unerwarteter Fehler ist aufgetreten.' :
-      language === 'en' ? 'An unexpected error occurred.' :
-      language === 'ro' ? 'A apărut o eroare neașteptată.' :
-      'Произошла непредвиденная ошибка.');
+      setError(language === 'de' ? 'Die Registrierung konnte nicht abgeschlossen werden. Bitte versuche es erneut.' :
+      language === 'en' ? 'Registration could not be completed. Please try again.' :
+      language === 'ro' ? 'Înregistrarea nu a putut fi finalizată. Te rugăm să încerci din nou.' :
+      'Регистрация не могла быть завершена. Пожалуйста, попробуйте снова.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle GitHub signup / GitHub-Registrierung behandeln
-  const handleGithubSignup = async () => {
+  // Handle Google signup / Google-Registrierung behandeln
+  const handleGoogleSignup = async () => {
     setLoading(true);
     setError('');
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
+        provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -143,10 +143,10 @@ export default function SignupPage() {
         setError(error.message);
       }
     } catch (err) {
-      setError(language=== 'de' ? 'Ein Fehler ist bei der GitHub-Registrierung aufgetreten.' :
-      language === 'en' ? 'An error occurred during GitHub registration.' :
-      language === 'ro' ? 'A apărut o eroare în timpul înregistrării GitHub.' :
-      'Произошла ошибка при регистрации GitHub.');
+      setError(language=== 'de' ? 'Ein Fehler ist bei der Google-Registrierung aufgetreten.' :
+      language === 'en' ? 'An error occurred during Google registration.' :
+      language === 'ro' ? 'A apărut o eroare în timpul înregistrării cu Google.' :
+      'Произошла ошибка при регистрации через Google.');
     } finally {
       setLoading(false);
     }
@@ -181,23 +181,24 @@ export default function SignupPage() {
           )}
           
           {message && (
-            <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-green-300 text-sm">
+            <div className="mb-4 p-4 bg-green-500/20 border border-green-500/30 rounded-lg text-green-300 text-sm text-center">
+              <div className="text-2xl mb-2">✓</div>
               {message}
             </div>
           )}
 
-          {/* GitHub signup button / GitHub-Registrierungs-Button */}
+          {/* Google signup button / Google-Registrierungs-Button */}
           <button
-            onClick={handleGithubSignup}
+            onClick={handleGoogleSignup}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaGithub className="text-xl" />
+            <FaGoogle className="text-xl" />
             <span>
-              {language === 'de' ? 'Mit GitHub registrieren' : 
-              language === 'en' ? 'Sign up with GitHub' : 
-              language === 'ro' ? 'Înscriere cu GitHub' : 
-              'Зарегистрироваться с GitHub'} </span>
+              {language === 'de' ? 'Mit Google registrieren' : 
+              language === 'en' ? 'Sign up with Google' : 
+              language === 'ro' ? 'Înregistrare cu Google' : 
+              'Зарегистрироваться с Google'} </span>
           </button>
 
           {/* Divider / Trenner */}

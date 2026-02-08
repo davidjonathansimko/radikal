@@ -785,20 +785,25 @@ body {
   color: #1a1a1a !important;
 }
 
-.light p, .light span, .light div, .light a, .light button, .light label {
+.light p:not(.mobile-menu-container *),
+.light span:not(.mobile-menu-container *),
+.light div:not(.mobile-menu-container *),
+.light a:not(.mobile-menu-container *),
+.light button:not(.mobile-menu-container *),
+.light label:not(.mobile-menu-container *) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
 /* Force ALL text colors in light mode */
-.light .text-white,
-.light .text-white\/90,
-.light .text-white\/80,
-.light .text-white\/70,
-.light .text-white\/60,
-.light .text-white\/50,
-.light .text-white\/40,
-.light .text-white\/30,
-.light .text-white\/20 {
+.light .text-white:not(.mobile-menu-container *),
+.light .text-white\/90:not(.mobile-menu-container *),
+.light .text-white\/80:not(.mobile-menu-container *),
+.light .text-white\/70:not(.mobile-menu-container *),
+.light .text-white\/60:not(.mobile-menu-container *),
+.light .text-white\/50:not(.mobile-menu-container *),
+.light .text-white\/40:not(.mobile-menu-container *),
+.light .text-white\/30:not(.mobile-menu-container *),
+.light .text-white\/20:not(.mobile-menu-container *) {
   color: #1a1a1a !important;
 }
 
@@ -825,8 +830,8 @@ body {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
-.light button,
-.light button * {
+.light button:not(.mobile-menu-container *),
+.light button *:not(.mobile-menu-container *) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
@@ -1497,5 +1502,17 @@ body.modal-open {
 
 html.modal-open {
   overflow: hidden !important;
+}
+
+/* STEP 700: Mobile fullscreen menu slide-in animation */
+@keyframes mobileMenuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 

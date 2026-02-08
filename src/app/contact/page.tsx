@@ -516,16 +516,6 @@ export default function ContactPage() {
               
               <div className="space-y-3">
                 <a 
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded-lg transition-colors duration-200"
-                >
-                  <FaGithub className="text-xl text-black dark:text-white" />
-                  <span className="text-black dark:text-white">GitHub</span>
-                </a>
-                
-                <a 
                   href="mailto:radikal@radikal.blog"
                   className="flex items-center gap-3 p-3 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded-lg transition-colors duration-200"
                 >
@@ -557,21 +547,6 @@ export default function ContactPage() {
                      language === 'en' ? 'I typically respond to all messages within 24 hours.' : 
                      language === 'ro' ? 'De obicei răspund la toate mesajele în 24 de ore.' : 
                      'Я обычно отвечаю на все сообщения в течение 24 часов.'}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="text-black dark:text-white font-medium mb-1">
-                    {language === 'de' ? 'Kann ich als Gast schreiben?' : 
-                     language === 'en' ? 'Can I write as a guest?' : 
-                     language === 'ro' ? 'Pot scrie ca oaspete?' : 
-                     'Могу ли я писать как гость?'}
-                  </h4>
-                  <p className="text-black/70 dark:text-white/70">
-                    {language === 'de' ? 'Ja, Sie können mir eine Nachricht senden, ohne sich anzumelden. Geben Sie einfach Ihre E-Mail-Adresse an.' : 
-                     language === 'en' ? 'Yes, you can send me a message without signing up. Just provide your email address.' : 
-                     language === 'ro' ? 'Da, poți să îmi trimiți un mesaj fără să te înregistrezi. Doar furnizează adresa de email.' : 
-                     'Да, вы можете отправить мне сообщение без регистрации. Просто укажите ваш адрес электронной почты.'}
                   </p>
                 </div>
               </div>

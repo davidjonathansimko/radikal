@@ -62,10 +62,10 @@ export default function FooterComponent() {
              '© 2025 RADIKAL. Все права защищены.'}
           </p>
           <p className="text-black/50 dark:text-white/40 text-xs mt-2">
-            {language === 'de' ? 'Entwickelt mit ❤️ und Next.js' : 
-             language === 'en' ? 'Built with ❤️ and Next.js' : 
-             language === 'ro' ? 'Construit cu ❤️ și Next.js' : 
-             'Создано с ❤️ и Next.js'}
+            {language === 'de' ? 'Entwickelt mit Next.js' : 
+             language === 'en' ? 'Built with Next.js' : 
+             language === 'ro' ? 'Construit cu Next.js' : 
+             'Создано с помощью Next.js'}
           </p>
         </div>
       </div>

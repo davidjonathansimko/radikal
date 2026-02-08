@@ -396,6 +396,16 @@ export default function BlogPostPage() {
   const displayExcerpt = language === 'ro' ? post?.excerpt : (translatedExcerpt || post?.excerpt);
   const displayTags = language === 'ro' ? (post?.tags || []) : (translatedTags.length > 0 ? translatedTags : (post?.tags || []));
 
+  // Update browser tab title with translated blog title
+  // Browser-Tab-Titel mit übersetztem Blog-Titel aktualisieren
+  // Actualizează titlul tab-ului browserului cu titlul tradus al blogului
+  useEffect(() => {
+    if (displayTitle) {
+      document.title = `${displayTitle} | RADIKAL`;
+    }
+    return () => { document.title = 'RADIKAL'; };
+  }, [displayTitle]);
+
   // 💬 Show login required popup / Login-erforderlich-Popup anzeigen / Afișează popup autentificare necesară
   const showLoginRequired = (action: 'like' | 'dislike' | 'reply' | 'bloglike') => {
     const messages = {
@@ -813,28 +823,29 @@ export default function BlogPostPage() {
           {/* 2. Post metadata UNDER image / Metadaten UNTER Bild / Metadate SUB imagine */}
           {/* Fluid flex-stretch layout - auto-adapts to screen size */}
           {/* Mobile: clamp 360→13px, 390→14px, 400→15px, bolder text. Desktop (sm+): original text-base */}
-          <div className="flex items-stretch gap-3 xs:gap-4 text-gray-600 dark:text-white/60 mb-3 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {/* Left side - date + reading time stretch to fill available space */}
-            <div className="flex-1 flex items-center min-w-0 text-[clamp(0.85rem,calc(-0.15rem+5vw),0.9375rem)] sm:text-base font-semibold xs:font-medium sm:font-normal">
-              <time dateTime={post.created_at} className="whitespace-nowrap">
+          <div className="flex items-center justify-between text-gray-600 dark:text-white/60 mb-3 animate-fadeIn text-[clamp(0.85rem,calc(-0.15rem+5vw),0.9375rem)] sm:text-base font-semibold xs:font-medium sm:font-normal" style={{ animationDelay: '0.2s' }}>
+            {/* Date + Reading time (on <360px they sit together left, on ≥360px date left / time right) */}
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <time dateTime={post.created_at}>
                 {formatDate(post.created_at)}
               </time>
-              
-              {/* Separator dot with spacing */}
-              <span className="flex-shrink-0 opacity-60 mx-2 sm:mx-3">&nbsp;·&nbsp;</span>
-              
-              {/* Reading time / Lesezeit / Timp de citire */}
-              {/* Short version on <360px (for Russian etc.), full on xs+ */}
-              <span className="flex items-center gap-1 xs:gap-1.5 whitespace-nowrap">
+              {/* Reading time inline at <360px */}
+              <span className="flex items-center gap-1 xs:hidden">
+                <span className="mx-1">·</span>
                 <FaClock className="text-[0.7em] flex-shrink-0" />
-                <span className="xs:hidden">{getShortReadingTime(calculateReadingTime(post.content || '', language).minutes, language)}</span>
-                <span className="hidden xs:inline">{calculateReadingTime(post.content || '', language).text}</span>
+                <span>{getShortReadingTime(calculateReadingTime(post.content || '', language).minutes, language)}</span>
               </span>
             </div>
             
-            {/* Bookmark button - right side, flex-none (fixed), smaller only on tiny screens */}
-            <div className="flex-none">
-              <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-2 !py-1 !text-[0.7rem] !gap-1.5 xs:!px-3 xs:!py-1.5 xs:!text-xs sm:!px-4 sm:!py-2 sm:!text-sm sm:!gap-2" />
+            {/* Reading time on right at ≥360px */}
+            <span className="hidden xs:flex items-center gap-1.5 whitespace-nowrap">
+              <FaClock className="text-[0.7em] flex-shrink-0" />
+              <span>{calculateReadingTime(post.content || '', language).text}</span>
+            </span>
+
+            {/* BookmarkButton on right at <360px (replaces reading time position) */}
+            <div className="xs:hidden flex-shrink-0">
+              <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-2 !py-1 !text-[10px] !gap-0.5" />
             </div>
           </div>
 
@@ -874,6 +885,7 @@ export default function BlogPostPage() {
                 />
               </div>
               <PrintButton variant="icon" showLabel />
+              <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-3 !py-1.5 !text-xs !gap-1.5 sm:!px-4 sm:!py-2 sm:!text-sm sm:!gap-2" />
               <ReadingModeToggle />
             </div>
             
@@ -891,16 +903,21 @@ export default function BlogPostPage() {
                   <ReadingModeToggle />
                 </div>
               </div>
-              {/* Row 2: PDF (<360px only) + TTS */}
-              <div className="flex items-center gap-2 w-full">
-                <div className="xs:hidden flex-shrink-0">
-                  <PrintButton variant="icon" showLabel />
+              {/* Row 2: PDF (<360px only) + TTS + Speichern */}
+              <div className="flex items-center w-full">
+                <div className="flex items-center gap-1 min-w-0 flex-shrink overflow-hidden">
+                  <div className="xs:hidden flex-shrink-0">
+                    <PrintButton variant="icon" showLabel />
+                  </div>
+                  <div className="min-w-0 overflow-hidden">
+                    <TextToSpeech 
+                      text={displayContent || post.content || ''} 
+                      compact
+                    />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <TextToSpeech 
-                    text={displayContent || post.content || ''} 
-                    compact
-                  />
+                <div className="flex-shrink-0 ml-auto hidden xs:block">
+                  <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-2 !py-1 !text-[11px] !gap-1" />
                 </div>
               </div>
             </div>
@@ -969,14 +986,14 @@ export default function BlogPostPage() {
           </button>
 
           {/* Share buttons with complete sentence / Teilen-Buttons mit vollständigem Satz / Butoane distribuire cu propoziție completă */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 w-full">
             <span className="text-gray-600 dark:text-white/60">
               {language === 'de' ? 'Teile diesen Artikel:' : 
                language === 'en' ? 'Share this article:' : 
                language === 'ro' ? 'Distribuie acest articol:' : 
                'Поделиться статьёй:'}
             </span>
-            <div className="flex items-center gap-1.5 xs:gap-2 flex-nowrap xs:flex-wrap">
+            <div className="flex items-center flex-nowrap w-full justify-evenly">
             <button
               onClick={() => sharePost('whatsapp')}
               className="w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
@@ -1076,7 +1093,7 @@ export default function BlogPostPage() {
                   <button
                     type="submit"
                     disabled={!newComment.trim()}
-                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed text-[11px] xs:text-sm"
                   >
                     {language === 'de' ? 'Kommentar veröffentlichen' : 
                      language === 'en' ? 'Post Comment' : 

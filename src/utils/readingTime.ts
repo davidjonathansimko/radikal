@@ -95,8 +95,8 @@ export function calculateReadingTime(
 export function getFormattedTime(minutes: number, language: string): string {
   const translations: Record<string, { singular: string; plural: string; short: string }> = {
     de: {
-      singular: 'Min. Lesezeit',
-      plural: 'Min. Lesezeit',
+      singular: 'Minuten Lesezeit',
+      plural: 'Minuten Lesezeit',
       short: 'Min.'
     },
     en: {

@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
 
@@ -14,7 +14,7 @@ interface EmojiReactionsProps {
   className?: string;
 }
 
-type ReactionType = 'like' | 'love' | 'pray' | 'wow' | 'clap' | 'fire' | 'think' | 'sad' | 'hallelujah' | 'blessed';
+type ReactionType = 'like' | 'love' | 'pray' | 'wow' | 'clap' | 'fire' | 'think' | 'sad' | 'hallelujah' | 'star' | 'angel' | 'light';
 
 interface ReactionData {
   type: ReactionType;
@@ -34,7 +34,9 @@ const reactionConfig: Omit<ReactionData, 'count' | 'hasReacted'>[] = [
   { type: 'think' as ReactionType, emoji: '🤔', label: { de: 'Nachdenklich', en: 'Thinking', ro: 'Gânditor', ru: 'Задумчивый' } },
   { type: 'sad' as ReactionType, emoji: '😢', label: { de: 'Traurig', en: 'Sad', ro: 'Trist', ru: 'Грустно' } },
   { type: 'hallelujah' as ReactionType, emoji: '🙌', label: { de: 'Halleluja', en: 'Hallelujah', ro: 'Aleluia', ru: 'Аллилуйя' } },
-  { type: 'blessed' as ReactionType, emoji: '✝️', label: { de: 'Gesegnet', en: 'Blessed', ro: 'Binecuvântat', ru: 'Благословен' } },
+  { type: 'star' as ReactionType, emoji: '⭐', label: { de: 'Stern', en: 'Star', ro: 'Stea', ru: 'Звезда' } },
+  { type: 'angel' as ReactionType, emoji: '😇', label: { de: 'Engel', en: 'Angel', ro: 'Înger', ru: 'Ангел' } },
+  { type: 'light' as ReactionType, emoji: '💡', label: { de: 'Erleuchtend', en: 'Enlightening', ro: 'Luminător', ru: 'Просвещающий' } },
 ];
 
 const translations = {
@@ -67,6 +69,8 @@ export default function EmojiReactions({ postId, className = '' }: EmojiReaction
   const [isExpanded, setIsExpanded] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pickerPosition, setPickerPosition] = useState<'above' | 'below'>('above');
+  const triggerRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   // Check user authentication
@@ -97,6 +101,22 @@ export default function EmojiReactions({ postId, className = '' }: EmojiReaction
 
     loadReactions();
   }, [postId]);
+
+  // Smart positioning: detect if picker should appear above or below based on scroll position
+  useEffect(() => {
+    if (isExpanded && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceAbove = rect.top;
+      const spaceBelow = viewportHeight - rect.bottom;
+      
+      if (spaceAbove < 220 || spaceBelow > spaceAbove) {
+        setPickerPosition('below');
+      } else {
+        setPickerPosition('above');
+      }
+    }
+  }, [isExpanded]);
 
   // Handle reaction click - works for guests too using localStorage
   const handleReaction = (type: ReactionType) => {
@@ -145,7 +165,7 @@ export default function EmojiReactions({ postId, className = '' }: EmojiReaction
   return (
     <div className={`relative ${className}`}>
       {/* Compact view - show top reactions */}
-      <div className="flex items-center gap-2">
+      <div ref={triggerRef} className="flex items-center gap-2">
         {/* Reaction summary */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -176,45 +196,45 @@ export default function EmojiReactions({ postId, className = '' }: EmojiReaction
         </button>
       </div>
 
-      {/* Expanded reaction picker */}
+      {/* Expanded reaction picker with smart positioning */}
       {isExpanded && (
-        <div className="absolute bottom-full left-0 mb-2 p-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-white/20 flex gap-1 animate-slideUp z-50">
-          {reactions.map((reaction) => (
-            <button
-              key={reaction.type}
-              onClick={() => {
-                handleReaction(reaction.type);
-                setIsExpanded(false);
-              }}
-              className={`group relative p-2 rounded-xl transition-all duration-200 hover:scale-125 hover:bg-gray-100 dark:hover:bg-white/10 ${
-                reaction.hasReacted ? 'bg-blue-100 dark:bg-blue-500/20' : ''
-              }`}
-              title={reaction.label[language as keyof typeof reaction.label]}
-            >
-              <span className="text-2xl">{reaction.emoji}</span>
-              
-              {/* Count badge */}
-              {reaction.count > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-gray-200 dark:bg-white/20 rounded-full text-xs font-medium flex items-center justify-center text-gray-700 dark:text-white/80">
-                  {reaction.count}
+        <>
+          {/* Backdrop with subtle blur */}
+          <div 
+            className="fixed inset-0 z-40 bg-black/15 backdrop-blur-[2px]" 
+            onClick={() => setIsExpanded(false)}
+          />
+          {/* Reaction picker - auto positions above or below based on viewport */}
+          <div className={`absolute ${pickerPosition === 'above' ? 'bottom-full mb-3' : 'top-full mt-3'} left-1/2 -translate-x-1/2 p-3 bg-white/95 dark:bg-gray-950 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/60 dark:border-white/10 flex flex-wrap justify-center gap-1.5 z-50 w-[min(calc(100vw-32px),420px)]`}>
+            {reactions.map((reaction) => (
+              <button
+                key={reaction.type}
+                onClick={() => {
+                  handleReaction(reaction.type);
+                  setIsExpanded(false);
+                }}
+                className={`group relative p-2 xs:p-2.5 rounded-xl transition-all duration-200 hover:scale-125 hover:bg-gray-100/80 dark:hover:bg-white/10 ${
+                  reaction.hasReacted ? 'bg-blue-100 dark:bg-blue-500/20 scale-110' : ''
+                }`}
+                title={reaction.label[language as keyof typeof reaction.label]}
+              >
+                <span className="text-xl xs:text-2xl">{reaction.emoji}</span>
+                
+                {/* Count badge */}
+                {reaction.count > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-gray-200 dark:bg-white/20 rounded-full text-xs font-medium flex items-center justify-center text-gray-700 dark:text-white/80">
+                    {reaction.count}
+                  </span>
+                )}
+                
+                {/* Tooltip */}
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                  {reaction.label[language as keyof typeof reaction.label]}
                 </span>
-              )}
-              
-              {/* Tooltip */}
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                {reaction.label[language as keyof typeof reaction.label]}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Click outside to close */}
-      {isExpanded && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setIsExpanded(false)}
-        />
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

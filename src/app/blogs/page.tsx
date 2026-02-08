@@ -65,6 +65,20 @@ function BlogsPageContent() {
     return `${monthNames[language as keyof typeof monthNames]?.[filterMonth] || monthNames.en[filterMonth]} ${filterYear}`;
   }, [filterYear, filterMonth, language]);
 
+  // Set browser tab title in user's language
+  // Browser-Tab-Titel in der Sprache des Benutzers setzen
+  // Setează titlul tab-ului browserului în limba utilizatorului
+  useEffect(() => {
+    const titles = {
+      de: 'Blogs | RADIKAL',
+      en: 'Blogs | RADIKAL',
+      ro: 'Bloguri | RADIKAL',
+      ru: 'Блоги | RADIKAL'
+    };
+    document.title = titles[language as keyof typeof titles] || titles.de;
+    return () => { document.title = 'RADIKAL'; };
+  }, [language]);
+
   // Show loading while checking access / Ladeindikator anzeigen während Zugriff geprüft wird / Afișează încărcare în timp ce se verifică accesul
   if (isChecking) {
     return (
