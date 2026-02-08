@@ -106,6 +106,26 @@ const nextConfig = {
   
   // React strict mode for development
   reactStrictMode: true,
+  
+  // Optimize react-icons tree-shaking and reduce bundle size
+  // Optimiert react-icons Tree-Shaking und reduziert Bündelgröße
+  modularizeImports: {
+    'react-icons/fa': {
+      transform: 'react-icons/fa/{{member}}',
+    },
+    'react-icons/tfi': {
+      transform: 'react-icons/tfi/{{member}}',
+    },
+    'react-icons/ci': {
+      transform: 'react-icons/ci/{{member}}',
+    },
+  },
+  
+  // Experimental performance optimizations
+  experimental: {
+    // Optimize package imports for smaller bundles
+    optimizePackageImports: ['react-icons', 'date-fns', 'gsap'],
+  },
 }
 
 module.exports = nextConfig
