@@ -263,7 +263,7 @@ export const SkeletonBlogGrid: React.FC<SkeletonBlogGridProps> = ({
 
 // Full page loading skeleton / Ganzseitiges Lade-Skeleton
 interface SkeletonPageProps {
-  type?: 'blog-list' | 'blog-post' | 'about';
+  type?: 'blog-list' | 'blog-post' | 'about' | 'contact' | 'home';
 }
 
 export const SkeletonPage: React.FC<SkeletonPageProps> = ({ type = 'blog-list' }) => {
@@ -299,6 +299,57 @@ export const SkeletonPage: React.FC<SkeletonPageProps> = ({ type = 'blog-list' }
         </div>
         
         <SkeletonText lines={6} />
+      </div>
+    );
+  }
+
+  // Pasul 121: Contact page skeleton / Kontaktseiten-Skeleton / Schelet pagină contact
+  if (type === 'contact') {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <Skeleton className="h-10 w-40 mx-auto mb-4" />
+          <Skeleton className="h-5 w-72 mx-auto" />
+        </div>
+        <div className="glass-effect rounded-2xl p-8 space-y-6">
+          <Skeleton className="h-5 w-24 mb-2" />
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-5 w-24 mb-2" />
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-5 w-24 mb-2" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-12 w-40 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // Pasul 121: About page skeleton / Über-Seiten-Skeleton / Schelet pagină despre
+  if (type === 'about') {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <Skeleton className="h-12 w-48 mx-auto mb-6" />
+          <SkeletonText lines={4} className="max-w-2xl mx-auto mb-8" />
+        </div>
+        <SkeletonImage aspectRatio="video" className="mb-8 max-w-2xl mx-auto" />
+        <SkeletonText lines={6} className="max-w-2xl mx-auto mb-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <SkeletonStatCard />
+          <SkeletonStatCard />
+        </div>
+      </div>
+    );
+  }
+
+  // Pasul 121: Home page skeleton / Startseiten-Skeleton / Schelet pagină principală
+  if (type === 'home') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+        <div className="max-w-4xl mx-auto w-full text-center">
+          <SkeletonText lines={3} widths={['90%', '100%', '85%']} className="mb-8" />
+          <Skeleton className="h-8 w-48 mx-auto" />
+        </div>
       </div>
     );
   }

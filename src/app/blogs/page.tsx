@@ -79,12 +79,16 @@ function BlogsPageContent() {
     return () => { document.title = 'RADIKAL'; };
   }, [language]);
 
-  // Show loading while checking access / Ladeindikator anzeigen während Zugriff geprüft wird / Afișează încărcare în timp ce se verifică accesul
+  // Show loading while checking access — Pasul 121: skeleton dots / Ladeindikator anzeigen — Skeleton-Punkte
   if (isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-gray-300 dark:border-white/30 border-t-gray-900 dark:border-t-white/80 rounded-full mx-auto mb-4"></div>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
+          </div>
           <p className="text-gray-700 dark:text-white/60">
             {language === 'de' ? 'Wird geladen...' : 
              language === 'en' ? 'Loading...' : 
@@ -145,14 +149,14 @@ function BlogsPageContent() {
           )}
           
           <p className="text-xl text-gray-700 dark:text-white/80 max-w-2xl mx-auto animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {language === 'de' ? 'Entdecke tiefgreifende Einblicke in die Bibel und radikale Lehren, die dein Leben transformieren können.' : 
-             language === 'en' ? 'Discover profound insights into the Bible and radical teachings that can transform your life.' : 
-             language === 'ro' ? 'Descoperă perspective profunde în Biblie și învățături radicale care îți pot transforma viața.' : 
-             'Открой для себя глубокие понимания Библии и радикальные учения, которые могут трансформировать твою жизнь.'}
+            {language === 'de' ? 'Vielleicht suchst du nicht, um zu finden, sondern suchst, um dich selbst zu finden.' : 
+             language === 'en' ? 'Perhaps you are not searching to find, but searching to rediscover yourself.' : 
+             language === 'ro' ? 'Poate că nu cauți pentru a găsi, ci cauți pentru a te regăsi.' : 
+             'Возможно, вы ищете не для того, чтобы найти, а для того, чтобы заново открыть себя.'}
           </p>
           
-          {/* Back to home button for mobile / Zurück zur Startseite Button für Mobile / Buton înapoi la pagină principală pentru mobil */}
-          <BackToHome className="mt-6 flex justify-center" />
+          {/* Back to home button - hidden on mobile, shown on desktop (moved below BlogList on mobile) */}
+          <BackToHome className="mt-6 hidden lg:flex justify-center" />
           
           {/* Blog browse - alphabetical & date-based filtering / Blog-Durchsuchen - Alphabetische & Datumsbasierte Filterung / Navigare bloguri - filtrare alfabetică & pe bază de dată */}
           <div className="flex justify-center">
@@ -163,9 +167,9 @@ function BlogsPageContent() {
         {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
         <CircularReadingProgress />
 
-        {/* Newsletter subscription - only for authenticated users / Newsletter-Abonnement - nur für authentifizierte Benutzer / Abonare newsletter - doar pentru utilizatori autentificați */}
+        {/* Newsletter subscription - desktop position (hidden on mobile, moved below BlogList) */}
         {isAuthenticated && (
-          <div className="max-w-md mx-auto mb-12 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+          <div className="hidden lg:block max-w-md mx-auto mb-12 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <NewsletterSubscribe />
           </div>
         )}
@@ -189,6 +193,16 @@ function BlogsPageContent() {
             <BlogList filterYear={filterYear} filterMonth={filterMonth} />
           </Suspense>
         </div>
+
+        {/* Mobile: Back to home button below blog list / Mobil: Zurück-Button unter der Blogliste */}
+        <BackToHome className="mt-8 flex lg:hidden justify-center" />
+
+        {/* Mobile: Newsletter subscription below blog list / Mobil: Newsletter-Abonnement unter der Blogliste */}
+        {isAuthenticated && (
+          <div className="lg:hidden max-w-md mx-auto mt-8 mb-12 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+            <NewsletterSubscribe />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -201,8 +215,10 @@ export default function BlogsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-gray-300 dark:border-white/30 border-t-gray-900 dark:border-t-white/80 rounded-full mx-auto mb-4"></div>
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
         </div>
       </div>
     }>

@@ -20,7 +20,7 @@ export default function FooterComponent() {
 
   return (
     <footer 
-      className="relative z-10 bg-white/90 dark:bg-black/40 backdrop-blur-md border-t border-black/10 dark:border-white/10 mt-8"
+      className="hidden lg:block relative z-10 bg-white/90 dark:bg-black/40 backdrop-blur-md border-t border-black/10 dark:border-white/10 mt-8"
       style={{ 
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' 
       }}

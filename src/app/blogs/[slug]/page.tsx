@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
@@ -41,7 +41,8 @@ import { CiHeart } from 'react-icons/ci';
 // Dynamic imports for heavy components (loaded only when needed)
 const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ssr: false });
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
-const BookmarkButton = dynamic(() => import('@/components/BookmarkButton'), { ssr: false });
+// BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
+// const BookmarkButton = dynamic(() => import('@/components/BookmarkButton'), { ssr: false });
 const RelatedPosts = dynamic(() => import('@/components/RelatedPosts'), { ssr: false });
 const EmojiReactions = dynamic(() => import('@/components/EmojiReactions'), { ssr: false });
 const PrintButton = dynamic(() => import('@/components/PrintButton'), { ssr: false });
@@ -59,6 +60,137 @@ export default function BlogPostPage() {
   const { slug } = useParams();
   const { language } = useLanguage();
   const { theme } = useTheme();
+  
+  // 🔒 Store the ORIGINAL Romanian slug from the database — NEVER changes after first load
+  // This prevents URL translation (replaceState) from breaking DB queries
+  // Speichert den ORIGINALEN rumänischen Slug — ändert sich NIE nach dem ersten Laden
+  // Stochează slug-ul ORIGINAL românesc — nu se schimbă NICIODATĂ după prima încărcare
+  const originalSlugRef = useRef<string>('');
+  
+  // Helper: get the slug string safely from useParams (can be string | string[])
+  const slugString = typeof slug === 'string' ? slug : Array.isArray(slug) ? slug[0] : '';
+  
+  // Helper: Convert a title to a URL-friendly slug
+  // Hilfsfunktion: Titel in URL-freundlichen Slug konvertieren
+  // Ajutor: Convertește un titlu într-un slug URL-friendly
+  const titleToSlug = useCallback((title: string): string => {
+    // Cyrillic → Latin transliteration map for Russian
+    // Кириллица → Латиница транслитерация для русского
+    const cyrillicMap: Record<string, string> = {
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+      'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+      'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+      'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+      'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    };
+    
+    return title
+      .toLowerCase()
+      // Transliterate Cyrillic characters first (before NFD normalization strips them)
+      .split('').map(ch => cyrillicMap[ch] !== undefined ? cyrillicMap[ch] : ch).join('')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics / Diakritische Zeichen entfernen
+      .replace(/[äÄ]/g, 'a').replace(/[öÖ]/g, 'o').replace(/[üÜ]/g, 'u').replace(/[ß]/g, 'ss')
+      .replace(/[ăâ]/g, 'a').replace(/[îÎ]/g, 'i').replace(/[șȘ]/g, 's').replace(/[țȚ]/g, 't')
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars / Sonderzeichen entfernen
+      .replace(/\s+/g, '-') // Spaces to hyphens / Leerzeichen zu Bindestrichen
+      .replace(/-+/g, '-') // Collapse multiple hyphens / Mehrfache Bindestriche zusammenfassen
+      .replace(/^-|-$/g, '') // Trim hyphens / Bindestriche trimmen
+      .substring(0, 80); // Limit length / Länge begrenzen
+  }, []);
+
+  // 📖 Highlight Bible references in blog text / Bibelreferenzen im Blogtext hervorheben / Evidențiază referințele biblice în textul blogului
+  const highlightBibleReferences = useCallback((text: string): React.ReactNode => {
+    // Bible book names in all 4 languages (Romanian, German, English, Russian)
+    // Bibelbuchnamen in allen 4 Sprachen / Numele cărților biblice în toate cele 4 limbi
+    const bibleBooks = [
+      // Romanian / Rumänisch / Română
+      'Geneza', 'Exodul', 'Leviticul', 'Numeri', 'Deuteronomul',
+      'Iosua', 'Judecători', 'Rut', 'Samuel', 'Împărați', 'Cronici',
+      'Ezra', 'Neemia', 'Estera', 'Iov', 'Psalmii', 'Psalmi', 'Psalmul',
+      'Proverbele', 'Proverbe', 'Eclesiastul', 'Cântarea Cântărilor',
+      'Isaia', 'Ieremia', 'Plângerile', 'Ezechiel', 'Daniel', 'Osea',
+      'Ioel', 'Amos', 'Obadia', 'Iona', 'Mica', 'Naum', 'Habacuc',
+      'Țefania', 'Hagai', 'Zaharia', 'Maleahi',
+      'Matei', 'Marcu', 'Luca', 'Ioan', 'Faptele Apostolilor', 'Faptele',
+      'Romani', 'Corinteni', 'Galateni', 'Efeseni', 'Filipeni',
+      'Coloseni', 'Tesaloniceni', 'Timotei', 'Tit', 'Filimon',
+      'Evrei', 'Iacov', 'Petru', 'Iuda', 'Apocalipsa',
+      // German / Deutsch / Germană
+      'Genesis', 'Exodus', 'Levitikus', 'Numeri', 'Deuteronomium',
+      'Josua', 'Richter', 'Ruth', 'Könige', 'Chronik',
+      'Esra', 'Nehemia', 'Ester', 'Hiob', 'Psalmen', 'Psalm',
+      'Sprüche', 'Prediger', 'Hoheslied',
+      'Jesaja', 'Jeremia', 'Klagelieder', 'Hesekiel', 'Hosea',
+      'Joel', 'Obadja', 'Jona', 'Micha', 'Nahum', 'Habakuk',
+      'Zefanja', 'Haggai', 'Sacharja', 'Maleachi',
+      'Matthäus', 'Markus', 'Lukas', 'Johannes', 'Apostelgeschichte',
+      'Römer', 'Korinther', 'Galater', 'Epheser', 'Philipper',
+      'Kolosser', 'Thessalonicher', 'Timotheus', 'Titus', 'Philemon',
+      'Hebräer', 'Jakobus', 'Judas', 'Offenbarung',
+      // English / Englisch / Engleză
+      'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+      'Joshua', 'Judges', 'Ruth', 'Kings', 'Chronicles',
+      'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Psalm',
+      'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Song of Songs',
+      'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea',
+      'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
+      'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
+      'Matthew', 'Mark', 'Luke', 'John', 'Acts',
+      'Romans', 'Corinthians', 'Galatians', 'Ephesians', 'Philippians',
+      'Colossians', 'Thessalonians', 'Timothy', 'Titus', 'Philemon',
+      'Hebrews', 'James', 'Peter', 'Jude', 'Revelation',
+      // Russian / Russisch / Rusă
+      'Бытие', 'Исход', 'Левит', 'Числа', 'Второзаконие',
+      'Иисус Навин', 'Судей', 'Руфь', 'Царств', 'Паралипоменон',
+      'Ездра', 'Неемия', 'Есфирь', 'Иов', 'Псалом', 'Псалмы', 'Псалтирь',
+      'Притчи', 'Екклесиаст', 'Песня Песней',
+      'Исаия', 'Иеремия', 'Плач Иеремии', 'Иезекииль', 'Даниил', 'Осия',
+      'Иоиль', 'Амос', 'Авдий', 'Иона', 'Михей', 'Наум', 'Аввакум',
+      'Софония', 'Аггей', 'Захария', 'Малахия',
+      'Матфей', 'Марка', 'Лука', 'Иоанна', 'Деяния',
+      'Римлянам', 'Коринфянам', 'Галатам', 'Ефесянам', 'Филиппийцам',
+      'Колоссянам', 'Фессалоникийцам', 'Тимофею', 'Титу', 'Филимону',
+      'Евреям', 'Иакова', 'Петра', 'Иуды', 'Откровение',
+    ];
+
+    // Remove duplicates and sort by length (longest first to avoid partial matches)
+    // Duplikate entfernen und nach Länge sortieren / Elimină duplicatele și sortează după lungime
+    const uniqueBooks = [...new Set(bibleBooks)].sort((a, b) => b.length - a.length);
+    
+    // Escape special regex characters in book names
+    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const bookPattern = uniqueBooks.map(escapeRegex).join('|');
+    
+    // Pattern: optional opening paren + optional number + book name + chapter:verse(-verse) + optional closing paren
+    // Muster: optionale öffnende Klammer + optionale Zahl + Buchname + Kapitel:Vers(-Vers) + optionale schließende Klammer
+    const bibleRefRegex = new RegExp(
+      `(\\(?\\s*(?:\\d\\s*)?(?:${bookPattern})\\s+\\d{1,3}(?:\\s*[:\\s]\\s*\\d{1,3}(?:\\s*[-–]\\s*\\d{1,3})?)?\\s*\\)?)`,
+      'gi'
+    );
+
+    const parts = text.split(bibleRefRegex);
+    
+    if (parts.length === 1) {
+      // No Bible references found / Keine Bibelreferenzen gefunden / Nu s-au găsit referințe biblice
+      return text;
+    }
+
+    return parts.map((part, i) => {
+      if (bibleRefRegex.test(part)) {
+        // Reset lastIndex after test / lastIndex nach Test zurücksetzen
+        bibleRefRegex.lastIndex = 0;
+        return (
+          <span key={i} className="bible-ref">
+            {part}
+          </span>
+        );
+      }
+      // Reset lastIndex / lastIndex zurücksetzen
+      bibleRefRegex.lastIndex = 0;
+      return part;
+    });
+  }, []);
   
   // Reading mode for font size adjustments / Lesemodus für Schriftgrößenanpassungen / Mod citire pentru ajustări dimensiune font
   const { fontSize } = useReadingMode();
@@ -100,24 +232,51 @@ export default function BlogPostPage() {
   const [prevArticle, setPrevArticle] = useState<{ slug: string; title: string } | null>(null);
   const [nextArticle, setNextArticle] = useState<{ slug: string; title: string } | null>(null);
   
-  // Supabase client / Supabase-Client / Client Supabase
-  const supabase = createClient();
+  // Supabase client - memoized to prevent re-creation on every render
+  // Supabase-Client - memoized um Neuerstellen bei jedem Render zu verhindern
+  const supabase = useMemo(() => createClient(), []);
 
   // Load blog post and comments / Blog-Post und Kommentare laden / Încărcă postarea de blog și comentariile
+  // Performance: Reset state when slug changes to prevent stale data accumulation
   useEffect(() => {
-    if (slug) {
-      loadBlogPost();
-      loadComments();
-      checkUserAuth();
+    // Reset state for new blog post to free memory / Status für neuen Blog-Post zurücksetzen
+    setPost(null);
+    setComments([]);
+    setTranslatedTitle('');
+    setTranslatedContent('');
+    setTranslatedExcerpt('');
+    setTranslatedTags([]);
+    setTranslatedComments(new Map());
+    setShowOriginalComment(new Set());
+    setCommentLikes(new Map());
+    setIsLiked(false);
+    setShowIntroModal(false);
+    setIntroModalCompleted(false);
+    setLoading(true);
+    
+    // On navigation, slugString from useParams() is ALWAYS the real DB slug
+    // Store it as original slug for all future DB queries (likes, comments, etc.)
+    // Decode URI-encoded slugs (e.g. %C8%9B → ț) so DB queries match correctly
+    // Bei Navigation ist slugString von useParams() IMMER der echte DB-Slug
+    // La navigare, slugString din useParams() este ÎNTOTDEAUNA slug-ul real din DB
+    if (slugString) {
+      const decodedSlug = decodeURIComponent(slugString);
+      originalSlugRef.current = decodedSlug;
+      loadBlogPost(decodedSlug);
+      loadComments(decodedSlug);
+      checkUserAuth(decodedSlug);
     }
-  }, [slug]); // Load blog post when slug changes / Blog-Post laden wenn Slug sich ändert / Încărcă postarea de blog când slug-ul se schimbă
+    
+    // Cancel speech synthesis when navigating away
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [slugString]); // Load blog post when slug changes / Blog-Post laden wenn Slug sich ändert
 
   // Dynamic blog background image feature / Dynamische Blog-Hintergrundbild-Funktion / Funcție imagine fundal dinamică pentru blog
   // When user enters a blog to read it, the blog's image becomes the background / Wenn Benutzer einen Blog betritt um ihn zu lesen, wird das Blog-Bild zum Hintergrund / Când utilizatorul intră pe un blog pentru a-l citi, imaginea blogului devine fundalul
   useEffect(() => {
     if (post?.image_url) {
-      console.log('🎨 Setting blog background image:', post.image_url);
-      
       // Apply the blog's image as full screen background / Blog-Bild als Vollbild-Hintergrund anwenden / Aplică imaginea blogului ca fundal pe ecran complet
       document.body.style.backgroundImage = `url('${post.image_url}')`;
       document.body.style.backgroundSize = 'cover';
@@ -138,8 +297,6 @@ export default function BlogPostPage() {
       overlay.id = 'blog-background-overlay';
       
       // Theme-aware overlay color - improved visibility
-      // Dark mode: darker overlay (0.5) for white text visibility
-      // Light mode: lighter overlay (0.6) for black text visibility
       const overlayColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.6)';
       
       overlay.style.cssText = `
@@ -154,44 +311,41 @@ export default function BlogPostPage() {
         transition: background 0.3s ease;
       `;
       document.body.appendChild(overlay);
-      
-      console.log(`✅ Blog background applied successfully with ${theme} theme overlay`);
     }
 
     // Cleanup when leaving the blog / Aufräumen beim Verlassen des Blogs / Curățare când se părăsește blogul
     return () => {
-      console.log('🧹 Cleaning up blog background...');
-      
       // Reset background to default / Hintergrund auf Standard zurücksetzen / Resetează fundalul la implicit
       document.body.style.backgroundImage = '';
       document.body.style.backgroundSize = '';
       document.body.style.backgroundPosition = '';
       document.body.style.backgroundAttachment = '';
       document.body.style.backgroundRepeat = '';
-      document.body.style.backgroundColor = ''; // Reset background color
+      document.body.style.backgroundColor = '';
       
       // Remove overlay / Overlay entfernen / Elimină overlay-ul
       const overlay = document.getElementById('blog-background-overlay');
       if (overlay) {
         overlay.remove();
       }
-      
-      console.log('✅ Background reset to default');
     };
-  }, [post, theme]); // Update when post or theme changes / Aktualisieren wenn Post oder Theme sich ändert / Actualizează când postarea sau tema se schimbă
+  }, [post?.image_url, theme]); // Only re-run when image URL or theme changes (not entire post object)
 
   // Load blog post data / Blog-Post-Daten laden / Încărcă datele postării de blog
-  const loadBlogPost = async () => {
+  const loadBlogPost = async (dbSlug?: string) => {
+    const querySlug = dbSlug || originalSlugRef.current;
+    if (!querySlug) return;
+    
     try {
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
-        .eq('slug', slug)
+        .eq('slug', querySlug)
         .eq('published', true)
         .single();
 
       if (error) {
-        console.error('Error loading post:', error);
+        console.error('Error loading post:', error.message, error.code, error.details, '| slug:', querySlug);
         return;
       }
 
@@ -256,12 +410,15 @@ export default function BlogPostPage() {
   };
 
   // Load comments for this post / Kommentare für diesen Post laden / Încărcă comentariile pentru această postare
-  const loadComments = async () => {
+  const loadComments = async (passedSlug?: string) => {
+    const querySlug = passedSlug || originalSlugRef.current;
+    if (!querySlug) return;
+    
     try {
       const { data, error } = await supabase
         .from('comments')
         .select('*')
-        .eq('post_id', slug) // Assuming we use slug as post identifier
+        .eq('post_id', querySlug) // Always use original Romanian slug as post identifier
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -276,16 +433,17 @@ export default function BlogPostPage() {
   };
 
   // Check user authentication / Benutzer-Authentifizierung prüfen / Verifică autentificarea utilizatorului
-  const checkUserAuth = async () => {
+  const checkUserAuth = async (passedSlug?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     setUser(user);
     
-    if (user && slug) {
+    const querySlug = passedSlug || originalSlugRef.current;
+    if (user && querySlug) {
       // Check if user has liked this post / Prüfen, ob Benutzer diesen Post geliked hat / Verifică dacă utilizatorul a apăsat like la această postare
       const { data } = await supabase
         .from('likes')
         .select('id')
-        .eq('post_id', slug)
+        .eq('post_id', querySlug)
         .eq('user_id', user.id)
         .single();
       
@@ -294,28 +452,29 @@ export default function BlogPostPage() {
   };
 
   // 🌐 DeepL AUTO-TRANSLATION: Translate blog content when language changes
-  // 🌐 DeepL AUTO-ÜBERSETZUNG: Blog-Inhalt automatisch übersetzen wenn Sprache sich ändert
-  // 🌐 DeepL TRADUCERE AUTOMATĂ: Traduce conținutul blogului când limba se schimbă
+  // Performance: Only triggers when post.id or language changes (not entire post object)
+  const postId = post?.id;
+  const postTitle = post?.title;
+  const postContent = post?.content;
+  const postExcerpt = post?.excerpt;
+  const postTags = post?.tags;
+  
   useEffect(() => {
     const translateContent = async () => {
-      if (!post || language === 'ro') {
-        // Reset to original if Romanian / Auf Original zurücksetzen wenn Rumänisch / Resetează la original dacă este Română
+      if (!postTitle || !postContent || language === 'ro') {
         setTranslatedTitle('');
         setTranslatedContent('');
         setTranslatedExcerpt('');
         return;
       }
 
-      console.log(`🌐 DeepL: Translating blog "${post.title}" to ${language}...`);
-
       try {
-        // Translate title, content, excerpt and tags in parallel / Titel, Inhalt, Auszug und Tags parallel übersetzen / Traduce titlul, conținutul, rezumatul și tag-urile în paralel
-        const tagsToTranslate = Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : []);
+        const tagsToTranslate = Array.isArray(postTags) ? postTags : (postTags ? [postTags] : []);
         
         const [title, content, excerpt, tags] = await Promise.all([
-          translate(post.title, language),
-          translate(post.content, language),
-          translate(post.excerpt, language),
+          translate(postTitle, language),
+          translate(postContent, language),
+          translate(postExcerpt || '', language),
           tagsToTranslate.length > 0 ? translateBatch(tagsToTranslate, language) : Promise.resolve([]),
         ]);
 
@@ -323,28 +482,21 @@ export default function BlogPostPage() {
         setTranslatedContent(content);
         setTranslatedExcerpt(excerpt);
         setTranslatedTags(tags);
-
-        console.log('✅ DeepL: Blog content translated successfully');
       } catch (error) {
-        console.error('❌ DeepL: Failed to translate blog content:', error);
+        console.error('DeepL translation failed:', error);
       }
     };
 
     translateContent();
-  }, [post, language, translate, translateBatch]);
+  }, [postId, language, translate, translateBatch]);
 
   // 🌐 DeepL: Auto-translate comments when language changes (auto-detect source language)
-  // Comments can be in ANY language, so we use DeepL's auto-detect feature
-  // Kommentare können in JEDER Sprache sein, also verwenden wir DeepL's Auto-Erkennung
-  // Comentariile pot fi în ORICE limbă, deci folosim funcția de auto-detectare a DeepL
   useEffect(() => {
     const translateCommentsContent = async () => {
       if (comments.length === 0) {
         setTranslatedComments(new Map());
         return;
       }
-
-      console.log(`🌐 DeepL: Translating ${comments.length} comments to ${language} (auto-detect source)...`);
 
       try {
         const commentTexts = comments.map(c => c.content);
@@ -359,9 +511,8 @@ export default function BlogPostPage() {
         });
         
         setTranslatedComments(newMap);
-        console.log('✅ DeepL: Comments translated successfully');
       } catch (error) {
-        console.error('❌ DeepL: Failed to translate comments:', error);
+        console.error('DeepL comments translation failed:', error);
       }
     };
 
@@ -405,6 +556,44 @@ export default function BlogPostPage() {
     }
     return () => { document.title = 'RADIKAL'; };
   }, [displayTitle]);
+
+  // 🌐 Update URL slug to match translated title (cosmetic only — does NOT trigger navigation)
+  // Uses window.history.replaceState which does NOT affect Next.js router or useParams
+  // All DB queries use originalSlugRef.current, so this is 100% safe
+  // URL-Slug aktualisieren passend zum übersetzten Titel (nur kosmetisch — löst KEINE Navigation aus)
+  // Actualizează slug-ul URL pentru a se potrivi cu titlul tradus (doar cosmetic — NU declanșează navigare)
+  useEffect(() => {
+    if (!displayTitle || !originalSlugRef.current) return;
+    
+    const dbSlug = originalSlugRef.current;
+    
+    if (language === 'ro') {
+      // Romanian = original language, restore original slug
+      // Rumänisch = Originalsprache, originalen Slug wiederherstellen
+      // Română = limba originală, restaurează slug-ul original
+      const currentPath = window.location.pathname;
+      if (currentPath !== `/blogs/${dbSlug}`) {
+        window.history.replaceState(null, '', `/blogs/${dbSlug}`);
+      }
+    } else if (translatedTitle) {
+      // Other language: create slug from translated title
+      // Andere Sprache: Slug aus übersetztem Titel erstellen
+      // Altă limbă: creează slug din titlul tradus
+      const translatedSlug = titleToSlug(translatedTitle);
+      if (translatedSlug && translatedSlug !== dbSlug) {
+        window.history.replaceState(null, '', `/blogs/${translatedSlug}`);
+      }
+    }
+    
+    // Cleanup: restore original slug when leaving the page
+    // Aufräumen: Original-Slug wiederherstellen beim Verlassen der Seite
+    // Curățare: restaurează slug-ul original la părăsirea paginii
+    return () => {
+      if (dbSlug) {
+        window.history.replaceState(null, '', `/blogs/${dbSlug}`);
+      }
+    };
+  }, [displayTitle, translatedTitle, language, titleToSlug]);
 
   // 💬 Show login required popup / Login-erforderlich-Popup anzeigen / Afișează popup autentificare necesară
   const showLoginRequired = (action: 'like' | 'dislike' | 'reply' | 'bloglike') => {
@@ -490,7 +679,7 @@ export default function BlogPostPage() {
       const { error } = await supabase
         .from('comments')
         .insert({
-          post_id: slug,
+          post_id: originalSlugRef.current,
           user_id: user.id,
           content: replyContent.trim(),
           author_email: user.email,
@@ -525,7 +714,7 @@ export default function BlogPostPage() {
           commentAuthor: reportedComment?.author_name || reportedComment?.author_email,
           reporterEmail: user.email,
           reason: reportReason,
-          blogSlug: slug,
+          blogSlug: originalSlugRef.current,
           language
         })
       });
@@ -556,14 +745,14 @@ export default function BlogPostPage() {
         await supabase
           .from('likes')
           .delete()
-          .eq('post_id', slug)
+          .eq('post_id', originalSlugRef.current)
           .eq('user_id', user.id);
         setIsLiked(false);
       } else {
         // Add like / Like hinzufügen / Adaugă like
         await supabase
           .from('likes')
-          .insert({ post_id: slug, user_id: user.id });
+          .insert({ post_id: originalSlugRef.current, user_id: user.id });
         setIsLiked(true);
       }
     } catch (error) {
@@ -598,7 +787,7 @@ export default function BlogPostPage() {
       const { error } = await supabase
         .from('comments')
         .insert({
-          post_id: slug,
+          post_id: originalSlugRef.current,
           user_id: user.id,
           content: newComment,
           author_email: user.email,
@@ -685,12 +874,16 @@ export default function BlogPostPage() {
     return formatDistanceToNow(date, { addSuffix: true, locale });
   };
 
-  // Show loading while checking access / Ladeindikator anzeigen während Zugriff geprüft wird / Afișează încărcare în timp ce se verifică accesul
+  // Show loading while checking access — Pasul 121: skeleton dots
   if (isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-gray-300 dark:border-white/30 border-t-gray-900 dark:border-t-white/80 rounded-full mx-auto mb-4"></div>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
+          </div>
           <p className="text-gray-700 dark:text-white/60">
             {language === 'de' ? 'Wird geladen...' : 
              language === 'en' ? 'Loading...' : 
@@ -702,7 +895,7 @@ export default function BlogPostPage() {
     );
   }
 
-  // Don't render page if access not allowed / Seite nicht rendern wenn Zugriff nicht erlaubt / Nu reda pagina dacă accesul nu este permis
+  // Don't render page if access not allowed
   if (!isAllowed) {
     return null;
   }
@@ -710,7 +903,11 @@ export default function BlogPostPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="spinner" />
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '0ms' }} />
+          <div className="w-2.5 h-2.5 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '150ms' }} />
+          <div className="w-2.5 h-2.5 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
+        </div>
       </div>
     );
   }
@@ -756,13 +953,13 @@ export default function BlogPostPage() {
         datePublished={post.created_at}
         dateModified={post.updated_at || post.created_at}
         image={post.image_url || '/exampleblog002.jpg'}
-        url={`https://radikal-blog.vercel.app/blogs/${slug}`}
+        url={`https://radikal-blog.vercel.app/blogs/${originalSlugRef.current}`}
       />
       <BreadcrumbSchema 
         items={[
           { name: 'Home', url: 'https://radikal-blog.vercel.app' },
           { name: 'Blogs', url: 'https://radikal-blog.vercel.app/blogs' },
-          { name: displayTitle || post.title, url: `https://radikal-blog.vercel.app/blogs/${slug}` }
+          { name: displayTitle || post.title, url: `https://radikal-blog.vercel.app/blogs/${originalSlugRef.current}` }
         ]}
       />
       
@@ -843,10 +1040,10 @@ export default function BlogPostPage() {
               <span>{calculateReadingTime(post.content || '', language).text}</span>
             </span>
 
-            {/* BookmarkButton on right at <360px (replaces reading time position) */}
-            <div className="xs:hidden flex-shrink-0">
+            {/* BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts */}
+            {/* <div className="xs:hidden flex-shrink-0">
               <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-2 !py-1 !text-[10px] !gap-0.5" />
-            </div>
+            </div> */}
           </div>
 
           {/* Row 2 - Tags on separate line, bolder on mobile */}
@@ -885,47 +1082,34 @@ export default function BlogPostPage() {
                 />
               </div>
               <PrintButton variant="icon" showLabel />
-              <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-3 !py-1.5 !text-xs !gap-1.5 sm:!px-4 sm:!py-2 sm:!text-sm sm:!gap-2" />
+              {/* BookmarkButton commented out - replaced by Liked Posts */}
+              {/* <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-3 !py-1.5 !text-xs !gap-1.5 sm:!px-4 sm:!py-2 sm:!text-sm sm:!gap-2" /> */}
               <ReadingModeToggle />
             </div>
             
             {/* Mobile layout: responsive rows */}
             <div className="md:hidden flex flex-col gap-2">
-              {/* <360px: Row 1 = FontSize + Focus, Row 2 = PDF + TTS */}
-              {/* ≥360px: Row 1 = FontSize + PDF + Focus, Row 2 = TTS */}
+              {/* Row 1: FontSize + PDF + Focus (all sizes) */}
               <div className="flex items-center justify-between gap-1">
                 <FontSizeControls />
                 <div className="flex items-center gap-1">
-                  {/* PDF only visible ≥360px in row 1 */}
-                  <div className="hidden xs:block">
-                    <PrintButton variant="icon" showLabel />
-                  </div>
+                  <PrintButton variant="icon" showLabel />
                   <ReadingModeToggle />
                 </div>
               </div>
-              {/* Row 2: PDF (<360px only) + TTS + Speichern */}
-              <div className="flex items-center w-full">
-                <div className="flex items-center gap-1 min-w-0 flex-shrink overflow-hidden">
-                  <div className="xs:hidden flex-shrink-0">
-                    <PrintButton variant="icon" showLabel />
-                  </div>
-                  <div className="min-w-0 overflow-hidden">
-                    <TextToSpeech 
-                      text={displayContent || post.content || ''} 
-                      compact
-                    />
-                  </div>
-                </div>
-                <div className="flex-shrink-0 ml-auto hidden xs:block">
-                  <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-2 !py-1 !text-[11px] !gap-1" />
-                </div>
+              {/* Row 2: TTS only (full width) */}
+              <div className="w-full">
+                <TextToSpeech 
+                  text={displayContent || post.content || ''} 
+                  compact
+                />
               </div>
             </div>
           </div>
           
           <div className="prose prose-lg prose-gray dark:prose-invert max-w-none">
             <div 
-              className="text-gray-800 dark:text-white/95 leading-relaxed transition-all duration-200"
+              className="blog-body-text text-gray-800 dark:text-white/95 leading-relaxed transition-all duration-200"
               style={{ fontSize: `${fontSize}%` }}
             >
               {/* Apply Drop Cap effect to first paragraph / Drop Cap Effekt auf ersten Absatz anwenden / Aplică efectul Drop Cap la primul paragraf */}
@@ -934,7 +1118,7 @@ export default function BlogPostPage() {
                 if (index === 0 && paragraph.trim()) {
                   return (
                     <p key={index} className="blog-drop-cap mb-6 text-justify">
-                      {paragraph}
+                      {highlightBibleReferences(paragraph)}
                     </p>
                   );
                 }
@@ -942,7 +1126,7 @@ export default function BlogPostPage() {
                 if (index === 1 && paragraph.trim()) {
                   return (
                     <p key={index} className="mb-4 text-justify paragraph-indent">
-                      {paragraph}
+                      {highlightBibleReferences(paragraph)}
                     </p>
                   );
                 }
@@ -950,7 +1134,7 @@ export default function BlogPostPage() {
                 if (paragraph.trim()) {
                   return (
                     <p key={index} className="mb-4 text-justify">
-                      {paragraph}
+                      {highlightBibleReferences(paragraph)}
                     </p>
                   );
                 }

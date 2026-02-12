@@ -163,8 +163,8 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-40 bg-gray-200 dark:bg-white/10 rounded-xl mb-3"></div>
-              <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-3/4 mb-2"></div>
+              <div className="h-20 bg-gray-200 dark:bg-white/10 rounded-xl mb-2"></div>
+              <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-3/4 mb-1.5"></div>
               <div className="h-3 bg-gray-200 dark:bg-white/10 rounded w-1/2"></div>
             </div>
           ))}
@@ -184,7 +184,7 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
       </h2>
       
       {/* Horizontal card layout - smaller and more compact */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-[260px] sm:max-w-none mx-auto">
         {posts.map((post, index) => (
           <Link
             key={post.id}
@@ -194,7 +194,7 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
           >
             {/* Image - smaller and horizontal on mobile */}
             {post.image_url && (
-              <div className="relative w-24 h-24 sm:w-full sm:h-28 flex-shrink-0 overflow-hidden">
+              <div className="relative w-24 h-24 sm:w-full sm:h-20 flex-shrink-0 overflow-hidden">
                 <Image
                   src={post.image_url}
                   alt={getTitle(post)}
@@ -205,13 +205,13 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
               </div>
             )}
             
-            {/* Content - compact */}
-            <div className="p-3 flex-1 min-w-0">
-              <h3 className="font-medium text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-1.5 leading-snug">
+            {/* Content - title at top, date+readmore at bottom, aligned with image */}
+            <div className="p-1.5 pt-1 sm:p-2.5 flex-1 min-w-0 flex flex-col justify-start sm:justify-between self-stretch">
+              <h3 className="font-medium text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug mb-0.5 sm:mb-1">
                 {getTitle(post)}
               </h3>
               
-              <div className="flex items-center justify-between text-sm text-gray-600 dark:text-white/60 font-medium">
+              <div className="mt-auto flex items-center justify-between text-xs text-gray-600 dark:text-white/60 font-medium">
                 <time>
                   {new Date(post.created_at).toLocaleDateString(
                     language === 'de' ? 'de-DE' : language === 'ro' ? 'ro-RO' : language === 'ru' ? 'ru-RU' : 'en-US',
