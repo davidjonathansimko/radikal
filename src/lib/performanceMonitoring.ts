@@ -469,7 +469,8 @@ export function usePerformanceTracker(componentName: string): void {
   const mountTime = useRef(performance.now());
 
   useEffect(() => {
-    const loadTime = performance.now() - mountTime.current;
+    const currentMountTime = mountTime.current;
+    const loadTime = performance.now() - currentMountTime;
 
     trackMetric({
       name: `${componentName}_Mount`,
@@ -480,7 +481,7 @@ export function usePerformanceTracker(componentName: string): void {
     });
 
     return () => {
-      const unmountTime = performance.now() - mountTime.current;
+      const unmountTime = performance.now() - currentMountTime;
       trackMetric({
         name: `${componentName}_Lifetime`,
         value: unmountTime,

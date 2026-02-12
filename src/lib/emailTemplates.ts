@@ -509,7 +509,7 @@ ${contact.message}
   });
 }
 
-export default {
+const emailTemplates = {
   getEmailWrapper,
   getEmailButton,
   getWelcomeEmail,
@@ -520,3 +520,5 @@ export default {
   getNewPostEmail,
   getAdminContactEmail,
 };
+
+export default emailTemplates;

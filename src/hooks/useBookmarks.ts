@@ -69,6 +69,7 @@ export function useBookmarks(): UseBookmarksReturn {
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch bookmarks / Lesezeichen abrufen
@@ -159,6 +160,7 @@ export function useBookmarks(): UseBookmarksReturn {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // Fetch on user change / Bei Benutzeränderung abrufen

@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { getSupabaseClient } from '@/lib/supabase';
 
 const supabase = getSupabaseClient();
@@ -64,11 +65,7 @@ export default function BookmarkButton({
   const [showCollections, setShowCollections] = useState(false);
 
   // Check if content is bookmarked
-  useEffect(() => {
-    checkBookmarkStatus();
-  }, [contentId]);
-
-  const checkBookmarkStatus = async () => {
+  const checkBookmarkStatus = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsLoading(false);
@@ -84,7 +81,11 @@ export default function BookmarkButton({
 
     setIsBookmarked(!!data);
     setIsLoading(false);
-  };
+  }, [contentId]);
+
+  useEffect(() => {
+    checkBookmarkStatus();
+  }, [checkBookmarkStatus]);
 
   const toggleBookmark = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -180,11 +181,7 @@ export function BookmarksList({ userId, collectionId }: BookmarksListProps) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadBookmarks();
-  }, [userId, collectionId]);
-
-  const loadBookmarks = async () => {
+  const loadBookmarks = useCallback(async () => {
     setIsLoading(true);
 
     let query = supabase
@@ -207,7 +204,11 @@ export function BookmarksList({ userId, collectionId }: BookmarksListProps) {
     }
 
     setIsLoading(false);
-  };
+  }, [userId, collectionId]);
+
+  useEffect(() => {
+    loadBookmarks();
+  }, [loadBookmarks]);
 
   const removeBookmark = async (bookmarkId: string) => {
     await supabase.from('bookmarks').delete().eq('id', bookmarkId);
@@ -251,9 +252,11 @@ export function BookmarksList({ userId, collectionId }: BookmarksListProps) {
         >
           {bookmark.image_url && (
             <a href={`/blog/${bookmark.slug}`} className="flex-shrink-0">
-              <img
+              <Image
                 src={bookmark.image_url}
                 alt=""
+                width={80}
+                height={80}
                 className="w-20 h-20 object-cover rounded-lg"
               />
             </a>
