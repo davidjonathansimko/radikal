@@ -55,11 +55,11 @@ const translations = {
     cookiesAnalytics: 'Analyse-Cookies',
     cookiesAnalyticsText: 'Mit Ihrer Einwilligung verwenden wir Analyse-Cookies, um zu verstehen, wie Besucher unsere Website nutzen.',
     cookiesSettings: 'Cookie-Einstellungen ändern',
-    cookiesSettingsText: 'Sie können Ihre Cookie-Einstellungen jederzeit ändern, indem Sie auf den Link "Cookie-Einstellungen" im Footer klicken.',
+    cookiesSettingsText: 'Sie können Ihre Cookie-Einstellungen jederzeit über die Browser-Einstellungen verwalten. Die meisten Browser bieten die Möglichkeit, Cookies zu blockieren oder zu löschen.',
     
     // 6. Hosting
     hostingTitle: '6. Hosting',
-    hostingText: 'Unsere Website wird bei Vercel Inc. gehostet. Vercel kann technische Daten wie IP-Adressen und Zugriffszeiten erfassen, die für den Betrieb der Website erforderlich sind.',
+    hostingText: 'Unsere Website wird bei Vercel Inc. gehostet. Die Domain www.radikal.blog wird über checkdomain.de verwaltet. Vercel und checkdomain können technische Daten wie IP-Adressen und Zugriffszeiten erfassen, die für den Betrieb der Website erforderlich sind.',
     
     // 7. Database
     databaseTitle: '7. Datenbank (Supabase)',
@@ -87,7 +87,7 @@ const translations = {
     
     // 11. Newsletter
     newsletterTitle: '11. Newsletter',
-    newsletterText: 'Wenn Sie unseren Newsletter abonnieren, speichern wir Ihre E-Mail-Adresse. Sie können den Newsletter jederzeit über den Abmeldelink in jeder E-Mail abbestellen.',
+    newsletterText: 'Wenn Sie unseren Newsletter abonnieren, speichern wir Ihre E-Mail-Adresse. Sie können den Newsletter jederzeit über den Abmeldelink in jeder E-Mail oder direkt in der Anwendung auf der Blogseite unter „Newsletter-Einstellungen" abbestellen.',
     
     // Footer links
     impressum: 'Impressum',
@@ -134,10 +134,10 @@ const translations = {
     cookiesAnalytics: 'Analytics Cookies',
     cookiesAnalyticsText: 'With your consent, we use analytics cookies to understand how visitors use our website.',
     cookiesSettings: 'Change Cookie Settings',
-    cookiesSettingsText: 'You can change your cookie settings at any time by clicking on the "Cookie Settings" link in the footer.',
+    cookiesSettingsText: 'You can manage your cookie settings at any time through your browser settings. Most browsers offer the option to block or delete cookies.',
     
     hostingTitle: '6. Hosting',
-    hostingText: 'Our website is hosted by Vercel Inc. Vercel may collect technical data such as IP addresses and access times necessary for the operation of the website.',
+    hostingText: 'Our website is hosted by Vercel Inc. The domain www.radikal.blog is managed through checkdomain.de. Vercel and checkdomain may collect technical data such as IP addresses and access times necessary for the operation of the website.',
     
     databaseTitle: '7. Database (Supabase)',
     databaseText: 'We use Supabase for data storage. Supabase stores your data securely in the EU (Germany/Frankfurt).',
@@ -160,7 +160,7 @@ const translations = {
     commentsText: 'When you leave comments on our blog, we store the data you enter as well as your IP address and the time of creation. This is for security and the ability to track illegal comments.',
     
     newsletterTitle: '11. Newsletter',
-    newsletterText: 'When you subscribe to our newsletter, we store your email address. You can unsubscribe from the newsletter at any time via the unsubscribe link in each email.',
+    newsletterText: 'When you subscribe to our newsletter, we store your email address. You can unsubscribe from the newsletter at any time via the unsubscribe link in each email or directly in the application on the blogs page under "Newsletter Settings".',
     
     impressum: 'Legal Notice',
     contact: 'Contact',
@@ -206,10 +206,10 @@ const translations = {
     cookiesAnalytics: 'Cookie-uri de Analiză',
     cookiesAnalyticsText: 'Cu consimțământul dvs., folosim cookie-uri de analiză pentru a înțelege cum vizitatorii folosesc site-ul nostru.',
     cookiesSettings: 'Modificați Setările Cookie',
-    cookiesSettingsText: 'Puteți modifica setările cookie în orice moment făcând clic pe link-ul "Setări Cookie" din footer.',
+    cookiesSettingsText: 'Puteți gestiona setările cookie în orice moment prin setările browserului dumneavoastră. Majoritatea browserelor oferă opțiunea de a bloca sau șterge cookie-urile.',
     
     hostingTitle: '6. Găzduire',
-    hostingText: 'Site-ul nostru este găzduit de Vercel Inc. Vercel poate colecta date tehnice precum adrese IP și ore de acces necesare pentru funcționarea site-ului.',
+    hostingText: 'Site-ul nostru este găzduit de Vercel Inc. Domeniul www.radikal.blog este administrat prin checkdomain.de. Vercel și checkdomain pot colecta date tehnice precum adrese IP și ore de acces necesare pentru funcționarea site-ului.',
     
     databaseTitle: '7. Baza de Date (Supabase)',
     databaseText: 'Folosim Supabase pentru stocarea datelor. Supabase stochează datele dvs. în siguranță în UE (Germania/Frankfurt).',
@@ -232,7 +232,7 @@ const translations = {
     commentsText: 'Când lăsați comentarii pe blogul nostru, stocăm datele pe care le introduceți, precum și adresa dvs. IP și ora creării. Acest lucru este pentru securitate și capacitatea de a urmări comentariile ilegale.',
     
     newsletterTitle: '11. Newsletter',
-    newsletterText: 'Când vă abonați la newsletter-ul nostru, stocăm adresa dvs. de email. Vă puteți dezabona de la newsletter în orice moment prin link-ul de dezabonare din fiecare email.',
+    newsletterText: 'Când vă abonați la newsletter-ul nostru, stocăm adresa dvs. de email. Vă puteți dezabona de la newsletter în orice moment prin link-ul de dezabonare din fiecare email sau direct din aplicație pe pagina de bloguri sub „Setări Newsletter".',
     
     impressum: 'Imprimat Legal',
     contact: 'Contact',
@@ -278,10 +278,10 @@ const translations = {
     cookiesAnalytics: 'Аналитические Cookies',
     cookiesAnalyticsText: 'С вашего согласия мы используем аналитические cookies, чтобы понять, как посетители используют наш веб-сайт.',
     cookiesSettings: 'Изменить настройки Cookies',
-    cookiesSettingsText: 'Вы можете изменить настройки cookies в любое время, нажав на ссылку "Настройки Cookies" в подвале.',
+    cookiesSettingsText: 'Вы можете управлять настройками cookies в любое время через настройки вашего браузера. Большинство браузеров предлагают возможность блокировать или удалять cookies.',
     
     hostingTitle: '6. Хостинг',
-    hostingText: 'Наш веб-сайт размещён на Vercel Inc. Vercel может собирать технические данные, такие как IP-адреса и время доступа, необходимые для работы веб-сайта.',
+    hostingText: 'Наш веб-сайт размещён на Vercel Inc. Домен www.radikal.blog управляется через checkdomain.de. Vercel и checkdomain могут собирать технические данные, такие как IP-адреса и время доступа, необходимые для работы веб-сайта.',
     
     databaseTitle: '7. База данных (Supabase)',
     databaseText: 'Мы используем Supabase для хранения данных. Supabase хранит ваши данные безопасно в ЕС (Германия/Франкфурт).',
@@ -304,7 +304,7 @@ const translations = {
     commentsText: 'Когда вы оставляете комментарии в нашем блоге, мы сохраняем введённые вами данные, а также ваш IP-адрес и время создания. Это делается для безопасности и возможности отслеживания незаконных комментариев.',
     
     newsletterTitle: '11. Рассылка',
-    newsletterText: 'Когда вы подписываетесь на нашу рассылку, мы сохраняем ваш адрес электронной почты. Вы можете отписаться от рассылки в любое время через ссылку отписки в каждом письме.',
+    newsletterText: 'Когда вы подписываетесь на нашу рассылку, мы сохраняем ваш адрес электронной почты. Вы можете отписаться от рассылки в любое время через ссылку отписки в каждом письме или непосредственно в приложении на странице блогов в разделе «Настройки рассылки».',
     
     impressum: 'Юридическая информация',
     contact: 'Контакт',

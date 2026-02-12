@@ -282,8 +282,8 @@ export default function BlogBrowse() {
               onClick={() => { setMode('alpha'); setSelectedYear(null); setSelectedMonth(null); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'alpha'
-                  ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
-                  : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20'
+                  ? 'bg-gray-400 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                  : 'bg-white dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/20'
               }`}
             >
               <FaSortAlphaDown className="w-3.5 h-3.5" />
@@ -293,8 +293,8 @@ export default function BlogBrowse() {
               onClick={() => { setMode('date'); setSelectedLetter(null); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'date'
-                  ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
-                  : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/20'
+                  ? 'bg-gray-400 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                  : 'bg-white dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/20'
               }`}
             >
               <FaCalendarAlt className="w-3.5 h-3.5" />
@@ -303,7 +303,7 @@ export default function BlogBrowse() {
             
             <button
               onClick={handleToggle}
-              className="ml-auto p-1.5 rounded-lg bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 text-gray-500 dark:text-white/50 transition-colors"
+              className="flex items-center justify-center ml-auto p-1.5 rounded-lg bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 text-gray-500 dark:text-white/50 transition-colors"
               title={t.close}
             >
               <FaTimes className="w-3 h-3" />
@@ -332,7 +332,7 @@ export default function BlogBrowse() {
                           disabled={!hasBlogs}
                           className={`w-8 h-8 xs:w-9 xs:h-9 flex items-center justify-center rounded-lg text-sm font-semibold transition-all duration-200 ${
                             isSelected
-                              ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md scale-110'
+                              ? 'bg-gray-400 dark:bg-white text-white dark:text-gray-900 shadow-md scale-110'
                               : hasBlogs
                                 ? 'bg-white dark:bg-white/10 text-gray-800 dark:text-white/80 hover:bg-gray-200 dark:hover:bg-white/20 hover:scale-105 border border-gray-200 dark:border-white/10'
                                 : 'bg-gray-50 dark:bg-white/5 text-gray-300 dark:text-white/20 cursor-not-allowed border border-transparent'
@@ -397,7 +397,7 @@ export default function BlogBrowse() {
                           onClick={() => handleYearClick(year)}
                           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                             isSelected
-                              ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                              ? 'bg-gray-400 dark:bg-white text-white dark:text-gray-900 shadow-md'
                               : 'bg-white dark:bg-white/10 text-gray-800 dark:text-white/80 hover:bg-gray-200 dark:hover:bg-white/20 border border-gray-200 dark:border-white/10'
                           }`}
                         >
@@ -421,7 +421,7 @@ export default function BlogBrowse() {
                                 onClick={() => handleMonthClick(month)}
                                 className={`px-3 py-1.5 rounded-lg text-xs xs:text-sm font-medium transition-all duration-200 ${
                                   isSelected
-                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                                    ? 'bg-gray-400 dark:bg-white text-white dark:text-gray-900 shadow-md'
                                     : 'bg-white dark:bg-white/10 text-gray-700 dark:text-white/70 hover:bg-gray-200 dark:hover:bg-white/20 border border-gray-200 dark:border-white/10'
                                 }`}
                               >

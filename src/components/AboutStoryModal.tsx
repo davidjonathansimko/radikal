@@ -25,7 +25,7 @@ const storyContent = {
   introSubtitle: { de: 'Die Essenz der Wurzel', en: 'The Essence of the Root', ro: 'Esența Rădăcinii', ru: 'Сущность Корня' },
   skipInfoMobile: { de: 'Zum Überspringen tippen Sie auf ÜBERSPRINGEN', en: 'Tap SKIP to skip', ro: 'Atingeți SARI PESTE pentru a sări', ru: 'Нажмите ПРОПУСТИТЬ для пропуска' },
   skipInfoDesktop: { de: 'Zum Überspringen drücken Sie ESC oder klicken Sie auf ÜBERSPRINGEN', en: 'Press ESC or click SKIP to skip', ro: 'Apăsați ESC sau click pe SARI PESTE pentru a sări', ru: 'Нажмите ESC или кликните ПРОПУСТИТЬ для пропуска' },
-  readingTime: { de: 'Geschätzte Lesezeit: 8-10 Minuten', en: 'Estimated reading time: 8-10 minutes', ro: 'Timp estimat de citire: 8-10 minute', ru: 'Примерное время чтения: 8-10 минут' },
+  readingTime: { de: 'Geschätzte Lesezeit: 15-20 Minuten', en: 'Estimated reading time: 15-20 minutes', ro: 'Timp estimat de citire: 15-20 minute', ru: 'Примерное время чтения: 15-20 минут' },
   skipButton: { de: 'ÜBERSPRINGEN', en: 'SKIP', ro: 'SARI PESTE', ru: 'ПРОПУСТИТЬ' },
   startingIn: { de: 'Beginnt in', en: 'Starting in', ro: 'Începe în', ru: 'Начало через' },
   tutorial: {
@@ -44,6 +44,10 @@ const storyContent = {
     pressAnyKey: { de: 'BELIEBIGE TASTE DRÜCKEN', en: 'PRESS ANY KEY', ro: 'APASĂ ORICE TASTĂ', ru: 'НАЖМИТЕ ЛЮБУЮ КЛАВИШУ' }
   },
   paused: { de: 'PAUSIERT', en: 'PAUSED', ro: 'PAUZĂ', ru: 'ПАУЗА' },
+  muteSound: { de: 'MUTE SOUND', en: 'MUTE SOUND', ro: 'MUTE SOUND', ru: 'MUTE SOUND' },
+  soundOn: { de: 'SOUND', en: 'SOUND', ro: 'SOUND', ru: 'SOUND' },
+  headphones: { de: 'FÜR DAS BESTE ERLEBNIS KOPFHÖRER BENUTZEN', en: 'USE HEADPHONES FOR THE BEST EXPERIENCE', ro: 'FOLOSIȚI CĂȘTILE PENTRU CEA MAI BUNĂ EXPERIENȚĂ', ru: 'ИСПОЛЬЗУЙТЕ НАУШНИКИ ДЛЯ ЛУЧШЕГО ВПЕЧАТЛЕНИЯ' },
+  headphonesMuteHint: { de: 'Oben links kannst du den Sound ein- oder ausschalten', en: 'You can mute or unmute the sound in the top left corner', ro: 'Poți opri sau porni sunetul din butonul din stânga sus', ru: 'Вы можете включить или выключить звук кнопкой слева вверху' },
   theEnd: { de: 'ENDE', en: 'THE END', ro: 'SFÂRȘIT', ru: 'КОНЕЦ' },
   experienceAgain: { de: 'ERNEUT ERLEBEN', en: 'EXPERIENCE AGAIN', ro: 'RETRĂIEȘTE', ru: 'ПЕРЕЖИТЬ СНОВА' },
   share: { de: 'TEILEN', en: 'SHARE', ro: 'DISTRIBUIE', ru: 'ПОДЕЛИТЬСЯ' },
@@ -78,6 +82,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
   const [showEndScreen, setShowEndScreen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -87,8 +92,115 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const phraseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   const phrases = getStoryPhrases(lang);
+
+  // 🎵 Smart text splitting: split long phrases that would overflow the viewport
+  // Intelligente Textaufteilung: lange Phrasen aufteilen, die den Viewport überlaufen würden
+  // Împărțire inteligentă a textului: împarte frazele lungi care ar depăși viewport-ul
+  const splitPhrases = React.useMemo(() => {
+    // Max characters per screen based on viewport (mobile gets less)
+    // Approximate: each word ~6 chars, mobile fits ~25-30 words, desktop ~50 words
+    const maxMainChars = isMobile ? 160 : 280;
+    const maxSubChars = isMobile ? 100 : 180;
+    
+    const result: { main: string; sub: string | null }[] = [];
+    
+    for (const phrase of phrases) {
+      const mainLen = phrase.main.length;
+      const subLen = phrase.sub?.length || 0;
+      const totalLen = mainLen + subLen;
+      
+      // If phrase fits comfortably, keep as-is
+      if (totalLen <= maxMainChars + maxSubChars && mainLen <= maxMainChars * 1.3) {
+        result.push(phrase);
+        continue;
+      }
+      
+      // Split long main text at sentence boundaries
+      if (mainLen > maxMainChars) {
+        const sentences = phrase.main.match(/[^.!?;:]+[.!?;:]+\s*/g) || [phrase.main];
+        
+        let currentChunk = '';
+        let isFirstChunk = true;
+        
+        for (let i = 0; i < sentences.length; i++) {
+          const sentence = sentences[i].trim();
+          
+          if (currentChunk.length + sentence.length + 1 > maxMainChars && currentChunk.length > 0) {
+            // Push current chunk
+            result.push({ main: currentChunk.trim(), sub: null });
+            currentChunk = sentence;
+            isFirstChunk = false;
+          } else {
+            currentChunk = currentChunk ? currentChunk + ' ' + sentence : sentence;
+          }
+        }
+        
+        // Push remaining text with sub if it's the last chunk
+        if (currentChunk.trim()) {
+          result.push({ main: currentChunk.trim(), sub: phrase.sub });
+        }
+      } else {
+        // Main fits but sub is too long — split sub into separate screens
+        result.push({ main: phrase.main, sub: null });
+        if (phrase.sub) {
+          result.push({ main: phrase.sub, sub: null });
+        }
+      }
+    }
+    
+    return result;
+  }, [phrases, isMobile]);
+
+  // 🎵 Background music - starts when story begins, stops on end/skip
+  // Hintergrundmusik - startet wenn Geschichte beginnt, stoppt bei Ende/Überspringen
+  // Muzica de fundal - începe când povestea începe, se oprește la final/omitere
+  useEffect(() => {
+    if (currentScreen === 'story' && !bgMusicRef.current) {
+      const audio = new Audio('/fundal.mp3');
+      audio.loop = true;
+      audio.volume = 0.3;
+      bgMusicRef.current = audio;
+      audio.play().catch(err => console.log('[BGMusic] Autoplay blocked:', err));
+    }
+    
+    // Music continues during pause (user reads while listening)
+    // Only stop on end screen
+    if (bgMusicRef.current) {
+      if (showEndScreen) {
+        bgMusicRef.current.pause();
+      } else if (currentScreen === 'story') {
+        bgMusicRef.current.play().catch(() => {});
+      }
+    }
+    
+    // Stop music on end screen or leaving story
+    if (currentScreen !== 'story' && currentScreen !== 'intro' && currentScreen !== 'tutorial') {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+        bgMusicRef.current.currentTime = 0;
+      }
+    }
+  }, [currentScreen, isPaused, showEndScreen]);
+
+  // Sync mute state with audio
+  useEffect(() => {
+    if (bgMusicRef.current) {
+      bgMusicRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  // Cleanup music on unmount
+  useEffect(() => {
+    return () => {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+        bgMusicRef.current = null;
+      }
+    };
+  }, []);
 
   // Text color based on theme
   const textColor = isDark ? 'text-white' : 'text-gray-900';
@@ -100,11 +212,13 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
   const tutorialSteps = isMobile ? [
     { icon: 'tap', title: storyContent.tutorial.tap[lang], desc: storyContent.tutorial.tapDesc[lang] },
     { icon: 'swipe', title: storyContent.tutorial.swipe[lang], desc: storyContent.tutorial.swipeDesc[lang] },
+    { icon: 'headphones', title: '🎧', desc: storyContent.headphones[lang], descExtra: storyContent.headphonesMuteHint[lang] },
     { icon: 'start', title: storyContent.tutorial.start[lang], desc: storyContent.tutorial.tapToContinue[lang] }
   ] : [
     { icon: 'space', title: storyContent.tutorial.space[lang], desc: storyContent.tutorial.spaceDesc[lang] },
     { icon: 'arrows', title: storyContent.tutorial.arrows[lang], desc: storyContent.tutorial.arrowsDesc[lang] },
     { icon: 'fullscreen', title: storyContent.tutorial.fullscreen[lang], desc: storyContent.tutorial.fullscreenDesc[lang] },
+    { icon: 'headphones', title: '🎧', desc: storyContent.headphones[lang], descExtra: storyContent.headphonesMuteHint[lang] },
     { icon: 'start', title: storyContent.tutorial.start[lang], desc: storyContent.tutorial.pressAnyKey[lang] }
   ];
 
@@ -114,8 +228,10 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
   useEffect(() => {
     const footer = document.querySelector('footer');
     const nav = document.querySelector('nav');
+    const mobileNavs = document.querySelectorAll('[data-mobile-nav]');
     if (footer) (footer as HTMLElement).style.display = 'none';
     if (nav) (nav as HTMLElement).style.display = 'none';
+    mobileNavs.forEach(el => (el as HTMLElement).style.display = 'none');
     
     // Completely lock the body scroll
     document.body.style.overflow = 'hidden';
@@ -127,6 +243,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
     return () => {
       if (footer) (footer as HTMLElement).style.display = '';
       if (nav) (nav as HTMLElement).style.display = '';
+      mobileNavs.forEach(el => (el as HTMLElement).style.display = '');
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
@@ -181,14 +298,14 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
   const skipToNext = useCallback(() => {
     setCurrentPhrase(prev => {
       const next = prev + 1;
-      if (next >= phrases.length) {
+      if (next >= splitPhrases.length) {
         setShowEndScreen(true);
         setIsPaused(true);
         return prev;
       }
       return next;
     });
-  }, [phrases.length]);
+  }, [splitPhrases.length]);
 
   // Skip to previous phrase
   const skipToPrevious = useCallback(() => {
@@ -439,7 +556,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
     const onComplete = () => {
       setCurrentPhrase(prev => {
         const next = prev + 1;
-        if (next >= phrases.length) {
+        if (next >= splitPhrases.length) {
           setShowEndScreen(true);
           setIsPaused(true);
           return prev;
@@ -459,7 +576,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
         const elapsed = timelineRef.current.time();
         const dur = timelineRef.current.duration();
         const phraseProgress = dur > 0 ? elapsed / dur : 0;
-        const overallProgress = ((currentPhrase + phraseProgress) / phrases.length) * 100;
+        const overallProgress = ((currentPhrase + phraseProgress) / splitPhrases.length) * 100;
         setProgress(Math.min(overallProgress, 100));
       }
     }, 200);
@@ -474,7 +591,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
         progressTimerRef.current = null;
       }
     };
-  }, [currentScreen, isLoading, currentPhrase, showEndScreen, phrases.length, prefersReducedMotion]);
+  }, [currentScreen, isLoading, currentPhrase, showEndScreen, splitPhrases.length, prefersReducedMotion]);
 
   // Pause/resume GSAP timeline
   useEffect(() => {
@@ -662,6 +779,13 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
                 <span className={`${isDark ? 'text-white/60' : 'text-gray-600'} text-xl`}>F</span>
               </div>
             )}
+            {step.icon === 'headphones' && (
+              <div className={`w-20 h-20 mx-auto flex items-center justify-center`}>
+                <svg className={`w-16 h-16 ${isDark ? 'text-white/60' : 'text-gray-600'} animate-pulse`} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 1c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z"/>
+                </svg>
+              </div>
+            )}
             {step.icon === 'start' && (
               <div className={`w-20 h-20 mx-auto border-2 ${isDark ? 'border-white' : 'border-gray-800'} rounded-full flex items-center justify-center animate-pulse`}>
                 <svg className={`w-8 h-8 ${isDark ? 'text-white' : 'text-gray-800'} ml-1`} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -672,6 +796,12 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
           {/* Text */}
           <h2 className={`${textColor} text-3xl md:text-4xl tracking-[0.2em] mb-4 uppercase`}>{step.title}</h2>
           <p className={`${textColorMuted} text-lg tracking-wider`}>{step.desc}</p>
+          {step.descExtra && (
+            <p className={`${textColorSubtle} text-sm md:text-base tracking-wider mt-3 flex items-center justify-center gap-2`}>
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+              <span>{step.descExtra}</span>
+            </p>
+          )}
           
           {/* Tap to continue */}
           <p className={`${textColorSubtle} text-sm tracking-[0.2em] mt-16 animate-pulse`}>
@@ -751,9 +881,22 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
         </button>
       )}
 
+      {/* Mute/Sound button - top left, below fullscreen (desktop) or top left (mobile) */}
+      <button 
+        onClick={() => setIsMuted(!isMuted)}
+        className={`fixed ${isMobile ? 'top-4 left-4' : 'top-14 left-4 md:top-16 md:left-6'} z-[120] flex items-center gap-1.5 ${isDark ? 'text-white/40 hover:text-white' : 'text-gray-400 hover:text-gray-800'} transition-colors duration-200 text-xs tracking-[0.15em] uppercase`}
+      >
+        {isMuted ? (
+          <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M9,11l12-7v24L9,21H3v-4H1v-2h2v-4H9z M30.707,13.707l-1.414-1.414L26.5,15.086l-2.793-2.793l-1.414,1.414l2.793,2.793l-2.793,2.793l1.414,1.414l2.793-2.793l2.793,2.793l1.414-1.414L27.914,16.5L30.707,13.707z"/></svg>
+        ) : (
+          <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M9,11l12-7v24L9,21H3v-4H1v-2h2v-4H9z"/><path d="M24.5,21.4c1.7-1.4,2.8-3.5,2.8-5.9s-1.1-4.5-2.8-5.9l-1.3,1.5c1.3,1.1,2.1,2.7,2.1,4.4s-0.8,3.3-2.1,4.4L24.5,21.4z"/><path d="M28,24.7c2.6-2.1,4.3-5.3,4.3-9.2S30.6,9.4,28,7.3l-1.3,1.5c2.2,1.8,3.6,4.5,3.6,7.7s-1.4,5.9-3.6,7.7L28,24.7z"/></svg>
+        )}
+        <span className="hidden sm:inline">{isMuted ? storyContent.muteSound[lang] : storyContent.soundOn[lang]}</span>
+      </button>
+
       {/* Scene indicator */}
       <div className={`fixed bottom-4 md:bottom-3 left-1/2 -translate-x-1/2 z-[110] ${isDark ? 'text-white/40' : 'text-gray-400'} text-[10px] md:text-xs tracking-[0.3em] font-light`}>
-        {currentPhrase + 1} / {phrases.length}
+        {currentPhrase + 1} / {splitPhrases.length}
       </div>
 
       {/* Progress bar */}
@@ -832,17 +975,19 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
       )}
 
       {/* Current phrase - GSAP word-by-word animation (insurrection.photo style) */}
-      {phrases[currentPhrase] && (
+      {splitPhrases[currentPhrase] && (
         <div 
           ref={phraseRef}
           key={currentPhrase}
           className="absolute flex flex-col items-center justify-center z-30 px-4 sm:px-6 md:px-8 max-w-[95vw] md:max-w-4xl lg:max-w-5xl"
           style={{ 
             transform: `translate(${mousePos.x * 8}px, ${mousePos.y * 8}px)`,
+            maxHeight: '70vh',
+            overflow: 'hidden',
           }}
         >
           <p 
-            className={`${isDark ? 'text-white' : 'text-gray-900'} text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-[0.05em] md:tracking-[0.1em] text-center leading-relaxed`}
+            className={`${isDark ? 'text-white' : 'text-gray-900'} text-2xl sm:text-3xl md:text-4xl lg:text-5xl tracking-[0.05em] md:tracking-[0.1em] text-center leading-snug sm:leading-relaxed`}
             style={{ 
               fontWeight: 300, 
               textShadow: isDark 
@@ -850,7 +995,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
                 : '0 0 1px rgba(0,0,0,0.1)',
             }}
           >
-            {phrases[currentPhrase].main.split(' ').map((word, i) => (
+            {splitPhrases[currentPhrase].main.split(' ').map((word, i) => (
               <span 
                 key={i} 
                 className="word-main inline-block mr-[0.3em]"
@@ -860,16 +1005,16 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
               </span>
             ))}
           </p>
-          {phrases[currentPhrase].sub && (
+          {splitPhrases[currentPhrase].sub && (
             <p 
               ref={subRef}
-              className={`${isDark ? 'text-white/60' : 'text-gray-600'} text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.05em] text-center mt-3 md:mt-6 italic`}
+              className={`${isDark ? 'text-white/60' : 'text-gray-600'} text-lg sm:text-xl md:text-2xl lg:text-3xl tracking-[0.05em] text-center mt-3 md:mt-6 italic`}
               style={{ 
                 fontWeight: 300, 
                 textShadow: isDark ? '0 0 2px rgba(255,255,255,0.4)' : 'none',
               }}
             >
-              {phrases[currentPhrase].sub!.split(' ').map((word, i) => (
+              {splitPhrases[currentPhrase].sub!.split(' ').map((word, i) => (
                 <span 
                   key={i} 
                   className="word-sub inline-block mr-[0.3em]"

@@ -12,15 +12,18 @@ export interface User {
 // Blog post interface / Blog-Post-Schnittstelle
 export interface BlogPost {
   id: string;
-  title: string; // Post title / Post-Titel
+  title: string; // Post title (default/Romanian) / Post-Titel (Standard/Rumänisch)
+  title_de?: string; // German title / Deutscher Titel
   title_en?: string; // English title / Englischer Titel
   title_ro?: string; // Romanian title / Rumänischer Titel
   title_ru?: string; // Russian title / Russischer Titel
-  content: string; // Post content in German / Post-Inhalt auf Deutsch
+  content: string; // Post content (default/Romanian) / Post-Inhalt (Standard/Rumänisch)
+  content_de?: string; // Post content in German / Post-Inhalt auf Deutsch
   content_en?: string; // Post content in English / Post-Inhalt auf Englisch
   content_ro?: string; // Post content in Romanian / Post-Inhalt auf Rumänisch
   content_ru?: string; // Post content in Russian / Post-Inhalt auf Russisch
-  excerpt: string; // Short description / Kurze Beschreibung
+  excerpt: string; // Short description (default/Romanian) / Kurze Beschreibung (Standard/Rumänisch)
+  excerpt_de?: string; // German excerpt / Deutscher Auszug
   excerpt_en?: string; // English excerpt / Englischer Auszug
   excerpt_ro?: string; // Romanian excerpt / Rumänischer Auszug
   excerpt_ru?: string; // Russian excerpt / Russischer Auszug

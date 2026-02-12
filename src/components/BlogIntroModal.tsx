@@ -40,9 +40,11 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     // Hide footer and navigation
     const footer = document.querySelector('footer');
     const nav = document.querySelector('nav');
+    const mobileNavs = document.querySelectorAll('[data-mobile-nav]');
     
     if (footer) (footer as HTMLElement).style.display = 'none';
     if (nav) (nav as HTMLElement).style.display = 'none';
+    mobileNavs.forEach(el => (el as HTMLElement).style.display = 'none');
     
     // Add modal-open class for CSS fix
     document.body.classList.add('modal-open');
@@ -61,6 +63,7 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     return () => {
       if (footer) (footer as HTMLElement).style.display = '';
       if (nav) (nav as HTMLElement).style.display = '';
+      mobileNavs.forEach(el => (el as HTMLElement).style.display = '');
       document.body.classList.remove('modal-open');
       document.documentElement.classList.remove('modal-open');
       document.body.style.overflow = '';

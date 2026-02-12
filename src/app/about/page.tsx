@@ -26,12 +26,16 @@ export default function AboutPage() {
     setShowStoryModal(false);
   };
 
-  // Show loading while checking access / Ladeindikator anzeigen während Zugriff geprüft wird / Afișează încărcare în timp ce se verifică accesul
+  // Show loading while checking access — Pasul 121: skeleton dots
   if (isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-gray-300 dark:border-white/30 border-t-gray-900 dark:border-t-white/80 rounded-full mx-auto mb-4"></div>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
+          </div>
           <p className="text-gray-700 dark:text-white/60">
             {language === 'de' ? 'Wird geladen...' : 
              language === 'en' ? 'Loading...' : 
@@ -83,8 +87,8 @@ export default function AboutPage() {
           <section className="glass-effect rounded-2xl p-8 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-4 mb-6">
               <div className="text-black/90 dark:text-white/90">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-12 h-12" fill="none">
-                  <path fill="currentColor" d="M6.423 20h11.27q.604 0 1.013-.41q.41-.408.41-1.013v-.443H5v.443q0 .605.41 1.014q.408.409 1.013.409m5.638-12.365q-.934 0-1.57-.665q-.637-.664-.587-1.595q.05-1.05.71-1.865q.661-.814 1.444-1.51q.783.696 1.443 1.51t.71 1.846q.05.95-.583 1.615q-.634.664-1.567.664m-1.388 9.5h2.77V10.5h-2.77zm1.383-10.5q.5 0 .828-.348t.328-.85q0-.618-.372-1.112q-.373-.494-.782-.954q-.41.46-.782.954t-.372 1.112q0 .502.327.85q.326.348.825.348m7.79 10.5q.479 0 .817-.338t.337-.826t-.337-.826t-.817-.337t-.816.337t-.338.826t.338.826t.816.338M17.692 21H6.423q-1.01 0-1.716-.707T4 18.577v-1.443h5.673V9.5h4.77v7.635h3.638q-.185-.258-.287-.55t-.102-.623q0-.901.627-1.528t1.527-.626t1.527.626t.627 1.528q0 .834-.543 1.444q-.544.61-1.342.706v.465q0 1.01-.706 1.716T17.692 21m-7.019-3.866h2.77zm1.385-12.138" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 234.022 234.022" className="w-12 h-12" fill="currentColor">
+                  <path d="M175.952,35.375h-11.788H157.4V5.025C157.4,2.25,155.15,0,152.375,0H81.648c-2.776,0-5.026,2.25-5.026,5.025v30.35h-6.767 H58.07c-2.776,0-5.025,2.25-5.025,5.026c0,2.776,2.25,5.026,5.025,5.026h6.76v89.269c0,20.787,12.224,38.767,29.859,47.147 c-17.635,8.381-29.859,26.364-29.859,47.153c0,2.776,2.25,5.025,5.026,5.025h94.308c2.776,0,5.026-2.25,5.026-5.025 c0-20.789-12.224-38.772-29.859-47.153c17.635-8.38,29.859-26.361,29.859-47.147V45.426h6.762c2.776,0,5.025-2.25,5.025-5.026 C180.977,37.625,178.727,35.375,175.952,35.375z M86.674,10.051h60.676v25.325H86.674V10.051z M158.84,223.971H75.18 c2.492-20.87,20.301-37.103,41.83-37.103C138.54,186.868,156.348,203.101,158.84,223.971z M117.01,176.817 c-21.528,0-39.324-16.232-41.818-37.096h47.338c0.003,0,0.005,0.001,0.008,0.001c0.002,0,0.005-0.001,0.007-0.001h36.283 C156.334,160.585,138.538,176.817,117.01,176.817z M104.243,114.738c0.282-2.75,0.485-4.737,7.001-10.041 c4.56-3.713,7.238-9.267,8.789-14.045c4.853,6.385,10.671,17.263,9.737,26.535c-0.535,5.207-5.802,10.192-8.832,12.484h-10.111 C104.681,124.765,103.825,118.899,104.243,114.738z M159.138,129.67h-24.106c2.334-3.179,4.284-7.06,4.737-11.466 c1.835-18.221-13.7-38.533-20.489-41.873c-1.476-0.725-3.213-0.679-4.649,0.116c-1.438,0.795-2.398,2.248-2.568,3.882 c-0.342,3.265-2.292,12.606-7.165,16.572c-8.237,6.706-10.05,10.923-10.654,16.821c-0.385,3.825-0.177,9.889,3.376,15.948H74.882 V45.426h6.767h70.727h6.764V129.67z" />
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-black dark:text-white">
@@ -193,8 +197,8 @@ export default function AboutPage() {
               <div className="glass-effect rounded-xl p-6 hover:bg-white/15 dark:hover:bg-white/15 hover:bg-black/15 transition-all duration-300">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="text-black/90 dark:text-white/90">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-8 h-8" fill="none">
-                      <path fill="currentColor" d="M12 .099C5.373.099 0 5.426 0 12c0 6.571 5.373 11.9 12 11.9S24 18.573 24 12C24 5.428 18.627.1 12 .1Zm.139 7.34l5.377 2.66v.222h-.526v.504l6.36-1.619a11.53 11.53 0 0 1-.248 6.424l-6.112-1.22v.652h2.428v1.091h.393l-.002.248l-2.745 1.471l.67 4.219l-.203.111a11.7 11.7 0 0 1-5.506 1.367A11.7 11.7 0 0 1 6.72 22.3h-.01v-.003q-.098-.048-.195-.098l.685-4.31l-2.765-1.473l.001-.264h.413v-1.09h2.435v-.65L.961 15.675a11.5 11.5 0 0 1-.602-3.676c0-.987.125-1.947.36-2.863l6.564 1.676v-.51h-.578v-.203Zm-4.856 3.373v3.6l.33-.067v-3.451zm.33.082l2.668.68v-1.061H7.613Zm2.668.68v2.24l.328-.067v-2.09zm.328.083l.452.115l.039-.439h2.076l.04.453l.458-.115v-1.158h-3.065zm3.065.014l-.002 2.074l.33.067v-2.225l2.658-.678v-.396H14v1.074zm2.986-.762v3.434l.33.066v-3.584zm0 3.434l-2.658-.531v.935h2.658zm-2.988-.598l-.281-.055l.097 1.057h.184zm-3.063.002v1h.178l.096-1.055zm-2.996.598v.402h2.666v-.933zm-.904 7.95l.01.005l10.812-.098l-.343-2.219H7.078Zm5.428-14.704l-5.291 2.594h10.527Zm-.905 3.888l-.298 3.268h2.408l-.299-3.268zm-3.619 3.543v.069h9.235l-.004-.069zm-2.547.32v.81h2.217v-.81zm2.547 0v.81h3.01v-.81zm3.229 0v.81h2.605v-.81zm2.824 0v.81h3.18v-.81zm3.398 0v.81H19.2v-.81Zm-12.216 1.05l2.574 1.37h9.422l2.574-1.37z" />
+                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="currentColor">
+                      <path d="M71 22.406v102.53h202.25v18.69h-73.22v36.968h-18.686v-36.97H79.156l43.375 53.782h180.44v18.688H180.905v36.97H162.22v-36.97h-39.407v163.562h58.53v-44.75H157.47V316.22h74.155V282.56H193.72v-18.687h97.218v18.688h-40.625v33.656h73.28v18.686h-32.437v44.75h26.313v18.688h-63.69l-2.686 74.03-18.688-.687 2.656-73.343H93.032V398h-.22l-28.687 92.844h79.844l9.81-70.688 18.5 2.563-9.468 68.124H453.25L424.562 398h-30.03V197.78l51.812-64.25V22.407h-64.406v52.438h-39.22V22.406h-65.124v52.438h-38.53V22.406h-65.126v52.438h-38.5V22.406H71zm129.03 312.5v44.75h72.44v-44.75h-72.44z" />
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-black dark:text-white">

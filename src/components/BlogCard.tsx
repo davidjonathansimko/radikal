@@ -11,7 +11,8 @@ import Link from 'next/link';
 import { BlogPost } from '@/types';
 import { useLanguage } from '@/hooks/useLanguage';
 import { calculateReadingTime } from '@/utils/readingTime';
-import BookmarkButton from '@/components/BookmarkButton';
+// BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts
+// import BookmarkButton from '@/components/BookmarkButton';
 import PrefetchLink from '@/components/PrefetchLink';
 import { FaHeart, FaEye, FaClock, FaComment } from 'react-icons/fa';
 
@@ -20,19 +21,26 @@ interface BlogCardProps {
   variant?: 'default' | 'featured' | 'compact';
   showBookmark?: boolean;
   className?: string;
+  translatedTitle?: string; // Pre-translated title from DeepL / Vorübersetzter Titel von DeepL
+  translatedExcerpt?: string; // Pre-translated excerpt from DeepL / Vorübersetzter Auszug von DeepL
 }
 
 const BlogCard: React.FC<BlogCardProps> = ({ 
   post, 
   variant = 'default',
   showBookmark = true,
-  className = '' 
+  className = '',
+  translatedTitle,
+  translatedExcerpt,
 }) => {
   const { language } = useLanguage();
 
   // Get title based on language / Titel basierend auf Sprache abrufen
+  // Priority: translatedTitle prop (DeepL) > language-specific DB field > default title
   const getTitle = () => {
+    if (translatedTitle) return translatedTitle;
     switch (language) {
+      case 'de': return post.title_de || post.title;
       case 'en': return post.title_en || post.title;
       case 'ro': return post.title_ro || post.title;
       case 'ru': return post.title_ru || post.title;
@@ -41,8 +49,11 @@ const BlogCard: React.FC<BlogCardProps> = ({
   };
 
   // Get excerpt based on language / Auszug basierend auf Sprache abrufen
+  // Priority: translatedExcerpt prop (DeepL) > language-specific DB field > default excerpt
   const getExcerpt = () => {
+    if (translatedExcerpt) return translatedExcerpt;
     switch (language) {
+      case 'de': return post.excerpt_de || post.excerpt;
       case 'en': return post.excerpt_en || post.excerpt;
       case 'ro': return post.excerpt_ro || post.excerpt;
       case 'ru': return post.excerpt_ru || post.excerpt;
@@ -130,19 +141,19 @@ const BlogCard: React.FC<BlogCardProps> = ({
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             
             {/* Featured badge / Hervorgehobenes Badge */}
-            <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium">
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium force-white-text">
               Featured
             </div>
             
-            {/* Bookmark button / Lesezeichen-Button */}
-            {showBookmark && (
+            {/* Bookmark button commented out - replaced by Liked Posts */}
+            {/* {showBookmark && (
               <div className="absolute top-4 right-4">
                 <BookmarkButton postId={post.id} size="md" />
               </div>
-            )}
+            )} */}
             
             {/* Title overlay / Titel-Überlagerung */}
-            <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="absolute bottom-0 left-0 right-0 p-6 force-white-text">
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">
                 {getTitle()}
               </h2>
@@ -195,17 +206,17 @@ const BlogCard: React.FC<BlogCardProps> = ({
           )}
           
           {/* Reading time badge / Lesezeit-Badge */}
-          <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-1.5">
+          <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-1.5 force-white-text">
             <FaClock className="text-blue-400" />
             {readingTime.minutes} min
           </div>
           
-          {/* Bookmark button / Lesezeichen-Button */}
-          {showBookmark && (
+          {/* Bookmark button commented out - replaced by Liked Posts */}
+          {/* {showBookmark && (
             <div className="absolute top-4 right-4" onClick={(e) => e.preventDefault()}>
               <BookmarkButton postId={post.id} size="sm" />
             </div>
-          )}
+          )} */}
         </div>
         
         {/* Content / Inhalt */}

@@ -109,7 +109,7 @@ export default function PullToRefresh({
 
   return (
     <div ref={containerRef} className="relative min-h-screen">
-      {/* Pull indicator - shown when pulling */}
+      {/* Pull indicator - beautiful animated indicator / Schöner animierter Indikator / Indicator animat frumos */}
       <div 
         className="fixed left-0 right-0 flex justify-center items-center pointer-events-none z-50 transition-all duration-300"
         style={{ 
@@ -119,40 +119,55 @@ export default function PullToRefresh({
         }}
       >
         <div className={`
-          w-10 h-10 rounded-full bg-black/10 dark:bg-white/10 backdrop-blur-sm
-          flex items-center justify-center border border-black/20 dark:border-white/20
-          ${isRefreshing ? 'animate-spin' : ''}
+          w-12 h-12 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-xl shadow-xl
+          flex items-center justify-center border border-black/10 dark:border-white/20
+          transition-all duration-300
         `}>
           {isRefreshing ? (
-            // Loading spinner
-            <svg className="w-5 h-5 text-black dark:text-white" viewBox="0 0 24 24">
-              <circle 
-                className="opacity-25" 
-                cx="12" cy="12" r="10" 
-                stroke="currentColor" 
-                strokeWidth="3" 
-                fill="none"
-              />
-              <path 
-                className="opacity-75" 
-                fill="currentColor" 
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
+            // Animated refresh spinner with three dots / Animierter Aktualisierungs-Spinner mit drei Punkten
+            <div className="flex items-center justify-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pull-refresh-dot" style={{ animationDelay: '0ms' }} />
+              <div className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pull-refresh-dot" style={{ animationDelay: '150ms' }} />
+              <div className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
+            </div>
           ) : (
-            // Arrow icon that rotates based on progress
+            // Animated water drop icon that morphs based on progress / Animiertes Wassertropfen-Symbol
             <svg 
-              className="w-5 h-5 text-black dark:text-white transition-transform duration-200"
-              style={{ transform: `rotate(${progress >= 1 ? 180 : 0}deg)` }}
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
+              className="w-6 h-6 text-black dark:text-white transition-all duration-300"
+              style={{ 
+                transform: `rotate(${progress >= 1 ? 180 : 0}deg) scale(${0.7 + progress * 0.3})`,
+              }}
+              viewBox="0 0 24 24" 
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
+              {/* Circular progress ring / Kreisförmiger Fortschrittsring / Inel de progres circular */}
+              <circle
+                cx="12" cy="12" r="9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                fill="none"
+                opacity={0.15}
+              />
+              <circle
+                cx="12" cy="12" r="9"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                fill="none"
+                strokeDasharray={`${progress * 56.5} 56.5`}
+                className="transition-all duration-200"
+                style={{ transformOrigin: 'center', transform: 'rotate(-90deg)' }}
+              />
+              {/* Arrow / Pfeil / Săgeată */}
               <path 
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M19 14l-7 7m0 0l-7-7m7 7V3" 
+                strokeWidth={2.5} 
+                stroke="currentColor"
+                d="M12 7v6m0 0l-2.5-2.5M12 13l2.5-2.5"
+                opacity={progress >= 1 ? 1 : 0.6 + progress * 0.4}
               />
             </svg>
           )}

@@ -45,17 +45,17 @@ const translations = {
     
     // Liability links
     liabilityLinksTitle: 'Haftung für Links',
-    liabilityLinksText1: 'Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.',
-    liabilityLinksText2: 'Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar. Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.',
+    liabilityLinksText1: 'Derzeit enthält unser Angebot keine Links zu externen Websites Dritter. Sollten in Zukunft Links zu externen Seiten Dritter eingebunden werden, übernehmen wir keine Haftung für deren Inhalte, da wir auf diese keinen Einfluss haben.',
+    liabilityLinksText2: 'Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber verantwortlich. Sollten Links hinzugefügt werden, werden diese zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.',
     
     // Copyright
     copyrightTitle: 'Urheberrecht',
-    copyrightText1: 'Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.',
-    copyrightText2: 'Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet. Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.',
+    copyrightText1: 'Sämtliche Inhalte und Werke auf diesen Seiten wurden vom Betreiber persönlich erstellt und unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des Autors.',
+    copyrightText2: 'Downloads und Kopien dieser Seite sind nicht gestattet. Sollten in Zukunft Inhalte Dritter auf dieser Seite erscheinen, werden diese ausdrücklich als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.',
     
     // Bible quotes
     bibleTitle: 'Verwendete Bibelübersetzungen',
-    bibleText: 'Die auf dieser Website verwendeten Bibelzitate stammen aus verschiedenen Übersetzungen. Falls nicht anders angegeben, verwenden wir die Lutherbibel, Elberfelder oder andere gemeinfreie Übersetzungen.',
+    bibleText: 'Die auf dieser Website verwendeten Bibelzitate stammen aus verschiedenen Übersetzungen. Falls nicht anders angegeben, verwenden wir die Lutherbibel, Elberfelder (Deutsch), King James Version (Englisch), Dumitru Cornilescu (Rumänisch) und Synodal Translation (Russisch) sowie andere gemeinfreie Übersetzungen.',
     
     // Footer links
     privacy: 'Datenschutz',
@@ -90,15 +90,15 @@ const translations = {
     liabilityContentText2: 'Obligations to remove or block the use of information according to general laws remain unaffected. However, liability in this regard is only possible from the time of knowledge of a specific legal violation. Upon becoming aware of such violations, we will remove this content immediately.',
     
     liabilityLinksTitle: 'Liability for Links',
-    liabilityLinksText1: 'Our offer contains links to external third-party websites, over whose content we have no influence. Therefore, we cannot assume any liability for this external content. The respective provider or operator of the pages is always responsible for the content of the linked pages.',
-    liabilityLinksText2: 'The linked pages were checked for possible legal violations at the time of linking. Illegal content was not recognizable at the time of linking. However, permanent content control of the linked pages is not reasonable without concrete evidence of a legal violation. Upon becoming aware of legal violations, we will remove such links immediately.',
+    liabilityLinksText1: 'Currently, our website does not contain links to external third-party websites. Should links to external third-party pages be added in the future, we assume no liability for their content, as we have no influence over them.',
+    liabilityLinksText2: 'The respective provider or operator is always responsible for the content of linked pages. Should links be added, they will be checked for possible legal violations at the time of linking. Upon becoming aware of legal violations, we will remove such links immediately.',
     
     copyrightTitle: 'Copyright',
-    copyrightText1: 'The content and works created by the site operators on these pages are subject to German copyright law. The reproduction, editing, distribution and any kind of exploitation outside the limits of copyright require the written consent of the respective author or creator.',
-    copyrightText2: 'Downloads and copies of this site are only permitted for private, non-commercial use. Insofar as the content on this site was not created by the operator, the copyrights of third parties are respected. In particular, third-party content is marked as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. Upon becoming aware of legal violations, we will remove such content immediately.',
+    copyrightText1: 'All content and works on these pages were personally created by the operator and are subject to German copyright law. The reproduction, editing, distribution and any kind of exploitation outside the limits of copyright require the written consent of the author.',
+    copyrightText2: 'Downloads and copies of this site are not permitted. Should third-party content appear on this site in the future, it will be expressly marked as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. Upon becoming aware of legal violations, we will remove such content immediately.',
     
     bibleTitle: 'Bible Translations Used',
-    bibleText: 'The Bible quotes used on this website come from various translations. Unless otherwise stated, we use Luther Bible, Elberfelder or other public domain translations.',
+    bibleText: 'The Bible quotes used on this website come from various translations. Unless otherwise stated, we use the Luther Bible, Elberfelder (German), King James Version (English), Dumitru Cornilescu (Romanian) and Russian Synodal Translation (Russian) as well as other public domain translations.',
     
     privacy: 'Privacy Policy',
     contact: 'Contact',
@@ -132,15 +132,15 @@ const translations = {
     liabilityContentText2: 'Obligațiile de a elimina sau bloca utilizarea informațiilor conform legilor generale rămân neafectate. Cu toate acestea, răspunderea în această privință este posibilă doar din momentul cunoașterii unei încălcări legale specifice. La cunoașterea unor astfel de încălcări, vom elimina imediat acest conținut.',
     
     liabilityLinksTitle: 'Răspunderea pentru Link-uri',
-    liabilityLinksText1: 'Oferta noastră conține link-uri către site-uri web externe ale terților, asupra al căror conținut nu avem nicio influență. Prin urmare, nu putem asuma nicio răspundere pentru acest conținut extern. Furnizorul sau operatorul respectiv al paginilor este întotdeauna responsabil pentru conținutul paginilor legate.',
-    liabilityLinksText2: 'Paginile legate au fost verificate pentru posibile încălcări legale în momentul legării. Conținutul ilegal nu era recognoscibil la momentul legării. Cu toate acestea, controlul permanent al conținutului paginilor legate nu este rezonabil fără dovezi concrete ale unei încălcări legale. La cunoașterea încălcărilor legale, vom elimina imediat astfel de link-uri.',
+    liabilityLinksText1: 'În prezent, site-ul nostru nu conține link-uri către site-uri externe ale terților. În cazul în care în viitor vor fi adăugate link-uri către pagini externe ale terților, nu ne asumăm răspunderea pentru conținutul acestora, deoarece nu avem nicio influență asupra lor.',
+    liabilityLinksText2: 'Furnizorul sau operatorul respectiv al paginilor este întotdeauna responsabil pentru conținutul paginilor legate. Dacă vor fi adăugate link-uri, acestea vor fi verificate pentru posibile încălcări legale la momentul legării. La cunoașterea încălcărilor legale, vom elimina imediat astfel de link-uri.',
     
     copyrightTitle: 'Drepturi de Autor',
-    copyrightText1: 'Conținutul și lucrările create de operatorii site-ului pe aceste pagini sunt supuse legii germane a drepturilor de autor. Reproducerea, editarea, distribuirea și orice fel de exploatare în afara limitelor drepturilor de autor necesită consimțământul scris al autorului sau creatorului respectiv.',
-    copyrightText2: 'Descărcările și copiile acestui site sunt permise numai pentru uz privat, necomercial. În măsura în care conținutul de pe acest site nu a fost creat de operator, drepturile de autor ale terților sunt respectate. În special, conținutul terților este marcat ca atare. Dacă totuși deveniți conștienți de o încălcare a drepturilor de autor, vă rugăm să ne informați în mod corespunzător. La cunoașterea încălcărilor legale, vom elimina imediat un astfel de conținut.',
+    copyrightText1: 'Tot conținutul și lucrările de pe aceste pagini au fost create personal de către operator și sunt supuse legii germane a drepturilor de autor. Reproducerea, editarea, distribuirea și orice fel de exploatare în afara limitelor drepturilor de autor necesită consimțământul scris al autorului.',
+    copyrightText2: 'Descărcările și copiile acestui site nu sunt permise. Dacă în viitor vor apărea conținuturi ale terților pe acest site, acestea vor fi marcate în mod expres ca atare. Dacă totuși deveniți conștienți de o încălcare a drepturilor de autor, vă rugăm să ne informați în mod corespunzător. La cunoașterea încălcărilor legale, vom elimina imediat un astfel de conținut.',
     
     bibleTitle: 'Traduceri Biblice Folosite',
-    bibleText: 'Citatele biblice folosite pe acest site provin din diverse traduceri. Dacă nu se specifică altfel, folosim traduceri Cornilescu, Luther sau alte traduceri din domeniul public.',
+    bibleText: 'Citatele biblice folosite pe acest site provin din diverse traduceri. Dacă nu se specifică altfel, folosim Lutherbibel, Elberfelder (Germană), King James Version (Engleză), Dumitru Cornilescu (Română) și Traducerea Sinodală (Rusă) precum și alte traduceri din domeniul public.',
     
     privacy: 'Politica de Confidențialitate',
     contact: 'Contact',
@@ -174,15 +174,15 @@ const translations = {
     liabilityContentText2: 'Обязательства по удалению или блокировке использования информации согласно общим законам остаются незатронутыми. Однако ответственность в этом отношении возможна только с момента получения информации о конкретном нарушении закона. При получении информации о таких нарушениях мы немедленно удалим это содержание.',
     
     liabilityLinksTitle: 'Ответственность за ссылки',
-    liabilityLinksText1: 'Наше предложение содержит ссылки на внешние веб-сайты третьих лиц, на содержание которых мы не имеем влияния. Поэтому мы не можем нести ответственность за это внешнее содержание. Соответствующий поставщик или оператор страниц всегда несёт ответственность за содержание связанных страниц.',
-    liabilityLinksText2: 'Связанные страницы были проверены на возможные нарушения закона в момент создания ссылки. Незаконное содержание не было распознано в момент создания ссылки. Однако постоянный контроль содержания связанных страниц необоснован без конкретных доказательств нарушения закона. При получении информации о нарушениях закона мы немедленно удалим такие ссылки.',
+    liabilityLinksText1: 'В настоящее время наш сайт не содержит ссылок на внешние веб-сайты третьих лиц. Если в будущем будут добавлены ссылки на внешние страницы третьих лиц, мы не несём ответственности за их содержание, так как не имеем на него влияния.',
+    liabilityLinksText2: 'Соответствующий поставщик или оператор страниц всегда несёт ответственность за содержание связанных страниц. Если будут добавлены ссылки, они будут проверены на возможные нарушения закона в момент создания. При получении информации о нарушениях закона мы немедленно удалим такие ссылки.',
     
     copyrightTitle: 'Авторское право',
-    copyrightText1: 'Содержание и произведения, созданные операторами сайта на этих страницах, подлежат немецкому авторскому праву. Воспроизведение, редактирование, распространение и любое использование за пределами авторского права требуют письменного согласия соответствующего автора или создателя.',
-    copyrightText2: 'Загрузки и копии этого сайта разрешены только для частного, некоммерческого использования. Поскольку содержание на этом сайте не было создано оператором, соблюдаются авторские права третьих лиц. В частности, содержание третьих лиц обозначается как таковое. Если вы всё же узнаете о нарушении авторских прав, пожалуйста, сообщите нам об этом. При получении информации о нарушениях закона мы немедленно удалим такое содержание.',
+    copyrightText1: 'Всё содержание и произведения на этих страницах были лично созданы оператором и подлежат немецкому авторскому праву. Воспроизведение, редактирование, распространение и любое использование за пределами авторского права требуют письменного согласия автора.',
+    copyrightText2: 'Загрузки и копии этого сайта не разрешены. Если в будущем на этом сайте появится содержание третьих лиц, оно будет явно обозначено как таковое. Если вы всё же узнаете о нарушении авторских прав, пожалуйста, сообщите нам об этом. При получении информации о нарушениях закона мы немедленно удалим такое содержание.',
     
     bibleTitle: 'Используемые переводы Библии',
-    bibleText: 'Библейские цитаты, используемые на этом сайте, взяты из различных переводов. Если не указано иное, мы используем Синодальный перевод, Лютеранскую Библию или другие общедоступные переводы.',
+    bibleText: 'Библейские цитаты, используемые на этом сайте, взяты из различных переводов. Если не указано иное, мы используем Лютеранскую Библию, Эльберфельдер (немецкий), King James Version (английский), Думитру Корнилеску (румынский) и Синодальный перевод (русский), а также другие общедоступные переводы.',
     
     privacy: 'Политика конфиденциальности',
     contact: 'Контакт',
@@ -232,12 +232,20 @@ export default function ImpressumPage() {
             <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">{t.contactTitle}</h2>
             <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800 space-y-3">
               <p className="text-gray-700 dark:text-gray-300 flex items-center gap-3">
-                <span className="text-2xl">📧</span>
+                <span className="w-7 h-7 flex-shrink-0">
+                  <svg className="w-7 h-7" viewBox="0 0 1920 1920" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 1694.235h1920V226H0v1468.235ZM112.941 376.664V338.94H1807.06v37.723L960 1111.233l-847.059-734.57ZM1807.06 526.198v950.513l-351.134-438.89-88.32 70.475 378.353 472.998H174.042l378.353-472.998-88.32-70.475-351.134 438.89V526.198L960 1260.768l847.059-734.57Z" fillRule="evenodd"/>
+                  </svg>
+                </span>
                 <span>{t.email}: <a href="mailto:kontakt@radikal-blog.de" className="text-red-600 dark:text-red-400 hover:underline">kontakt@radikal-blog.de</a></span>
               </p>
               <p className="text-gray-700 dark:text-gray-300 flex items-center gap-3">
-                <span className="text-2xl">🌐</span>
-                <span>{t.website}: <a href="https://radikal-blog.vercel.app" className="text-red-600 dark:text-red-400 hover:underline">radikal-blog.vercel.app</a></span>
+                <span className="w-7 h-7 flex-shrink-0">
+                  <svg className="w-7 h-7" viewBox="0 0 512 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m429.2,82.8c-46.2-46.3-107.8-71.8-173.2-71.8s-127,25.5-173.2,71.8-71.8,107.8-71.8,173.2 25.5,127 71.8,173.2 107.8,71.8 173.2,71.8 127-25.5 173.2-71.8 71.8-107.8 71.8-173.2-25.5-127-71.8-173.2zm49.6,162.2h-95c-0.9-37.8-6.2-74.2-15.5-106.5 18.1-9.3 35-21 50.5-34.8 35,37.4 57.3,86.8 60,141.3zm-211.8,22h94.9c-0.8,34.8-5.6,68.1-13.9,97.9-25.6-10.3-52.9-16.3-81-17.6v-80.3zm136-178.6c-12.8,11.3-26.8,20.9-41.6,28.9-3.8-10.6-8.1-20.6-12.9-30-9.5-18.8-20.3-34.2-32.2-46 32.5,9.1 62,25.4 86.7,47.1zm-136-52c22.9,5.1 44.5,26.2 61.9,60.6 4.7,9.3 8.9,19.2 12.6,29.7-23.5,9.7-48.6,15.4-74.5,16.7v-107zm81.1,111.4c8.2,29.6 12.9,62.7 13.7,97.3h-94.8v-79.6c28.2-1.3 55.5-7.4 81.1-17.7zm-103.1,97.2h-94.9c0.8-34.6 5.5-67.7 13.7-97.3 25.6,10.4 53,16.4 81.1,17.6v79.7zm.1-208.6v107c-25.9-1.3-51.1-7-74.5-16.7 3.7-10.5 7.9-20.4 12.6-29.7 17.4-34.4 39-55.5 61.9-60.6zm-49.3,4.9c-11.9,11.8-22.7,27.3-32.2,46-4.7,9.4-9,19.4-12.9,30-14.8-8-28.7-17.6-41.6-28.9 24.7-21.7 54.2-38 86.7-47.1zm-102.5,62.4c15.5,13.8 32.4,25.4 50.5,34.8-9.3,32.4-14.7,68.7-15.5,106.5h-95c2.7-54.5 25-103.9 60-141.3zm-60,163.3h95c0.9,38.1 6.3,74.6 15.7,107.1-18,9.3-34.9,20.8-50.3,34.6-35.3-37.5-57.7-87-60.4-141.7zm76.2,157c12.8-11.2 26.7-20.8 41.4-28.7 3.8,10.3 8,20.2 12.7,29.4 9.5,18.8 20.3,34.2 32.2,46.1-32.3-9.1-61.7-25.3-86.3-46.8zm135.6,51.6c-22.9-5.1-44.5-26.2-61.9-60.6-4.6-9.1-8.7-18.8-12.4-29.1 23.4-9.7 48.5-15.4 74.3-16.6v106.3zm-81-110.7c-8.3-29.8-13.1-63.1-13.9-97.9h94.9v80.3c-28.1,1.2-55.4,7.2-81,17.6zm103,110.7v-106.3c25.8,1.3 50.9,6.9 74.3,16.6-3.7,10.3-7.8,20-12.4,29.1-17.4,34.4-39,55.5-61.9,60.6zm49.3-4.9c11.9-11.8 22.7-27.3 32.2-46.1 4.7-9.2 8.9-19.1 12.7-29.4 14.7,7.9 28.6,17.5 41.4,28.7-24.6,21.6-54,37.8-86.3,46.8zm102.2-62c-15.4-13.7-32.3-25.3-50.3-34.6 9.4-32.5 14.8-69.1 15.7-107.1h95c-2.8,54.7-25.2,104.2-60.4,141.7z"/>
+                  </svg>
+                </span>
+                <span>{t.website}: <a href="https://www.radikal.blog" className="text-red-600 dark:text-red-400 hover:underline">www.radikal.blog</a></span>
               </p>
             </div>
           </section>
@@ -276,8 +284,15 @@ export default function ImpressumPage() {
 
           {/* Verbraucherstreitbeilegung */}
           <section className="mb-12">
-            <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">
-              {t.consumerDisputeTitle}
+            <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4 break-words" style={{ wordBreak: 'break-word', hyphens: 'auto' }}>
+              <span className="hidden sm:inline">{t.consumerDisputeTitle}</span>
+              <span className="sm:hidden text-xl">
+                {language === 'de' ? (
+                  <>Verbraucherstreitbeilegung/{'\u200B'}Universalschlichtungsstelle</>
+                ) : (
+                  t.consumerDisputeTitle
+                )}
+              </span>
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               {t.consumerDisputeText}

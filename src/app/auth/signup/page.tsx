@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -30,11 +30,25 @@ export default function SignupPage() {
   // Supabase client / Supabase-Client
   const supabase = createClient();
 
+  // Keep nav/footer hidden on auth pages - add modal-active immediately before paint
+  // Nav/Footer auf Auth-Seiten versteckt halten
+  // Menține nav/footer ascunse pe paginile auth
+  useLayoutEffect(() => {
+    document.body.classList.add('modal-active');
+    return () => {
+      // Pasul 12005: Don't remove if redirecting after successful auth
+      if (!document.body.dataset.loginSuccess) {
+        document.body.classList.remove('modal-active');
+      }
+    };
+  }, []);
+
   // Check if user is already authenticated / Prüfen, ob Benutzer bereits authentifiziert ist
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        document.body.dataset.loginSuccess = 'true';
         router.push('/'); // Redirect to home if already logged in / Zur Startseite weiterleiten, wenn bereits angemeldet
       }
     };
@@ -153,17 +167,17 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 bg-white dark:bg-black overflow-y-auto">
+      <div className="max-w-md w-full space-y-2 sm:space-y-6 py-3 sm:py-0">
         {/* Header / Kopfbereich */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-2 animate-fadeIn">
+          <h2 className="text-xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-2 animate-fadeIn">
             {language=== 'de' ? 'Registrieren' : 
             language === 'en' ? 'Sign Up' : 
             language === 'ro' ? 'Înscriere' : 
             'Регистрация'}
           </h2>
-          <p className="text-white/80 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+          <p className="text-sm sm:text-base text-white/80 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' ? 'Erstelle dein Konto bei RADIKAL.' : 
             language === 'en' ? 'Create your account at RADIKAL.' : 
             language === 'ro' ? 'Creează-ți contul la RADIKAL.' : 
@@ -172,7 +186,7 @@ export default function SignupPage() {
         </div>
 
         {/* Signup form / Registrierungsformular */}
-        <div className="glass-effect rounded-2xl p-8 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+        <div className="glass-effect rounded-2xl p-3 sm:p-8 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
           {/* Error and success messages / Fehler- und Erfolgsmeldungen */}
           {error && (
             <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
@@ -191,10 +205,11 @@ export default function SignupPage() {
           <button
             onClick={handleGoogleSignup}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 px-4 py-1.5 sm:py-3 bg-gray-600 hover:bg-gray-700 text-sm sm:text-base font-medium rounded-lg transition-colors duration-200 mb-2 sm:mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ color: '#ffffff' }}
           >
-            <FaGoogle className="text-xl" />
-            <span>
+            <FaGoogle className="text-xl" style={{ color: '#ffffff' }} />
+            <span style={{ color: '#ffffff' }}>
               {language === 'de' ? 'Mit Google registrieren' : 
               language === 'en' ? 'Sign up with Google' : 
               language === 'ro' ? 'Înregistrare cu Google' : 
@@ -202,7 +217,7 @@ export default function SignupPage() {
           </button>
 
           {/* Divider / Trenner */}
-          <div className="relative my-6">
+          <div className="relative my-2 sm:my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/20" />
             </div>
@@ -215,10 +230,10 @@ export default function SignupPage() {
           </div>
 
           {/* Email signup form / E-Mail-Registrierungsformular */}
-          <form onSubmit={handleEmailSignup} className="space-y-4">
+          <form onSubmit={handleEmailSignup} className="space-y-1.5 sm:space-y-4">
             {/* Full name input / Vollständiger Name Eingabe */}
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-white/80 mb-2">
+              <label htmlFor="fullName" className="block text-sm font-medium text-white/80 mb-1 sm:mb-2">
                 {language === 'de' ? 'Vollständiger Name' : 
                 language === 'en' ? 'Full Name' : 
                 language === 'ro' ? 'Nume complet' : 
@@ -232,7 +247,7 @@ export default function SignupPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-1.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder={
                     language==='de' ?"Dein vollständiger Name" : 
                     language === 'en' ? "Your full name" : 
@@ -244,7 +259,7 @@ export default function SignupPage() {
 
             {/* Email input / E-Mail-Eingabe */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1 sm:mb-2">
                 {language==='de' ? 'E-Mail' : 
                 language === 'en' ? 'Email' : 
                 language === 'ro' ? 'Adresa de Email' : 
@@ -258,7 +273,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-1.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="deine@email.com"
                 />
               </div>
@@ -266,7 +281,7 @@ export default function SignupPage() {
 
             {/* Password input / Passwort-Eingabe */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-1 sm:mb-2">
                 {language==='de' ? 'Passwort' : 
                 language === 'en' ? 'Password' : 
                 language === 'ro' ? 'Parolă' : 
@@ -279,7 +294,7 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pr-10 pl-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pr-10 pl-4 py-1.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
                 />
                 <button
@@ -290,7 +305,7 @@ export default function SignupPage() {
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-              <p className="text-white/60 text-xs mt-1">
+              <p className="text-white/60 text-xs mt-0.5 sm:mt-1">
                 {language==='de' ? 'Mindestens 8 Zeichen, mit Groß- und Kleinbuchstaben und einer Zahl' : 
                 language === 'en' ? 'At least 8 characters, with uppercase and lowercase letters and a number' : 
                 language === 'ro' ? 'Cel puțin 8 caractere, cu litere mari și mici și un număr' : 
@@ -300,7 +315,7 @@ export default function SignupPage() {
 
             {/* Confirm password input / Passwort bestätigen Eingabe */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80 mb-1 sm:mb-2">
                 {language==='de' ? 'Passwort bestätigen' : 
                 language === 'en' ? 'Confirm Password' : 
                 language === 'ro' ? 'Confirmare parolă' : 
@@ -313,7 +328,7 @@ export default function SignupPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="w-full pr-10 pl-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pr-10 pl-4 py-1.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
                 />
                 <button
@@ -351,7 +366,7 @@ export default function SignupPage() {
           </form>
 
           {/* Sign in link / Anmelde-Link */}
-          <div className="mt-6 text-center">
+          <div className="mt-2 sm:mt-6 text-center">
             <span className="text-white/60 text-sm">
               {language==='de' ? 'Bereits ein Konto?' : 
               language === 'en' ? 'Already have an account?' : 

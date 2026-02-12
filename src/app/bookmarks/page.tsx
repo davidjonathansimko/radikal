@@ -1,103 +1,95 @@
-// Bookmarks Page / Lesezeichen-Seite / Pagina Bookmark-uri
-// User's saved posts and reading list
-// Gespeicherte Posts und Leseliste des Benutzers
-// Postările salvate și lista de lectură a utilizatorului
+// Liked Posts Page / Gelikte Beiträge Seite / Pagina Postări Apreciate
+// Shows posts that the user has liked (replaces old Bookmarks page)
+// Zeigt Beiträge an, die der Benutzer geliked hat (ersetzt alte Lesezeichen-Seite)
+// Afișează postările la care utilizatorul a dat like (înlocuiește vechea pagină de bookmark-uri)
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useBookmarks } from '@/hooks/useBookmarks';
+import { useTranslation } from '@/hooks/useTranslation';
 import { createClient } from '@/lib/supabase';
+import { BlogPost } from '@/types';
 import BlogCard from '@/components/BlogCard';
 import { SkeletonBlogGrid } from '@/components/SkeletonLoaders';
-import { FaBookmark, FaArrowLeft, FaSearch, FaTrash, FaSpinner } from 'react-icons/fa';
+import { FaHeart, FaArrowLeft, FaSearch, FaSpinner } from 'react-icons/fa';
 import Link from 'next/link';
 
 // Translations / Übersetzungen
 const translations = {
   de: {
-    title: 'Meine Lesezeichen',
-    subtitle: 'Deine gespeicherten Artikel',
-    noBookmarks: 'Noch keine Lesezeichen',
-    noBookmarksDesc: 'Speichere interessante Artikel zum späteren Lesen',
+    title: 'Gelikte Beiträge',
+    subtitle: 'Deine geschätzten Artikel',
+    noLiked: 'Noch keine gelikten Beiträge',
+    noLikedDesc: 'Gib Beiträgen ein Like, um sie hier zu sehen',
     browsePosts: 'Blogs durchsuchen',
-    searchPlaceholder: 'Lesezeichen durchsuchen...',
-    removeAll: 'Alle entfernen',
-    confirmRemoveAll: 'Alle Lesezeichen wirklich löschen?',
-    loading: 'Lesezeichen werden geladen...',
+    searchPlaceholder: 'Beiträge durchsuchen...',
+    loading: 'Beiträge werden geladen...',
     loginRequired: 'Anmeldung erforderlich',
-    loginDesc: 'Melde dich an, um deine Lesezeichen zu sehen',
+    loginDesc: 'Melde dich an, um deine gelikten Beiträge zu sehen',
     login: 'Anmelden',
-    savedOn: 'Gespeichert am',
     backToBlogs: 'Zurück zu Blogs'
   },
   en: {
-    title: 'My Bookmarks',
-    subtitle: 'Your saved articles',
-    noBookmarks: 'No bookmarks yet',
-    noBookmarksDesc: 'Save interesting articles to read later',
+    title: 'Liked Posts',
+    subtitle: 'Your appreciated articles',
+    noLiked: 'No liked posts yet',
+    noLikedDesc: 'Like posts to see them here',
     browsePosts: 'Browse blogs',
-    searchPlaceholder: 'Search bookmarks...',
-    removeAll: 'Remove all',
-    confirmRemoveAll: 'Really delete all bookmarks?',
-    loading: 'Loading bookmarks...',
+    searchPlaceholder: 'Search posts...',
+    loading: 'Loading posts...',
     loginRequired: 'Login required',
-    loginDesc: 'Login to see your bookmarks',
+    loginDesc: 'Login to see your liked posts',
     login: 'Login',
-    savedOn: 'Saved on',
     backToBlogs: 'Back to Blogs'
   },
   ro: {
-    title: 'Bookmark-urile mele',
-    subtitle: 'Articolele tale salvate',
-    noBookmarks: 'Încă nu ai bookmark-uri',
-    noBookmarksDesc: 'Salvează articole interesante pentru a le citi mai târziu',
+    title: 'Postări Apreciate',
+    subtitle: 'Articolele tale apreciate',
+    noLiked: 'Încă nu ai postări apreciate',
+    noLikedDesc: 'Dă like la postări pentru a le vedea aici',
     browsePosts: 'Răsfoiește blogurile',
-    searchPlaceholder: 'Caută în bookmark-uri...',
-    removeAll: 'Elimină toate',
-    confirmRemoveAll: 'Chiar vrei să ștergi toate bookmark-urile?',
-    loading: 'Se încarcă bookmark-urile...',
+    searchPlaceholder: 'Caută în postări...',
+    loading: 'Se încarcă postările...',
     loginRequired: 'Autentificare necesară',
-    loginDesc: 'Autentifică-te pentru a vedea bookmark-urile',
+    loginDesc: 'Autentifică-te pentru a vedea postările apreciate',
     login: 'Autentificare',
-    savedOn: 'Salvat pe',
     backToBlogs: 'Înapoi la Bloguri'
   },
   ru: {
-    title: 'Мои закладки',
-    subtitle: 'Ваши сохранённые статьи',
-    noBookmarks: 'Пока нет закладок',
-    noBookmarksDesc: 'Сохраняйте интересные статьи для чтения позже',
+    title: 'Понравившиеся',
+    subtitle: 'Ваши оценённые статьи',
+    noLiked: 'Пока нет понравившихся постов',
+    noLikedDesc: 'Поставьте лайк постам, чтобы увидеть их здесь',
     browsePosts: 'Просмотреть блоги',
-    searchPlaceholder: 'Поиск в закладках...',
-    removeAll: 'Удалить все',
-    confirmRemoveAll: 'Действительно удалить все закладки?',
-    loading: 'Загрузка закладок...',
+    searchPlaceholder: 'Поиск в постах...',
+    loading: 'Загрузка постов...',
     loginRequired: 'Требуется вход',
-    loginDesc: 'Войдите, чтобы увидеть закладки',
+    loginDesc: 'Войдите, чтобы увидеть понравившиеся посты',
     login: 'Войти',
-    savedOn: 'Сохранено',
     backToBlogs: 'Назад к блогам'
   }
 };
 
-export default function BookmarksPage() {
+export default function LikedPostsPage() {
   const { language } = useLanguage();
+  const { translateBatch } = useTranslation();
   const router = useRouter();
   const t = translations[language as keyof typeof translations] || translations.de;
   
   // State / Zustand
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [likedPosts, setLikedPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Bookmarks hook / Lesezeichen-Hook
-  const { bookmarkedPosts, loading, removeBookmark } = useBookmarks();
+  // 🌐 DeepL Translation state / Übersetzungsstatus / Stare traducere
+  const [translatedPosts, setTranslatedPosts] = useState<Map<string, { title: string; excerpt: string }>>(new Map());
   
-  // Supabase client / Supabase-Client
-  const supabase = createClient();
+  // Supabase client - memoized / Supabase-Client - memoized
+  const supabase = useMemo(() => createClient(), []);
 
   // Check auth on mount / Auth beim Laden prüfen
   useEffect(() => {
@@ -107,36 +99,129 @@ export default function BookmarksPage() {
       setAuthLoading(false);
     };
     checkAuth();
-  }, []);
+  }, [supabase]);
 
-  // Filter bookmarks by search / Lesezeichen nach Suche filtern
-  const filteredPosts = bookmarkedPosts.filter(post => {
-    if (!searchQuery) return true;
+  // Fetch liked posts from Supabase / Gelikte Beiträge von Supabase abrufen
+  const fetchLikedPosts = useCallback(async () => {
+    if (!user) {
+      setLikedPosts([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Get all post_ids that user has liked / Alle post_ids abrufen, die der Benutzer geliked hat
+      const { data: likes, error: likesError } = await supabase
+        .from('likes')
+        .select('post_id, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (likesError || !likes || likes.length === 0) {
+        setLikedPosts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get the blog posts for those IDs / Blog-Posts für diese IDs abrufen
+      const postSlugs = likes.map(l => l.post_id);
+      const { data: posts, error: postsError } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .in('slug', postSlugs)
+        .eq('published', true);
+
+      if (postsError || !posts) {
+        setLikedPosts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Order posts by like date (most recently liked first)
+      // Beiträge nach Like-Datum sortieren (zuletzt geliked zuerst)
+      const slugOrder = new Map(likes.map((l, i) => [l.post_id, i]));
+      posts.sort((a, b) => (slugOrder.get(a.slug) ?? 999) - (slugOrder.get(b.slug) ?? 999));
+
+      setLikedPosts(posts);
+    } catch (error) {
+      console.error('Error fetching liked posts:', error);
+      setLikedPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, supabase]);
+
+  // Load liked posts when user is available
+  useEffect(() => {
+    if (user) {
+      fetchLikedPosts();
+    }
+  }, [user, fetchLikedPosts]);
+
+  // 🌐 DeepL AUTO-TRANSLATION: Translate liked posts when language changes
+  // 🌐 DeepL AUTO-ÜBERSETZUNG: Gelikte Posts automatisch übersetzen wenn Sprache sich ändert
+  useEffect(() => {
+    const translatePosts = async () => {
+      // Skip if Romanian (original language) or no posts
+      if (language === 'ro' || likedPosts.length === 0) {
+        setTranslatedPosts(new Map());
+        return;
+      }
+
+      try {
+        const titles = likedPosts.map(post => post.title);
+        const excerpts = likedPosts.map(post => post.excerpt);
+
+        const [translatedTitles, translatedExcerpts] = await Promise.all([
+          translateBatch(titles, language),
+          translateBatch(excerpts, language),
+        ]);
+
+        const newTranslations = new Map<string, { title: string; excerpt: string }>();
+        likedPosts.forEach((post, index) => {
+          newTranslations.set(post.id, {
+            title: translatedTitles[index] || post.title,
+            excerpt: translatedExcerpts[index] || post.excerpt,
+          });
+        });
+
+        setTranslatedPosts(newTranslations);
+      } catch (error) {
+        console.error('DeepL: Failed to translate liked posts:', error);
+      }
+    };
+
+    translatePosts();
+  }, [language, likedPosts, translateBatch]);
+
+  // Filter posts by search (language-aware with DeepL translations)
+  // Beiträge nach Suche filtern (sprachbewusst mit DeepL-Übersetzungen)
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery) return likedPosts;
     const query = searchQuery.toLowerCase();
-    const title = post.title?.toLowerCase() || '';
-    const excerpt = post.excerpt?.toLowerCase() || '';
-    const tags = Array.isArray(post.tags) ? post.tags.join(' ').toLowerCase() : (post.tags || '').toLowerCase();
-    return title.includes(query) || excerpt.includes(query) || tags.includes(query);
-  });
-
-  // Format date / Datum formatieren
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(language === 'de' ? 'de-DE' : language === 'ro' ? 'ro-RO' : language === 'ru' ? 'ru-RU' : 'en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+    return likedPosts.filter(post => {
+      // Use DeepL translated title/excerpt if available, fallback to DB fields
+      const translated = translatedPosts.get(post.id);
+      const title = (translated?.title || post.title)?.toLowerCase() || '';
+      const excerpt = (translated?.excerpt || post.excerpt)?.toLowerCase() || '';
+      const tags = Array.isArray(post.tags) ? post.tags.join(' ').toLowerCase() : (post.tags || '').toLowerCase();
+      return title.includes(query) || excerpt.includes(query) || tags.includes(query);
     });
-  };
+  }, [likedPosts, searchQuery, translatedPosts]);
 
-  // Show loading state / Ladezustand anzeigen
+  // Show loading state — Pasul 121: skeleton dots
   if (authLoading) {
     return (
       <div className="min-h-screen py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center py-20">
-            <FaSpinner className="animate-spin text-3xl text-blue-500 mr-4" />
-            <span className="text-white/60">{t.loading}</span>
+            <div className="flex items-center gap-2 mr-4">
+              <div className="w-2 h-2 rounded-full bg-red-400 animate-pull-refresh-dot" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full bg-red-400 animate-pull-refresh-dot" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full bg-red-400 animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
+            </div>
+            <span className="text-gray-600 dark:text-white/60">{t.loading}</span>
           </div>
         </div>
       </div>
@@ -149,14 +234,14 @@ export default function BookmarksPage() {
       <div className="min-h-screen py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center py-20">
-            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6">
-              <FaBookmark className="text-3xl text-white/20" />
+            <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+              <FaHeart className="text-3xl text-red-400/40" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-4">{t.loginRequired}</h1>
-            <p className="text-white/60 mb-8">{t.loginDesc}</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.loginRequired}</h1>
+            <p className="text-gray-600 dark:text-white/60 mb-8">{t.loginDesc}</p>
             <Link
               href="/auth/login"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
             >
               {t.login}
             </Link>
@@ -172,7 +257,7 @@ export default function BookmarksPage() {
         {/* Back button / Zurück-Button */}
         <Link 
           href="/blogs"
-          className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors duration-200 mb-8 group"
+          className="inline-flex items-center gap-2 text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 mb-8 group"
         >
           <FaArrowLeft className="group-hover:-translate-x-1 transition-transform duration-200" />
           <span>{t.backToBlogs}</span>
@@ -181,31 +266,30 @@ export default function BookmarksPage() {
         {/* Header / Kopfbereich */}
         <header className="mb-12">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <FaBookmark className="text-2xl text-white" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
+              <FaHeart className="text-2xl text-white" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-white animate-fadeIn">
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white animate-fadeIn">
                 {t.title}
               </h1>
-              <p className="text-white/60 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
-                {t.subtitle} ({bookmarkedPosts.length})
+              <p className="text-gray-600 dark:text-white/60 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+                {t.subtitle} ({likedPosts.length})
               </p>
             </div>
           </div>
 
-          {/* Search and actions / Suche und Aktionen */}
-          {bookmarkedPosts.length > 0 && (
+          {/* Search / Suche */}
+          {likedPosts.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-4 mt-8 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-              {/* Search / Suche */}
               <div className="relative flex-1">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t.searchPlaceholder}
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-blue-500/50 transition-colors"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-red-500/50 transition-colors"
                 />
               </div>
             </div>
@@ -215,17 +299,17 @@ export default function BookmarksPage() {
         {/* Content / Inhalt */}
         {loading ? (
           <SkeletonBlogGrid count={6} />
-        ) : bookmarkedPosts.length === 0 ? (
+        ) : likedPosts.length === 0 ? (
           // Empty state / Leerer Zustand
           <div className="text-center py-20 animate-fadeIn">
-            <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6">
-              <FaBookmark className="text-4xl text-white/10" />
+            <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+              <FaHeart className="text-4xl text-red-400/20" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-4">{t.noBookmarks}</h2>
-            <p className="text-white/60 mb-8 max-w-md mx-auto">{t.noBookmarksDesc}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.noLiked}</h2>
+            <p className="text-gray-600 dark:text-white/60 mb-8 max-w-md mx-auto">{t.noLikedDesc}</p>
             <Link
               href="/blogs"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
             >
               {t.browsePosts}
             </Link>
@@ -233,10 +317,15 @@ export default function BookmarksPage() {
         ) : filteredPosts.length === 0 ? (
           // No search results / Keine Suchergebnisse
           <div className="text-center py-20">
-            <p className="text-white/60">No bookmarks matching &quot;{searchQuery}&quot;</p>
+            <p className="text-gray-600 dark:text-white/60">
+              {language === 'de' ? `Keine Beiträge gefunden für "${searchQuery}"` :
+               language === 'en' ? `No posts found for "${searchQuery}"` :
+               language === 'ro' ? `Nicio postare găsită pentru "${searchQuery}"` :
+               `Не найдено постов для "${searchQuery}"`}
+            </p>
           </div>
         ) : (
-          // Bookmarks grid / Lesezeichen-Raster
+          // Liked posts grid / Gelikte Beiträge Raster
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredPosts.map((post, index) => (
               <div 
@@ -244,28 +333,23 @@ export default function BookmarksPage() {
                 className="relative animate-fadeIn"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <BlogCard post={post} />
+                <BlogCard 
+                  post={post} 
+                  showBookmark={false} 
+                  translatedTitle={translatedPosts.get(post.id)?.title}
+                  translatedExcerpt={translatedPosts.get(post.id)?.excerpt}
+                />
                 
-                {/* Bookmarked date badge / Gespeichert-Datum-Badge */}
-                <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-                  <span className="px-2 py-1 rounded-full bg-blue-500/90 text-white text-xs font-medium flex items-center gap-1">
-                    <FaBookmark className="text-[10px]" />
-                    {formatDate(post.bookmarked_at)}
+                {/* Liked badge / Geliked-Badge */}
+                <div className="absolute top-4 right-4 z-10">
+                  <span className="px-2 py-1 rounded-full bg-red-500/90 text-white text-xs font-medium flex items-center gap-1 force-white-text">
+                    <FaHeart className="text-[10px]" />
+                    {language === 'de' ? 'Geliked' : 
+                     language === 'en' ? 'Liked' : 
+                     language === 'ro' ? 'Apreciat' : 
+                     'Понравилось'}
                   </span>
                 </div>
-                
-                {/* Remove button / Entfernen-Button */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    removeBookmark(post.id);
-                  }}
-                  className="absolute bottom-4 right-4 z-10 p-2 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors opacity-0 group-hover:opacity-100"
-                  title="Remove bookmark"
-                >
-                  <FaTrash className="text-sm" />
-                </button>
               </div>
             ))}
           </div>
