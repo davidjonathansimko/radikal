@@ -476,7 +476,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       
       {/* Modal container with margins like hamburger menu */}
       <div 
-        className="fixed inset-0 z-[9999] p-4 sm:p-6 flex items-start justify-center pt-16 sm:pt-20"
+        className="fixed inset-0 z-[9999] p-4 sm:p-6 flex items-end sm:items-start justify-center pb-20 sm:pb-0 sm:pt-20"
         onClick={onClose}
         onTouchEnd={(e) => {
           if (e.target === e.currentTarget) onClose();

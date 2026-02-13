@@ -335,12 +335,25 @@ export function ReadingModeOverlay() {
           >
             {blogContent && blogContent.length > 0 ? (
               <>
-                <span className="reading-drop-cap">{blogContent.charAt(0)}</span>
-                {blogContent.slice(1).split(/\n\n+/).map((paragraph, index) => (
-                  <p key={index} style={{ marginBottom: '1.5em', textIndent: index > 0 ? '0' : 'inherit' }}>
-                    {paragraph.trim()}
-                  </p>
-                ))}
+                {(() => {
+                  // Extract leading punctuation (quotes) + first actual letter for drop cap
+                  // CSS ::first-letter automatically includes preceding punctuation, but JS needs manual handling
+                  // Extrahiere führende Satzzeichen (Anführungszeichen) + ersten Buchstaben für Drop Cap
+                  const dropCapMatch = blogContent.match(/^([\s"„""«»'\u201C\u201D\u201E\u201F\u00AB\u00BB]*[A-Za-zÀ-ÿА-Яа-яĂăÂâÎîȘșȚț])/);
+                  const dropCapText = dropCapMatch ? dropCapMatch[0] : blogContent.charAt(0);
+                  const remainingText = blogContent.slice(dropCapText.length);
+                  
+                  return (
+                    <>
+                      <span className="reading-drop-cap">{dropCapText}</span>
+                      {remainingText.split(/\n\n+/).map((paragraph, index) => (
+                        <p key={index} style={{ marginBottom: '1.5em', textIndent: index > 0 ? '0' : 'inherit' }}>
+                          {paragraph.trim()}
+                        </p>
+                      ))}
+                    </>
+                  );
+                })()}
               </>
             ) : blogContent}
           </div>

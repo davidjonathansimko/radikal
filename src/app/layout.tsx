@@ -31,9 +31,13 @@ const ToastProvider = dynamic(() => import('@/components/ToastNotifications'));
 const inter = Inter({ subsets: ['latin'] });
 
 // Viewport configuration (Next.js 15+) / Viewport-Konfiguration (Next.js 15+) / Configurare viewport (Next.js 15+)
+// Pasul 1302000: viewport-fit=cover for fullscreen PWA, zoom disabled in PWA mode
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#000000',
 };
 
@@ -85,13 +89,41 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const savedTheme = localStorage.getItem('radikal-theme');
+                var savedTheme = localStorage.getItem('radikal-theme');
                 if (savedTheme === 'light') {
                   document.documentElement.classList.add('light');
                 } else {
                   document.documentElement.classList.add('dark');
                 }
               })();
+            `,
+          }}
+        />
+        {/* Hide nav/footer instantly on homepage via CSS before React loads */}
+        {/* This prevents any flash of navigation/footer before WelcomeModal appears */}
+        {/* Versteckt nav/footer sofort auf der Homepage via CSS bevor React lädt */}
+        {/* Ascunde nav/footer instant pe homepage via CSS înainte ca React să se încarce */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              body.modal-active nav,
+              body.modal-active footer {
+                display: none !important;
+              }
+            `,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // This script runs in <head> - we use documentElement to flag pages that need nav/footer hidden
+              // The body script will transfer this to body.modal-active once body exists
+              // Dieses Script läuft im <head> - wir markieren Seiten die nav/footer verstecken müssen
+              // Acest script rulează în <head> - marcăm paginile care trebuie să ascundă nav/footer
+              var p = window.location.pathname;
+              if (p === '/' || p.indexOf('/auth/') === 0) {
+                document.documentElement.classList.add('radikal-hide-nav');
+              }
             `,
           }}
         />
@@ -105,16 +137,58 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&display=swap"
           as="style"
         />
-        {/* Google Fonts: Cinzel + EB Garamond + Montserrat - optimized weights */}
+        {/* Google Fonts: Cinzel + EB Garamond + Montserrat (with cyrillic) - optimized weights */}
         <link 
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700&display=swap" 
+          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700&display=swap&subset=cyrillic,latin-ext" 
           rel="stylesheet" 
         />
         {/* Favicon / Favicon / Favicon */}
         {/* Using black background logo for browser tab / Logo mit schwarzem Hintergrund für Browser-Tab / Logo cu fundal negru pentru tab-ul browser-ului */}
         <link rel="icon" href="/radikal.logo.schwarz.hintergrund.png" />
+        
+        {/* Pasul 1302000: PWA fullscreen — Apple/iOS specific meta tags */}
+        {/* iOS: Enable fullscreen PWA mode / iOS: Fullscreen-PWA-Modus aktivieren / iOS: Activează modul PWA fullscreen */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="RADIKAL" />
+        <link rel="apple-touch-icon" href="/radikal.logo.schwarz.hintergrund.png" />
+        
+        {/* Android: Fullscreen immersive mode hint / Android: Fullscreen-Immersiv-Modus-Hinweis */}
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body suppressHydrationWarning className={`${inter.className} min-h-screen transition-colors duration-300 bg-white dark:bg-black text-black dark:text-white`}>
+        {/* Immediately add modal-active to body on homepage to hide nav/footer before React renders */}
+        {/* This script runs as the FIRST thing inside <body>, before any components render */}
+        {/* Sofort modal-active auf body auf der Homepage hinzufügen um nav/footer auszublenden */}
+        {/* Adaugă imediat modal-active pe body pe homepage pentru a ascunde nav/footer */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (document.documentElement.classList.contains('radikal-hide-nav')) {
+                document.body.classList.add('modal-active');
+              }
+              // Pasul 1302000: PWA fullscreen mode detection + disable zoom
+              // Detect if running as installed PWA (standalone or fullscreen)
+              var isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.matchMedia('(display-mode: fullscreen)').matches || 
+                          window.navigator.standalone === true;
+              if (isPWA) {
+                document.documentElement.classList.add('pwa-mode');
+                // Disable pinch-to-zoom in PWA mode (apps don't allow zoom)
+                document.addEventListener('touchstart', function(e) {
+                  if (e.touches.length > 1) { e.preventDefault(); }
+                }, { passive: false });
+                // Disable double-tap zoom in PWA mode
+                var lastTouchEnd = 0;
+                document.addEventListener('touchend', function(e) {
+                  var now = Date.now();
+                  if (now - lastTouchEnd <= 300) { e.preventDefault(); }
+                  lastTouchEnd = now;
+                }, { passive: false });
+              }
+            `,
+          }}
+        />
         {/* ThemeProvider and LanguageProvider wrap the entire app / ThemeProvider und LanguageProvider umhüllen die gesamte App / ThemeProvider și LanguageProvider învelește întreaga aplicație */}
         {/* Body uses CSS variables and .light class to switch themes / Body verwendet CSS-Variablen und .light-Klasse zum Wechseln von Themes / Body folosește variabile CSS și clasa .light pentru a schimba temele */}
         <ThemeProvider>
@@ -137,8 +211,8 @@ export default function RootLayout({
                   {/* Reading mode overlay for distraction-free reading / Lesemodus-Overlay für ablenkungsfreies Lesen / Suprapunere mod citire pentru lectură fără distrageri */}
                   <ReadingModeOverlay />
 
-                  {/* Main content area with proper spacing / Hauptinhaltsbereich mit richtigem Abstand / Zona de conținut principală cu spațiere corespunzătoare */}
-                  <main className="relative z-10 pt-16">
+                  {/* Pasul 1123: Mobile — pt for top logo/hamburger area, pb for floating bottom bar; Desktop — pt for top nav */}
+                  <main className="relative z-10 pt-16 pb-20 lg:pb-0 lg:pt-16">
                     <ErrorBoundary>
                       {children}
                     </ErrorBoundary>

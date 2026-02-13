@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHaptic } from '@/hooks/useHaptic';
 import { createClient } from '@/lib/supabase';
 
 interface EmojiReactionsProps {
@@ -64,6 +65,7 @@ const translations = {
 
 export default function EmojiReactions({ postId, className = '' }: EmojiReactionsProps) {
   const { language } = useLanguage();
+  const { tapSuccess, tapLight } = useHaptic();
   const t = translations[language as keyof typeof translations] || translations.de;
   const [reactions, setReactions] = useState<ReactionData[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -120,6 +122,8 @@ export default function EmojiReactions({ postId, className = '' }: EmojiReaction
 
   // Handle reaction click - works for guests too using localStorage
   const handleReaction = (type: ReactionType) => {
+    // Haptic feedback for reaction / Haptisches Feedback für Reaktion / Feedback haptic pentru reacție
+    tapSuccess();
     // No login required - guests can react using localStorage
 
     const currentUserReaction = localStorage.getItem(`radikal-user-reaction-${postId}`);
@@ -189,7 +193,7 @@ export default function EmojiReactions({ postId, className = '' }: EmojiReaction
 
         {/* Add reaction button */}
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => { tapLight(); setIsExpanded(!isExpanded); }}
           className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 flex items-center justify-center transition-all hover:scale-110"
         >
           <span className="text-lg">😊</span>

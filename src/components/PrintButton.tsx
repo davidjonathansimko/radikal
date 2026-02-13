@@ -35,11 +35,11 @@ export default function PrintButton({ className = '', variant = 'button', showLa
     return (
       <button
         onClick={handlePrint}
-        className={`px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-all no-print flex items-center gap-0.5 xs:gap-1 ${className}`}
+        className={`px-2 xs:px-2.5 sm:px-3 py-1 xs:py-1.5 sm:py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-all no-print flex items-center gap-1 xs:gap-1.5 ${className}`}
         title={t.saveAsPdf}
       >
-        <FaDownload className="w-3 h-3 xs:w-4 xs:h-4 sm:w-4 sm:h-4" />
-        <span className="text-[0.7rem] xs:text-xs sm:text-sm font-semibold">{t.pdf}</span>
+        <FaDownload className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
+        <span className="text-xs xs:text-sm sm:text-sm font-semibold">{t.pdf}</span>
       </button>
     );
   }

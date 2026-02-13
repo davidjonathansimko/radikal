@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -13,6 +13,18 @@ export default function AuthCallback() {
   const router = useRouter();
   const supabase = createClient();
  const { t,language } = useLanguage();
+
+  // Keep nav/footer hidden on auth callback page
+  useLayoutEffect(() => {
+    document.body.classList.add('modal-active');
+    return () => {
+      // Pasul 12005: Don't remove if redirecting after successful auth
+      if (!document.body.dataset.loginSuccess) {
+        document.body.classList.remove('modal-active');
+      }
+    };
+  }, []);
+
   useEffect(() => {
     // Handle the OAuth callback / OAuth-Callback behandeln
     const handleAuthCallback = async () => {
@@ -28,6 +40,13 @@ export default function AuthCallback() {
 
         if (data.session) {
           // User is authenticated, redirect to home / Benutzer ist authentifiziert, zur Startseite weiterleiten
+          document.body.dataset.loginSuccess = 'true';
+          // Transfer pending language from WelcomeModal to persistent localStorage
+          const pendingLang = sessionStorage.getItem('radikalPendingLanguage');
+          if (pendingLang) {
+            localStorage.setItem('radikalSelectedLanguage', pendingLang);
+            sessionStorage.removeItem('radikalPendingLanguage');
+          }
           router.push('/');
         } else {
           // No session found, redirect to login / Keine Session gefunden, zur Anmeldung weiterleiten

@@ -6,6 +6,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Pasul 1302000: PWA FULLSCREEN MODE ===== */
+/* When running as installed PWA app — disable zoom, use safe areas */
+/* Wenn als installierte PWA-App ausgeführt — Zoom deaktivieren, sichere Bereiche verwenden */
+/* Când rulează ca aplicație PWA instalată — dezactivează zoom, folosește zone sigure */
+
+/* PWA mode: disable all zoom gestures */
+html.pwa-mode {
+  touch-action: pan-x pan-y;
+  -ms-touch-action: pan-x pan-y;
+}
+
+html.pwa-mode body {
+  touch-action: pan-x pan-y;
+  -ms-touch-action: pan-x pan-y;
+  /* Use safe-area-inset for fullscreen mode — content avoids status bar area */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* PWA mode: fixed elements need safe area offsets */
+html.pwa-mode .fixed.top-0 {
+  top: env(safe-area-inset-top, 0px);
+}
+
+html.pwa-mode .fixed.bottom-0 {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Pasul 1123: Hide scrollbar utility for swipeable carousel */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ===== SEARCH MODAL BLUR EFFECT ===== */
 /* When search modal is open, blur the entire page content */
 /* Wenn das Such-Modal geöffnet ist, wird der gesamte Seiteninhalt unscharf */
@@ -67,6 +106,10 @@ body {
   max-width: 100vw;
   overflow-x: hidden;
   scroll-behavior: smooth;
+  /* Pasul 1302003: Prevent browser overscroll navigation (back/forward gestures) */
+  /* Verhindert Browser-Overscroll-Navigation (Zurück/Vorwärts-Gesten) */
+  /* Previne navigarea prin overscroll a browserului (gesturi înapoi/înainte) */
+  overscroll-behavior-x: none;
 }
 
 /* Theme-aware body styles */
@@ -145,16 +188,35 @@ p, li, span, div {
 /* Prose content - Optimal reading experience with Montserrat for blogs */
 /* Blog-Inhalt - Optimale Leseerfahrung mit Montserrat für Blogs */
 /* Conținut blog - Experiență de citire optimă cu Montserrat pentru bloguri */
-.prose, article, .blog-content {
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+.prose, article, .blog-content, .blog-body-text, .reading-mode-content {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   font-size: clamp(1rem, 1.1vw, 1.125rem);
   line-height: 1.8;
   letter-spacing: 0.01em;
 }
 
-.prose p, article p {
+.prose p, article p, .blog-body-text p, .reading-mode-content p {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   margin-bottom: 1.5em;
   text-wrap: pretty;
+}
+
+/* 📖 Bible reference highlighting - Bold and red / Bibelreferenz-Hervorhebung / Evidențiere referințe biblice */
+.bible-ref {
+  font-weight: 700;
+  color: #ef4444;
+  transition: color 0.2s ease;
+}
+
+/* Dark mode: brighter red for dark backgrounds / Dunkel-Modus: helleres Rot / Mod întunecat: roșu mai deschis */
+.dark .bible-ref {
+  color: #f87171;
+}
+
+/* Light mode: darker red for readability / Hell-Modus: dunkleres Rot / Mod luminos: roșu mai închis */
+:root:not(.dark) .bible-ref,
+.light .bible-ref {
+  color: #dc2626;
 }
 
 .prose h1, .prose h2, .prose h3, article h1, article h2, article h3 {
@@ -493,6 +555,63 @@ html.light body {
   animation: spin-slow 20s linear infinite;
 }
 
+/* Moon rocking animation — gentle swing / Mond-Schaukel-Animation / Animație legănare lună */
+@keyframes moon-rock {
+  0%, 100% {
+    transform: rotate(-8deg) scale(1);
+    filter: drop-shadow(0 0 4px rgba(148,163,184,0.3));
+  }
+  25% {
+    transform: rotate(4deg) scale(1.05);
+    filter: drop-shadow(0 0 8px rgba(148,163,184,0.5));
+  }
+  50% {
+    transform: rotate(-4deg) scale(1);
+    filter: drop-shadow(0 0 6px rgba(148,163,184,0.4));
+  }
+  75% {
+    transform: rotate(8deg) scale(1.05);
+    filter: drop-shadow(0 0 10px rgba(148,163,184,0.6));
+  }
+}
+
+.animate-moon-rock {
+  animation: moon-rock 6s ease-in-out infinite;
+  color: #94a3b8;
+}
+
+/* Search pulse animation — gentle scale beat / Such-Puls-Animation / Animație pulsare căutare */
+@keyframes search-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.animate-search-pulse {
+  animation: search-pulse 3s ease-in-out infinite;
+}
+
+/* Flag wave animation — gentle tilt / Flaggen-Wellen-Animation / Animație fluturare steag */
+@keyframes flag-wave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(3deg);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+}
+
+.animate-flag-wave {
+  animation: flag-wave 4s ease-in-out infinite;
+  display: inline-block;
+}
+
 /* Text reveal animation - like insurrection.photo story */
 @keyframes textReveal {
   0% {
@@ -696,6 +815,29 @@ html.light body {
   .mobile-hidden {
     @apply hidden;
   }
+
+  /* Pasul 1302006: Slightly larger text on mobile for better readability */
+  /* Etwas größerer Text auf Mobilgeräten für bessere Lesbarkeit */
+  /* Text puțin mai mare pe mobil pentru lizibilitate mai bună */
+  body {
+    font-size: 16px;
+  }
+
+  /* Blog content text on mobile — 17px base for comfortable reading */
+  .blog-body-text, .reading-mode-content, .prose {
+    font-size: 17px !important;
+    line-height: 1.85 !important;
+  }
+
+  /* General page text slightly larger on mobile */
+  p, span, li {
+    font-size: max(15px, 1em);
+  }
+
+  /* Comment text readable on mobile */
+  .comments-section p, .comments-section span {
+    font-size: 15px;
+  }
 }
 
 /* Tablet responsive adjustments / Tablet responsive Anpassungen */
@@ -785,26 +927,33 @@ body {
   color: #1a1a1a !important;
 }
 
-.light p:not(.mobile-menu-container *),
-.light span:not(.mobile-menu-container *),
-.light div:not(.mobile-menu-container *),
-.light a:not(.mobile-menu-container *),
-.light button:not(.mobile-menu-container *),
-.light label:not(.mobile-menu-container *) {
+.light p:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light span:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light div:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light a:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light button:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light label:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
 /* Force ALL text colors in light mode */
-.light .text-white:not(.mobile-menu-container *),
-.light .text-white\/90:not(.mobile-menu-container *),
-.light .text-white\/80:not(.mobile-menu-container *),
-.light .text-white\/70:not(.mobile-menu-container *),
-.light .text-white\/60:not(.mobile-menu-container *),
-.light .text-white\/50:not(.mobile-menu-container *),
-.light .text-white\/40:not(.mobile-menu-container *),
-.light .text-white\/30:not(.mobile-menu-container *),
-.light .text-white\/20:not(.mobile-menu-container *) {
+.light .text-white:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/90:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/80:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/70:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/60:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/50:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/40:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/30:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
+.light .text-white\/20:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text) {
   color: #1a1a1a !important;
+}
+
+/* Elements with force-white-text class keep white text in light mode */
+/* Used for overlays on dark images (e.g., reading time badge on blog cards) */
+.force-white-text,
+.force-white-text * {
+  color: white !important;
 }
 
 /* Light theme specific text overrides */
@@ -825,13 +974,13 @@ body {
 }
 
 /* Navigation and interactive elements */
-.light nav,
-.light nav * {
+.light nav:not(.force-white-text):not(.force-white-text *),
+.light nav *:not(.force-white-text):not(.force-white-text *) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
-.light button:not(.mobile-menu-container *),
-.light button *:not(.mobile-menu-container *) {
+.light button:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *),
+.light button *:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
@@ -1072,10 +1221,17 @@ body {
 }
 
 /* Hide Navigation and Footer when modal is active */
+/* Navigation und Footer ausblenden wenn Modal aktiv ist */
+/* Ascunde Navigarea și Footerul când modalul este activ */
 body.modal-active nav,
-body.modal-active footer {
+body.modal-active footer,
+body.modal-active div[data-mobile-nav] {
   display: none !important;
   visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 
 /* ========================================
@@ -1504,6 +1660,17 @@ html.modal-open {
   overflow: hidden !important;
 }
 
+/* Pasul 12005: Share buttons closer together at ≤320px / Teilen-Buttons näher zusammen bei ≤320px */
+@media (max-width: 320px) {
+  .share-buttons-row {
+    gap: 0.375rem !important;
+  }
+  .share-buttons-row svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
 /* STEP 700: Mobile fullscreen menu slide-in animation */
 @keyframes mobileMenuSlideIn {
   from {
@@ -1515,4 +1682,83 @@ html.modal-open {
     transform: translateY(0);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* Pasul 121: UX/UI Mobile Experience Animations             */
+/* ═══════════════════════════════════════════════════════════ */
+
+/* Pull-to-refresh bouncing dots animation / Pull-to-Refresh springende Punkte Animation */
+@keyframes pull-refresh-dot {
+  0%, 80%, 100% { 
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% { 
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+.animate-pull-refresh-dot {
+  animation: pull-refresh-dot 1s ease-in-out infinite;
+}
+
+/* Bottom sheet slide-up animation / Bottom-Sheet Hochgleiten Animation */
+@keyframes bottom-sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Sticky header fade-in slide / Sticky-Header Ein-Gleiten / Antet lipicios alunecare */
+@keyframes sticky-header-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Swipe hint pulse animation / Swipe-Hinweis-Puls-Animation / Animație puls indiciu swipe */
+@keyframes swipe-hint-pulse {
+  0%, 100% { opacity: 0; transform: translateX(0); }
+  50% { opacity: 0.6; transform: translateX(-4px); }
+}
+
+/* Skeleton shimmer enhanced / Verbesserter Skeleton-Schimmer / Sclipire schelet îmbunătățită */
+@keyframes skeleton-wave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.8s ease-in-out infinite;
+}
+.dark .skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 200% 100%;
+}
+
 

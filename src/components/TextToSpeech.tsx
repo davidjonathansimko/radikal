@@ -8,6 +8,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 
+// TTS Engine type — 'browser' = built-in SpeechSynthesis, 'google' = Google Cloud WaveNet
+type TTSEngine = 'browser' | 'google';
+
 interface TextToSpeechProps {
   text: string;
   lang?: string;
@@ -190,6 +193,45 @@ export default function TextToSpeech({
   const chunksRef = useRef<string[]>([]);
   const currentChunkRef = useRef<number>(0);
   const isSpeakingRef = useRef<boolean>(false);
+  
+  // Wake Lock + silent audio to keep TTS alive when screen locks
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // ===== Google Cloud TTS State =====
+  const [ttsEngine, setTtsEngine] = useState<TTSEngine>('browser');
+  const [googleAvailable, setGoogleAvailable] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleVoiceGender, setGoogleVoiceGender] = useState<'female' | 'male'>('female');
+  const googleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const googleChunksRef = useRef<string[]>([]);
+  const googleCurrentChunkRef = useRef<number>(0);
+  const googleIsPlayingRef = useRef<boolean>(false);
+
+  // ===== Client-side audio cache (persists in browser session) =====
+  // Key: hash of text+lang+gender+rate → base64 audio
+  const clientAudioCacheRef = useRef<Map<string, string>>(new Map());
+
+  // Check if Google Cloud TTS is available on mount
+  useEffect(() => {
+    const checkGoogleTTS = async () => {
+      try {
+        const res = await fetch('/api/tts');
+        if (res.ok) {
+          const data = await res.json();
+          setGoogleAvailable(data.available === true);
+          if (data.available) {
+            // Auto-select Google if available (better quality)
+            setTtsEngine('google');
+          }
+        }
+      } catch {
+        // Google TTS not available — use browser
+        setGoogleAvailable(false);
+      }
+    };
+    checkGoogleTTS();
+  }, []);
 
   // Clean text for speech (remove markdown, HTML, etc.)
   const cleanText = useCallback((rawText: string): string => {
@@ -395,9 +437,152 @@ export default function TextToSpeech({
   useEffect(() => {
     return () => {
       isSpeakingRef.current = false;
+      googleIsPlayingRef.current = false;
       speechSynthesis.cancel();
+      // Stop Google audio on unmount
+      if (googleAudioRef.current) {
+        googleAudioRef.current.pause();
+        googleAudioRef.current = null;
+      }
+      // Release wake lock on unmount
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+      // Stop silent audio
+      if (silentAudioRef.current) {
+        silentAudioRef.current.pause();
+        silentAudioRef.current = null;
+      }
     };
   }, []);
+
+  // Request Wake Lock to keep screen/audio alive
+  const requestWakeLock = useCallback(async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await (navigator as Navigator & { wakeLock: { request: (type: string) => Promise<WakeLockSentinel> } }).wakeLock.request('screen');
+        console.log('[TTS] Wake Lock acquired');
+        wakeLockRef.current.addEventListener('release', () => {
+          console.log('[TTS] Wake Lock released');
+        });
+      }
+    } catch (err) {
+      console.log('[TTS] Wake Lock not available:', err);
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
+  }, []);
+
+  // Play a silent audio loop to keep the audio session alive on mobile
+  // This prevents the OS from suspending TTS when screen locks
+  const startSilentAudio = useCallback(() => {
+    if (silentAudioRef.current) return; // Already playing
+    try {
+      // Create a tiny silent audio context to keep audio session active
+      const audioCtx = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.001; // Nearly silent
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.start();
+      // Store reference for cleanup
+      silentAudioRef.current = { pause: () => { oscillator.stop(); audioCtx.close(); } } as unknown as HTMLAudioElement;
+      console.log('[TTS] Silent audio started for background playback');
+    } catch (err) {
+      console.log('[TTS] Silent audio not available:', err);
+    }
+  }, []);
+
+  const stopSilentAudio = useCallback(() => {
+    if (silentAudioRef.current) {
+      silentAudioRef.current.pause();
+      silentAudioRef.current = null;
+    }
+  }, []);
+
+  // Set up Media Session API for lock screen controls
+  const updateMediaSession = useCallback((playing: boolean, paused: boolean) => {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'RADIKAL Blog',
+        artist: 'Text-to-Speech',
+        album: 'RADIKAL.',
+      });
+      navigator.mediaSession.playbackState = playing ? (paused ? 'paused' : 'playing') : 'none';
+    } catch (err) {
+      console.log('[TTS] Media Session not available:', err);
+    }
+  }, []);
+
+  // Ref for startSpeaking to avoid circular dependency in visibility handler
+  const startSpeakingRef = useRef<(fromPosition: number) => void>(() => {});
+  
+  // Re-acquire wake lock when page becomes visible again (e.g., user turns screen on)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isPlaying && !isPaused) {
+        // Re-acquire wake lock if it was released
+        requestWakeLock();
+        // If speech was interrupted while screen was off, resume it
+        if (isSpeakingRef.current && !speechSynthesis.speaking && !speechSynthesis.paused) {
+          console.log('[TTS] Speech stopped during screen off, restarting from position', currentPosition);
+          setTimeout(() => {
+            if (isSpeakingRef.current) {
+              startSpeakingRef.current(currentPosition);
+            }
+          }, 300);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isPlaying, isPaused, currentPosition, requestWakeLock]);
+
+  // Set up Media Session action handlers for lock screen controls
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (isPaused) {
+          speechSynthesis.resume();
+          setIsPaused(false);
+          updateMediaSession(true, false);
+        } else if (!isPlaying) {
+          startSpeakingRef.current(currentPosition);
+        }
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (isPlaying && !isPaused) {
+          speechSynthesis.pause();
+          setIsPaused(true);
+          updateMediaSession(true, true);
+        }
+      });
+      navigator.mediaSession.setActionHandler('stop', () => {
+        isSpeakingRef.current = false;
+        speechSynthesis.cancel();
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(0);
+        setCurrentPosition(0);
+        releaseWakeLock();
+        stopSilentAudio();
+        updateMediaSession(false, false);
+      });
+    } catch (err) {
+      console.log('[TTS] Media Session handlers not supported:', err);
+    }
+  }, [isPlaying, isPaused, currentPosition, updateMediaSession, releaseWakeLock, stopSilentAudio]);
+
 
   // Chrome bug workaround: Chrome pauses speech after ~15 seconds
   // Periodically call resume() to keep it going
@@ -462,6 +647,216 @@ export default function TextToSpeech({
     });
   }, [effectiveLang, rate, selectedVoice]);
 
+  // ===== Google Cloud TTS: Chunk and play via /api/tts =====
+  const googleSplitChunks = useCallback((fullText: string): string[] => {
+    // Google limit is ~5000 bytes; we use 4000 chars to be safe with UTF-8
+    const GOOGLE_CHUNK_SIZE = 4000;
+    if (fullText.length <= GOOGLE_CHUNK_SIZE) return [fullText];
+    
+    const chunks: string[] = [];
+    let remaining = fullText;
+    while (remaining.length > 0) {
+      if (remaining.length <= GOOGLE_CHUNK_SIZE) {
+        chunks.push(remaining);
+        break;
+      }
+      let splitAt = GOOGLE_CHUNK_SIZE;
+      const searchWindow = remaining.substring(Math.floor(GOOGLE_CHUNK_SIZE * 0.6), GOOGLE_CHUNK_SIZE);
+      const sentenceEndMatch = searchWindow.match(/[.!?]\s/g);
+      if (sentenceEndMatch) {
+        const lastEnd = searchWindow.lastIndexOf(sentenceEndMatch[sentenceEndMatch.length - 1]);
+        if (lastEnd >= 0) splitAt = Math.floor(GOOGLE_CHUNK_SIZE * 0.6) + lastEnd + 2;
+      } else {
+        const lastSpace = remaining.lastIndexOf(' ', GOOGLE_CHUNK_SIZE);
+        if (lastSpace > GOOGLE_CHUNK_SIZE * 0.3) splitAt = lastSpace + 1;
+      }
+      chunks.push(remaining.substring(0, splitAt).trim());
+      remaining = remaining.substring(splitAt).trim();
+    }
+    return chunks;
+  }, []);
+
+  const googlePlayChunk = useCallback(async (chunkText: string): Promise<void> => {
+    // Client-side cache key: simple hash of text + params
+    const cacheKey = `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`;
+    
+    let audioSrc: string;
+    
+    // Check client-side memory cache first
+    const cachedAudio = clientAudioCacheRef.current.get(cacheKey);
+    if (cachedAudio) {
+      console.log('[TTS Client Cache] ✅ HIT — using cached audio');
+      audioSrc = cachedAudio;
+    } else {
+      // Fetch from server (server also has its own 2-layer cache)
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: chunkText,
+          language: voiceLanguage,
+          speakingRate: rate,
+          voiceGender: googleVoiceGender,
+        }),
+      });
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (err.error === 'quota_exceeded') {
+          throw new Error('quota_exceeded');
+        }
+        throw new Error(`Google TTS failed: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      audioSrc = `data:audio/mp3;base64,${data.audioContent}`;
+      
+      // Save to client-side cache for this session
+      clientAudioCacheRef.current.set(cacheKey, audioSrc);
+      console.log(`[TTS Client Cache] 💾 SAVED — ${clientAudioCacheRef.current.size} chunks cached`);
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      const audio = new Audio(audioSrc);
+      googleAudioRef.current = audio;
+      
+      audio.onended = () => {
+        resolve();
+      };
+      audio.onerror = () => {
+        reject(new Error('Audio playback failed'));
+      };
+      audio.play().catch(reject);
+    });
+  }, [voiceLanguage, rate, googleVoiceGender]);
+
+  const startGoogleSpeaking = useCallback(async (fromPosition: number = 0) => {
+    const cleanedText = cleanText(text);
+    if (!cleanedText) return;
+
+    const textToSpeak = cleanedText.substring(fromPosition);
+    const chunks = googleSplitChunks(textToSpeak);
+    googleChunksRef.current = chunks;
+    googleCurrentChunkRef.current = 0;
+    googleIsPlayingRef.current = true;
+
+    setIsPlaying(true);
+    setIsPaused(false);
+    setGoogleLoading(true);
+    requestWakeLock();
+    startSilentAudio();
+    updateMediaSession(true, false);
+
+    let offsetBefore = fromPosition;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      if (!googleIsPlayingRef.current) break;
+      
+      googleCurrentChunkRef.current = i;
+      setGoogleLoading(true);
+      
+      try {
+        // Update progress at chunk start
+        const chunkProgress = (offsetBefore / cleanedText.length) * 100;
+        setProgress(chunkProgress);
+        setCurrentPosition(offsetBefore);
+        
+        await googlePlayChunk(chunks[i]);
+        setGoogleLoading(false);
+        offsetBefore += chunks[i].length;
+      } catch (err: unknown) {
+        setGoogleLoading(false);
+        const error = err as Error;
+        if (error.message === 'quota_exceeded') {
+          // Quota exceeded → auto-fallback to browser TTS
+          console.warn('[TTS] Google quota exceeded, falling back to browser TTS');
+          setTtsEngine('browser');
+          googleIsPlayingRef.current = false;
+          // Continue with browser TTS from current position
+          setTimeout(() => startSpeaking(offsetBefore), 200);
+          return;
+        }
+        console.error('[Google TTS] Error:', error.message);
+        break;
+      }
+    }
+
+    // Finished naturally
+    if (googleIsPlayingRef.current) {
+      googleIsPlayingRef.current = false;
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentPosition(0);
+      setGoogleLoading(false);
+      releaseWakeLock();
+      stopSilentAudio();
+      updateMediaSession(false, false);
+    }
+  }, [text, cleanText, googleSplitChunks, googlePlayChunk, requestWakeLock, startSilentAudio, releaseWakeLock, stopSilentAudio, updateMediaSession]);
+
+  const stopGoogleSpeaking = useCallback(() => {
+    googleIsPlayingRef.current = false;
+    if (googleAudioRef.current) {
+      googleAudioRef.current.pause();
+      googleAudioRef.current = null;
+    }
+    setIsPlaying(false);
+    setIsPaused(false);
+    setProgress(0);
+    setCurrentPosition(0);
+    setGoogleLoading(false);
+    releaseWakeLock();
+    stopSilentAudio();
+    updateMediaSession(false, false);
+  }, [releaseWakeLock, stopSilentAudio, updateMediaSession]);
+
+  const pauseGoogleSpeaking = useCallback(() => {
+    if (googleAudioRef.current) {
+      googleAudioRef.current.pause();
+    }
+    setIsPaused(true);
+    updateMediaSession(true, true);
+  }, [updateMediaSession]);
+
+  const resumeGoogleSpeaking = useCallback(() => {
+    if (googleAudioRef.current) {
+      googleAudioRef.current.play();
+    }
+    setIsPaused(false);
+    updateMediaSession(true, false);
+  }, [updateMediaSession]);
+
+  // Update progress during Google audio playback
+  useEffect(() => {
+    if (ttsEngine !== 'google' || !isPlaying || isPaused) return;
+    
+    const interval = setInterval(() => {
+      if (googleAudioRef.current && !googleAudioRef.current.paused) {
+        const audio = googleAudioRef.current;
+        const cleanedText = cleanText(text);
+        const chunks = googleChunksRef.current;
+        const chunkIdx = googleCurrentChunkRef.current;
+        
+        // Calculate overall progress from chunk position + audio position
+        let offsetBefore = 0;
+        for (let i = 0; i < chunkIdx; i++) {
+          offsetBefore += chunks[i]?.length || 0;
+        }
+        
+        const chunkLen = chunks[chunkIdx]?.length || 0;
+        const audioProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+        const posInChunk = Math.floor(chunkLen * audioProgress);
+        const totalPos = offsetBefore + posInChunk;
+        
+        setCurrentPosition(totalPos);
+        setProgress((totalPos / cleanedText.length) * 100);
+      }
+    }, 200);
+    
+    return () => clearInterval(interval);
+  }, [ttsEngine, isPlaying, isPaused, text, cleanText]);
+
   const startSpeaking = useCallback((fromPosition: number = 0) => {
     const cleanedText = cleanText(text);
     cleanedTextRef.current = cleanedText;
@@ -493,6 +888,11 @@ export default function TextToSpeech({
 
     setIsPlaying(true);
     setIsPaused(false);
+    
+    // Activate wake lock + silent audio to prevent screen lock from stopping TTS
+    requestWakeLock();
+    startSilentAudio();
+    updateMediaSession(true, false);
 
     // Play chunks sequentially
     const playChunks = async () => {
@@ -528,6 +928,9 @@ export default function TextToSpeech({
         setIsPaused(false);
         setProgress(0);
         setCurrentPosition(0);
+        releaseWakeLock();
+        stopSilentAudio();
+        updateMediaSession(false, false);
       }
     };
 
@@ -537,30 +940,57 @@ export default function TextToSpeech({
     } else {
       playChunks();
     }
-  }, [text, effectiveLang, rate, selectedVoice, cleanText, splitIntoChunks, speakChunk]);
+  }, [text, effectiveLang, rate, selectedVoice, cleanText, splitIntoChunks, speakChunk, requestWakeLock, startSilentAudio, releaseWakeLock, stopSilentAudio, updateMediaSession]);
+
+  // Keep ref in sync so visibility handler can call latest startSpeaking
+  useEffect(() => {
+    startSpeakingRef.current = startSpeaking;
+  }, [startSpeaking]);
 
   const pauseSpeaking = () => {
-    speechSynthesis.pause();
-    setIsPaused(true);
+    if (ttsEngine === 'google') {
+      pauseGoogleSpeaking();
+    } else {
+      speechSynthesis.pause();
+      setIsPaused(true);
+      updateMediaSession(true, true);
+    }
+    // Keep wake lock & silent audio active during pause so position is preserved
   };
 
   const resumeSpeaking = () => {
-    speechSynthesis.resume();
-    setIsPaused(false);
+    if (ttsEngine === 'google') {
+      resumeGoogleSpeaking();
+    } else {
+      speechSynthesis.resume();
+      setIsPaused(false);
+      updateMediaSession(true, false);
+    }
   };
 
   const stopSpeaking = () => {
-    isSpeakingRef.current = false;
-    speechSynthesis.cancel();
-    setIsPlaying(false);
-    setIsPaused(false);
-    setProgress(0);
-    setCurrentPosition(0);
+    if (ttsEngine === 'google') {
+      stopGoogleSpeaking();
+    } else {
+      isSpeakingRef.current = false;
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentPosition(0);
+      releaseWakeLock();
+      stopSilentAudio();
+      updateMediaSession(false, false);
+    }
   };
 
   const togglePlayPause = () => {
     if (!isPlaying) {
-      startSpeaking(currentPosition);
+      if (ttsEngine === 'google') {
+        startGoogleSpeaking(currentPosition);
+      } else {
+        startSpeaking(currentPosition);
+      }
     } else if (isPaused) {
       resumeSpeaking();
     } else {
@@ -574,10 +1004,15 @@ export default function TextToSpeech({
     const newPosition = Math.floor((percent / 100) * cleanedText.length);
     
     if (isPlaying) {
-      speechSynthesis.cancel();
-      setTimeout(() => {
-        startSpeaking(newPosition);
-      }, 100);
+      if (ttsEngine === 'google') {
+        stopGoogleSpeaking();
+        setTimeout(() => startGoogleSpeaking(newPosition), 100);
+      } else {
+        speechSynthesis.cancel();
+        setTimeout(() => {
+          startSpeaking(newPosition);
+        }, 100);
+      }
     } else {
       setCurrentPosition(newPosition);
       setProgress(percent);
@@ -611,63 +1046,280 @@ export default function TextToSpeech({
 
   // Compact version - expandable with settings
   // Visible text labels, inline layout for desktop
+  // Beautiful progress bar appears below when playing
   if (compact) {
+    // Estimate reading time based on text length and speed rate
+    const estimatedTotalSeconds = Math.round((cleanText(text).length / (15 * rate)));
+    const currentSeconds = Math.round((progress / 100) * estimatedTotalSeconds);
+    const formatTime = (s: number) => {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    };
+
+    // Button style matching PDF/Fokus-Lesen buttons
+    const btnBase = "flex items-center gap-0.5 xs:gap-1 px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-200 touch-manipulation flex-shrink-0";
+    const btnNormal = `${btnBase} bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-200 dark:hover:bg-white/20`;
+    const btnActive = `${btnBase} bg-red-600 text-white hover:bg-red-700`;
+
     return (
       <div className={`${className}`}>
-        <div className="flex items-center gap-1">
-          {/* Play button with text label */}
+        {/* Row 1: Blog hören, Stop, Stimme buttons - same style as PDF/Fokus-Lesen */}
+        <div className="flex items-center gap-1 flex-wrap">
+          {/* Play/Stop button with text label */}
           <button
             onClick={togglePlayPause}
-            className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg transition-colors touch-manipulation flex-shrink-0 ${
-              isPlaying ? 'bg-red-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+            className={isPlaying ? btnActive : btnNormal}
             title={isPlaying ? (isPaused ? t.resume : t.pause) : t.play}
+            disabled={googleLoading && ttsEngine === 'google'}
           >
-            <span className="text-sm">{isPlaying && !isPaused ? '⏸️' : '🔊'}</span>
-            <span className="text-[10px] xs:text-xs sm:text-sm font-semibold">{t.listenBlog}</span>
+            <span className="text-[0.75rem] xs:text-xs sm:text-sm">
+              {googleLoading ? '⏳' : isPlaying && !isPaused ? '▐▐' : '🔊'}
+            </span>
+            <span className="text-[0.75rem] xs:text-xs sm:text-sm font-semibold">
+              {t.listenBlog}
+              {ttsEngine === 'google' && !isPlaying && <span className="ml-0.5 text-[9px] opacity-70">✨</span>}
+            </span>
           </button>
-          
-          {/* Progress bar - only when playing */}
-          {isPlaying && (
-            <div 
-              className="h-2 bg-gray-300 dark:bg-gray-600 rounded-full cursor-pointer w-[40px] sm:w-[60px]"
-              onClick={handleProgressClick}
-            >
-              <div className="h-full bg-red-600 rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
-          )}
           
           {/* Stop button - only when playing */}
           {isPlaying && (
             <button
               onClick={stopSpeaking}
-              className="p-1 sm:p-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors touch-manipulation flex-shrink-0"
+              className={`${btnNormal} justify-center`}
               title={t.stop}
             >
-              <span className="text-sm">⏹️</span>
+              <span className="text-[0.75rem] xs:text-xs sm:text-sm">⏹</span>
             </button>
           )}
           
           {/* Settings toggle with visible text */}
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg transition-colors touch-manipulation flex-shrink-0 ${
-              showSettings ? 'bg-gray-800 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+            className={showSettings ? btnActive : btnNormal}
             title={t.voiceSettings}
           >
-            <span className="text-sm">⚙️</span>
-            <span className="text-[10px] xs:text-xs sm:text-sm font-medium">{t.voiceSettings}</span>
+            <span className="text-[0.75rem] xs:text-xs sm:text-sm">⚙️</span>
+            <span className="text-[0.75rem] xs:text-xs sm:text-sm font-semibold">{t.voiceSettings}</span>
           </button>
         </div>
         
-        {/* Compact settings panel - dark theme */}
+        {/* ===== Player bar - appears below when playing (like barplay/barpause screenshots) ===== */}
+        {isPlaying && (
+          <div className="mt-2 flex items-center gap-1.5 xs:gap-2 sm:gap-3 w-full px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/10 transition-all duration-300">
+            {/* Play/Pause button */}
+            <button
+              onClick={togglePlayPause}
+              className="flex-shrink-0 w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors touch-manipulation"
+              title={isPaused ? t.resume : t.pause}
+            >
+              {isPaused ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
+                  <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
+                  <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+
+            {/* Current time */}
+            <span className="flex-shrink-0 text-[9px] xs:text-[10px] sm:text-xs text-gray-500 dark:text-white/50 font-mono tabular-nums min-w-[28px] xs:min-w-[32px] sm:min-w-[38px] text-right">
+              {formatTime(currentSeconds)}
+            </span>
+
+            {/* Progress bar - full width, clickable & draggable */}
+            <div className="flex-1 min-w-[40px] relative group cursor-pointer select-none touch-none"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const bar = e.currentTarget;
+                const rect = bar.getBoundingClientRect();
+                const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                setProgress(pct);
+                // Don't seekTo on mousedown - only update visual position
+                // Pause speech while dragging to prevent conflicts
+                const wasPaused = isPaused;
+                if (isPlaying && !isPaused) {
+                  speechSynthesis.pause();
+                }
+                const onMove = (ev: MouseEvent) => {
+                  ev.preventDefault();
+                  const r = bar.getBoundingClientRect();
+                  const p = Math.max(0, Math.min(100, ((ev.clientX - r.left) / r.width) * 100));
+                  setProgress(p);
+                };
+                const onUp = (ev: MouseEvent) => {
+                  ev.preventDefault();
+                  const r = bar.getBoundingClientRect();
+                  const p = Math.max(0, Math.min(100, ((ev.clientX - r.left) / r.width) * 100));
+                  setProgress(p);
+                  document.removeEventListener('mousemove', onMove);
+                  document.removeEventListener('mouseup', onUp);
+                  // Only seek on mouseup - this avoids restarting speech during drag
+                  seekTo(p);
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const bar = e.currentTarget;
+                const rect = bar.getBoundingClientRect();
+                const touch = e.touches[0];
+                const pct = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
+                setProgress(pct);
+                // Pause speech while dragging to prevent conflicts
+                if (isPlaying && !isPaused) {
+                  speechSynthesis.pause();
+                }
+                const onMove = (ev: TouchEvent) => {
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  const r = bar.getBoundingClientRect();
+                  const t = ev.touches[0];
+                  const p = Math.max(0, Math.min(100, ((t.clientX - r.left) / r.width) * 100));
+                  setProgress(p);
+                };
+                const onEnd = (ev: TouchEvent) => {
+                  ev.preventDefault();
+                  const r = bar.getBoundingClientRect();
+                  const t = ev.changedTouches[0];
+                  const p = Math.max(0, Math.min(100, ((t.clientX - r.left) / r.width) * 100));
+                  document.removeEventListener('touchmove', onMove);
+                  document.removeEventListener('touchend', onEnd);
+                  // Only seek on touchend - this avoids restarting speech during drag
+                  seekTo(p);
+                };
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onEnd, { passive: false });
+              }}
+            >
+              {/* Track background */}
+              <div className="w-full h-1.5 sm:h-2 bg-gray-300 dark:bg-white/15 rounded-full cursor-pointer overflow-hidden touch-manipulation">
+                {/* Filled progress - blue like in barplay/barpause */}
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-[width] duration-100"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              {/* Scrub thumb - always visible */}
+              <div 
+                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-white rounded-full shadow-md border border-gray-300 dark:border-white/30 pointer-events-none transition-[left] duration-100"
+                style={{ left: `calc(${progress}% - 6px)` }}
+              />
+            </div>
+
+            {/* Total time */}
+            <span className="flex-shrink-0 text-[9px] xs:text-[10px] sm:text-xs text-gray-500 dark:text-white/50 font-mono tabular-nums min-w-[28px] xs:min-w-[32px] sm:min-w-[38px]">
+              {formatTime(estimatedTotalSeconds)}
+            </span>
+
+            {/* Volume/Speed indicator */}
+            <div className="flex-shrink-0 flex items-center gap-1">
+              <button
+                onClick={() => {
+                  // Cycle speed: 0.8 → 1.0 → 1.2 → 1.5 → 0.8
+                  const speeds = [0.8, 1.0, 1.2, 1.5];
+                  const currentIdx = speeds.indexOf(rate);
+                  const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % speeds.length : 0;
+                  const newRate = speeds[nextIdx];
+                  setRate(newRate);
+                  if (isPlaying && !isPaused) {
+                    if (ttsEngine === 'google') {
+                      stopGoogleSpeaking();
+                      setTimeout(() => startGoogleSpeaking(currentPosition), 100);
+                    } else {
+                      speechSynthesis.cancel();
+                      setTimeout(() => startSpeaking(currentPosition), 100);
+                    }
+                  }
+                }}
+                className="text-[10px] sm:text-xs text-gray-500 dark:text-white/50 hover:text-gray-800 dark:hover:text-white/80 font-mono px-1 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 transition-colors touch-manipulation"
+                title={t.speed}
+              >
+                {rate}x
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Compact settings panel */}
         {showSettings && (
-          <div className="mt-2 p-3 bg-gray-900 rounded-lg border border-gray-700 space-y-3">
+          <div className="mt-2 p-3 bg-gray-50 dark:bg-black rounded-lg border border-gray-200 dark:border-white/10 space-y-3">
+            {/* TTS Engine toggle — Google WaveNet vs Browser */}
+            {googleAvailable && (
+              <div>
+                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
+                  🎙️ {language === 'de' ? 'Stimm-Engine' : language === 'en' ? 'Voice Engine' : language === 'ro' ? 'Motor vocal' : 'Голосовой движок'}
+                </label>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => { setTtsEngine('google'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                      ttsEngine === 'google' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/15'
+                    }`}
+                  >
+                    ✨ Google WaveNet
+                  </button>
+                  <button
+                    onClick={() => { setTtsEngine('browser'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                      ttsEngine === 'browser' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/15'
+                    }`}
+                  >
+                    🔊 Browser
+                  </button>
+                </div>
+                {ttsEngine === 'google' && (
+                  <p className="text-[10px] text-gray-400 dark:text-white/30 mt-1">
+                    {language === 'de' ? 'Hochwertige KI-Stimme' : language === 'en' ? 'High-quality AI voice' : language === 'ro' ? 'Voce AI de înaltă calitate' : 'Высококачественный ИИ-голос'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Google voice gender selector */}
+            {ttsEngine === 'google' && googleAvailable && (
+              <div>
+                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
+                  {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
+                </label>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => { setGoogleVoiceGender('female'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all ${
+                      googleVoiceGender === 'female' 
+                        ? 'bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-600' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60'
+                    }`}
+                  >
+                    👩 {language === 'de' ? 'Weiblich' : language === 'en' ? 'Female' : language === 'ro' ? 'Feminină' : 'Женский'}
+                  </button>
+                  <button
+                    onClick={() => { setGoogleVoiceGender('male'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all ${
+                      googleVoiceGender === 'male' 
+                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60'
+                    }`}
+                  >
+                    👨 {language === 'de' ? 'Männlich' : language === 'en' ? 'Male' : language === 'ro' ? 'Masculină' : 'Мужской'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Voice Language selector */}
             {availableLanguages.length > 1 && (
               <div>
-                <label className="text-gray-400 text-xs block mb-1">
+                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
                   🌐 {language === 'de' ? 'Vorlesesprache' : language === 'en' ? 'Reading Language' : language === 'ro' ? 'Limba de citire' : 'Язык чтения'}
                 </label>
                 <select
@@ -678,7 +1330,7 @@ export default function TextToSpeech({
                       stopSpeaking();
                     }
                   }}
-                  className="w-full bg-gray-800 text-white text-xs rounded p-1.5 border border-gray-600"
+                  className="w-full bg-white dark:bg-neutral-900 text-gray-800 dark:text-white text-xs rounded p-1.5 border border-gray-300 dark:border-white/15"
                 >
                   {availableLanguages.map((langKey) => (
                     <option key={langKey} value={langKey}>
@@ -691,7 +1343,7 @@ export default function TextToSpeech({
             
             {/* Speed */}
             <div>
-              <label className="text-gray-400 text-xs block mb-1">
+              <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
                 {t.speed}: {rate}x
               </label>
               <input
@@ -701,20 +1353,20 @@ export default function TextToSpeech({
                 step="0.1"
                 value={rate}
                 onChange={(e) => setRate(parseFloat(e.target.value))}
-                className="w-full h-1.5 accent-red-600"
+                className="w-full h-1.5 accent-blue-500"
               />
             </div>
             
             {/* Voice - only if multiple voices */}
             {voices.length > 0 && (
               <div>
-                <label className="text-gray-400 text-xs block mb-1">
+                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
                   {t.voice}
                 </label>
                 {/* Warning when using fallback voices */}
                 {usingFallback && (
-                  <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-600/50 rounded text-yellow-400 text-xs flex items-center gap-2">
-                    <span>⚠️</span>
+                  <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-600/40 rounded text-yellow-700 dark:text-yellow-400 text-xs flex items-center gap-2">
+                    <span>⚠︎</span>
                     <span>{t.noVoices} - {t.usingFallback}</span>
                   </div>
                 )}
@@ -730,7 +1382,7 @@ export default function TextToSpeech({
                       }
                     }
                   }}
-                  className="w-full bg-gray-800 text-white text-xs rounded p-1.5 border border-gray-600"
+                  className="w-full bg-white dark:bg-neutral-900 text-gray-800 dark:text-white text-xs rounded p-1.5 border border-gray-300 dark:border-white/15"
                 >
                   {voices.map((v) => (
                     <option key={v.voice.name} value={v.voice.name}>
@@ -831,6 +1483,68 @@ export default function TextToSpeech({
       {/* Settings panel */}
       {showSettings && (
         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 space-y-4">
+          {/* TTS Engine toggle — Google WaveNet vs Browser (full version) */}
+          {googleAvailable && (
+            <div>
+              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
+                🎙️ {language === 'de' ? 'Stimm-Engine' : language === 'en' ? 'Voice Engine' : language === 'ro' ? 'Motor vocal' : 'Голосовой движок'}
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setTtsEngine('google'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    ttsEngine === 'google' 
+                      ? 'bg-blue-600 text-white shadow-sm' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  ✨ Google WaveNet
+                </button>
+                <button
+                  onClick={() => { setTtsEngine('browser'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    ttsEngine === 'browser' 
+                      ? 'bg-blue-600 text-white shadow-sm' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  🔊 Browser
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Google voice gender (full version) */}
+          {ttsEngine === 'google' && googleAvailable && (
+            <div>
+              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
+                {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setGoogleVoiceGender('female'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    googleVoiceGender === 'female' 
+                      ? 'bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-600' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  👩 {language === 'de' ? 'Weiblich' : language === 'en' ? 'Female' : language === 'ro' ? 'Feminină' : 'Женский'}
+                </button>
+                <button
+                  onClick={() => { setGoogleVoiceGender('male'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    googleVoiceGender === 'male' 
+                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  👨 {language === 'de' ? 'Männlich' : language === 'en' ? 'Male' : language === 'ro' ? 'Masculină' : 'Мужской'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Voice Language selector */}
           {availableLanguages.length > 1 && (
             <div>

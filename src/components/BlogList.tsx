@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
@@ -47,6 +47,44 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  
+  // Pasul 1123: Mobile carousel state
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile for swipeable carousel
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Track active slide via scroll position
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel || !isMobile) return;
+    const handleScroll = () => {
+      const scrollLeft = carousel.scrollLeft;
+      const cardWidth = carousel.offsetWidth;
+      if (cardWidth === 0) return;
+      const idx = Math.round(scrollLeft / cardWidth);
+      setActiveSlide(Math.max(0, Math.min(idx, Math.min(posts.length, 6) - 1)));
+    };
+    // Listen to both scroll and touchend for reliability
+    carousel.addEventListener('scroll', handleScroll, { passive: true });
+    carousel.addEventListener('touchend', () => {
+      // Small delay to let momentum scroll settle
+      setTimeout(handleScroll, 150);
+    }, { passive: true });
+    // Initial check
+    handleScroll();
+    return () => {
+      carousel.removeEventListener('scroll', handleScroll);
+      carousel.removeEventListener('touchend', handleScroll);
+    };
+  }, [isMobile, posts.length]);
   
   // Translation state / Übersetzungsstatus / Stare traducere
   const [translatedPosts, setTranslatedPosts] = useState<Map<string, { title: string; excerpt: string; tags: string[] }>>(new Map());
@@ -311,13 +349,13 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Message showing only last 5 blogs / Nachricht zeigt nur die letzten 5 Blogs / Mesaj arată doar ultimele 5 bloguri */}
-      <div className="mb-8 text-center">
-        <p className="text-gray-600 dark:text-white/60 text-md font-bold italic">
-          {language === 'de' ? 'Angezeigt werden die letzten 5 Blogbeiträge' : 
-           language === 'en' ? 'Showing the last 5 blog posts' : 
-           language === 'ro' ? 'Sunt afișate ultimele 5 postări de blog' : 
-           'Показаны последние 5 публикаций в блоге'}
+      {/* Message showing only last 6 blogs / Nachricht zeigt nur die letzten 6 Blogs / Mesaj arată doar ultimele 6 bloguri */}
+      <div className="mb-4 lg:mb-8 text-center">
+        <p className="text-gray-600 dark:text-white/60 text-sm lg:text-lg font-medium">
+          {language === 'de' ? 'Angezeigt werden die letzten 6 Blogbeiträge' : 
+           language === 'en' ? 'Showing the last 6 blog posts' : 
+           language === 'ro' ? 'Sunt afișate ultimele 6 postări de blog' : 
+           'Показаны последние 6 публикаций в блоге'}
         </p>
       </div>
       
@@ -333,18 +371,64 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         </div>
       )}
 
-      {/* Blog posts grid - with more spacing and clear separators between cards / Blog-Posts-Raster - mit mehr Abstand und klaren Trennzeichen zwischen Karten / Grilă postări blog - cu mai mult spațiu și separatoare clare între carduri */}
-      <div className="space-y-8">
-        {posts.slice(0, 5).map((post, index) => (
+      {/* Pasul 1125: Mobile = single card with left/right arrows, Desktop = vertical stack */}
+      <div className="relative">
+        {/* Left arrow — mobile only (always rendered when activeSlide > 0) */}
+        {isMobile && activeSlide > 0 && (
+          <button
+            onClick={() => {
+              const carousel = carouselRef.current;
+              if (!carousel) return;
+              const cardWidth = carousel.offsetWidth;
+              carousel.scrollTo({ left: (activeSlide - 1) * cardWidth, behavior: 'smooth' });
+            }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-40 bg-black/60 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/20 active:scale-90 transition-all"
+            aria-label="Previous blog"
+            style={{ pointerEvents: 'auto' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        )}
+        {/* Right arrow — mobile only */}
+        {isMobile && activeSlide < Math.min(posts.length, 6) - 1 && (
+          <button
+            onClick={() => {
+              const carousel = carouselRef.current;
+              if (!carousel) return;
+              const cardWidth = carousel.offsetWidth;
+              carousel.scrollTo({ left: (activeSlide + 1) * cardWidth, behavior: 'smooth' });
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-40 bg-black/60 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/20 active:scale-90 transition-all"
+            aria-label="Next blog"
+            style={{ pointerEvents: 'auto' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        )}
+
+        {/* Dot indicators moved below carousel */}
+
+      <div 
+        ref={carouselRef}
+        className={isMobile 
+          ? "flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" 
+          : "space-y-8"
+        }
+        style={isMobile ? { scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' } : {}}
+      >
+        {posts.slice(0, 6).map((post, index) => (
           <React.Fragment key={post.id}>
+            <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : ""}
+              style={isMobile ? { maxHeight: 'calc(100vh - 160px)' } : {}}
+            >
             <Link href={`/blogs/${post.slug}`}>
             <article 
-              className="backdrop-blur-[1.5px] rounded-md p-6 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className={`backdrop-blur-[1.5px] rounded-xl p-3 lg:p-6 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 ${isMobile ? 'shadow-md overflow-y-auto' : ''}`}
+              style={isMobile ? { maxHeight: 'calc(100vh - 170px)' } : { animationDelay: `${index * 0.1}s` }}
             >
               {/* Post header with theme-aware colors / Post-Kopf mit themenabhängigen Farben / Antet postare cu culori adaptate la temă */}
-              <header className="mb-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-200">
+              <header className="mb-2">
+                <h2 className="text-lg sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-200">
                   {getTranslatedTitle(post)}
                 </h2>
               
@@ -369,30 +453,30 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
             </header>
 
             {/* Post content / Post-Inhalt / Conținut postare */}
-            <div className="mb-6">
+            <div className="mb-4">
               {/* Featured image / Hauptbild / Imagine principală */}
               {post.image_url && (
-                <div className="mb-4 rounded-lg overflow-hidden">
+                <div className="mb-3 rounded-lg overflow-hidden">
                   <Image
                     src={post.image_url}
                     alt={getTranslatedTitle(post)}
                     width={800}
                     height={400}
-                    className="w-full h-48 sm:h-64 object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-28 sm:h-64 object-cover hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               )}
               
               {/* Post excerpt with theme-aware colors / Post-Auszug mit themenabhängigen Farben / Extras postare cu culori adaptate la temă */}
-              <p className="text-gray-700 dark:text-white/80 leading-relaxed text-lg">
+              <p className="text-gray-700 dark:text-white/80 leading-relaxed text-sm lg:text-lg line-clamp-2 lg:line-clamp-none">
                 {getTranslatedExcerpt(post)}
               </p>
             </div>
 
             {/* Responsive footer — auto-stretch, monochrome, uniform spacing, never overflow */}
-            <footer className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 pt-4 border-t border-gray-300 dark:border-white/20">
+            <footer className="flex flex-col items-stretch gap-2 pt-3 border-t border-gray-300 dark:border-white/20 overflow-hidden">
               {/* Like & Comments — equal spacing from card edges */}
-              <div className="flex items-center justify-between w-full sm:w-auto sm:justify-start sm:gap-6">
+              <div className="flex items-center justify-between w-full">
                 {/* Like button */}
                 <button
                   onClick={(e) => {
@@ -410,7 +494,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                   <span>{post.likes_count || 0}</span>
                 </button>
                 
-                {/* Comments button — right-aligned on mobile with equal margin */}
+                {/* Comments button */}
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -424,15 +508,15 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 </button>
               </div>
 
-              {/* Share buttons — flex-shrink-0 label, shorter Russian word */}
-              <div className="flex items-center flex-nowrap w-full sm:w-auto">
-                <span className="text-gray-700 dark:text-white/70 flex-shrink-0 font-bold" style={{ fontSize: 'clamp(13px, 4vw, 18px)' }}>
+              {/* Share buttons — all in one row, never overflow */}
+              <div className="flex items-center gap-2 w-full overflow-hidden">
+                <span className="text-gray-700 dark:text-white/70 flex-shrink-0 font-bold text-sm">
                   {language === 'de' ? 'Teilen:' : 
                    language === 'en' ? 'Share:' : 
                    language === 'ro' ? 'Distribuie:' : 
                    'Отправить:'}
                 </span>
-                <div className="flex flex-1 items-center justify-evenly flex-nowrap sm:flex-none sm:justify-start sm:gap-5 ml-3">
+                <div className="flex items-center gap-3 flex-shrink-0 share-buttons-row">
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -442,7 +526,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                   className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
                   title="WhatsApp"
                 >
-                  <FaWhatsapp style={{ width: 'clamp(16px, 5vw, 20px)', height: 'clamp(16px, 5vw, 20px)' }} />
+                  <FaWhatsapp className="w-[18px] h-[18px]" />
                 </button>
                 <button
                   onClick={(e) => {
@@ -453,7 +537,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                   className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
                   title="Telegram"
                 >
-                  <FaTelegram style={{ width: 'clamp(16px, 5vw, 20px)', height: 'clamp(16px, 5vw, 20px)' }} />
+                  <FaTelegram className="w-[18px] h-[18px]" />
                 </button>
                 <button
                   onClick={(e) => {
@@ -464,7 +548,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                   className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
                   title="Email"
                 >
-                  <FaEnvelope style={{ width: 'clamp(16px, 5vw, 20px)', height: 'clamp(16px, 5vw, 20px)' }} />
+                  <FaEnvelope className="w-[18px] h-[18px]" />
                 </button>
                 <button
                   onClick={(e) => {
@@ -475,13 +559,13 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                   className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
                   title="Twitter"
                 >
-                  <FaTwitter style={{ width: 'clamp(16px, 5vw, 20px)', height: 'clamp(16px, 5vw, 20px)' }} />
+                  <FaTwitter className="w-[18px] h-[18px]" />
                 </button>
                 </div>
               </div>
 
-              {/* Read more indicator with larger text on mobile */}
-              <div className="w-full sm:w-auto text-right sm:text-left">
+              {/* Read more indicator */}
+              <div className="text-right">
                 <span className="text-base sm:text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:text-blue-500 dark:group-hover:text-blue-300 transition-colors duration-200">
                   {language === 'de' ? 'Weiterlesen' : 
                    language === 'en' ? 'Read More' : 
@@ -492,12 +576,36 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
             </footer>
           </article>
         </Link>
-        {/* Clear separator between blog cards - only show if not last item */}
-        {index < Math.min(posts.length, 5) - 1 && (
+        {/* Separator — only on desktop / Separator — nur auf Desktop / Separator — doar pe desktop */}
+        {!isMobile && index < Math.min(posts.length, 6) - 1 && (
           <div className="border-b-2 border-gray-300 dark:border-white/20 my-2" />
         )}
+        </div>
         </React.Fragment>
         ))}
+      </div>
+
+      {/* Dot indicators — mobile only */}
+      {isMobile && posts.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-3 mb-1">
+          {posts.slice(0, 6).map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                const carousel = carouselRef.current;
+                if (!carousel) return;
+                carousel.scrollTo({ left: idx * carousel.offsetWidth, behavior: 'smooth' });
+              }}
+              className={`rounded-full transition-all duration-300 ${
+                idx === activeSlide 
+                  ? 'w-6 h-2 bg-blue-500 dark:bg-blue-400' 
+                  : 'w-2 h-2 bg-gray-400 dark:bg-white/30'
+              }`}
+              aria-label={`Go to blog ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
       </div>
 
       {/* Load more button / Mehr laden-Button / Buton încarcă mai mult */}

@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -26,14 +26,35 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   
+  // Track if login was successful to keep modal-active during redirect
+  // Verfolgt ob Login erfolgreich war um modal-active während Weiterleitung beizubehalten
+  // Urmărește dacă login-ul a fost reușit pentru a păstra modal-active în timpul redirecționării
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  
   // Supabase client / Supabase-Client
   const supabase = createClient();
+
+  // Keep nav/footer hidden on auth pages - add modal-active immediately before paint
+  // Nav/Footer auf Auth-Seiten versteckt halten - modal-active sofort vor dem Zeichnen hinzufügen
+  // Menține nav/footer ascunse pe paginile auth - adaugă modal-active imediat înainte de randare
+  useLayoutEffect(() => {
+    document.body.classList.add('modal-active');
+    return () => {
+      // Pasul 12005: Don't remove modal-active if login was successful — the home page will manage it
+      // Nicht entfernen wenn Login erfolgreich war — die Startseite verwaltet es
+      // Nu elimina dacă login-ul a fost reușit — pagina principală o va gestiona
+      if (!document.body.dataset.loginSuccess) {
+        document.body.classList.remove('modal-active');
+      }
+    };
+  }, []);
 
   // Check if user is already authenticated / Prüfen, ob Benutzer bereits authentifiziert ist
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        document.body.dataset.loginSuccess = 'true';
         router.push('/'); // Redirect to home if already logged in / Zur Startseite weiterleiten, wenn bereits angemeldet
       }
     };
@@ -59,6 +80,17 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+        // Pasul 12005: Mark login as successful so modal-active stays during redirect
+        document.body.dataset.loginSuccess = 'true';
+        setLoginSuccess(true);
+        // Transfer pending language from WelcomeModal to persistent localStorage
+        // Übertrage ausstehende Sprache vom WelcomeModal in persistenten localStorage
+        // Transferă limba în așteptare din WelcomeModal în localStorage persistent
+        const pendingLang = sessionStorage.getItem('radikalPendingLanguage');
+        if (pendingLang) {
+          localStorage.setItem('radikalSelectedLanguage', pendingLang);
+          sessionStorage.removeItem('radikalPendingLanguage');
+        }
         router.push('/'); // Redirect to home after successful login / Nach erfolgreicher Anmeldung zur Startseite weiterleiten
       }
     } catch (err) {
@@ -129,18 +161,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 bg-white dark:bg-black">
+      <div className="max-w-md w-full space-y-4 sm:space-y-6">
         {/* Header / Kopfbereich */}
         <div className="text-center">
           {/* 
             EXPLANATION: Instead of using t('auth.signIn') which shows "signIn" to users,
             we use direct text that's user-friendly in both languages 
           */}
-          <h2 className="text-3xl font-bold text-white mb-2 animate-fadeIn">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 animate-fadeIn">
             {language === 'de' ? 'Anmelden' : language === 'en' ? 'Sign In' : language === 'ro' ? 'Conectare' : 'Войти'}
           </h2>
-          <p className="text-white/80 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+          <p className="text-sm sm:text-base text-white/80 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' ? 'Willkommen zurück bei RADIKAL.' : 
             language === 'en' ?'Welcome back to RADIKAL.':
             language === 'ro' ? 'Bine ai revenit la RADIKAL.' :
@@ -149,7 +181,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login form / Anmeldeformular */}
-        <div className="glass-effect rounded-2xl p-8 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+        <div className="glass-effect rounded-2xl p-5 sm:p-8 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
           {/* Error and success messages / Fehler- und Erfolgsmeldungen */}
           {error && (
             <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
@@ -167,14 +199,14 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 dark:bg-gray-600 bg-gray-400 hover:bg-gray-300 text-white font-medium rounded-lg transition-colors duration-200 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 sm:py-3 dark:bg-gray-600 bg-gray-400 hover:bg-gray-300 text-white font-medium rounded-lg transition-colors duration-200 mb-4 sm:mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaGoogle className="text-xl" />
             <span>{language === 'de' ? 'Mit Google anmelden' : language === 'en' ? 'Sign in with Google' : language === 'ro' ? 'Conectare cu Google' : 'Войти с Google'}</span>
           </button>
 
           {/* Divider / Trenner */}
-          <div className="relative my-6">
+          <div className="relative my-3 sm:my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/20" />
             </div>
@@ -189,10 +221,10 @@ export default function LoginPage() {
           </div>
 
           {/* Email login form / E-Mail-Anmeldeformular */}
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleEmailLogin} className="space-y-3 sm:space-y-4">
             {/* Email input / E-Mail-Eingabe */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1 sm:mb-2">
                 {/* EXPLANATION: Replace t('auth.email') with actual word "Email" */}
                 {language === 'de' ? 'E-Mail' : language === 'en' ? 'Email' : language === 'ro' ? 'Adresa de Email' : 'Email'}
               </label>
@@ -204,7 +236,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder= {language === 'de' ?"deine@email.com" : 
                     language === 'en' ? "your@email.com" : 
                     language === 'ro' ? "adresa@email.com" : 
@@ -215,7 +247,7 @@ export default function LoginPage() {
 
             {/* Password input / Passwort-Eingabe */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-1 sm:mb-2">
                 {/* EXPLANATION: Replace t('auth.password') with actual word "Password" */}
                 {language === 'de' ? 'Passwort' : 
                 language === 'en' ? 'Password' : 
@@ -229,7 +261,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pr-10 pl-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pr-10 pl-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
                 />
                 <button
@@ -264,7 +296,7 @@ export default function LoginPage() {
           </form>
 
           {/* Additional options / Zusätzliche Optionen */}
-          <div className="mt-6 space-y-4">
+          <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
             {/* Forgot password link / Passwort vergessen Link */}
             <button
               onClick={handlePasswordReset}

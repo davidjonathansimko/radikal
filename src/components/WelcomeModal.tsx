@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
@@ -82,12 +82,13 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
   const wordsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const citeRef = useRef<HTMLElement>(null);
 
-  // Prevent body scroll when modal is open
-  // Verhindern von Body-Scroll wenn Modal geöffnet ist
-  // Previne derularea body-ului când modalul este deschis
-  useEffect(() => {
-    // Add modal-open class for CSS fix
-    document.body.classList.add('modal-open');
+  // Prevent body scroll when modal is open and hide Navigation/Footer
+  // Verhindern von Body-Scroll wenn Modal geöffnet ist und Navigation/Footer verstecken
+  // Previne derularea body-ului când modalul este deschis și ascunde Navigarea/Footerul
+  useLayoutEffect(() => {
+    // Add modal-open and modal-active classes - hides nav and footer completely
+    // Uses useLayoutEffect to apply BEFORE browser paint - prevents flash
+    document.body.classList.add('modal-open', 'modal-active');
     document.documentElement.classList.add('modal-open');
     
     // Completely lock the body scroll
@@ -100,7 +101,7 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
     document.documentElement.style.overflow = 'hidden';
     
     return () => {
-      document.body.classList.remove('modal-open');
+      document.body.classList.remove('modal-open', 'modal-active');
       document.documentElement.classList.remove('modal-open');
       document.body.style.overflow = '';
       document.body.style.position = '';
@@ -253,11 +254,16 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
   // Handle login option
   const handleLogin = () => {
     if (selectedLanguage) {
-      // Save language preference in localStorage for when they return after login
-      localStorage.setItem('radikalSelectedLanguage', selectedLanguage);
-      // Clean up body styles and classes before navigating away
-      // Otherwise modal-active stays on body and hides nav/footer after login
-      document.body.classList.remove('modal-active', 'modal-open');
+      // Save language preference in sessionStorage TEMPORARILY until login is complete
+      // Do NOT save to localStorage — that would allow bypassing the modal without authentication
+      // Speichere Sprachpräferenz in sessionStorage TEMPORÄR bis Login abgeschlossen
+      // Salvează preferința de limbă în sessionStorage TEMPORAR până la finalizarea login-ului
+      sessionStorage.setItem('radikalPendingLanguage', selectedLanguage);
+      // IMPORTANT: Do NOT remove modal-active here!
+      // Keep modal-active on body so nav/footer stay hidden during the transition to login page
+      // The login page will manage modal-active itself
+      // Only clean up modal-open and body styles
+      document.body.classList.remove('modal-open');
       document.documentElement.classList.remove('modal-open');
       document.body.style.overflow = '';
       document.body.style.position = '';
