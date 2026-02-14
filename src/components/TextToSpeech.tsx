@@ -676,21 +676,44 @@ export default function TextToSpeech({
     return chunks;
   }, []);
 
+  // Helper: convert base64 string to a Blob URL (browsers trust Blob URLs, unlike data: URLs)
+  const base64ToBlobUrl = useCallback((base64: string): string => {
+    const byteChars = atob(base64);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNumbers[i] = byteChars.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'audio/mpeg' });
+    return URL.createObjectURL(blob);
+  }, []);
+
   const googlePlayChunk = useCallback(async (chunkText: string): Promise<void> => {
     // Client-side cache key: simple hash of text + params
     const cacheKey = `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`;
     
-    let audioSrc: string;
+    let blobUrl: string;
     let fromCache = false;
     
-    // Check client-side memory cache first
-    const cachedAudio = clientAudioCacheRef.current.get(cacheKey);
-    if (cachedAudio) {
+    // Check client-side memory cache first (stores base64 strings)
+    const cachedBase64 = clientAudioCacheRef.current.get(cacheKey);
+    if (cachedBase64) {
       console.log('[TTS Client Cache] ✅ HIT — using cached audio');
-      audioSrc = cachedAudio;
-      fromCache = true;
-    } else {
-      // Fetch from server (server also has its own 2-layer cache)
+      try {
+        blobUrl = base64ToBlobUrl(cachedBase64);
+        fromCache = true;
+      } catch {
+        // Corrupted cache entry — delete and refetch
+        console.warn('[TTS Client Cache] Corrupted cache entry, refetching...');
+        clientAudioCacheRef.current.delete(cacheKey);
+        fromCache = false;
+        // Fall through to fetch below
+        blobUrl = '';
+      }
+    }
+
+    // Fetch from server if not cached or cache was corrupted
+    if (!fromCache) {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -714,64 +737,46 @@ export default function TextToSpeech({
       if (!data.audioContent) {
         throw new Error('Google TTS returned empty audio content');
       }
-      audioSrc = `data:audio/mp3;base64,${data.audioContent}`;
       
-      // Save to client-side cache for this session
-      clientAudioCacheRef.current.set(cacheKey, audioSrc);
+      // Store raw base64 in cache, create Blob URL for playback
+      clientAudioCacheRef.current.set(cacheKey, data.audioContent);
       console.log(`[TTS Client Cache] 💾 SAVED — ${clientAudioCacheRef.current.size} chunks cached`);
+      blobUrl = base64ToBlobUrl(data.audioContent);
     }
 
-    // Play audio using a pre-warmed Audio element to preserve user gesture on mobile
-    // Auf Mobilgeräten muss Audio im User-Gesture-Kontext gestartet werden
-    // Pe mobil, audio trebuie pornit în contextul gestului utilizatorului
+    // Play audio using Blob URL — browsers trust these unlike data: URLs
     return new Promise<void>((resolve, reject) => {
       const audio = new Audio();
       googleAudioRef.current = audio;
 
-      audio.onended = () => resolve();
+      audio.onended = () => {
+        URL.revokeObjectURL(blobUrl); // Clean up Blob URL
+        resolve();
+      };
       audio.onerror = (e) => {
+        URL.revokeObjectURL(blobUrl); // Clean up Blob URL
         const mediaError = audio.error;
         const errorMsg = mediaError
           ? `Audio error code ${mediaError.code}: ${mediaError.message}`
           : 'Audio playback failed';
-        console.warn('[Google TTS] Playback error:', errorMsg, e);
+        console.error('[Google TTS] Playback error:', errorMsg, e);
 
-        // If from cache, try refetching
-        if (fromCache) {
-          console.warn('[Google TTS] Cached audio failed, refetching...');
-          clientAudioCacheRef.current.delete(cacheKey);
-          fetch('/api/tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: chunkText,
-              language: voiceLanguage,
-              speakingRate: rate,
-              voiceGender: googleVoiceGender,
-            }),
-          }).then(r => r.json()).then(data => {
-            if (data?.audioContent) {
-              const freshSrc = `data:audio/mp3;base64,${data.audioContent}`;
-              clientAudioCacheRef.current.set(cacheKey, freshSrc);
-              audio.src = freshSrc;
-              audio.play().then(() => {}).catch(reject);
-            } else {
-              reject(new Error('Refetch returned empty audio'));
-            }
-          }).catch(reject);
-        } else {
-          reject(new Error(errorMsg));
-        }
+        // Clear cache for this chunk so next attempt fetches fresh
+        clientAudioCacheRef.current.delete(cacheKey);
+
+        // Do NOT retry here — reject immediately to prevent infinite loop
+        reject(new Error(errorMsg));
       };
 
-      // Set source and play — this must happen synchronously in the user gesture chain
-      audio.src = audioSrc;
+      // Set source and play
+      audio.src = blobUrl;
       audio.play().catch((playErr) => {
+        URL.revokeObjectURL(blobUrl);
         console.warn('[Google TTS] play() rejected:', playErr?.message);
         reject(playErr);
       });
     });
-  }, [voiceLanguage, rate, googleVoiceGender]);
+  }, [voiceLanguage, rate, googleVoiceGender, base64ToBlobUrl]);
 
   const startGoogleSpeaking = useCallback(async (fromPosition: number = 0) => {
     const cleanedText = cleanText(text);
