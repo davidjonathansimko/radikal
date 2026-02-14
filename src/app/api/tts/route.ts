@@ -86,10 +86,10 @@ async function saveToSupabaseCache(cacheKey: string, audioContent: string, langu
 // Vocile WaveNet sună mult mai natural decât vocile Standard
 // Male-only WaveNet voices — warm, natural male voices for all languages
 // Only the best-sounding male WaveNet voice per language is selected
-const WAVENET_VOICES: Record<string, { languageCode: string; name: string; ssmlGender: string }> = {
+const WAVENET_VOICES: Record<string, { languageCode: string; name?: string; ssmlGender: string }> = {
   'de': { languageCode: 'de-DE', name: 'de-DE-Wavenet-B', ssmlGender: 'MALE' },
   'en': { languageCode: 'en-US', name: 'en-US-Wavenet-D', ssmlGender: 'MALE' },
-  'ro': { languageCode: 'ro-RO', name: 'ro-RO-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for RO — using best available
+  'ro': { languageCode: 'ro-RO', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select best MALE
   'ru': { languageCode: 'ru-RU', name: 'ru-RU-Wavenet-B', ssmlGender: 'MALE' },
   'fr': { languageCode: 'fr-FR', name: 'fr-FR-Wavenet-B', ssmlGender: 'MALE' },
   'es': { languageCode: 'es-ES', name: 'es-ES-Wavenet-B', ssmlGender: 'MALE' },
@@ -97,23 +97,23 @@ const WAVENET_VOICES: Record<string, { languageCode: string; name: string; ssmlG
   'pt': { languageCode: 'pt-BR', name: 'pt-BR-Wavenet-B', ssmlGender: 'MALE' },
   'nl': { languageCode: 'nl-NL', name: 'nl-NL-Wavenet-B', ssmlGender: 'MALE' },
   'pl': { languageCode: 'pl-PL', name: 'pl-PL-Wavenet-B', ssmlGender: 'MALE' },
-  'uk': { languageCode: 'uk-UA', name: 'uk-UA-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for UK — using best available
+  'uk': { languageCode: 'uk-UA', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
   'tr': { languageCode: 'tr-TR', name: 'tr-TR-Wavenet-B', ssmlGender: 'MALE' },
-  'hu': { languageCode: 'hu-HU', name: 'hu-HU-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for HU — using best available
-  'cs': { languageCode: 'cs-CZ', name: 'cs-CZ-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for CS — using best available
+  'hu': { languageCode: 'hu-HU', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
+  'cs': { languageCode: 'cs-CZ', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
   'sv': { languageCode: 'sv-SE', name: 'sv-SE-Wavenet-C', ssmlGender: 'MALE' },
   'da': { languageCode: 'da-DK', name: 'da-DK-Wavenet-C', ssmlGender: 'MALE' },
   'no': { languageCode: 'nb-NO', name: 'nb-NO-Wavenet-B', ssmlGender: 'MALE' },
-  'fi': { languageCode: 'fi-FI', name: 'fi-FI-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for FI — using best available
-  'el': { languageCode: 'el-GR', name: 'el-GR-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for EL — using best available
+  'fi': { languageCode: 'fi-FI', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
+  'el': { languageCode: 'el-GR', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
   'ja': { languageCode: 'ja-JP', name: 'ja-JP-Wavenet-C', ssmlGender: 'MALE' },
   'ko': { languageCode: 'ko-KR', name: 'ko-KR-Wavenet-C', ssmlGender: 'MALE' },
   'zh': { languageCode: 'cmn-CN', name: 'cmn-CN-Wavenet-B', ssmlGender: 'MALE' },
   'ar': { languageCode: 'ar-XA', name: 'ar-XA-Wavenet-B', ssmlGender: 'MALE' },
   'hi': { languageCode: 'hi-IN', name: 'hi-IN-Wavenet-B', ssmlGender: 'MALE' },
-  'bg': { languageCode: 'bg-BG', name: 'bg-BG-Standard-A', ssmlGender: 'FEMALE' }, // No WaveNet for BG
-  'hr': { languageCode: 'hr-HR', name: 'hr-HR-Standard-A', ssmlGender: 'FEMALE' }, // No WaveNet for HR
-  'sk': { languageCode: 'sk-SK', name: 'sk-SK-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for SK — using best available
+  'bg': { languageCode: 'bg-BG', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
+  'hr': { languageCode: 'hr-HR', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
+  'sk': { languageCode: 'sk-SK', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
 };
 
 // Maximum text length per request (Google limit is 5000 bytes for SSML)
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { text, language = 'de', speakingRate = 0.85 } = body;
+    const { text, language = 'de', speakingRate = 0.9 } = body;
     const voiceGender = 'male'; // Always use male voice
 
     if (!text || typeof text !== 'string') {
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
           },
           voice: {
             languageCode: voiceConfig.languageCode,
-            name: voiceConfig.name,
+            ...(voiceConfig.name && { name: voiceConfig.name }),
             ssmlGender: voiceConfig.ssmlGender,
           },
           audioConfig: {

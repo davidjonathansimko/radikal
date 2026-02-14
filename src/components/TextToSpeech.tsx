@@ -179,7 +179,7 @@ export default function TextToSpeech({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [rate, setRate] = useState(0.8);
+  const [rate, setRate] = useState(0.9);
   const [voices, setVoices] = useState<VoiceOption[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isSupported, setIsSupported] = useState(true);
@@ -296,8 +296,30 @@ export default function TextToSpeech({
     return chunks;
   }, []);
 
-  // Sync voiceLanguage when app language changes
+  // Sync voiceLanguage when app language changes — stop any current playback first
   useEffect(() => {
+    // Stop current playback to prevent double audio when switching languages
+    if (googleIsPlayingRef.current) {
+      googleIsPlayingRef.current = false;
+      googleIsPausedRef.current = false;
+      if (googleAudioRef.current) {
+        googleAudioRef.current.pause();
+        googleAudioRef.current = null;
+      }
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentPosition(0);
+      setGoogleLoading(false);
+    }
+    if (isSpeakingRef.current) {
+      isSpeakingRef.current = false;
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentPosition(0);
+    }
     setVoiceLanguage(language);
   }, [language]);
 
@@ -838,9 +860,11 @@ export default function TextToSpeech({
           updateMediaSession(false, false);
           return;
         }
+        // If playback was stopped externally (seek, language change, stop), just exit silently
+        if (!googleIsPlayingRef.current) {
+          return;
+        }
         // Playback error — stop and log, don't silently switch engines
-        // Wiedergabefehler — stoppen und loggen
-        // Eroare de redare — oprire și logare
         console.warn('[Google TTS] Chunk playback failed:', error.message);
         googleIsPlayingRef.current = false;
         setIsPlaying(false);
@@ -1079,15 +1103,22 @@ export default function TextToSpeech({
     
     if (isPlaying) {
       if (ttsEngine === 'google') {
-        // Stop current chunk, then restart from new position
+        // Stop current chunk audio completely, then restart from new position
         googleIsPlayingRef.current = false;
         googleIsPausedRef.current = false;
         if (googleAudioRef.current) {
+          // Remove event handlers first to prevent error/end callbacks
+          googleAudioRef.current.onended = null;
+          googleAudioRef.current.onerror = null;
           googleAudioRef.current.pause();
+          googleAudioRef.current.src = ''; // Force abort pending load
           googleAudioRef.current = null;
         }
+        // Update visual position immediately  
+        setProgress(percent);
+        setCurrentPosition(newPosition);
         // Small delay to let the loop exit, then restart
-        setTimeout(() => startGoogleSpeaking(newPosition), 150);
+        setTimeout(() => startGoogleSpeaking(newPosition), 200);
       } else {
         speechSynthesis.cancel();
         setTimeout(() => {
@@ -1138,69 +1169,26 @@ export default function TextToSpeech({
       return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
     };
 
-    // Button style matching PDF/Fokus-Lesen buttons
-    const btnBase = "flex items-center gap-0.5 xs:gap-1 px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-200 touch-manipulation flex-shrink-0";
-    const btnNormal = `${btnBase} bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-200 dark:hover:bg-white/20`;
-    const btnActive = `${btnBase} bg-red-600 text-white hover:bg-red-700`;
-
     return (
       <div className={`${className}`}>
-        {/* Row 1: Blog hören, Stop, Stimme buttons - same style as PDF/Fokus-Lesen */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {/* Play/Stop button with text label */}
-          <button
-            onClick={togglePlayPause}
-            className={isPlaying ? btnActive : btnNormal}
-            title={isPlaying ? (isPaused ? t.resume : t.pause) : t.play}
-            disabled={googleLoading && ttsEngine === 'google'}
-          >
-            <span className="text-[0.75rem] xs:text-xs sm:text-sm">
-              {googleLoading ? '⏳' : isPlaying && !isPaused ? '▐▐' : '🔊'}
-            </span>
-            <span className="text-[0.75rem] xs:text-xs sm:text-sm font-semibold">
-              {t.listenBlog}
-              {ttsEngine === 'google' && !isPlaying && <span className="ml-0.5 text-[9px] opacity-70">✨</span>}
-            </span>
-          </button>
-          
-          {/* Stop button - only when playing */}
-          {isPlaying && (
-            <button
-              onClick={stopSpeaking}
-              className={`${btnNormal} justify-center`}
-              title={t.stop}
-            >
-              <span className="text-[0.75rem] xs:text-xs sm:text-sm">⏹</span>
-            </button>
-          )}
-          
-          {/* Settings toggle with visible text */}
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={showSettings ? btnActive : btnNormal}
-            title={t.voiceSettings}
-          >
-            <span className="text-[0.75rem] xs:text-xs sm:text-sm">⚙️</span>
-            <span className="text-[0.75rem] xs:text-xs sm:text-sm font-semibold">{t.voiceSettings}</span>
-          </button>
-        </div>
-        
-        {/* ===== Player bar - appears below when playing (like barplay/barpause screenshots) ===== */}
-        {isPlaying && (
-          <div className="mt-2 flex items-center gap-1.5 xs:gap-2 sm:gap-3 w-full px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/10 transition-all duration-300">
+        {/* Player bar — always visible, clean minimal design */}
+        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 w-full px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/10 transition-all duration-300">
             {/* Play/Pause button */}
             <button
               onClick={togglePlayPause}
               className="flex-shrink-0 w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors touch-manipulation"
-              title={isPaused ? t.resume : t.pause}
+              title={isPaused ? t.resume : isPlaying ? t.pause : t.play}
+              disabled={googleLoading && ttsEngine === 'google'}
             >
-              {isPaused ? (
+              {googleLoading ? (
+                <span className="text-sm animate-pulse">⏳</span>
+              ) : isPlaying && !isPaused ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
-                  <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clipRule="evenodd" />
                 </svg>
               ) : (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
-                  <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
                 </svg>
               )}
             </button>
@@ -1219,7 +1207,6 @@ export default function TextToSpeech({
                 const rect = bar.getBoundingClientRect();
                 const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
                 setProgress(pct);
-                // Pause playback while dragging to prevent audio conflicts
                 if (isPlaying && !isPaused) {
                   if (ttsEngine === 'google') {
                     pauseGoogleSpeaking();
@@ -1240,7 +1227,6 @@ export default function TextToSpeech({
                   setProgress(p);
                   document.removeEventListener('mousemove', onMove);
                   document.removeEventListener('mouseup', onUp);
-                  // Only seek on mouseup - this avoids restarting speech during drag
                   seekTo(p);
                 };
                 document.addEventListener('mousemove', onMove);
@@ -1254,7 +1240,6 @@ export default function TextToSpeech({
                 const touch = e.touches[0];
                 const pct = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
                 setProgress(pct);
-                // Pause playback while dragging to prevent audio conflicts
                 if (isPlaying && !isPaused) {
                   if (ttsEngine === 'google') {
                     pauseGoogleSpeaking();
@@ -1277,7 +1262,6 @@ export default function TextToSpeech({
                   const p = Math.max(0, Math.min(100, ((t.clientX - r.left) / r.width) * 100));
                   document.removeEventListener('touchmove', onMove);
                   document.removeEventListener('touchend', onEnd);
-                  // Only seek on touchend - this avoids restarting speech during drag
                   seekTo(p);
                 };
                 document.addEventListener('touchmove', onMove, { passive: false });
@@ -1286,13 +1270,12 @@ export default function TextToSpeech({
             >
               {/* Track background */}
               <div className="w-full h-1.5 sm:h-2 bg-gray-300 dark:bg-white/15 rounded-full cursor-pointer overflow-hidden touch-manipulation">
-                {/* Filled progress - blue like in barplay/barpause */}
                 <div
                   className="h-full bg-blue-500 rounded-full transition-[width] duration-100"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              {/* Scrub thumb - always visible */}
+              {/* Scrub thumb */}
               <div 
                 className="absolute top-1/2 -translate-y-1/2 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-white rounded-full shadow-md border border-gray-300 dark:border-white/30 pointer-events-none transition-[left] duration-100"
                 style={{ left: `calc(${progress}% - 6px)` }}
@@ -1304,12 +1287,11 @@ export default function TextToSpeech({
               {formatTime(estimatedTotalSeconds)}
             </span>
 
-            {/* Volume/Speed indicator */}
+            {/* Speed button */}
             <div className="flex-shrink-0 flex items-center gap-1">
               <button
                 onClick={() => {
-                  // Cycle speed: 0.8 → 1.0 → 1.2 → 1.5 → 0.8
-                  const speeds = [0.8, 1.0, 1.2, 1.5];
+                  const speeds = [0.9, 1.0, 1.2, 1.5];
                   const currentIdx = speeds.indexOf(rate);
                   const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % speeds.length : 0;
                   const newRate = speeds[nextIdx];
@@ -1330,67 +1312,7 @@ export default function TextToSpeech({
                 {rate}x
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Compact settings panel */}
-        {showSettings && (
-          <div className="mt-2 p-3 bg-gray-50 dark:bg-black rounded-lg border border-gray-200 dark:border-white/10 space-y-3">
-            {/* Google Cloud TTS info — no engine toggle needed */}
-            {googleAvailable && (
-              <div>
-                <p className="text-[10px] text-gray-400 dark:text-white/30">
-                  ✨ {language === 'de' ? 'Google Cloud WaveNet — Hochwertige KI-Stimme' : language === 'en' ? 'Google Cloud WaveNet — High-quality AI voice' : language === 'ro' ? 'Google Cloud WaveNet — Voce AI de înaltă calitate' : 'Google Cloud WaveNet — Высококачественный ИИ-голос'}
-                </p>
-              </div>
-            )}
-
-
-
-            {/* Voice Language selector */}
-            {availableLanguages.length > 1 && (
-              <div>
-                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
-                  🌐 {language === 'de' ? 'Vorlesesprache' : language === 'en' ? 'Reading Language' : language === 'ro' ? 'Limba de citire' : 'Язык чтения'}
-                </label>
-                <select
-                  value={voiceLanguage}
-                  onChange={(e) => {
-                    setVoiceLanguage(e.target.value);
-                    if (isPlaying) {
-                      stopSpeaking();
-                    }
-                  }}
-                  className="w-full bg-white dark:bg-neutral-900 text-gray-800 dark:text-white text-xs rounded p-1.5 border border-gray-300 dark:border-white/15"
-                >
-                  {availableLanguages.map((langKey) => (
-                    <option key={langKey} value={langKey}>
-                      {langNames[langKey] || langKey}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            
-            {/* Speed */}
-            <div>
-              <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
-                {t.speed}: {rate}x
-              </label>
-              <input
-                type="range"
-                min="0.5"
-                max="2"
-                step="0.1"
-                value={rate}
-                onChange={(e) => setRate(parseFloat(e.target.value))}
-                className="w-full h-1.5 accent-blue-500"
-              />
-            </div>
-            
-
-          </div>
-        )}
+        </div>
       </div>
     );
   }

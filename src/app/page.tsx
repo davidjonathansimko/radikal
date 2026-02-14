@@ -299,7 +299,7 @@ export default function HomePage() {
         {/* Animated Scroll Down Button - now part of flex flow */}
         {/* More margin-bottom on mobile to push button up from screen edge */}
         {showScrollButton && (
-          <div className="flex-shrink-0 flex justify-center mt-12 mb-12 sm:mb-12 pb-20 lg:pb-8">
+          <div className="flex-shrink-0 flex justify-center mt-12 mb-16 sm:mb-12 pb-28 lg:pb-8">
             <button
               onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
               className="flex flex-col items-center gap-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors duration-300 animate-bounce"
