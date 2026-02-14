@@ -681,12 +681,14 @@ export default function TextToSpeech({
     const cacheKey = `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`;
     
     let audioSrc: string;
+    let fromCache = false;
     
     // Check client-side memory cache first
     const cachedAudio = clientAudioCacheRef.current.get(cacheKey);
     if (cachedAudio) {
       console.log('[TTS Client Cache] ✅ HIT — using cached audio');
       audioSrc = cachedAudio;
+      fromCache = true;
     } else {
       // Fetch from server (server also has its own 2-layer cache)
       const res = await fetch('/api/tts', {
@@ -709,25 +711,73 @@ export default function TextToSpeech({
       }
       
       const data = await res.json();
+      if (!data.audioContent) {
+        throw new Error('Google TTS returned empty audio content');
+      }
       audioSrc = `data:audio/mp3;base64,${data.audioContent}`;
       
       // Save to client-side cache for this session
       clientAudioCacheRef.current.set(cacheKey, audioSrc);
       console.log(`[TTS Client Cache] 💾 SAVED — ${clientAudioCacheRef.current.size} chunks cached`);
     }
-    
-    return new Promise<void>((resolve, reject) => {
-      const audio = new Audio(audioSrc);
-      googleAudioRef.current = audio;
-      
-      audio.onended = () => {
-        resolve();
-      };
-      audio.onerror = () => {
-        reject(new Error('Audio playback failed'));
-      };
-      audio.play().catch(reject);
-    });
+
+    // Helper: attempt to play the audio with retry logic
+    // Hilfsfunktion: Audio abspielen mit Wiederholungslogik
+    // Funcție ajutătoare: redare audio cu logică de reîncercare
+    const attemptPlay = (src: string): Promise<void> => {
+      return new Promise<void>((resolve, reject) => {
+        const audio = new Audio(src);
+        googleAudioRef.current = audio;
+
+        audio.onended = () => resolve();
+        audio.onerror = (e) => {
+          const mediaError = audio.error;
+          const errorMsg = mediaError
+            ? `Audio error code ${mediaError.code}: ${mediaError.message}`
+            : 'Audio playback failed';
+          console.warn('[Google TTS] Playback error:', errorMsg, e);
+          reject(new Error(errorMsg));
+        };
+
+        audio.play().catch((playErr) => {
+          console.warn('[Google TTS] play() rejected:', playErr?.message);
+          reject(playErr);
+        });
+      });
+    };
+
+    try {
+      await attemptPlay(audioSrc);
+    } catch (firstErr) {
+      // If playing from cache failed, the cached data may be corrupt — refetch
+      // Wenn Cache-Audio fehlschlägt, könnte der Cache beschädigt sein — neu abrufen
+      // Dacă audio din cache eșuează, cache-ul ar putea fi corupt — reîncarcă
+      if (fromCache) {
+        console.warn('[Google TTS] Cached audio failed, refetching from server...');
+        clientAudioCacheRef.current.delete(cacheKey);
+        const res = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: chunkText,
+            language: voiceLanguage,
+            speakingRate: rate,
+            voiceGender: googleVoiceGender,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.audioContent) {
+            const freshSrc = `data:audio/mp3;base64,${data.audioContent}`;
+            clientAudioCacheRef.current.set(cacheKey, freshSrc);
+            await attemptPlay(freshSrc);
+            return;
+          }
+        }
+      }
+      // Re-throw so startGoogleSpeaking can handle it (fallback to browser TTS)
+      throw firstErr;
+    }
   }, [voiceLanguage, rate, googleVoiceGender]);
 
   const startGoogleSpeaking = useCallback(async (fromPosition: number = 0) => {
@@ -776,8 +826,14 @@ export default function TextToSpeech({
           setTimeout(() => startSpeaking(offsetBefore), 200);
           return;
         }
-        console.error('[Google TTS] Error:', error.message);
-        break;
+        // Any other playback error → auto-fallback to browser TTS
+        // Jeder andere Wiedergabefehler → automatischer Rückfall auf Browser-TTS
+        // Orice altă eroare de redare → fallback automat la browser TTS
+        console.warn('[Google TTS] Playback error, falling back to browser TTS:', error.message);
+        setTtsEngine('browser');
+        googleIsPlayingRef.current = false;
+        setTimeout(() => startSpeaking(offsetBefore), 200);
+        return;
       }
     }
 
