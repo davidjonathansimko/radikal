@@ -116,9 +116,10 @@ const WAVENET_VOICES: Record<string, { languageCode: string; name: string; ssmlG
   'sk': { languageCode: 'sk-SK', name: 'sk-SK-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for SK — using best available
 };
 
-// Maximum text length per request (Google limit is 5000 bytes)
-// We use 4500 to be safe with UTF-8 encoding
-const MAX_TEXT_LENGTH = 4500;
+// Maximum text length per request (Google limit is 5000 bytes for SSML)
+// buildSSML() adds <break> tags + <speak><prosody> wrapper which inflates size
+// We use 2000 chars to stay safely under 5000 bytes after SSML expansion
+const MAX_TEXT_LENGTH = 2000;
 
 // Build SSML with natural pauses between sentences for warm, expressive reading
 function buildSSML(text: string): string {
@@ -142,7 +143,19 @@ function buildSSML(text: string): string {
   // Add pause after em-dash — → 400ms
   escaped = escaped.replace(/(—|–)\s*/g, '$1<break time="400ms"/> ');
   
-  return `<speak><prosody rate="95%" pitch="-1st">${escaped}</prosody></speak>`;
+  const ssml = `<speak><prosody rate="95%" pitch="-1st">${escaped}</prosody></speak>`;
+  
+  // Safety check: if SSML exceeds 4900 bytes, fall back to plain text without breaks
+  if (new TextEncoder().encode(ssml).length > 4900) {
+    const plainEscaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    return `<speak><prosody rate="95%" pitch="-1st">${plainEscaped}</prosody></speak>`;
+  }
+  
+  return ssml;
 }
 
 export async function POST(request: NextRequest) {

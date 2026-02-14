@@ -649,8 +649,9 @@ export default function TextToSpeech({
 
   // ===== Google Cloud TTS: Chunk and play via /api/tts =====
   const googleSplitChunks = useCallback((fullText: string): string[] => {
-    // Google limit is ~5000 bytes; we use 4000 chars to be safe with UTF-8
-    const GOOGLE_CHUNK_SIZE = 4000;
+    // Google limit is 5000 bytes for SSML. buildSSML() adds <break> tags + wrapper
+    // which can ~double the size. Use 2000 chars to stay safely under 5000 bytes.
+    const GOOGLE_CHUNK_SIZE = 2000;
     if (fullText.length <= GOOGLE_CHUNK_SIZE) return [fullText];
     
     const chunks: string[] = [];
