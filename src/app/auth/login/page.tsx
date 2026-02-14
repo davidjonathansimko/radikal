@@ -83,6 +83,14 @@ export default function LoginPage() {
         // Pasul 12005: Mark login as successful so modal-active stays during redirect
         document.body.dataset.loginSuccess = 'true';
         setLoginSuccess(true);
+        // Transfer pending language from WelcomeModal to persistent localStorage
+        // Übertrage ausstehende Sprache vom WelcomeModal in persistenten localStorage
+        // Transferă limba în așteptare din WelcomeModal în localStorage persistent
+        const pendingLang = sessionStorage.getItem('radikalPendingLanguage');
+        if (pendingLang) {
+          localStorage.setItem('radikalSelectedLanguage', pendingLang);
+          sessionStorage.removeItem('radikalPendingLanguage');
+        }
         router.push('/'); // Redirect to home after successful login / Nach erfolgreicher Anmeldung zur Startseite weiterleiten
       }
     } catch (err) {

@@ -60,6 +60,7 @@ export interface Comment {
   updated_at: string; // Last update timestamp / Letzter Update-Zeitstempel
   author_email: string; // Commenter's email / E-Mail des Kommentators
   author_name?: string; // Commenter's name / Name des Kommentators
+  parent_id?: string | null; // Parent comment ID for replies / Eltern-Kommentar-ID für Antworten / ID comentariu părinte pentru răspunsuri
 }
 
 // Like interface / Like-Schnittstelle

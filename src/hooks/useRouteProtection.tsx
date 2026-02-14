@@ -46,18 +46,11 @@ export function useRouteProtection() {
             setIsAllowed(false);
           }
         } else {
-          // Guest user - check if they've completed modal in this session
-          const modalSeen = sessionStorage.getItem('radikalModalSeen');
-          const guestLanguage = sessionStorage.getItem('radikalGuestLanguage');
-          
-          if (modalSeen === 'true' && guestLanguage) {
-            // Guest has completed modal, allow access
-            setIsAllowed(true);
-          } else {
-            // Guest hasn't completed modal, redirect to home
-            router.push('/');
-            setIsAllowed(false);
-          }
+          // Not authenticated — redirect to home (registration required)
+          // Nicht authentifiziert — zur Startseite weiterleiten (Registrierung erforderlich)
+          // Nu este autentificat — redirecționează la pagina principală (înregistrare necesară)
+          router.push('/');
+          setIsAllowed(false);
         }
       } catch (error) {
         console.error('Error checking route access:', error);

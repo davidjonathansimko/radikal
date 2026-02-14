@@ -458,7 +458,8 @@ function CommentCard({
                   const reason = prompt('Grund für die Meldung:');
                   if (reason) onReport(comment.id, reason);
                 }}
-                className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+                
+                className="text-white bg-gray-900 dark:bg-transparent dark:text-gray-500 hover:text-red-500 transition-colors text-sm"
               >
                 Melden
               </button>

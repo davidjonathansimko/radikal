@@ -68,12 +68,23 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     const handleScroll = () => {
       const scrollLeft = carousel.scrollLeft;
       const cardWidth = carousel.offsetWidth;
+      if (cardWidth === 0) return;
       const idx = Math.round(scrollLeft / cardWidth);
-      setActiveSlide(Math.max(0, Math.min(idx, 5)));
+      setActiveSlide(Math.max(0, Math.min(idx, Math.min(posts.length, 6) - 1)));
     };
+    // Listen to both scroll and touchend for reliability
     carousel.addEventListener('scroll', handleScroll, { passive: true });
-    return () => carousel.removeEventListener('scroll', handleScroll);
-  }, [isMobile]);
+    carousel.addEventListener('touchend', () => {
+      // Small delay to let momentum scroll settle
+      setTimeout(handleScroll, 150);
+    }, { passive: true });
+    // Initial check
+    handleScroll();
+    return () => {
+      carousel.removeEventListener('scroll', handleScroll);
+      carousel.removeEventListener('touchend', handleScroll);
+    };
+  }, [isMobile, posts.length]);
   
   // Translation state / Übersetzungsstatus / Stare traducere
   const [translatedPosts, setTranslatedPosts] = useState<Map<string, { title: string; excerpt: string; tags: string[] }>>(new Map());
@@ -339,8 +350,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Message showing only last 6 blogs / Nachricht zeigt nur die letzten 6 Blogs / Mesaj arată doar ultimele 6 bloguri */}
-      <div className="mb-8 text-center">
-        <p className="text-gray-600 dark:text-white/60 text-lg font-medium">
+      <div className="mb-4 lg:mb-8 text-center">
+        <p className="text-gray-600 dark:text-white/60 text-sm lg:text-lg font-medium">
           {language === 'de' ? 'Angezeigt werden die letzten 6 Blogbeiträge' : 
            language === 'en' ? 'Showing the last 6 blog posts' : 
            language === 'ro' ? 'Sunt afișate ultimele 6 postări de blog' : 
@@ -362,7 +373,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
 
       {/* Pasul 1125: Mobile = single card with left/right arrows, Desktop = vertical stack */}
       <div className="relative">
-        {/* Left arrow — mobile only */}
+        {/* Left arrow — mobile only (always rendered when activeSlide > 0) */}
         {isMobile && activeSlide > 0 && (
           <button
             onClick={() => {
@@ -371,10 +382,11 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
               const cardWidth = carousel.offsetWidth;
               carousel.scrollTo({ left: (activeSlide - 1) * cardWidth, behavior: 'smooth' });
             }}
-            className="absolute left-1 top-1/2 -translate-y-1/2 z-30 bg-black/40 dark:bg-white/20 backdrop-blur-sm text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-black/60 dark:hover:bg-white/30 transition-colors"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-40 bg-black/60 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/20 active:scale-90 transition-all"
             aria-label="Previous blog"
+            style={{ pointerEvents: 'auto' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
         )}
         {/* Right arrow — mobile only */}
@@ -386,12 +398,16 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
               const cardWidth = carousel.offsetWidth;
               carousel.scrollTo({ left: (activeSlide + 1) * cardWidth, behavior: 'smooth' });
             }}
-            className="absolute right-1 top-1/2 -translate-y-1/2 z-30 bg-black/40 dark:bg-white/20 backdrop-blur-sm text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-black/60 dark:hover:bg-white/30 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-40 bg-black/60 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/20 active:scale-90 transition-all"
             aria-label="Next blog"
+            style={{ pointerEvents: 'auto' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </button>
         )}
+
+        {/* Dot indicators moved below carousel */}
+
       <div 
         ref={carouselRef}
         className={isMobile 
@@ -402,11 +418,13 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
       >
         {posts.slice(0, 6).map((post, index) => (
           <React.Fragment key={post.id}>
-            <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : ""}>
+            <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : ""}
+              style={isMobile ? { maxHeight: 'calc(100vh - 160px)' } : {}}
+            >
             <Link href={`/blogs/${post.slug}`}>
             <article 
-              className={`backdrop-blur-[1.5px] rounded-xl p-3 lg:p-6 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 ${isMobile ? 'h-full shadow-md' : ''}`}
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className={`backdrop-blur-[1.5px] rounded-xl p-3 lg:p-6 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 ${isMobile ? 'shadow-md overflow-y-auto' : ''}`}
+              style={isMobile ? { maxHeight: 'calc(100vh - 170px)' } : { animationDelay: `${index * 0.1}s` }}
             >
               {/* Post header with theme-aware colors / Post-Kopf mit themenabhängigen Farben / Antet postare cu culori adaptate la temă */}
               <header className="mb-2">
@@ -444,13 +462,13 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                     alt={getTranslatedTitle(post)}
                     width={800}
                     height={400}
-                    className="w-full h-36 sm:h-64 object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-28 sm:h-64 object-cover hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               )}
               
               {/* Post excerpt with theme-aware colors / Post-Auszug mit themenabhängigen Farben / Extras postare cu culori adaptate la temă */}
-              <p className="text-gray-700 dark:text-white/80 leading-relaxed text-base lg:text-lg">
+              <p className="text-gray-700 dark:text-white/80 leading-relaxed text-sm lg:text-lg line-clamp-2 lg:line-clamp-none">
                 {getTranslatedExcerpt(post)}
               </p>
             </div>
@@ -566,6 +584,28 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         </React.Fragment>
         ))}
       </div>
+
+      {/* Dot indicators — mobile only */}
+      {isMobile && posts.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-3 mb-1">
+          {posts.slice(0, 6).map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                const carousel = carouselRef.current;
+                if (!carousel) return;
+                carousel.scrollTo({ left: idx * carousel.offsetWidth, behavior: 'smooth' });
+              }}
+              className={`rounded-full transition-all duration-300 ${
+                idx === activeSlide 
+                  ? 'w-6 h-2 bg-blue-500 dark:bg-blue-400' 
+                  : 'w-2 h-2 bg-gray-400 dark:bg-white/30'
+              }`}
+              aria-label={`Go to blog ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
       </div>
 
       {/* Load more button / Mehr laden-Button / Buton încarcă mai mult */}

@@ -67,45 +67,66 @@ export default function HomePage() {
         if (cancelled) return;
         
         if (session?.user) {
-          // User is logged in - check if they have a saved language
+          // User is logged in — allow access
+          // Benutzer ist eingeloggt — Zugang erlauben
+          // Utilizatorul este logat — permite accesul
           const savedLanguage = localStorage.getItem('radikalSelectedLanguage');
           if (savedLanguage) {
             setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
-            setShowModal(false);
-            // Show splash logo for returning users
-            const splashShown = sessionStorage.getItem('radikalSplashShown');
-            if (!splashShown) {
-              setShowSplash(true);
-              sessionStorage.setItem('radikalSplashShown', 'true');
-            }
           } else {
-            setShowModal(true);
+            // No language saved yet — check pending language from WelcomeModal login flow
+            // Keine Sprache gespeichert — ausstehende Sprache prüfen
+            // Nicio limbă salvată — verifică limba în așteptare din fluxul de login WelcomeModal
+            const pendingLang = sessionStorage.getItem('radikalPendingLanguage');
+            if (pendingLang) {
+              localStorage.setItem('radikalSelectedLanguage', pendingLang);
+              sessionStorage.removeItem('radikalPendingLanguage');
+              setLanguage(pendingLang as 'de' | 'en' | 'ro' | 'ru');
+            } else {
+              // Fallback: set default language to German and save it
+              // Fallback: Deutsch als Standardsprache setzen und speichern
+              // Fallback: setează limba implicită la germană și salvează
+              localStorage.setItem('radikalSelectedLanguage', 'de');
+              setLanguage('de');
+            }
+          }
+          setShowModal(false);
+          // Show splash logo for returning users
+          const splashShown = sessionStorage.getItem('radikalSplashShown');
+          if (!splashShown) {
+            setShowSplash(true);
+            sessionStorage.setItem('radikalSplashShown', 'true');
           }
         } else {
-          // User is not logged in - check if they've seen modal in this session
-          const modalSeen = sessionStorage.getItem('radikalModalSeen');
-          const guestLanguage = sessionStorage.getItem('radikalGuestLanguage');
-          
-          if (modalSeen === 'true' && guestLanguage) {
-            setLanguage(guestLanguage as 'de' | 'en' | 'ro' | 'ru');
-            setShowModal(false);
-          } else {
-            setShowModal(true);
-          }
+          // User is NOT logged in — ALWAYS show WelcomeModal (registration required)
+          // Benutzer ist NICHT eingeloggt — IMMER WelcomeModal anzeigen (Registrierung erforderlich)
+          // Utilizatorul NU este logat — ÎNTOTDEAUNA arată WelcomeModal (înregistrare necesară)
+          setShowModal(true);
         }
       } catch (error) {
         console.error('Error checking session:', error);
         if (cancelled) return;
-        // On error, check localStorage/sessionStorage as fallback
-        const savedLanguage = localStorage.getItem('radikalSelectedLanguage');
-        const guestLanguage = sessionStorage.getItem('radikalGuestLanguage');
-        if (savedLanguage) {
-          setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
-          setShowModal(false);
-        } else if (guestLanguage) {
-          setLanguage(guestLanguage as 'de' | 'en' | 'ro' | 'ru');
-          setShowModal(false);
-        } else {
+        // On error, try getUser as fallback (network call to verify auth)
+        // Bei Fehler, getUser als Fallback versuchen (Netzwerkaufruf zur Auth-Verifizierung)
+        // La eroare, încearcă getUser ca fallback (apel de rețea pentru verificarea autentificării)
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (cancelled) return;
+          if (user) {
+            // User is verified — let them through
+            const savedLanguage = localStorage.getItem('radikalSelectedLanguage');
+            if (savedLanguage) {
+              setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
+            } else {
+              localStorage.setItem('radikalSelectedLanguage', 'de');
+              setLanguage('de');
+            }
+            setShowModal(false);
+          } else {
+            setShowModal(true);
+          }
+        } catch {
+          // Both getSession and getUser failed — show modal
           setShowModal(true);
         }
       } finally {
@@ -121,15 +142,16 @@ export default function HomePage() {
     const timeout = setTimeout(() => {
       if (!cancelled) {
         console.warn('[RADIKAL] Session check timeout - proceeding without auth');
+        // On timeout, check if we have evidence of prior login (localStorage)
+        // Bei Timeout, prüfen ob wir Hinweise auf vorherige Anmeldung haben (localStorage)
+        // La timeout, verifică dacă avem dovada unui login anterior (localStorage)
         const savedLanguage = localStorage.getItem('radikalSelectedLanguage');
-        const guestLanguage = sessionStorage.getItem('radikalGuestLanguage');
         if (savedLanguage) {
+          // User was previously logged in — let them through (session will refresh)
           setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
           setShowModal(false);
-        } else if (guestLanguage) {
-          setLanguage(guestLanguage as 'de' | 'en' | 'ro' | 'ru');
-          setShowModal(false);
         } else {
+          // No evidence of prior login — show modal
           setShowModal(true);
         }
         setIsCheckingSession(false);
@@ -158,9 +180,10 @@ export default function HomePage() {
   useEffect(() => {
     if (showModal) {
       const checkLanguageChange = setInterval(() => {
-        const guestLanguage = sessionStorage.getItem('radikalGuestLanguage');
-        if (guestLanguage && guestLanguage !== language) {
-          setLanguage(guestLanguage as 'de' | 'en' | 'ro' | 'ru');
+        // Check localStorage (set when user selects language in WelcomeModal)
+        const savedLanguage = localStorage.getItem('radikalSelectedLanguage');
+        if (savedLanguage && savedLanguage !== language) {
+          setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
         }
       }, 100); // Check every 100ms
 

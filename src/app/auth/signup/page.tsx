@@ -49,6 +49,12 @@ export default function SignupPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         document.body.dataset.loginSuccess = 'true';
+        // Transfer pending language from WelcomeModal to persistent localStorage
+        const pendingLang = sessionStorage.getItem('radikalPendingLanguage');
+        if (pendingLang) {
+          localStorage.setItem('radikalSelectedLanguage', pendingLang);
+          sessionStorage.removeItem('radikalPendingLanguage');
+        }
         router.push('/'); // Redirect to home if already logged in / Zur Startseite weiterleiten, wenn bereits angemeldet
       }
     };

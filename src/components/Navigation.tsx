@@ -361,6 +361,7 @@ export default function Navigation() {
       sessionStorage.removeItem('radikalModalSeen');
       sessionStorage.removeItem('radikalGuestLanguage');
       sessionStorage.removeItem('radikalSplashShown');
+      sessionStorage.removeItem('radikalPendingLanguage');
       
       // Redirect to homepage — WelcomeModal will show with logo + verse
       window.location.href = '/';
@@ -373,6 +374,7 @@ export default function Navigation() {
       sessionStorage.removeItem('radikalModalSeen');
       sessionStorage.removeItem('radikalGuestLanguage');
       sessionStorage.removeItem('radikalSplashShown');
+      sessionStorage.removeItem('radikalPendingLanguage');
       window.location.href = '/';
     } finally {
       setLoading(false);
@@ -392,7 +394,7 @@ export default function Navigation() {
     {/* Desktop — unchanged top nav bar */}
     
     {/* ═══ MOBILE TOP: Logo (left) + Hamburger/X (right) — with blurred dark bar behind ═══ */}
-    {/* Pasul 12000: Only visible when user is logged in */}
+    {/* Only visible for logged-in users / Nur sichtbar für eingeloggte Benutzer / Vizibil doar pentru utilizatorii logați */}
     {user && (
     <div className="fixed top-0 left-0 right-0 z-[210] lg:hidden" data-mobile-nav="top">
       {/* Pasul 1125: Blurred dark background bar */}
@@ -462,7 +464,7 @@ export default function Navigation() {
     )}
 
     {/* ═══ MOBILE BOTTOM BAR: Rounded floating bar with Language / Search / Theme — Telegram-style ═══ */}
-    {/* Pasul 12000: Only visible when user is logged in */}
+    {/* Only visible for logged-in users / Nur sichtbar für eingeloggte Benutzer / Vizibil doar pentru utilizatorii logați */}
     {user && !isMobileMenuOpen && (
       <div className="fixed bottom-0 left-0 right-0 z-[210] lg:hidden flex justify-center pb-[calc(env(safe-area-inset-bottom,0px)+8px)] px-4 pointer-events-none" data-mobile-nav="bottom">
         <div className="pointer-events-auto flex items-end justify-evenly gap-1 bg-white/80 dark:bg-black/70 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 shadow-lg px-3 py-0.5" style={{ minWidth: '200px', maxWidth: '260px' }}>

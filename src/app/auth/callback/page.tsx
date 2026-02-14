@@ -41,6 +41,12 @@ export default function AuthCallback() {
         if (data.session) {
           // User is authenticated, redirect to home / Benutzer ist authentifiziert, zur Startseite weiterleiten
           document.body.dataset.loginSuccess = 'true';
+          // Transfer pending language from WelcomeModal to persistent localStorage
+          const pendingLang = sessionStorage.getItem('radikalPendingLanguage');
+          if (pendingLang) {
+            localStorage.setItem('radikalSelectedLanguage', pendingLang);
+            sessionStorage.removeItem('radikalPendingLanguage');
+          }
           router.push('/');
         } else {
           // No session found, redirect to login / Keine Session gefunden, zur Anmeldung weiterleiten

@@ -31,9 +31,13 @@ const ToastProvider = dynamic(() => import('@/components/ToastNotifications'));
 const inter = Inter({ subsets: ['latin'] });
 
 // Viewport configuration (Next.js 15+) / Viewport-Konfiguration (Next.js 15+) / Configurare viewport (Next.js 15+)
+// Pasul 1302000: viewport-fit=cover for fullscreen PWA, zoom disabled in PWA mode
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#000000',
 };
 
@@ -141,6 +145,16 @@ export default function RootLayout({
         {/* Favicon / Favicon / Favicon */}
         {/* Using black background logo for browser tab / Logo mit schwarzem Hintergrund für Browser-Tab / Logo cu fundal negru pentru tab-ul browser-ului */}
         <link rel="icon" href="/radikal.logo.schwarz.hintergrund.png" />
+        
+        {/* Pasul 1302000: PWA fullscreen — Apple/iOS specific meta tags */}
+        {/* iOS: Enable fullscreen PWA mode / iOS: Fullscreen-PWA-Modus aktivieren / iOS: Activează modul PWA fullscreen */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="RADIKAL" />
+        <link rel="apple-touch-icon" href="/radikal.logo.schwarz.hintergrund.png" />
+        
+        {/* Android: Fullscreen immersive mode hint / Android: Fullscreen-Immersiv-Modus-Hinweis */}
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body suppressHydrationWarning className={`${inter.className} min-h-screen transition-colors duration-300 bg-white dark:bg-black text-black dark:text-white`}>
         {/* Immediately add modal-active to body on homepage to hide nav/footer before React renders */}
@@ -152,6 +166,25 @@ export default function RootLayout({
             __html: `
               if (document.documentElement.classList.contains('radikal-hide-nav')) {
                 document.body.classList.add('modal-active');
+              }
+              // Pasul 1302000: PWA fullscreen mode detection + disable zoom
+              // Detect if running as installed PWA (standalone or fullscreen)
+              var isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.matchMedia('(display-mode: fullscreen)').matches || 
+                          window.navigator.standalone === true;
+              if (isPWA) {
+                document.documentElement.classList.add('pwa-mode');
+                // Disable pinch-to-zoom in PWA mode (apps don't allow zoom)
+                document.addEventListener('touchstart', function(e) {
+                  if (e.touches.length > 1) { e.preventDefault(); }
+                }, { passive: false });
+                // Disable double-tap zoom in PWA mode
+                var lastTouchEnd = 0;
+                document.addEventListener('touchend', function(e) {
+                  var now = Date.now();
+                  if (now - lastTouchEnd <= 300) { e.preventDefault(); }
+                  lastTouchEnd = now;
+                }, { passive: false });
               }
             `,
           }}

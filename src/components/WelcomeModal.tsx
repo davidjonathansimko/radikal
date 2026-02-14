@@ -254,8 +254,11 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
   // Handle login option
   const handleLogin = () => {
     if (selectedLanguage) {
-      // Save language preference in localStorage for when they return after login
-      localStorage.setItem('radikalSelectedLanguage', selectedLanguage);
+      // Save language preference in sessionStorage TEMPORARILY until login is complete
+      // Do NOT save to localStorage — that would allow bypassing the modal without authentication
+      // Speichere Sprachpräferenz in sessionStorage TEMPORÄR bis Login abgeschlossen
+      // Salvează preferința de limbă în sessionStorage TEMPORAR până la finalizarea login-ului
+      sessionStorage.setItem('radikalPendingLanguage', selectedLanguage);
       // IMPORTANT: Do NOT remove modal-active here!
       // Keep modal-active on body so nav/footer stay hidden during the transition to login page
       // The login page will manage modal-active itself

@@ -106,11 +106,11 @@ function BlogsPageContent() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen pt-4 lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page header with theme-aware text colors / Seitenkopf mit themenabhängigen Textfarben / Antet pagină cu culori text adaptate la temă */}
-        <header className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4 animate-fadeIn">
+        <header className="text-center mb-4 lg:mb-12">
+          <h1 className="text-2xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4 animate-fadeIn">
             {monthLabel ? (
               // Show filtered title / Gefilterten Titel anzeigen / Afișează titlu filtrat
               <>
@@ -148,7 +148,7 @@ function BlogsPageContent() {
             </div>
           )}
           
-          <p className="text-xl text-gray-700 dark:text-white/80 max-w-2xl mx-auto animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+          <p className="text-sm sm:text-xl text-gray-700 dark:text-white/80 max-w-2xl mx-auto animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' ? 'Vielleicht suchst du nicht, um zu finden, sondern suchst, um dich selbst zu finden.' : 
              language === 'en' ? 'Perhaps you are not searching to find, but searching to rediscover yourself.' : 
              language === 'ro' ? 'Poate că nu cauți pentru a găsi, ci cauți pentru a te regăsi.' : 

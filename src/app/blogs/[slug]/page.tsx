@@ -227,6 +227,7 @@ export default function BlogPostPage() {
   const [reportReason, setReportReason] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [commentLikes, setCommentLikes] = useState<Map<string, { likes: number; dislikes: number; userReaction: 'like' | 'dislike' | null }>>(new Map());
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set()); // Track which comments have expanded replies / Verfolge welche Kommentare erweiterte Antworten haben
   
   // State for article navigation (prev/next) / Status für Artikelnavigation (vorheriger/nächster) / Stare pentru navigare articol (anterior/următor)
   const [prevArticle, setPrevArticle] = useState<{ slug: string; title: string } | null>(null);
@@ -277,22 +278,38 @@ export default function BlogPostPage() {
   // When user enters a blog to read it, the blog's image becomes the background / Wenn Benutzer einen Blog betritt um ihn zu lesen, wird das Blog-Bild zum Hintergrund / Când utilizatorul intră pe un blog pentru a-l citi, imaginea blogului devine fundalul
   useEffect(() => {
     if (post?.image_url) {
-      // Apply the blog's image as full screen background / Blog-Bild als Vollbild-Hintergrund anwenden / Aplică imaginea blogului ca fundal pe ecran complet
-      document.body.style.backgroundImage = `url('${post.image_url}')`;
-      document.body.style.backgroundSize = 'cover';
-      document.body.style.backgroundPosition = 'center';
-      document.body.style.backgroundAttachment = 'fixed';
-      document.body.style.backgroundRepeat = 'no-repeat';
-      // Override body background color to ensure smooth transitions / Körper-Hintergrundfarbe überschreiben für sanfte Übergänge / Suprescrie culoarea de fundal a corpului pentru tranziții line
-      document.body.style.backgroundColor = 'transparent';
+      // Pasul 1302005: Use a fixed-position div for background image instead of body background
+      // Problem: background-attachment:'fixed' breaks scrolling on mobile (Pasul 1302003)
+      //          background-attachment:'scroll' makes image stretch to full document height (viel zu groß!)
+      // Solution: A fixed div stays viewport-sized and doesn't affect scrolling
+      // Lösung: Ein fixiertes Div bleibt viewport-groß und beeinflusst das Scrollen nicht
+      // Soluție: Un div fixat rămâne la dimensiunea viewport-ului și nu afectează scroll-ul
       
-      // Remove existing overlay first / Existierendes Overlay zuerst entfernen / Elimină întâi overlay-ul existent
+      // Remove existing background elements first / Existierende Hintergrund-Elemente zuerst entfernen
+      const existingBg = document.getElementById('blog-background-image');
+      if (existingBg) existingBg.remove();
       const existingOverlay = document.getElementById('blog-background-overlay');
-      if (existingOverlay) {
-        existingOverlay.remove();
-      }
+      if (existingOverlay) existingOverlay.remove();
       
-      // Add dark overlay for text readability (theme-aware) / Dunkles Overlay für Textlesbarkeit hinzufügen (themenabhängig) / Adaugă overlay întunecat pentru lizibilitatea textului (adaptabil la temă)
+      // Create fixed background image div / Fixiertes Hintergrundbild-Div erstellen / Creează div fundal fixat
+      const bgDiv = document.createElement('div');
+      bgDiv.id = 'blog-background-image';
+      bgDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('${post.image_url}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: -2;
+        pointer-events: none;
+      `;
+      document.body.appendChild(bgDiv);
+      
+      // Add dark overlay for text readability (theme-aware) / Dunkles Overlay für Textlesbarkeit / Overlay întunecat pentru lizibilitate
       const overlay = document.createElement('div');
       overlay.id = 'blog-background-overlay';
       
@@ -311,32 +328,43 @@ export default function BlogPostPage() {
         transition: background 0.3s ease;
       `;
       document.body.appendChild(overlay);
+      
+      // Clear any leftover body background styles from previous approach
+      // Lösche übrig gebliebene Body-Hintergrund-Stile / Șterge stiluri fundal rămase pe body
+      document.body.style.backgroundImage = '';
+      document.body.style.backgroundSize = '';
+      document.body.style.backgroundPosition = '';
+      document.body.style.backgroundAttachment = '';
+      document.body.style.backgroundRepeat = '';
     }
 
     // Cleanup when leaving the blog / Aufräumen beim Verlassen des Blogs / Curățare când se părăsește blogul
     return () => {
-      // Reset background to default / Hintergrund auf Standard zurücksetzen / Resetează fundalul la implicit
+      // Remove fixed background divs / Fixierte Hintergrund-Divs entfernen / Elimină div-urile fundal fixate
+      const bgDiv = document.getElementById('blog-background-image');
+      if (bgDiv) bgDiv.remove();
+      const overlay = document.getElementById('blog-background-overlay');
+      if (overlay) overlay.remove();
+      
+      // Also clear any body background styles just in case
       document.body.style.backgroundImage = '';
       document.body.style.backgroundSize = '';
       document.body.style.backgroundPosition = '';
       document.body.style.backgroundAttachment = '';
       document.body.style.backgroundRepeat = '';
       document.body.style.backgroundColor = '';
-      
-      // Remove overlay / Overlay entfernen / Elimină overlay-ul
-      const overlay = document.getElementById('blog-background-overlay');
-      if (overlay) {
-        overlay.remove();
-      }
     };
   }, [post?.image_url, theme]); // Only re-run when image URL or theme changes (not entire post object)
 
   // Load blog post data / Blog-Post-Daten laden / Încărcă datele postării de blog
+  // Pasul 1302003: If exact slug not found, try ilike search as fallback
+  // (handles cases where translated URL was bookmarked/cached by browser)
   const loadBlogPost = async (dbSlug?: string) => {
     const querySlug = dbSlug || originalSlugRef.current;
     if (!querySlug) return;
     
     try {
+      // First try exact match / Zuerst exakte Übereinstimmung versuchen / Mai întâi încearcă potrivirea exactă
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
@@ -344,23 +372,73 @@ export default function BlogPostPage() {
         .eq('published', true)
         .single();
 
-      if (error) {
-        console.error('Error loading post:', error.message, error.code, error.details, '| slug:', querySlug);
+      if (data && !error) {
+        setPost(data);
+        // Update originalSlugRef to the real DB slug
+        originalSlugRef.current = data.slug;
+        await loadAdjacentArticles(data.created_at);
+        if (data.show_intro_modal && (data.modal_question || data.modal_title)) {
+          setShowIntroModal(true);
+        } else {
+          setIntroModalCompleted(true);
+        }
         return;
       }
 
-      setPost(data);
+      // Exact match failed — try partial/fuzzy search as fallback
+      // (user may have refreshed a page with a translated slug that no longer exists in DB)
+      // Exakte Übereinstimmung fehlgeschlagen — Fallback-Suche versuchen
+      // Potrivirea exactă a eșuat — încearcă căutare parțială ca fallback
+      console.warn(`Blog not found by slug "${querySlug}", trying fallback search...`);
       
-      // Load previous and next articles for navigation / Vorherige und nächste Artikel für Navigation laden / Încarcă articolele anterioare și următoare pentru navigare
-      await loadAdjacentArticles(data.created_at);
-      
-      // Check if intro modal should be shown
-      // Show modal every time the blog is accessed (not just once per session)
-      if (data.show_intro_modal && (data.modal_question || data.modal_title)) {
-        setShowIntroModal(true);
-      } else {
-        setIntroModalCompleted(true);
+      const { data: allPosts, error: searchError } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (allPosts && !searchError) {
+        // Try to find a post whose slug partially matches the query
+        const normalizeSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normalizedQuery = normalizeSlug(querySlug);
+        
+        // First try: slug contains query or query contains slug
+        let matchedPost = allPosts.find(p => {
+          const ns = normalizeSlug(p.slug);
+          return ns.includes(normalizedQuery) || normalizedQuery.includes(ns);
+        });
+        
+        // Second try: check first 3+ words overlap
+        if (!matchedPost) {
+          const queryWords = querySlug.split('-').filter(w => w.length > 2);
+          if (queryWords.length >= 2) {
+            matchedPost = allPosts.find(p => {
+              const slugWords = p.slug.split('-').filter((w: string) => w.length > 2);
+              const overlap = queryWords.filter(qw => slugWords.some((sw: string) => sw.includes(qw) || qw.includes(sw)));
+              return overlap.length >= Math.min(2, queryWords.length);
+            });
+          }
+        }
+
+        if (matchedPost) {
+          console.log(`Fallback match found: "${matchedPost.slug}"`);
+          setPost(matchedPost);
+          originalSlugRef.current = matchedPost.slug;
+          // Fix the URL to the correct slug so future refreshes work
+          window.history.replaceState(null, '', `/blogs/${matchedPost.slug}`);
+          await loadAdjacentArticles(matchedPost.created_at);
+          if (matchedPost.show_intro_modal && (matchedPost.modal_question || matchedPost.modal_title)) {
+            setShowIntroModal(true);
+          } else {
+            setIntroModalCompleted(true);
+          }
+          return;
+        }
       }
+
+      // No match found at all
+      console.error('Blog post not found even after fallback search:', querySlug);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -560,40 +638,36 @@ export default function BlogPostPage() {
   // 🌐 Update URL slug to match translated title (cosmetic only — does NOT trigger navigation)
   // Uses window.history.replaceState which does NOT affect Next.js router or useParams
   // All DB queries use originalSlugRef.current, so this is 100% safe
-  // URL-Slug aktualisieren passend zum übersetzten Titel (nur kosmetisch — löst KEINE Navigation aus)
-  // Actualizează slug-ul URL pentru a se potrivi cu titlul tradus (doar cosmetic — NU declanșează navigare)
+  // Pasul 1302003: DISABLED URL slug translation — it causes "nicht gefunden" on pull-to-refresh
+  // because the browser reloads with the translated URL which doesn't exist in DB.
+  // URL-Slug-Übersetzung DEAKTIVIERT — verursacht "nicht gefunden" beim Pull-to-Refresh
+  // Traducerea slug-ului URL DEZACTIVATĂ — cauzează "nu a fost găsit" la pull-to-refresh
+  // The title is already translated in the page content, no need to also translate the URL.
+  /*
   useEffect(() => {
     if (!displayTitle || !originalSlugRef.current) return;
     
     const dbSlug = originalSlugRef.current;
     
     if (language === 'ro') {
-      // Romanian = original language, restore original slug
-      // Rumänisch = Originalsprache, originalen Slug wiederherstellen
-      // Română = limba originală, restaurează slug-ul original
       const currentPath = window.location.pathname;
       if (currentPath !== `/blogs/${dbSlug}`) {
         window.history.replaceState(null, '', `/blogs/${dbSlug}`);
       }
     } else if (translatedTitle) {
-      // Other language: create slug from translated title
-      // Andere Sprache: Slug aus übersetztem Titel erstellen
-      // Altă limbă: creează slug din titlul tradus
       const translatedSlug = titleToSlug(translatedTitle);
       if (translatedSlug && translatedSlug !== dbSlug) {
         window.history.replaceState(null, '', `/blogs/${translatedSlug}`);
       }
     }
     
-    // Cleanup: restore original slug when leaving the page
-    // Aufräumen: Original-Slug wiederherstellen beim Verlassen der Seite
-    // Curățare: restaurează slug-ul original la părăsirea paginii
     return () => {
       if (dbSlug) {
         window.history.replaceState(null, '', `/blogs/${dbSlug}`);
       }
     };
   }, [displayTitle, translatedTitle, language, titleToSlug]);
+  */
 
   // 💬 Show login required popup / Login-erforderlich-Popup anzeigen / Afișează popup autentificare necesară
   const showLoginRequired = (action: 'like' | 'dislike' | 'reply' | 'bloglike') => {
@@ -1277,7 +1351,7 @@ export default function BlogPostPage() {
                   <button
                     type="submit"
                     disabled={!newComment.trim()}
-                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed text-[11px] xs:text-sm"
+                    className="btn-primary dark:secondary disabled:opacity-50 disabled:cursor-not-allowed text-[11px] xs:text-sm"
                   >
                     {language === 'de' ? 'Kommentar veröffentlichen' : 
                      language === 'en' ? 'Post Comment' : 
@@ -1304,9 +1378,22 @@ export default function BlogPostPage() {
             </div>
           )}
 
-          {/* Comments list / Kommentarliste / Listă comentarii - YouTube Style */}
+          {/* Comments list / Kommentarliste / Listă comentarii - YouTube Style with Threading */}
           <div className="space-y-6">
-            {comments.map((comment) => {
+            {(() => {
+              // Separate top-level comments from replies / Trenne Top-Level-Kommentare von Antworten / Separă comentariile principale de răspunsuri
+              const topLevelComments = comments.filter(c => !c.parent_id);
+              const repliesMap = new Map<string, typeof comments>();
+              comments.forEach(c => {
+                if (c.parent_id) {
+                  const existing = repliesMap.get(c.parent_id) || [];
+                  existing.push(c);
+                  repliesMap.set(c.parent_id, existing);
+                }
+              });
+
+              // Helper function to render a single comment / Hilfsfunktion zum Rendern eines einzelnen Kommentars
+              const renderComment = (comment: typeof comments[0], isReply: boolean = false) => {
               // Generate avatar color based on username - DARKER colors to match RADIKAL
               // Avatar-Farbe basierend auf Benutzername generieren - DUNKLER Farben für RADIKAL
               // Generează culoare avatar bazată pe username - culori MAI ÎNCHISE pentru RADIKAL
@@ -1355,9 +1442,9 @@ export default function BlogPostPage() {
               };
 
               return (
-                <div key={comment.id} className="flex gap-3">
-                  {/* Avatar - YouTube Style with darker colors */}
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold text-sm shadow-lg`}>
+                <div key={comment.id} className={`flex gap-3 ${isReply ? '' : ''}`}>
+                  {/* Avatar - YouTube Style with darker colors / Smaller for replies */}
+                  <div className={`flex-shrink-0 ${isReply ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold shadow-lg`}>
                     {initial}
                   </div>
                   
@@ -1497,9 +1584,9 @@ export default function BlogPostPage() {
                       </svg>
                     </button>
                     
-                    {/* Dropdown Menu */}
+                    {/* Dropdown Menu — force-white-text keeps text white in light mode on dark bg-gray-900 */}
                     {activeMenu === comment.id && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-gray-900 rounded-lg shadow-xl py-1 z-50 border border-white/10">
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-gray-900 rounded-lg shadow-xl py-1 z-50 border border-white/10 force-white-text">
                         <button
                           onClick={() => {
                             setActiveMenu(null);
@@ -1521,7 +1608,67 @@ export default function BlogPostPage() {
                   </div>
                 </div>
               );
-            })}
+              }; // End of renderComment helper function
+
+              // Render threaded comments: top-level first, then replies underneath
+              // Gewindete Kommentare rendern: Top-Level zuerst, dann Antworten darunter
+              // Redare comentarii cu fire: principale mai întâi, apoi răspunsuri dedesubt
+              return (
+                <>
+                  {topLevelComments.map((comment) => {
+                    const replies = repliesMap.get(comment.id) || [];
+                    const hasReplies = replies.length > 0;
+                    const isExpanded = expandedReplies.has(comment.id);
+
+                    return (
+                      <div key={comment.id} className="space-y-0">
+                        {/* Top-level comment / Hauptkommentar / Comentariu principal */}
+                        {renderComment(comment, false)}
+                        
+                        {/* Replies section - YouTube style / Antworten-Bereich - YouTube-Stil / Secțiune răspunsuri - stil YouTube */}
+                        {hasReplies && (
+                          <div className="ml-12 mt-2">
+                            {/* Toggle replies button / Antworten ein-/ausblenden / Arată/ascunde răspunsuri */}
+                            <button
+                              onClick={() => {
+                                setExpandedReplies(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(comment.id)) {
+                                    newSet.delete(comment.id);
+                                  } else {
+                                    newSet.add(comment.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-blue-400 hover:bg-blue-500/10 text-xs font-semibold transition-all duration-200 mb-3"
+                            >
+                              <svg className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                              {replies.length} {language === 'de' 
+                                ? (replies.length === 1 ? 'Antwort' : 'Antworten') 
+                                : language === 'en' 
+                                  ? (replies.length === 1 ? 'reply' : 'replies') 
+                                  : language === 'ro' 
+                                    ? (replies.length === 1 ? 'răspuns' : 'răspunsuri') 
+                                    : (replies.length === 1 ? 'ответ' : replies.length < 5 ? 'ответа' : 'ответов')}
+                            </button>
+                            
+                            {/* Expanded replies / Erweiterte Antworten / Răspunsuri extinse */}
+                            {isExpanded && (
+                              <div className="space-y-4 border-l-2 border-white/10 pl-4">
+                                {replies.map((reply) => renderComment(reply, true))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              );
+            })()}
             
             {comments.length === 0 && (
               <div className="text-center py-12">
@@ -1562,7 +1709,7 @@ export default function BlogPostPage() {
       {/* Centered on screen for both desktop and mobile */}
       {showLoginPopup && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-          <div className="bg-gray-900 dark:bg-gray-800 text-white px-6 py-4 rounded-xl shadow-2xl border border-white/20 flex flex-col sm:flex-row items-center gap-3 max-w-sm w-full pointer-events-auto animate-fadeIn">
+          <div className="bg-gray-900 dark:bg-gray-800 text-white px-6 py-4 rounded-xl shadow-2xl border border-white/20 flex flex-col sm:flex-row items-center gap-3 max-w-sm w-full pointer-events-auto animate-fadeIn force-white-text">
             <div className="flex items-center gap-3 text-center sm:text-left">
               <svg className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -1579,7 +1726,7 @@ export default function BlogPostPage() {
       {/* Report Modal / Melden-Modal / Modal raportare */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10 shadow-2xl">
+          <div className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10 shadow-2xl force-white-text">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />

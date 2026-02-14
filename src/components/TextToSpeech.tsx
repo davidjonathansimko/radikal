@@ -8,6 +8,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 
+// TTS Engine type — 'browser' = built-in SpeechSynthesis, 'google' = Google Cloud WaveNet
+type TTSEngine = 'browser' | 'google';
+
 interface TextToSpeechProps {
   text: string;
   lang?: string;
@@ -194,6 +197,41 @@ export default function TextToSpeech({
   // Wake Lock + silent audio to keep TTS alive when screen locks
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // ===== Google Cloud TTS State =====
+  const [ttsEngine, setTtsEngine] = useState<TTSEngine>('browser');
+  const [googleAvailable, setGoogleAvailable] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleVoiceGender, setGoogleVoiceGender] = useState<'female' | 'male'>('female');
+  const googleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const googleChunksRef = useRef<string[]>([]);
+  const googleCurrentChunkRef = useRef<number>(0);
+  const googleIsPlayingRef = useRef<boolean>(false);
+
+  // ===== Client-side audio cache (persists in browser session) =====
+  // Key: hash of text+lang+gender+rate → base64 audio
+  const clientAudioCacheRef = useRef<Map<string, string>>(new Map());
+
+  // Check if Google Cloud TTS is available on mount
+  useEffect(() => {
+    const checkGoogleTTS = async () => {
+      try {
+        const res = await fetch('/api/tts');
+        if (res.ok) {
+          const data = await res.json();
+          setGoogleAvailable(data.available === true);
+          if (data.available) {
+            // Auto-select Google if available (better quality)
+            setTtsEngine('google');
+          }
+        }
+      } catch {
+        // Google TTS not available — use browser
+        setGoogleAvailable(false);
+      }
+    };
+    checkGoogleTTS();
+  }, []);
 
   // Clean text for speech (remove markdown, HTML, etc.)
   const cleanText = useCallback((rawText: string): string => {
@@ -399,7 +437,13 @@ export default function TextToSpeech({
   useEffect(() => {
     return () => {
       isSpeakingRef.current = false;
+      googleIsPlayingRef.current = false;
       speechSynthesis.cancel();
+      // Stop Google audio on unmount
+      if (googleAudioRef.current) {
+        googleAudioRef.current.pause();
+        googleAudioRef.current = null;
+      }
       // Release wake lock on unmount
       if (wakeLockRef.current) {
         wakeLockRef.current.release().catch(() => {});
@@ -603,6 +647,216 @@ export default function TextToSpeech({
     });
   }, [effectiveLang, rate, selectedVoice]);
 
+  // ===== Google Cloud TTS: Chunk and play via /api/tts =====
+  const googleSplitChunks = useCallback((fullText: string): string[] => {
+    // Google limit is ~5000 bytes; we use 4000 chars to be safe with UTF-8
+    const GOOGLE_CHUNK_SIZE = 4000;
+    if (fullText.length <= GOOGLE_CHUNK_SIZE) return [fullText];
+    
+    const chunks: string[] = [];
+    let remaining = fullText;
+    while (remaining.length > 0) {
+      if (remaining.length <= GOOGLE_CHUNK_SIZE) {
+        chunks.push(remaining);
+        break;
+      }
+      let splitAt = GOOGLE_CHUNK_SIZE;
+      const searchWindow = remaining.substring(Math.floor(GOOGLE_CHUNK_SIZE * 0.6), GOOGLE_CHUNK_SIZE);
+      const sentenceEndMatch = searchWindow.match(/[.!?]\s/g);
+      if (sentenceEndMatch) {
+        const lastEnd = searchWindow.lastIndexOf(sentenceEndMatch[sentenceEndMatch.length - 1]);
+        if (lastEnd >= 0) splitAt = Math.floor(GOOGLE_CHUNK_SIZE * 0.6) + lastEnd + 2;
+      } else {
+        const lastSpace = remaining.lastIndexOf(' ', GOOGLE_CHUNK_SIZE);
+        if (lastSpace > GOOGLE_CHUNK_SIZE * 0.3) splitAt = lastSpace + 1;
+      }
+      chunks.push(remaining.substring(0, splitAt).trim());
+      remaining = remaining.substring(splitAt).trim();
+    }
+    return chunks;
+  }, []);
+
+  const googlePlayChunk = useCallback(async (chunkText: string): Promise<void> => {
+    // Client-side cache key: simple hash of text + params
+    const cacheKey = `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`;
+    
+    let audioSrc: string;
+    
+    // Check client-side memory cache first
+    const cachedAudio = clientAudioCacheRef.current.get(cacheKey);
+    if (cachedAudio) {
+      console.log('[TTS Client Cache] ✅ HIT — using cached audio');
+      audioSrc = cachedAudio;
+    } else {
+      // Fetch from server (server also has its own 2-layer cache)
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: chunkText,
+          language: voiceLanguage,
+          speakingRate: rate,
+          voiceGender: googleVoiceGender,
+        }),
+      });
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (err.error === 'quota_exceeded') {
+          throw new Error('quota_exceeded');
+        }
+        throw new Error(`Google TTS failed: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      audioSrc = `data:audio/mp3;base64,${data.audioContent}`;
+      
+      // Save to client-side cache for this session
+      clientAudioCacheRef.current.set(cacheKey, audioSrc);
+      console.log(`[TTS Client Cache] 💾 SAVED — ${clientAudioCacheRef.current.size} chunks cached`);
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      const audio = new Audio(audioSrc);
+      googleAudioRef.current = audio;
+      
+      audio.onended = () => {
+        resolve();
+      };
+      audio.onerror = () => {
+        reject(new Error('Audio playback failed'));
+      };
+      audio.play().catch(reject);
+    });
+  }, [voiceLanguage, rate, googleVoiceGender]);
+
+  const startGoogleSpeaking = useCallback(async (fromPosition: number = 0) => {
+    const cleanedText = cleanText(text);
+    if (!cleanedText) return;
+
+    const textToSpeak = cleanedText.substring(fromPosition);
+    const chunks = googleSplitChunks(textToSpeak);
+    googleChunksRef.current = chunks;
+    googleCurrentChunkRef.current = 0;
+    googleIsPlayingRef.current = true;
+
+    setIsPlaying(true);
+    setIsPaused(false);
+    setGoogleLoading(true);
+    requestWakeLock();
+    startSilentAudio();
+    updateMediaSession(true, false);
+
+    let offsetBefore = fromPosition;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      if (!googleIsPlayingRef.current) break;
+      
+      googleCurrentChunkRef.current = i;
+      setGoogleLoading(true);
+      
+      try {
+        // Update progress at chunk start
+        const chunkProgress = (offsetBefore / cleanedText.length) * 100;
+        setProgress(chunkProgress);
+        setCurrentPosition(offsetBefore);
+        
+        await googlePlayChunk(chunks[i]);
+        setGoogleLoading(false);
+        offsetBefore += chunks[i].length;
+      } catch (err: unknown) {
+        setGoogleLoading(false);
+        const error = err as Error;
+        if (error.message === 'quota_exceeded') {
+          // Quota exceeded → auto-fallback to browser TTS
+          console.warn('[TTS] Google quota exceeded, falling back to browser TTS');
+          setTtsEngine('browser');
+          googleIsPlayingRef.current = false;
+          // Continue with browser TTS from current position
+          setTimeout(() => startSpeaking(offsetBefore), 200);
+          return;
+        }
+        console.error('[Google TTS] Error:', error.message);
+        break;
+      }
+    }
+
+    // Finished naturally
+    if (googleIsPlayingRef.current) {
+      googleIsPlayingRef.current = false;
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentPosition(0);
+      setGoogleLoading(false);
+      releaseWakeLock();
+      stopSilentAudio();
+      updateMediaSession(false, false);
+    }
+  }, [text, cleanText, googleSplitChunks, googlePlayChunk, requestWakeLock, startSilentAudio, releaseWakeLock, stopSilentAudio, updateMediaSession]);
+
+  const stopGoogleSpeaking = useCallback(() => {
+    googleIsPlayingRef.current = false;
+    if (googleAudioRef.current) {
+      googleAudioRef.current.pause();
+      googleAudioRef.current = null;
+    }
+    setIsPlaying(false);
+    setIsPaused(false);
+    setProgress(0);
+    setCurrentPosition(0);
+    setGoogleLoading(false);
+    releaseWakeLock();
+    stopSilentAudio();
+    updateMediaSession(false, false);
+  }, [releaseWakeLock, stopSilentAudio, updateMediaSession]);
+
+  const pauseGoogleSpeaking = useCallback(() => {
+    if (googleAudioRef.current) {
+      googleAudioRef.current.pause();
+    }
+    setIsPaused(true);
+    updateMediaSession(true, true);
+  }, [updateMediaSession]);
+
+  const resumeGoogleSpeaking = useCallback(() => {
+    if (googleAudioRef.current) {
+      googleAudioRef.current.play();
+    }
+    setIsPaused(false);
+    updateMediaSession(true, false);
+  }, [updateMediaSession]);
+
+  // Update progress during Google audio playback
+  useEffect(() => {
+    if (ttsEngine !== 'google' || !isPlaying || isPaused) return;
+    
+    const interval = setInterval(() => {
+      if (googleAudioRef.current && !googleAudioRef.current.paused) {
+        const audio = googleAudioRef.current;
+        const cleanedText = cleanText(text);
+        const chunks = googleChunksRef.current;
+        const chunkIdx = googleCurrentChunkRef.current;
+        
+        // Calculate overall progress from chunk position + audio position
+        let offsetBefore = 0;
+        for (let i = 0; i < chunkIdx; i++) {
+          offsetBefore += chunks[i]?.length || 0;
+        }
+        
+        const chunkLen = chunks[chunkIdx]?.length || 0;
+        const audioProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+        const posInChunk = Math.floor(chunkLen * audioProgress);
+        const totalPos = offsetBefore + posInChunk;
+        
+        setCurrentPosition(totalPos);
+        setProgress((totalPos / cleanedText.length) * 100);
+      }
+    }, 200);
+    
+    return () => clearInterval(interval);
+  }, [ttsEngine, isPlaying, isPaused, text, cleanText]);
+
   const startSpeaking = useCallback((fromPosition: number = 0) => {
     const cleanedText = cleanText(text);
     cleanedTextRef.current = cleanedText;
@@ -694,33 +948,49 @@ export default function TextToSpeech({
   }, [startSpeaking]);
 
   const pauseSpeaking = () => {
-    speechSynthesis.pause();
-    setIsPaused(true);
-    updateMediaSession(true, true);
+    if (ttsEngine === 'google') {
+      pauseGoogleSpeaking();
+    } else {
+      speechSynthesis.pause();
+      setIsPaused(true);
+      updateMediaSession(true, true);
+    }
     // Keep wake lock & silent audio active during pause so position is preserved
   };
 
   const resumeSpeaking = () => {
-    speechSynthesis.resume();
-    setIsPaused(false);
-    updateMediaSession(true, false);
+    if (ttsEngine === 'google') {
+      resumeGoogleSpeaking();
+    } else {
+      speechSynthesis.resume();
+      setIsPaused(false);
+      updateMediaSession(true, false);
+    }
   };
 
   const stopSpeaking = () => {
-    isSpeakingRef.current = false;
-    speechSynthesis.cancel();
-    setIsPlaying(false);
-    setIsPaused(false);
-    setProgress(0);
-    setCurrentPosition(0);
-    releaseWakeLock();
-    stopSilentAudio();
-    updateMediaSession(false, false);
+    if (ttsEngine === 'google') {
+      stopGoogleSpeaking();
+    } else {
+      isSpeakingRef.current = false;
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentPosition(0);
+      releaseWakeLock();
+      stopSilentAudio();
+      updateMediaSession(false, false);
+    }
   };
 
   const togglePlayPause = () => {
     if (!isPlaying) {
-      startSpeaking(currentPosition);
+      if (ttsEngine === 'google') {
+        startGoogleSpeaking(currentPosition);
+      } else {
+        startSpeaking(currentPosition);
+      }
     } else if (isPaused) {
       resumeSpeaking();
     } else {
@@ -734,10 +1004,15 @@ export default function TextToSpeech({
     const newPosition = Math.floor((percent / 100) * cleanedText.length);
     
     if (isPlaying) {
-      speechSynthesis.cancel();
-      setTimeout(() => {
-        startSpeaking(newPosition);
-      }, 100);
+      if (ttsEngine === 'google') {
+        stopGoogleSpeaking();
+        setTimeout(() => startGoogleSpeaking(newPosition), 100);
+      } else {
+        speechSynthesis.cancel();
+        setTimeout(() => {
+          startSpeaking(newPosition);
+        }, 100);
+      }
     } else {
       setCurrentPosition(newPosition);
       setProgress(percent);
@@ -796,9 +1071,15 @@ export default function TextToSpeech({
             onClick={togglePlayPause}
             className={isPlaying ? btnActive : btnNormal}
             title={isPlaying ? (isPaused ? t.resume : t.pause) : t.play}
+            disabled={googleLoading && ttsEngine === 'google'}
           >
-            <span className="text-[0.75rem] xs:text-xs sm:text-sm">{isPlaying && !isPaused ? '▐▐' : '🔊'}</span>
-            <span className="text-[0.75rem] xs:text-xs sm:text-sm font-semibold">{t.listenBlog}</span>
+            <span className="text-[0.75rem] xs:text-xs sm:text-sm">
+              {googleLoading ? '⏳' : isPlaying && !isPaused ? '▐▐' : '🔊'}
+            </span>
+            <span className="text-[0.75rem] xs:text-xs sm:text-sm font-semibold">
+              {t.listenBlog}
+              {ttsEngine === 'google' && !isPlaying && <span className="ml-0.5 text-[9px] opacity-70">✨</span>}
+            </span>
           </button>
           
           {/* Stop button - only when playing */}
@@ -947,8 +1228,13 @@ export default function TextToSpeech({
                   const newRate = speeds[nextIdx];
                   setRate(newRate);
                   if (isPlaying && !isPaused) {
-                    speechSynthesis.cancel();
-                    setTimeout(() => startSpeaking(currentPosition), 100);
+                    if (ttsEngine === 'google') {
+                      stopGoogleSpeaking();
+                      setTimeout(() => startGoogleSpeaking(currentPosition), 100);
+                    } else {
+                      speechSynthesis.cancel();
+                      setTimeout(() => startSpeaking(currentPosition), 100);
+                    }
                   }
                 }}
                 className="text-[10px] sm:text-xs text-gray-500 dark:text-white/50 hover:text-gray-800 dark:hover:text-white/80 font-mono px-1 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 transition-colors touch-manipulation"
@@ -963,6 +1249,73 @@ export default function TextToSpeech({
         {/* Compact settings panel */}
         {showSettings && (
           <div className="mt-2 p-3 bg-gray-50 dark:bg-black rounded-lg border border-gray-200 dark:border-white/10 space-y-3">
+            {/* TTS Engine toggle — Google WaveNet vs Browser */}
+            {googleAvailable && (
+              <div>
+                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
+                  🎙️ {language === 'de' ? 'Stimm-Engine' : language === 'en' ? 'Voice Engine' : language === 'ro' ? 'Motor vocal' : 'Голосовой движок'}
+                </label>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => { setTtsEngine('google'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                      ttsEngine === 'google' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/15'
+                    }`}
+                  >
+                    ✨ Google WaveNet
+                  </button>
+                  <button
+                    onClick={() => { setTtsEngine('browser'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                      ttsEngine === 'browser' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/15'
+                    }`}
+                  >
+                    🔊 Browser
+                  </button>
+                </div>
+                {ttsEngine === 'google' && (
+                  <p className="text-[10px] text-gray-400 dark:text-white/30 mt-1">
+                    {language === 'de' ? 'Hochwertige KI-Stimme' : language === 'en' ? 'High-quality AI voice' : language === 'ro' ? 'Voce AI de înaltă calitate' : 'Высококачественный ИИ-голос'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Google voice gender selector */}
+            {ttsEngine === 'google' && googleAvailable && (
+              <div>
+                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
+                  {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
+                </label>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => { setGoogleVoiceGender('female'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all ${
+                      googleVoiceGender === 'female' 
+                        ? 'bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-600' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60'
+                    }`}
+                  >
+                    👩 {language === 'de' ? 'Weiblich' : language === 'en' ? 'Female' : language === 'ro' ? 'Feminină' : 'Женский'}
+                  </button>
+                  <button
+                    onClick={() => { setGoogleVoiceGender('male'); if (isPlaying) stopSpeaking(); }}
+                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all ${
+                      googleVoiceGender === 'male' 
+                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60'
+                    }`}
+                  >
+                    👨 {language === 'de' ? 'Männlich' : language === 'en' ? 'Male' : language === 'ro' ? 'Masculină' : 'Мужской'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Voice Language selector */}
             {availableLanguages.length > 1 && (
               <div>
@@ -1130,6 +1483,68 @@ export default function TextToSpeech({
       {/* Settings panel */}
       {showSettings && (
         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 space-y-4">
+          {/* TTS Engine toggle — Google WaveNet vs Browser (full version) */}
+          {googleAvailable && (
+            <div>
+              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
+                🎙️ {language === 'de' ? 'Stimm-Engine' : language === 'en' ? 'Voice Engine' : language === 'ro' ? 'Motor vocal' : 'Голосовой движок'}
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setTtsEngine('google'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    ttsEngine === 'google' 
+                      ? 'bg-blue-600 text-white shadow-sm' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  ✨ Google WaveNet
+                </button>
+                <button
+                  onClick={() => { setTtsEngine('browser'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    ttsEngine === 'browser' 
+                      ? 'bg-blue-600 text-white shadow-sm' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  🔊 Browser
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Google voice gender (full version) */}
+          {ttsEngine === 'google' && googleAvailable && (
+            <div>
+              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
+                {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setGoogleVoiceGender('female'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    googleVoiceGender === 'female' 
+                      ? 'bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-600' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  👩 {language === 'de' ? 'Weiblich' : language === 'en' ? 'Female' : language === 'ro' ? 'Feminină' : 'Женский'}
+                </button>
+                <button
+                  onClick={() => { setGoogleVoiceGender('male'); if (isPlaying) stopSpeaking(); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    googleVoiceGender === 'male' 
+                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  👨 {language === 'de' ? 'Männlich' : language === 'en' ? 'Male' : language === 'ro' ? 'Masculină' : 'Мужской'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Voice Language selector */}
           {availableLanguages.length > 1 && (
             <div>
