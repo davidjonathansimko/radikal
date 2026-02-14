@@ -202,7 +202,7 @@ export default function TextToSpeech({
   const [ttsEngine, setTtsEngine] = useState<TTSEngine>('google');
   const [googleAvailable, setGoogleAvailable] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleVoiceGender, setGoogleVoiceGender] = useState<'female' | 'male'>('female');
+  const [googleVoiceGender] = useState<'male'>('male');
   const googleAudioRef = useRef<HTMLAudioElement | null>(null);
   const googleChunksRef = useRef<string[]>([]);
   const googleCurrentChunkRef = useRef<number>(0);
@@ -1318,36 +1318,7 @@ export default function TextToSpeech({
               </div>
             )}
 
-            {/* Google voice gender selector */}
-            {googleAvailable && (
-              <div>
-                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
-                  {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
-                </label>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => { setGoogleVoiceGender('female'); if (isPlaying) stopSpeaking(); }}
-                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all ${
-                      googleVoiceGender === 'female' 
-                        ? 'bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-600' 
-                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60'
-                    }`}
-                  >
-                    👩 {language === 'de' ? 'Weiblich' : language === 'en' ? 'Female' : language === 'ro' ? 'Feminină' : 'Женский'}
-                  </button>
-                  <button
-                    onClick={() => { setGoogleVoiceGender('male'); if (isPlaying) stopSpeaking(); }}
-                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all ${
-                      googleVoiceGender === 'male' 
-                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
-                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60'
-                    }`}
-                  >
-                    👨 {language === 'de' ? 'Männlich' : language === 'en' ? 'Male' : language === 'ro' ? 'Masculină' : 'Мужской'}
-                  </button>
-                </div>
-              </div>
-            )}
+
 
             {/* Voice Language selector */}
             {availableLanguages.length > 1 && (
@@ -1488,37 +1459,6 @@ export default function TextToSpeech({
               <p className="text-gray-400 dark:text-gray-500 text-sm">
                 ✨ {language === 'de' ? 'Google Cloud WaveNet — Hochwertige KI-Stimme' : language === 'en' ? 'Google Cloud WaveNet — High-quality AI voice' : language === 'ro' ? 'Google Cloud WaveNet — Voce AI de înaltă calitate' : 'Google Cloud WaveNet — Высококачественный ИИ-голос'}
               </p>
-            </div>
-          )}
-
-          {/* Google voice gender (full version) */}
-          {googleAvailable && (
-            <div>
-              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
-                {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setGoogleVoiceGender('female'); if (isPlaying) stopSpeaking(); }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    googleVoiceGender === 'female' 
-                      ? 'bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-600' 
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  👩 {language === 'de' ? 'Weiblich' : language === 'en' ? 'Female' : language === 'ro' ? 'Feminină' : 'Женский'}
-                </button>
-                <button
-                  onClick={() => { setGoogleVoiceGender('male'); if (isPlaying) stopSpeaking(); }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    googleVoiceGender === 'male' 
-                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  👨 {language === 'de' ? 'Männlich' : language === 'en' ? 'Male' : language === 'ro' ? 'Masculină' : 'Мужской'}
-                </button>
-              </div>
             </div>
           )}
 

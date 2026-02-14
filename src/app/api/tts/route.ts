@@ -84,37 +84,36 @@ async function saveToSupabaseCache(cacheKey: string, audioContent: string, langu
 // WaveNet voices sound much more natural than Standard voices
 // WaveNet-Stimmen klingen viel natürlicher als Standard-Stimmen
 // Vocile WaveNet sună mult mai natural decât vocile Standard
+// Male-only WaveNet voices — warm, natural male voices for all languages
+// Only the best-sounding male WaveNet voice per language is selected
 const WAVENET_VOICES: Record<string, { languageCode: string; name: string; ssmlGender: string }> = {
-  'de': { languageCode: 'de-DE', name: 'de-DE-Wavenet-C', ssmlGender: 'FEMALE' },
-  'de-male': { languageCode: 'de-DE', name: 'de-DE-Wavenet-B', ssmlGender: 'MALE' },
-  'en': { languageCode: 'en-US', name: 'en-US-Wavenet-F', ssmlGender: 'FEMALE' },
-  'en-male': { languageCode: 'en-US', name: 'en-US-Wavenet-D', ssmlGender: 'MALE' },
-  'ro': { languageCode: 'ro-RO', name: 'ro-RO-Wavenet-A', ssmlGender: 'FEMALE' },
-  'ru': { languageCode: 'ru-RU', name: 'ru-RU-Wavenet-C', ssmlGender: 'FEMALE' },
-  'ru-male': { languageCode: 'ru-RU', name: 'ru-RU-Wavenet-B', ssmlGender: 'MALE' },
-  'fr': { languageCode: 'fr-FR', name: 'fr-FR-Wavenet-C', ssmlGender: 'FEMALE' },
-  'es': { languageCode: 'es-ES', name: 'es-ES-Wavenet-C', ssmlGender: 'FEMALE' },
-  'it': { languageCode: 'it-IT', name: 'it-IT-Wavenet-A', ssmlGender: 'FEMALE' },
-  'pt': { languageCode: 'pt-BR', name: 'pt-BR-Wavenet-A', ssmlGender: 'FEMALE' },
-  'nl': { languageCode: 'nl-NL', name: 'nl-NL-Wavenet-A', ssmlGender: 'FEMALE' },
-  'pl': { languageCode: 'pl-PL', name: 'pl-PL-Wavenet-A', ssmlGender: 'FEMALE' },
-  'uk': { languageCode: 'uk-UA', name: 'uk-UA-Wavenet-A', ssmlGender: 'FEMALE' },
-  'tr': { languageCode: 'tr-TR', name: 'tr-TR-Wavenet-C', ssmlGender: 'FEMALE' },
-  'hu': { languageCode: 'hu-HU', name: 'hu-HU-Wavenet-A', ssmlGender: 'FEMALE' },
-  'cs': { languageCode: 'cs-CZ', name: 'cs-CZ-Wavenet-A', ssmlGender: 'FEMALE' },
-  'sv': { languageCode: 'sv-SE', name: 'sv-SE-Wavenet-A', ssmlGender: 'FEMALE' },
-  'da': { languageCode: 'da-DK', name: 'da-DK-Wavenet-A', ssmlGender: 'FEMALE' },
-  'no': { languageCode: 'nb-NO', name: 'nb-NO-Wavenet-C', ssmlGender: 'FEMALE' },
-  'fi': { languageCode: 'fi-FI', name: 'fi-FI-Wavenet-A', ssmlGender: 'FEMALE' },
-  'el': { languageCode: 'el-GR', name: 'el-GR-Wavenet-A', ssmlGender: 'FEMALE' },
-  'ja': { languageCode: 'ja-JP', name: 'ja-JP-Wavenet-B', ssmlGender: 'FEMALE' },
-  'ko': { languageCode: 'ko-KR', name: 'ko-KR-Wavenet-A', ssmlGender: 'FEMALE' },
-  'zh': { languageCode: 'cmn-CN', name: 'cmn-CN-Wavenet-A', ssmlGender: 'FEMALE' },
-  'ar': { languageCode: 'ar-XA', name: 'ar-XA-Wavenet-A', ssmlGender: 'FEMALE' },
-  'hi': { languageCode: 'hi-IN', name: 'hi-IN-Wavenet-A', ssmlGender: 'FEMALE' },
+  'de': { languageCode: 'de-DE', name: 'de-DE-Wavenet-B', ssmlGender: 'MALE' },
+  'en': { languageCode: 'en-US', name: 'en-US-Wavenet-D', ssmlGender: 'MALE' },
+  'ro': { languageCode: 'ro-RO', name: 'ro-RO-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for RO — using best available
+  'ru': { languageCode: 'ru-RU', name: 'ru-RU-Wavenet-B', ssmlGender: 'MALE' },
+  'fr': { languageCode: 'fr-FR', name: 'fr-FR-Wavenet-B', ssmlGender: 'MALE' },
+  'es': { languageCode: 'es-ES', name: 'es-ES-Wavenet-B', ssmlGender: 'MALE' },
+  'it': { languageCode: 'it-IT', name: 'it-IT-Wavenet-C', ssmlGender: 'MALE' },
+  'pt': { languageCode: 'pt-BR', name: 'pt-BR-Wavenet-B', ssmlGender: 'MALE' },
+  'nl': { languageCode: 'nl-NL', name: 'nl-NL-Wavenet-B', ssmlGender: 'MALE' },
+  'pl': { languageCode: 'pl-PL', name: 'pl-PL-Wavenet-B', ssmlGender: 'MALE' },
+  'uk': { languageCode: 'uk-UA', name: 'uk-UA-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for UK — using best available
+  'tr': { languageCode: 'tr-TR', name: 'tr-TR-Wavenet-B', ssmlGender: 'MALE' },
+  'hu': { languageCode: 'hu-HU', name: 'hu-HU-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for HU — using best available
+  'cs': { languageCode: 'cs-CZ', name: 'cs-CZ-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for CS — using best available
+  'sv': { languageCode: 'sv-SE', name: 'sv-SE-Wavenet-C', ssmlGender: 'MALE' },
+  'da': { languageCode: 'da-DK', name: 'da-DK-Wavenet-C', ssmlGender: 'MALE' },
+  'no': { languageCode: 'nb-NO', name: 'nb-NO-Wavenet-B', ssmlGender: 'MALE' },
+  'fi': { languageCode: 'fi-FI', name: 'fi-FI-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for FI — using best available
+  'el': { languageCode: 'el-GR', name: 'el-GR-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for EL — using best available
+  'ja': { languageCode: 'ja-JP', name: 'ja-JP-Wavenet-C', ssmlGender: 'MALE' },
+  'ko': { languageCode: 'ko-KR', name: 'ko-KR-Wavenet-C', ssmlGender: 'MALE' },
+  'zh': { languageCode: 'cmn-CN', name: 'cmn-CN-Wavenet-B', ssmlGender: 'MALE' },
+  'ar': { languageCode: 'ar-XA', name: 'ar-XA-Wavenet-B', ssmlGender: 'MALE' },
+  'hi': { languageCode: 'hi-IN', name: 'hi-IN-Wavenet-B', ssmlGender: 'MALE' },
   'bg': { languageCode: 'bg-BG', name: 'bg-BG-Standard-A', ssmlGender: 'FEMALE' }, // No WaveNet for BG
-  'hr': { languageCode: 'hr-HR', name: 'hr-HR-Standard-A', ssmlGender: 'FEMALE' }, // No WaveNet for HR  
-  'sk': { languageCode: 'sk-SK', name: 'sk-SK-Wavenet-A', ssmlGender: 'FEMALE' },
+  'hr': { languageCode: 'hr-HR', name: 'hr-HR-Standard-A', ssmlGender: 'FEMALE' }, // No WaveNet for HR
+  'sk': { languageCode: 'sk-SK', name: 'sk-SK-Wavenet-A', ssmlGender: 'FEMALE' }, // No male WaveNet for SK — using best available
 };
 
 // Maximum text length per request (Google limit is 5000 bytes)
@@ -133,7 +132,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { text, language = 'de', speakingRate = 0.85, voiceGender = 'female' } = body;
+    const { text, language = 'de', speakingRate = 0.85 } = body;
+    const voiceGender = 'male'; // Always use male voice
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
@@ -142,11 +142,8 @@ export async function POST(request: NextRequest) {
     // Truncate to max length (caller should chunk text before sending)
     const truncatedText = text.substring(0, MAX_TEXT_LENGTH);
 
-    // Select voice based on language and gender preference
-    const voiceKey = voiceGender === 'male' && WAVENET_VOICES[`${language}-male`] 
-      ? `${language}-male` 
-      : language;
-    const voiceConfig = WAVENET_VOICES[voiceKey] || WAVENET_VOICES['de'];
+    // Select voice based on language (always male)
+    const voiceConfig = WAVENET_VOICES[language] || WAVENET_VOICES['de'];
 
     // ===== CACHE LOOKUP: Check if we already have this audio cached =====
     const cacheKey = generateCacheKey(truncatedText, language, voiceGender, speakingRate);
@@ -190,7 +187,9 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          input: { text: truncatedText },
+          input: {
+            ssml: `<speak><prosody rate="medium" pitch="0st"><emphasis level="moderate">${truncatedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}</emphasis></prosody></speak>`
+          },
           voice: {
             languageCode: voiceConfig.languageCode,
             name: voiceConfig.name,
@@ -199,10 +198,10 @@ export async function POST(request: NextRequest) {
           audioConfig: {
             audioEncoding: 'MP3',
             speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
-            pitch: 0, // Natural pitch
-            volumeGainDb: 0,
-            // High quality audio settings
-            effectsProfileId: ['small-bluetooth-speaker-class-device'],
+            pitch: -1.0, // Slightly lower pitch for warmer, more natural male voice
+            volumeGainDb: 1.0, // Slightly louder for clarity
+            sampleRateHertz: 24000, // High quality sample rate
+            effectsProfileId: ['large-home-entertainment-class-device'], // Best quality audio profile
           },
         }),
       }
