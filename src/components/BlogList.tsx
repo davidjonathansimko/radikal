@@ -585,27 +585,6 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         ))}
       </div>
 
-      {/* Dot indicators — mobile only */}
-      {isMobile && posts.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-3 mb-1">
-          {posts.slice(0, 6).map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                const carousel = carouselRef.current;
-                if (!carousel) return;
-                carousel.scrollTo({ left: idx * carousel.offsetWidth, behavior: 'smooth' });
-              }}
-              className={`rounded-full transition-all duration-300 ${
-                idx === activeSlide 
-                  ? 'w-4 h-1.5 bg-gray-500 dark:bg-gray-400' 
-                  : 'w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600'
-              }`}
-              aria-label={`Go to blog ${idx + 1}`}
-            />
-          ))}
-        </div>
-      )}
       </div>
 
       {/* Load more button / Mehr laden-Button / Buton încarcă mai mult */}
