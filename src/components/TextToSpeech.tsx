@@ -199,7 +199,7 @@ export default function TextToSpeech({
   const silentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // ===== Google Cloud TTS State =====
-  const [ttsEngine, setTtsEngine] = useState<TTSEngine>('browser');
+  const [ttsEngine, setTtsEngine] = useState<TTSEngine>('google');
   const [googleAvailable, setGoogleAvailable] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleVoiceGender, setGoogleVoiceGender] = useState<'female' | 'male'>('female');
@@ -721,63 +721,56 @@ export default function TextToSpeech({
       console.log(`[TTS Client Cache] 💾 SAVED — ${clientAudioCacheRef.current.size} chunks cached`);
     }
 
-    // Helper: attempt to play the audio with retry logic
-    // Hilfsfunktion: Audio abspielen mit Wiederholungslogik
-    // Funcție ajutătoare: redare audio cu logică de reîncercare
-    const attemptPlay = (src: string): Promise<void> => {
-      return new Promise<void>((resolve, reject) => {
-        const audio = new Audio(src);
-        googleAudioRef.current = audio;
+    // Play audio using a pre-warmed Audio element to preserve user gesture on mobile
+    // Auf Mobilgeräten muss Audio im User-Gesture-Kontext gestartet werden
+    // Pe mobil, audio trebuie pornit în contextul gestului utilizatorului
+    return new Promise<void>((resolve, reject) => {
+      const audio = new Audio();
+      googleAudioRef.current = audio;
 
-        audio.onended = () => resolve();
-        audio.onerror = (e) => {
-          const mediaError = audio.error;
-          const errorMsg = mediaError
-            ? `Audio error code ${mediaError.code}: ${mediaError.message}`
-            : 'Audio playback failed';
-          console.warn('[Google TTS] Playback error:', errorMsg, e);
+      audio.onended = () => resolve();
+      audio.onerror = (e) => {
+        const mediaError = audio.error;
+        const errorMsg = mediaError
+          ? `Audio error code ${mediaError.code}: ${mediaError.message}`
+          : 'Audio playback failed';
+        console.warn('[Google TTS] Playback error:', errorMsg, e);
+
+        // If from cache, try refetching
+        if (fromCache) {
+          console.warn('[Google TTS] Cached audio failed, refetching...');
+          clientAudioCacheRef.current.delete(cacheKey);
+          fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: chunkText,
+              language: voiceLanguage,
+              speakingRate: rate,
+              voiceGender: googleVoiceGender,
+            }),
+          }).then(r => r.json()).then(data => {
+            if (data?.audioContent) {
+              const freshSrc = `data:audio/mp3;base64,${data.audioContent}`;
+              clientAudioCacheRef.current.set(cacheKey, freshSrc);
+              audio.src = freshSrc;
+              audio.play().then(() => {}).catch(reject);
+            } else {
+              reject(new Error('Refetch returned empty audio'));
+            }
+          }).catch(reject);
+        } else {
           reject(new Error(errorMsg));
-        };
-
-        audio.play().catch((playErr) => {
-          console.warn('[Google TTS] play() rejected:', playErr?.message);
-          reject(playErr);
-        });
-      });
-    };
-
-    try {
-      await attemptPlay(audioSrc);
-    } catch (firstErr) {
-      // If playing from cache failed, the cached data may be corrupt — refetch
-      // Wenn Cache-Audio fehlschlägt, könnte der Cache beschädigt sein — neu abrufen
-      // Dacă audio din cache eșuează, cache-ul ar putea fi corupt — reîncarcă
-      if (fromCache) {
-        console.warn('[Google TTS] Cached audio failed, refetching from server...');
-        clientAudioCacheRef.current.delete(cacheKey);
-        const res = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: chunkText,
-            language: voiceLanguage,
-            speakingRate: rate,
-            voiceGender: googleVoiceGender,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.audioContent) {
-            const freshSrc = `data:audio/mp3;base64,${data.audioContent}`;
-            clientAudioCacheRef.current.set(cacheKey, freshSrc);
-            await attemptPlay(freshSrc);
-            return;
-          }
         }
-      }
-      // Re-throw so startGoogleSpeaking can handle it (fallback to browser TTS)
-      throw firstErr;
-    }
+      };
+
+      // Set source and play — this must happen synchronously in the user gesture chain
+      audio.src = audioSrc;
+      audio.play().catch((playErr) => {
+        console.warn('[Google TTS] play() rejected:', playErr?.message);
+        reject(playErr);
+      });
+    });
   }, [voiceLanguage, rate, googleVoiceGender]);
 
   const startGoogleSpeaking = useCallback(async (fromPosition: number = 0) => {
@@ -794,7 +787,8 @@ export default function TextToSpeech({
     setIsPaused(false);
     setGoogleLoading(true);
     requestWakeLock();
-    startSilentAudio();
+    // Note: Do NOT call startSilentAudio() for Google TTS — it creates an AudioContext
+    // that conflicts with HTML5 Audio playback on mobile browsers
     updateMediaSession(true, false);
 
     let offsetBefore = fromPosition;
@@ -818,21 +812,28 @@ export default function TextToSpeech({
         setGoogleLoading(false);
         const error = err as Error;
         if (error.message === 'quota_exceeded') {
-          // Quota exceeded → auto-fallback to browser TTS
-          console.warn('[TTS] Google quota exceeded, falling back to browser TTS');
-          setTtsEngine('browser');
+          // Quota exceeded — stop playback
+          console.warn('[TTS] Google quota exceeded');
           googleIsPlayingRef.current = false;
-          // Continue with browser TTS from current position
-          setTimeout(() => startSpeaking(offsetBefore), 200);
+          setIsPlaying(false);
+          setIsPaused(false);
+          setGoogleLoading(false);
+          releaseWakeLock();
+          updateMediaSession(false, false);
           return;
         }
-        // Any other playback error → auto-fallback to browser TTS
-        // Jeder andere Wiedergabefehler → automatischer Rückfall auf Browser-TTS
-        // Orice altă eroare de redare → fallback automat la browser TTS
-        console.warn('[Google TTS] Playback error, falling back to browser TTS:', error.message);
-        setTtsEngine('browser');
+        // Playback error — stop and log, don't silently switch engines
+        // Wiedergabefehler — stoppen und loggen
+        // Eroare de redare — oprire și logare
+        console.warn('[Google TTS] Chunk playback failed:', error.message);
         googleIsPlayingRef.current = false;
-        setTimeout(() => startSpeaking(offsetBefore), 200);
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(0);
+        setCurrentPosition(0);
+        setGoogleLoading(false);
+        releaseWakeLock();
+        updateMediaSession(false, false);
         return;
       }
     }
@@ -846,10 +847,9 @@ export default function TextToSpeech({
       setCurrentPosition(0);
       setGoogleLoading(false);
       releaseWakeLock();
-      stopSilentAudio();
       updateMediaSession(false, false);
     }
-  }, [text, cleanText, googleSplitChunks, googlePlayChunk, requestWakeLock, startSilentAudio, releaseWakeLock, stopSilentAudio, updateMediaSession]);
+  }, [text, cleanText, googleSplitChunks, googlePlayChunk, requestWakeLock, releaseWakeLock, updateMediaSession]);
 
   const stopGoogleSpeaking = useCallback(() => {
     googleIsPlayingRef.current = false;
@@ -863,9 +863,8 @@ export default function TextToSpeech({
     setCurrentPosition(0);
     setGoogleLoading(false);
     releaseWakeLock();
-    stopSilentAudio();
     updateMediaSession(false, false);
-  }, [releaseWakeLock, stopSilentAudio, updateMediaSession]);
+  }, [releaseWakeLock, updateMediaSession]);
 
   const pauseGoogleSpeaking = useCallback(() => {
     if (googleAudioRef.current) {
@@ -1305,44 +1304,17 @@ export default function TextToSpeech({
         {/* Compact settings panel */}
         {showSettings && (
           <div className="mt-2 p-3 bg-gray-50 dark:bg-black rounded-lg border border-gray-200 dark:border-white/10 space-y-3">
-            {/* TTS Engine toggle — Google WaveNet vs Browser */}
+            {/* Google Cloud TTS info — no engine toggle needed */}
             {googleAvailable && (
               <div>
-                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
-                  🎙️ {language === 'de' ? 'Stimm-Engine' : language === 'en' ? 'Voice Engine' : language === 'ro' ? 'Motor vocal' : 'Голосовой движок'}
-                </label>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => { setTtsEngine('google'); if (isPlaying) stopSpeaking(); }}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
-                      ttsEngine === 'google' 
-                        ? 'bg-blue-600 text-white shadow-sm' 
-                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/15'
-                    }`}
-                  >
-                    ✨ Google WaveNet
-                  </button>
-                  <button
-                    onClick={() => { setTtsEngine('browser'); if (isPlaying) stopSpeaking(); }}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
-                      ttsEngine === 'browser' 
-                        ? 'bg-blue-600 text-white shadow-sm' 
-                        : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-300 dark:hover:bg-white/15'
-                    }`}
-                  >
-                    🔊 Browser
-                  </button>
-                </div>
-                {ttsEngine === 'google' && (
-                  <p className="text-[10px] text-gray-400 dark:text-white/30 mt-1">
-                    {language === 'de' ? 'Hochwertige KI-Stimme' : language === 'en' ? 'High-quality AI voice' : language === 'ro' ? 'Voce AI de înaltă calitate' : 'Высококачественный ИИ-голос'}
-                  </p>
-                )}
+                <p className="text-[10px] text-gray-400 dark:text-white/30">
+                  ✨ {language === 'de' ? 'Google Cloud WaveNet — Hochwertige KI-Stimme' : language === 'en' ? 'Google Cloud WaveNet — High-quality AI voice' : language === 'ro' ? 'Google Cloud WaveNet — Voce AI de înaltă calitate' : 'Google Cloud WaveNet — Высококачественный ИИ-голос'}
+                </p>
               </div>
             )}
 
             {/* Google voice gender selector */}
-            {ttsEngine === 'google' && googleAvailable && (
+            {googleAvailable && (
               <div>
                 <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
                   {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
@@ -1413,41 +1385,7 @@ export default function TextToSpeech({
               />
             </div>
             
-            {/* Voice - only if multiple voices */}
-            {voices.length > 0 && (
-              <div>
-                <label className="text-gray-500 dark:text-white/50 text-xs block mb-1">
-                  {t.voice}
-                </label>
-                {/* Warning when using fallback voices */}
-                {usingFallback && (
-                  <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-600/40 rounded text-yellow-700 dark:text-yellow-400 text-xs flex items-center gap-2">
-                    <span>⚠︎</span>
-                    <span>{t.noVoices} - {t.usingFallback}</span>
-                  </div>
-                )}
-                <select
-                  value={selectedVoice?.name || ''}
-                  onChange={(e) => {
-                    const voice = voices.find((v) => v.voice.name === e.target.value);
-                    if (voice) {
-                      setSelectedVoice(voice.voice);
-                      if (isPlaying) {
-                        speechSynthesis.cancel();
-                        setTimeout(() => startSpeaking(currentPosition), 100);
-                      }
-                    }
-                  }}
-                  className="w-full bg-white dark:bg-neutral-900 text-gray-800 dark:text-white text-xs rounded p-1.5 border border-gray-300 dark:border-white/15"
-                >
-                  {voices.map((v) => (
-                    <option key={v.voice.name} value={v.voice.name}>
-                      {v.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+
           </div>
         )}
       </div>
@@ -1539,39 +1477,17 @@ export default function TextToSpeech({
       {/* Settings panel */}
       {showSettings && (
         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 space-y-4">
-          {/* TTS Engine toggle — Google WaveNet vs Browser (full version) */}
+          {/* Google Cloud TTS info — no engine toggle needed (full version) */}
           {googleAvailable && (
             <div>
-              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
-                🎙️ {language === 'de' ? 'Stimm-Engine' : language === 'en' ? 'Voice Engine' : language === 'ro' ? 'Motor vocal' : 'Голосовой движок'}
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setTtsEngine('google'); if (isPlaying) stopSpeaking(); }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    ttsEngine === 'google' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  ✨ Google WaveNet
-                </button>
-                <button
-                  onClick={() => { setTtsEngine('browser'); if (isPlaying) stopSpeaking(); }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    ttsEngine === 'browser' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  🔊 Browser
-                </button>
-              </div>
+              <p className="text-gray-400 dark:text-gray-500 text-sm">
+                ✨ {language === 'de' ? 'Google Cloud WaveNet — Hochwertige KI-Stimme' : language === 'en' ? 'Google Cloud WaveNet — High-quality AI voice' : language === 'ro' ? 'Google Cloud WaveNet — Voce AI de înaltă calitate' : 'Google Cloud WaveNet — Высококачественный ИИ-голос'}
+              </p>
             </div>
           )}
 
           {/* Google voice gender (full version) */}
-          {ttsEngine === 'google' && googleAvailable && (
+          {googleAvailable && (
             <div>
               <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
                 {language === 'de' ? 'Stimme' : language === 'en' ? 'Voice' : language === 'ro' ? 'Voce' : 'Голос'}
@@ -1642,35 +1558,7 @@ export default function TextToSpeech({
             />
           </div>
 
-          {/* Voice selection */}
-          {voices.length > 1 && (
-            <div>
-              <label className="text-gray-600 dark:text-gray-400 text-sm block mb-2">
-                {t.voice}
-              </label>
-              <select
-                value={selectedVoice?.name || ''}
-                onChange={(e) => {
-                  const voice = voices.find((v) => v.voice.name === e.target.value);
-                  if (voice) {
-                    setSelectedVoice(voice.voice);
-                    // If playing, restart with new voice
-                    if (isPlaying) {
-                      speechSynthesis.cancel();
-                      setTimeout(() => startSpeaking(currentPosition), 100);
-                    }
-                  }
-                }}
-                className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 border border-gray-300 dark:border-gray-600"
-              >
-                {voices.map((v) => (
-                  <option key={v.voice.name} value={v.voice.name}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+
         </div>
       )}
     </div>
