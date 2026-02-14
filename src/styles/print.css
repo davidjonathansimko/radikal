@@ -31,6 +31,7 @@
   .reading-controls,
   .noise-overlay,
   #blog-background-overlay,
+  #blog-background-image,
   .CircularReadingProgress,
   [class*="CircularReading"],
   .fixed:not(article):not(header):not(.blog-content-backdrop):not(#blog-content),
@@ -55,6 +56,25 @@
   body > div:last-child > div:first-child {
     display: none !important;
     visibility: hidden !important;
+  }
+
+  /* Force hide background image divs - they cause duplicate images in PDF */
+  /* Hintergrund-Bild-Divs verstecken - verursachen doppelte Bilder im PDF */
+  /* Ascunde div-urile cu imagine de fundal - cauzează imagini duplicate în PDF */
+  #blog-background-image,
+  #blog-background-overlay {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    z-index: -9999 !important;
+  }
+
+  /* Remove any body background image for clean PDF */
+  body {
+    background-image: none !important;
   }
 
   /* Ensure buttons are hidden but content shows */

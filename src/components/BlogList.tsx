@@ -598,8 +598,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
               }}
               className={`rounded-full transition-all duration-300 ${
                 idx === activeSlide 
-                  ? 'w-6 h-2 bg-blue-500 dark:bg-blue-400' 
-                  : 'w-2 h-2 bg-gray-400 dark:bg-white/30'
+                  ? 'w-4 h-1.5 bg-gray-500 dark:bg-gray-400' 
+                  : 'w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600'
               }`}
               aria-label={`Go to blog ${idx + 1}`}
             />
