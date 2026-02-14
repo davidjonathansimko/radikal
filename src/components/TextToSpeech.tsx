@@ -778,6 +778,9 @@ export default function TextToSpeech({
     });
   }, [voiceLanguage, rate, googleVoiceGender, base64ToBlobUrl]);
 
+  // Ref to track pause state for Google TTS chunk loop
+  const googleIsPausedRef = useRef(false);
+
   const startGoogleSpeaking = useCallback(async (fromPosition: number = 0) => {
     const cleanedText = cleanText(text);
     if (!cleanedText) return;
@@ -787,6 +790,7 @@ export default function TextToSpeech({
     googleChunksRef.current = chunks;
     googleCurrentChunkRef.current = 0;
     googleIsPlayingRef.current = true;
+    googleIsPausedRef.current = false;
 
     setIsPlaying(true);
     setIsPaused(false);
@@ -799,6 +803,12 @@ export default function TextToSpeech({
     let offsetBefore = fromPosition;
     
     for (let i = 0; i < chunks.length; i++) {
+      if (!googleIsPlayingRef.current) break;
+      
+      // Wait while paused — check every 200ms
+      while (googleIsPausedRef.current && googleIsPlayingRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
       if (!googleIsPlayingRef.current) break;
       
       googleCurrentChunkRef.current = i;
@@ -858,6 +868,7 @@ export default function TextToSpeech({
 
   const stopGoogleSpeaking = useCallback(() => {
     googleIsPlayingRef.current = false;
+    googleIsPausedRef.current = false;
     if (googleAudioRef.current) {
       googleAudioRef.current.pause();
       googleAudioRef.current = null;
@@ -872,6 +883,7 @@ export default function TextToSpeech({
   }, [releaseWakeLock, updateMediaSession]);
 
   const pauseGoogleSpeaking = useCallback(() => {
+    googleIsPausedRef.current = true;
     if (googleAudioRef.current) {
       googleAudioRef.current.pause();
     }
@@ -880,6 +892,7 @@ export default function TextToSpeech({
   }, [updateMediaSession]);
 
   const resumeGoogleSpeaking = useCallback(() => {
+    googleIsPausedRef.current = false;
     if (googleAudioRef.current) {
       googleAudioRef.current.play();
     }
@@ -1058,15 +1071,22 @@ export default function TextToSpeech({
     }
   };
 
-  // Seek functionality
+  // Seek functionality — restarts from new position, preserving play state
   const seekTo = (percent: number) => {
     const cleanedText = cleanText(text);
     const newPosition = Math.floor((percent / 100) * cleanedText.length);
     
     if (isPlaying) {
       if (ttsEngine === 'google') {
-        stopGoogleSpeaking();
-        setTimeout(() => startGoogleSpeaking(newPosition), 100);
+        // Stop current chunk, then restart from new position
+        googleIsPlayingRef.current = false;
+        googleIsPausedRef.current = false;
+        if (googleAudioRef.current) {
+          googleAudioRef.current.pause();
+          googleAudioRef.current = null;
+        }
+        // Small delay to let the loop exit, then restart
+        setTimeout(() => startGoogleSpeaking(newPosition), 150);
       } else {
         speechSynthesis.cancel();
         setTimeout(() => {
@@ -1198,11 +1218,13 @@ export default function TextToSpeech({
                 const rect = bar.getBoundingClientRect();
                 const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
                 setProgress(pct);
-                // Don't seekTo on mousedown - only update visual position
-                // Pause speech while dragging to prevent conflicts
-                const wasPaused = isPaused;
+                // Pause playback while dragging to prevent audio conflicts
                 if (isPlaying && !isPaused) {
-                  speechSynthesis.pause();
+                  if (ttsEngine === 'google') {
+                    pauseGoogleSpeaking();
+                  } else {
+                    speechSynthesis.pause();
+                  }
                 }
                 const onMove = (ev: MouseEvent) => {
                   ev.preventDefault();
@@ -1231,9 +1253,13 @@ export default function TextToSpeech({
                 const touch = e.touches[0];
                 const pct = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
                 setProgress(pct);
-                // Pause speech while dragging to prevent conflicts
+                // Pause playback while dragging to prevent audio conflicts
                 if (isPlaying && !isPaused) {
-                  speechSynthesis.pause();
+                  if (ttsEngine === 'google') {
+                    pauseGoogleSpeaking();
+                  } else {
+                    speechSynthesis.pause();
+                  }
                 }
                 const onMove = (ev: TouchEvent) => {
                   ev.preventDefault();

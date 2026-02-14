@@ -120,6 +120,31 @@ const WAVENET_VOICES: Record<string, { languageCode: string; name: string; ssmlG
 // We use 4500 to be safe with UTF-8 encoding
 const MAX_TEXT_LENGTH = 4500;
 
+// Build SSML with natural pauses between sentences for warm, expressive reading
+function buildSSML(text: string): string {
+  // Escape XML special characters
+  let escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  
+  // Add natural pauses after sentence-ending punctuation
+  // Period, exclamation, question mark → 500ms pause
+  escaped = escaped.replace(/([.!?])\s+/g, '$1<break time="500ms"/> ');
+  
+  // Add shorter pauses after commas and semicolons → 250ms
+  escaped = escaped.replace(/([,;:])\s+/g, '$1<break time="250ms"/> ');
+  
+  // Add pause after ellipsis → 700ms for dramatic effect
+  escaped = escaped.replace(/(\.\.\.)\s*/g, '$1<break time="700ms"/> ');
+  
+  // Add pause after em-dash — → 400ms
+  escaped = escaped.replace(/(—|–)\s*/g, '$1<break time="400ms"/> ');
+  
+  return `<speak><prosody rate="95%" pitch="-1st">${escaped}</prosody></speak>`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.GOOGLE_CLOUD_TTS_API_KEY;
@@ -188,7 +213,7 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           input: {
-            ssml: `<speak><prosody rate="medium" pitch="0st"><emphasis level="moderate">${truncatedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}</emphasis></prosody></speak>`
+            ssml: buildSSML(truncatedText)
           },
           voice: {
             languageCode: voiceConfig.languageCode,
@@ -196,10 +221,10 @@ export async function POST(request: NextRequest) {
             ssmlGender: voiceConfig.ssmlGender,
           },
           audioConfig: {
-            audioEncoding: 'MP3',
+            audioEncoding: 'MP3', // MP3 — universally supported on all browsers incl. Safari/iOS
             speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
-            pitch: -1.0, // Slightly lower pitch for warmer, more natural male voice
-            volumeGainDb: 1.0, // Slightly louder for clarity
+            pitch: -2.0, // Lower pitch for warmer, deeper male voice
+            volumeGainDb: 2.0, // Louder for clarity
             sampleRateHertz: 24000, // High quality sample rate
             effectsProfileId: ['large-home-entertainment-class-device'], // Best quality audio profile
           },

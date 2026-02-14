@@ -74,7 +74,7 @@ export function ReadingModeProvider({ children }: { children: ReactNode }) {
   // DON'T load saved font size - always start at 100% for blog
   // Nur für Reading Mode die Größe speichern, nicht für den Blog
 
-  // Apply font size ONLY when in reading mode
+  // Apply font size CSS variable for reading mode styling
   useEffect(() => {
     if (isReadingMode) {
       document.documentElement.style.setProperty('--reading-font-size', `${readingModeFontSize}%`);
