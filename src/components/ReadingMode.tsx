@@ -41,7 +41,7 @@ const translations = {
   },
   ro: {
     readingMode: 'Mod Citire',
-    focusMode: 'Citire Focalizată',
+    focusMode: 'Focalizare',
     exitReadingMode: 'Ieși din Mod Citire',
     fontSize: 'Mărime Font',
     increase: 'Mărește',
@@ -183,19 +183,19 @@ export function FontSizeControls() {
   const t = translations[language as keyof typeof translations] || translations.de;
 
   return (
-    <div className="flex items-center gap-0 xs:gap-0.5 sm:gap-1 bg-gray-100 dark:bg-white/10 rounded-lg px-0.5 xs:px-1 sm:px-1 py-0.5 sm:py-1">
+    <div className="flex items-center gap-0 bg-gray-100 dark:bg-white/10 rounded-md px-0.5 py-0.5">
       <button
         onClick={decreaseFontSize}
         disabled={fontSize <= 70}
-        className="w-8 h-8 xs:w-8 xs:h-8 sm:w-8 sm:h-8 flex items-center justify-center rounded-md hover:bg-gray-200 dark:hover:bg-white/20 active:bg-gray-300 dark:active:bg-white/30 disabled:opacity-30 transition-colors touch-manipulation"
+        className="w-6 h-6 xs:w-7 xs:h-7 sm:w-7 sm:h-7 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-white/20 active:bg-gray-300 dark:active:bg-white/30 disabled:opacity-30 transition-colors touch-manipulation"
         title={t.decrease}
       >
-        <FaMinus className="w-3 h-3 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 text-gray-600 dark:text-white/60" />
+        <FaMinus className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-600 dark:text-white/60" />
       </button>
       
       <button
         onClick={resetFontSize}
-        className="px-1.5 xs:px-2 sm:px-2.5 py-1 xs:py-1 text-xs xs:text-sm sm:text-base font-medium text-gray-700 dark:text-white/80 hover:bg-gray-200 dark:hover:bg-white/20 active:bg-gray-300 dark:active:bg-white/30 rounded-md transition-colors min-w-[2.5rem] xs:min-w-[3rem] sm:min-w-[3.5rem] touch-manipulation"
+        className="px-1 xs:px-1.5 sm:px-2 py-0.5 text-[10px] xs:text-xs sm:text-sm font-medium text-gray-700 dark:text-white/80 hover:bg-gray-200 dark:hover:bg-white/20 active:bg-gray-300 dark:active:bg-white/30 rounded transition-colors min-w-[2rem] xs:min-w-[2.5rem] sm:min-w-[3rem] touch-manipulation"
         title={t.reset}
       >
         {fontSize}%
@@ -204,10 +204,10 @@ export function FontSizeControls() {
       <button
         onClick={increaseFontSize}
         disabled={fontSize >= 150}
-        className="w-8 h-8 xs:w-8 xs:h-8 sm:w-8 sm:h-8 flex items-center justify-center rounded-md hover:bg-gray-200 dark:hover:bg-white/20 active:bg-gray-300 dark:active:bg-white/30 disabled:opacity-30 transition-colors touch-manipulation"
+        className="w-6 h-6 xs:w-7 xs:h-7 sm:w-7 sm:h-7 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-white/20 active:bg-gray-300 dark:active:bg-white/30 disabled:opacity-30 transition-colors touch-manipulation"
         title={t.increase}
       >
-        <FaPlus className="w-3 h-3 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 text-gray-600 dark:text-white/60" />
+        <FaPlus className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-600 dark:text-white/60" />
       </button>
     </div>
   );

@@ -207,6 +207,10 @@ export default function TextToSpeech({
   const googleChunksRef = useRef<string[]>([]);
   const googleCurrentChunkRef = useRef<number>(0);
   const googleIsPlayingRef = useRef<boolean>(false);
+  // Session counter — each startGoogleSpeaking increments this; old loops check and exit
+  const googleSessionRef = useRef<number>(0);
+  // Offset tracking — the character offset where the current playback started from
+  const googleStartOffsetRef = useRef<number>(0);
 
   // ===== Client-side audio cache (persists in browser session) =====
   // Key: hash of text+lang+gender+rate → base64 audio
@@ -300,10 +304,15 @@ export default function TextToSpeech({
   useEffect(() => {
     // Stop current playback to prevent double audio when switching languages
     if (googleIsPlayingRef.current) {
+      // Increment session to kill the running playback loop
+      googleSessionRef.current++;
       googleIsPlayingRef.current = false;
       googleIsPausedRef.current = false;
       if (googleAudioRef.current) {
+        googleAudioRef.current.onended = null;
+        googleAudioRef.current.onerror = null;
         googleAudioRef.current.pause();
+        googleAudioRef.current.src = '';
         googleAudioRef.current = null;
       }
       setIsPlaying(false);
@@ -808,34 +817,47 @@ export default function TextToSpeech({
     const cleanedText = cleanText(text);
     if (!cleanedText) return;
 
+    // Increment session to invalidate any previous playback loop
+    const session = ++googleSessionRef.current;
+
+    // Stop any currently playing audio element first
+    if (googleAudioRef.current) {
+      googleAudioRef.current.onended = null;
+      googleAudioRef.current.onerror = null;
+      googleAudioRef.current.pause();
+      googleAudioRef.current.src = '';
+      googleAudioRef.current = null;
+    }
+
     const textToSpeak = cleanedText.substring(fromPosition);
     const chunks = googleSplitChunks(textToSpeak);
     googleChunksRef.current = chunks;
     googleCurrentChunkRef.current = 0;
+    googleStartOffsetRef.current = fromPosition;
     googleIsPlayingRef.current = true;
     googleIsPausedRef.current = false;
 
     setIsPlaying(true);
     setIsPaused(false);
-    setGoogleLoading(true);
+    setGoogleLoading(false);
     requestWakeLock();
-    // Note: Do NOT call startSilentAudio() for Google TTS — it creates an AudioContext
-    // that conflicts with HTML5 Audio playback on mobile browsers
     updateMediaSession(true, false);
 
     let offsetBefore = fromPosition;
     
     for (let i = 0; i < chunks.length; i++) {
+      // Check if this session is still the current one
+      if (googleSessionRef.current !== session) return;
       if (!googleIsPlayingRef.current) break;
       
       // Wait while paused — check every 200ms
-      while (googleIsPausedRef.current && googleIsPlayingRef.current) {
+      while (googleIsPausedRef.current && googleIsPlayingRef.current && googleSessionRef.current === session) {
         await new Promise(resolve => setTimeout(resolve, 200));
       }
+      if (googleSessionRef.current !== session) return;
       if (!googleIsPlayingRef.current) break;
       
       googleCurrentChunkRef.current = i;
-      setGoogleLoading(true);
       
       try {
         // Update progress at chunk start
@@ -844,13 +866,10 @@ export default function TextToSpeech({
         setCurrentPosition(offsetBefore);
         
         await googlePlayChunk(chunks[i]);
-        setGoogleLoading(false);
         offsetBefore += chunks[i].length;
       } catch (err: unknown) {
-        setGoogleLoading(false);
         const error = err as Error;
         if (error.message === 'quota_exceeded') {
-          // Quota exceeded — stop playback
           console.warn('[TTS] Google quota exceeded');
           googleIsPlayingRef.current = false;
           setIsPlaying(false);
@@ -860,11 +879,10 @@ export default function TextToSpeech({
           updateMediaSession(false, false);
           return;
         }
-        // If playback was stopped externally (seek, language change, stop), just exit silently
-        if (!googleIsPlayingRef.current) {
+        // If session changed or playback stopped externally, just exit silently
+        if (googleSessionRef.current !== session || !googleIsPlayingRef.current) {
           return;
         }
-        // Playback error — stop and log, don't silently switch engines
         console.warn('[Google TTS] Chunk playback failed:', error.message);
         googleIsPlayingRef.current = false;
         setIsPlaying(false);
@@ -878,8 +896,8 @@ export default function TextToSpeech({
       }
     }
 
-    // Finished naturally
-    if (googleIsPlayingRef.current) {
+    // Finished naturally — only if this session is still current
+    if (googleSessionRef.current === session && googleIsPlayingRef.current) {
       googleIsPlayingRef.current = false;
       setIsPlaying(false);
       setIsPaused(false);
@@ -892,10 +910,15 @@ export default function TextToSpeech({
   }, [text, cleanText, googleSplitChunks, googlePlayChunk, requestWakeLock, releaseWakeLock, updateMediaSession]);
 
   const stopGoogleSpeaking = useCallback(() => {
+    // Increment session to kill any running playback loop
+    googleSessionRef.current++;
     googleIsPlayingRef.current = false;
     googleIsPausedRef.current = false;
     if (googleAudioRef.current) {
+      googleAudioRef.current.onended = null;
+      googleAudioRef.current.onerror = null;
       googleAudioRef.current.pause();
+      googleAudioRef.current.src = '';
       googleAudioRef.current = null;
     }
     setIsPlaying(false);
@@ -935,9 +958,10 @@ export default function TextToSpeech({
         const cleanedText = cleanText(text);
         const chunks = googleChunksRef.current;
         const chunkIdx = googleCurrentChunkRef.current;
+        const startOffset = googleStartOffsetRef.current;
         
-        // Calculate overall progress from chunk position + audio position
-        let offsetBefore = 0;
+        // Calculate overall progress from seek offset + chunk position + audio position
+        let offsetBefore = startOffset;
         for (let i = 0; i < chunkIdx; i++) {
           offsetBefore += chunks[i]?.length || 0;
         }
@@ -1103,22 +1127,11 @@ export default function TextToSpeech({
     
     if (isPlaying) {
       if (ttsEngine === 'google') {
-        // Stop current chunk audio completely, then restart from new position
-        googleIsPlayingRef.current = false;
-        googleIsPausedRef.current = false;
-        if (googleAudioRef.current) {
-          // Remove event handlers first to prevent error/end callbacks
-          googleAudioRef.current.onended = null;
-          googleAudioRef.current.onerror = null;
-          googleAudioRef.current.pause();
-          googleAudioRef.current.src = ''; // Force abort pending load
-          googleAudioRef.current = null;
-        }
         // Update visual position immediately  
         setProgress(percent);
         setCurrentPosition(newPosition);
-        // Small delay to let the loop exit, then restart
-        setTimeout(() => startGoogleSpeaking(newPosition), 200);
+        // startGoogleSpeaking handles stopping previous playback via session counter
+        startGoogleSpeaking(newPosition);
       } else {
         speechSynthesis.cancel();
         setTimeout(() => {
@@ -1178,11 +1191,8 @@ export default function TextToSpeech({
               onClick={togglePlayPause}
               className="flex-shrink-0 w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors touch-manipulation"
               title={isPaused ? t.resume : isPlaying ? t.pause : t.play}
-              disabled={googleLoading && ttsEngine === 'google'}
             >
-              {googleLoading ? (
-                <span className="text-sm animate-pulse">⏳</span>
-              ) : isPlaying && !isPaused ? (
+              {isPlaying && !isPaused ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
                   <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clipRule="evenodd" />
                 </svg>
@@ -1233,7 +1243,8 @@ export default function TextToSpeech({
                 document.addEventListener('mouseup', onUp);
               }}
               onTouchStart={(e) => {
-                e.preventDefault();
+                // Do NOT call e.preventDefault() — React registers touch handlers as passive
+                // The touch-none CSS class already prevents default touch behavior
                 e.stopPropagation();
                 const bar = e.currentTarget;
                 const rect = bar.getBoundingClientRect();

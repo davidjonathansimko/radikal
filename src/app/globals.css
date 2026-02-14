@@ -188,15 +188,23 @@ p, li, span, div {
 /* Prose content - Optimal reading experience with Montserrat for blogs */
 /* Blog-Inhalt - Optimale Leseerfahrung mit Montserrat für Blogs */
 /* Conținut blog - Experiență de citire optimă cu Montserrat pentru bloguri */
-.prose, article, .blog-content, .blog-body-text, .reading-mode-content {
+.prose, article, .blog-content, .reading-mode-content {
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   font-size: clamp(1rem, 1.1vw, 1.125rem);
   line-height: 1.8;
   letter-spacing: 0.01em;
 }
 
+/* blog-body-text: font-size controlled by React inline style — do NOT set font-size here */
+.blog-body-text {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+}
+
 .prose p, article p, .blog-body-text p, .reading-mode-content p {
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: inherit;
   margin-bottom: 1.5em;
   text-wrap: pretty;
 }
@@ -823,9 +831,13 @@ html.light body {
     font-size: 16px;
   }
 
-  /* Blog content text on mobile — 17px base for comfortable reading */
-  .blog-body-text, .reading-mode-content, .prose {
+  /* Blog content text on mobile — controlled by React inline style for blog-body-text */
+  .reading-mode-content, .prose {
     font-size: 17px !important;
+    line-height: 1.85 !important;
+  }
+  /* blog-body-text: DO NOT set font-size here — it's controlled by React inline style (fontSize %) */
+  .blog-body-text {
     line-height: 1.85 !important;
   }
 
