@@ -27,13 +27,17 @@ html.pwa-mode body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* PWA mode: fixed elements need safe area offsets */
-html.pwa-mode .fixed.top-0 {
-  top: env(safe-area-inset-top, 0px);
+/* Pasul 21022026: PWA mode — fixed elements use INTERNAL padding for safe areas */
+/* The header/bottom bar stay at top:0 / bottom:0 so backgrounds extend edge-to-edge */
+/* Content inside is pushed by safe-area padding — no gap behind fixed bars */
+html.pwa-mode [data-mobile-nav="top"] {
+  top: 0 !important;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
-html.pwa-mode .fixed.bottom-0 {
-  bottom: env(safe-area-inset-bottom, 0px);
+html.pwa-mode [data-mobile-nav="bottom"] {
+  bottom: 0 !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Pasul 1123: Hide scrollbar utility for swipeable carousel */
