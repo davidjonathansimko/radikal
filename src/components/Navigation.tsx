@@ -466,8 +466,8 @@ export default function Navigation() {
 
     {/* ═══ MOBILE BOTTOM BAR: Rounded floating bar with Language / Search / Theme — Telegram-style ═══ */}
     {/* Only visible for logged-in users / Nur sichtbar für eingeloggte Benutzer / Vizibil doar pentru utilizatorii logați */}
+    {/* Pasul 21022026: Bottom bar — higher padding so native phone nav buttons (home/back/recent) stay visible */}
     {user && !isMobileMenuOpen && (
-      {/* Pasul 21022026: Bottom bar — higher padding so native phone nav buttons (home/back/recent) stay visible */}
       <div className="fixed bottom-0 left-0 right-0 z-[210] lg:hidden flex justify-center pb-[calc(env(safe-area-inset-bottom,0px)+18px)] px-4 pointer-events-none" data-mobile-nav="bottom">
         <div className="pointer-events-auto flex items-end justify-evenly gap-1 bg-white/80 dark:bg-black/70 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 shadow-lg px-3 py-0.5" style={{ minWidth: '200px', maxWidth: '260px' }}>
           {/* Language selector */}
