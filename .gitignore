@@ -95,6 +95,9 @@ imbunatatiri_pana_acum.md
 # Release instructions (personal)
 release.md
 
+# Protocol / documentation files (local only)
+protokol.md
+
 # Jest config (not needed for production)
 jest.config.js
 jest.setup.js
