@@ -207,8 +207,8 @@ export default function RootLayout({
                   {/* Reading mode overlay for distraction-free reading / Lesemodus-Overlay für ablenkungsfreies Lesen / Suprapunere mod citire pentru lectură fără distrageri */}
                   <ReadingModeOverlay />
 
-                  {/* Pasul 21022026: Mobile — pt for top logo/hamburger area + safe-area, pb for floating bottom bar + native nav clearance; Desktop — pt for top nav */}
-                  <main className="relative z-10 pt-16 pb-24 lg:pb-0 lg:pt-16" style={{ paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 4rem), 4rem)' }}>
+                  {/* Pasul 2102001: Mobile — pt-14 for thin header, pb-24 for bottom bar; Desktop — pt-16 for top nav */}
+                  <main className="relative z-10 pt-14 pb-24 lg:pb-0 lg:pt-16">
                     <ErrorBoundary>
                       {children}
                     </ErrorBoundary>

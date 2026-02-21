@@ -397,10 +397,10 @@ export default function Navigation() {
     {/* Only visible for logged-in users / Nur sichtbar für eingeloggte Benutzer / Vizibil doar pentru utilizatorii logați */}
     {user && (
     <div className="fixed top-0 left-0 right-0 z-[210] lg:hidden" data-mobile-nav="top">
-      {/* Pasul 21022026: Blurred dark background bar — extends edge-to-edge behind status bar */}
+      {/* Pasul 2102001: Blurred dark background bar — extends edge-to-edge, thin compact bar */}
       <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-black/10 dark:border-white/10" />
-      {/* Pasul 21022026: py-1.5 + safe-area-inset-top keeps content below phone status bar (time/battery) */}
-      <div className="relative flex items-center justify-between px-3 py-1.5" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 6px)' }}>
+      {/* Pasul 2102001: compact py-1, safe-area-inset-top only in PWA mode (handled by CSS) */}
+      <div className="relative flex items-center justify-between px-3 py-1">
       {/* Logo — top left */}
       <Link href="/" className="pointer-events-auto flex items-center">
         <Image

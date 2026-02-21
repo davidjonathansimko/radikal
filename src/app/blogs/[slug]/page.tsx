@@ -1163,10 +1163,10 @@ export default function BlogPostPage() {
             
             {/* Mobile layout: responsive rows */}
             <div className="md:hidden flex flex-col gap-2">
-              {/* Row 1: FontSize + PDF + Focus (all sizes) */}
-              <div className="flex items-center justify-between gap-1">
+              {/* Pasul 2102001: Row 1: FontSize + PDF + Focus — auto-stretch, equal margins, no overflow */}
+              <div className="flex items-center justify-between gap-1.5 w-full">
                 <FontSizeControls />
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <PrintButton variant="icon" showLabel />
                   <ReadingModeToggle />
                 </div>

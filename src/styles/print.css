@@ -34,6 +34,9 @@
   #blog-background-image,
   .CircularReadingProgress,
   [class*="CircularReading"],
+  /* Pasul 2102001: Hide TTS/audio player + font controls in PDF print */
+  [data-mobile-nav],
+  audio,
   .fixed:not(article):not(header):not(.blog-content-backdrop):not(#blog-content),
   /* Hide tags in PDF / Tags im PDF ausblenden / Ascunde tag-urile în PDF */
   .tags,
@@ -56,6 +59,15 @@
   body > div:last-child > div:first-child {
     display: none !important;
     visibility: hidden !important;
+  }
+
+  /* Pasul 2102001: Force hide reading-controls (font-size bar + TTS player) in PDF */
+  .reading-controls,
+  .reading-controls * {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
   /* Force hide background image divs - they cause duplicate images in PDF */

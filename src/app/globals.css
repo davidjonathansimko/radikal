@@ -26,15 +26,20 @@ html.pwa-mode body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Pasul 2102000: PWA mode — fixed elements stay at edges, background extends behind safe areas */
+/* Pasul 2102001: PWA mode — fixed elements stay at edges, background extends behind safe areas */
 /* Inner content uses its own padding to clear the status bar / home indicator */
-/* No padding on the outer wrapper — avoids double spacing */
 html.pwa-mode [data-mobile-nav="top"] {
   top: 0 !important;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 html.pwa-mode [data-mobile-nav="bottom"] {
   bottom: 0 !important;
+}
+
+/* Pasul 2102001: PWA mode — main content needs extra top padding for safe area */
+html.pwa-mode main {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem) !important;
 }
 
 /* Pasul 1123: Hide scrollbar utility for swipeable carousel */

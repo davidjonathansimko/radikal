@@ -162,15 +162,15 @@ export function ReadingModeToggle() {
   return (
     <button
       onClick={toggleReadingMode}
-      className={`flex-shrink-0 flex items-center gap-0.5 xs:gap-1 px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-300 ${
+      className={`flex-shrink-0 flex items-center gap-0.5 xs:gap-1 px-1.5 xs:px-2 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-300 ${
         isReadingMode
           ? 'bg-blue-500 text-white shadow-lg'
           : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-200 dark:hover:bg-white/20'
       }`}
       title={isReadingMode ? t.exitReadingMode : t.readingMode}
     >
-      <FaGlasses className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" />
-      <span className="text-[0.75rem] xs:text-xs sm:text-sm font-semibold">{t.focusMode}</span>
+      <FaGlasses className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+      <span className="text-[0.6rem] xs:text-xs sm:text-sm font-semibold whitespace-nowrap leading-tight">{t.focusMode}</span>
     </button>
   );
 }
@@ -329,9 +329,10 @@ export function ReadingModeOverlay() {
           )}
           
           {/* Blog content with drop cap effect and proper formatting */}
+          {/* Pasul 2102001: Use CSS variable for font-size so <p> elements inside prose also scale */}
           <div 
-            className="prose prose-lg prose-gray dark:prose-invert max-w-none text-gray-800 dark:text-white/90 leading-relaxed reading-mode-content text-justify"
-            style={{ fontSize: `${fontSize}%`, lineHeight: '2' }}
+            className="prose prose-gray dark:prose-invert max-w-none text-gray-800 dark:text-white/90 leading-relaxed reading-mode-content text-justify"
+            style={{ fontSize: `clamp(0.9rem, ${fontSize / 100}rem, 2.5rem)`, lineHeight: '2' }}
           >
             {blogContent && blogContent.length > 0 ? (
               <>
@@ -416,6 +417,11 @@ export function ReadingModeOverlay() {
           margin-top: 0.05em;
           font-weight: 600;
           font-family: 'Cinzel', Georgia, 'Times New Roman', serif;
+        }
+        
+        /* Pasul 2102001: Force reading-mode-content paragraphs to inherit parent font-size */
+        .reading-mode-content p {
+          font-size: inherit !important;
         }
         
         .reading-mode .blog-content-backdrop {
