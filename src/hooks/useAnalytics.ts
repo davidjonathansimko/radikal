@@ -105,7 +105,8 @@ export function useAnalytics() {
       });
       
       if (insertError) {
-        console.error('❌ Page view insert error:', insertError.message, insertError.code);
+        // Pasul 2102003: Suppress noisy analytics errors — these are non-critical
+        console.debug('Analytics: Page view insert issue:', insertError.code);
       } else {
         console.log('✅ Page view tracked:', pathname);
       }
@@ -136,7 +137,7 @@ export function useAnalytics() {
         });
         
         if (sessionInsertError && !sessionInsertError.message.includes('duplicate')) {
-          console.error('❌ Session insert error:', sessionInsertError.message);
+          console.debug('Analytics: Session insert issue:', sessionInsertError.code);
         }
       } else {
         console.log('✅ Session tracked');
@@ -151,7 +152,7 @@ export function useAnalytics() {
       }, { onConflict: 'session_id' });
       
       if (activeUserError) {
-        console.error('❌ Active user update error:', activeUserError.message);
+        console.debug('Analytics: Active user update issue:', activeUserError.code);
       }
 
     } catch (error) {
@@ -193,12 +194,12 @@ export function useAnalytics() {
       const duration = Math.floor((Date.now() - pageStartTime.current) / 1000);
       
       try {
-        // Get current session duration
+        // Get current session duration — use maybeSingle to avoid 406 when no row exists
         const { data: session } = await supabase
           .from('analytics_sessions')
           .select('duration_seconds')
           .eq('session_id', sessionId.current)
-          .single();
+          .maybeSingle();
 
         if (session) {
           await supabase

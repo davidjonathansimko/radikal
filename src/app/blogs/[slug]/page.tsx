@@ -1135,8 +1135,13 @@ export default function BlogPostPage() {
           )}
 
           {/* 3. Title AFTER metadata / Titel NACH Metadaten / Titlu DUPĂ metadate */}
+          {/* Pasul 2102003: Show skeleton pulse while waiting for DeepL translation instead of Romanian flash */}
           <h1 className="text-[clamp(1.5rem,6vw,2.25rem)] sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8 animate-fadeIn tracking-wide">
-            {displayTitle}
+            {language !== 'ro' && !translatedTitle ? (
+              <span className="inline-block w-full h-[1.2em] bg-gray-200 dark:bg-white/10 rounded animate-pulse" />
+            ) : (
+              displayTitle
+            )}
           </h1>
         </header>
 
@@ -1149,12 +1154,7 @@ export default function BlogPostPage() {
             {/* Desktop: Single row with all controls - NO wrap */}
             <div className="hidden md:flex items-center gap-2">
               <FontSizeControls />
-              <div className="flex-1">
-                <TextToSpeech 
-                  text={displayContent || post.content || ''} 
-                  compact
-                />
-              </div>
+              <div className="flex-1" />
               <PrintButton variant="icon" showLabel />
               {/* BookmarkButton commented out - replaced by Liked Posts */}
               {/* <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-3 !py-1.5 !text-xs !gap-1.5 sm:!px-4 sm:!py-2 sm:!text-sm sm:!gap-2" /> */}
@@ -1163,21 +1163,22 @@ export default function BlogPostPage() {
             
             {/* Mobile layout: responsive rows */}
             <div className="md:hidden flex flex-col gap-2">
-              {/* Pasul 2102001: Row 1: FontSize + PDF + Focus — auto-stretch, equal margins, no overflow */}
-              <div className="flex items-center justify-between gap-1.5 w-full">
+              {/* Pasul 2102003: Row 1: FontSize + PDF + Focus — compact, no overflow */}
+              <div className="flex items-center justify-between gap-1 w-full overflow-hidden">
                 <FontSizeControls />
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <PrintButton variant="icon" showLabel />
                   <ReadingModeToggle />
                 </div>
               </div>
-              {/* Row 2: TTS only (full width) */}
-              <div className="w-full">
-                <TextToSpeech 
-                  text={displayContent || post.content || ''} 
-                  compact
-                />
-              </div>
+            </div>
+
+            {/* Pasul 2102003: TTS — SINGLE shared instance for both mobile and desktop (prevents double playback) */}
+            <div className="w-full mt-2 md:mt-0">
+              <TextToSpeech 
+                text={displayContent || post.content || ''} 
+                compact
+              />
             </div>
           </div>
           

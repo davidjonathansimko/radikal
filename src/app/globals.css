@@ -37,9 +37,9 @@ html.pwa-mode [data-mobile-nav="bottom"] {
   bottom: 0 !important;
 }
 
-/* Pasul 2102001: PWA mode — main content needs extra top padding for safe area */
+/* Pasul 2102003: PWA mode — main content needs extra top padding for safe area */
 html.pwa-mode main {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem) !important;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 3rem) !important;
 }
 
 /* Pasul 1123: Hide scrollbar utility for swipeable carousel */

@@ -23,7 +23,7 @@ const ReadingModeContext = createContext<ReadingModeContextType | undefined>(und
 const translations = {
   de: {
     readingMode: 'Lesemodus',
-    focusMode: 'Fokus-Lesen',
+    focusMode: 'Fokus',
     exitReadingMode: 'Lesemodus beenden',
     fontSize: 'Schriftgröße',
     increase: 'Vergrößern',
@@ -32,7 +32,7 @@ const translations = {
   },
   en: {
     readingMode: 'Reading Mode',
-    focusMode: 'Focus Reading',
+    focusMode: 'Focus',
     exitReadingMode: 'Exit Reading Mode',
     fontSize: 'Font Size',
     increase: 'Increase',
@@ -41,7 +41,7 @@ const translations = {
   },
   ro: {
     readingMode: 'Mod Citire',
-    focusMode: 'Focalizare',
+    focusMode: 'Fokus',
     exitReadingMode: 'Ieși din Mod Citire',
     fontSize: 'Mărime Font',
     increase: 'Mărește',
@@ -50,7 +50,7 @@ const translations = {
   },
   ru: {
     readingMode: 'Режим чтения',
-    focusMode: 'Фокус чтения',
+    focusMode: 'Фокус',
     exitReadingMode: 'Выйти из режима чтения',
     fontSize: 'Размер шрифта',
     increase: 'Увеличить',
@@ -329,9 +329,9 @@ export function ReadingModeOverlay() {
           )}
           
           {/* Blog content with drop cap effect and proper formatting */}
-          {/* Pasul 2102001: Use CSS variable for font-size so <p> elements inside prose also scale */}
+          {/* Pasul 2102003: Apply font-size directly to each <p> via inline style to bypass prose overrides */}
           <div 
-            className="prose prose-gray dark:prose-invert max-w-none text-gray-800 dark:text-white/90 leading-relaxed reading-mode-content text-justify"
+            className="max-w-none text-gray-800 dark:text-white/90 leading-relaxed reading-mode-content text-justify"
             style={{ fontSize: `clamp(0.9rem, ${fontSize / 100}rem, 2.5rem)`, lineHeight: '2' }}
           >
             {blogContent && blogContent.length > 0 ? (
@@ -343,12 +343,13 @@ export function ReadingModeOverlay() {
                   const dropCapMatch = blogContent.match(/^([\s"„""«»'\u201C\u201D\u201E\u201F\u00AB\u00BB]*[A-Za-zÀ-ÿА-Яа-яĂăÂâÎîȘșȚț])/);
                   const dropCapText = dropCapMatch ? dropCapMatch[0] : blogContent.charAt(0);
                   const remainingText = blogContent.slice(dropCapText.length);
+                  const pFontSize = `clamp(0.9rem, ${fontSize / 100}rem, 2.5rem)`;
                   
                   return (
                     <>
                       <span className="reading-drop-cap">{dropCapText}</span>
                       {remainingText.split(/\n\n+/).map((paragraph, index) => (
-                        <p key={index} style={{ marginBottom: '1.5em', textIndent: index > 0 ? '0' : 'inherit' }}>
+                        <p key={index} style={{ fontSize: pFontSize, lineHeight: '2', marginBottom: '1.5em', textIndent: index > 0 ? '0' : 'inherit' }}>
                           {paragraph.trim()}
                         </p>
                       ))}

@@ -399,8 +399,8 @@ export default function Navigation() {
     <div className="fixed top-0 left-0 right-0 z-[210] lg:hidden" data-mobile-nav="top">
       {/* Pasul 2102001: Blurred dark background bar — extends edge-to-edge, thin compact bar */}
       <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-black/10 dark:border-white/10" />
-      {/* Pasul 2102001: compact py-1, safe-area-inset-top only in PWA mode (handled by CSS) */}
-      <div className="relative flex items-center justify-between px-3 py-1">
+      {/* Pasul 2102003: ultra-compact py-0.5, pushed up to fill top gap */}
+      <div className="relative flex items-center justify-between px-3 py-0.5">
       {/* Logo — top left */}
       <Link href="/" className="pointer-events-auto flex items-center">
         <Image

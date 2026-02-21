@@ -300,6 +300,42 @@ export default function TextToSpeech({
     return chunks;
   }, []);
 
+  // Pasul 2102003: Stop any ongoing playback when text content changes (e.g., translation arrives)
+  // This prevents double/triple audio streams when displayContent updates
+  const prevTextRef = useRef<string>(text);
+  useEffect(() => {
+    if (prevTextRef.current !== text) {
+      prevTextRef.current = text;
+      // Kill Google TTS playback
+      if (googleIsPlayingRef.current) {
+        googleSessionRef.current++;
+        googleIsPlayingRef.current = false;
+        googleIsPausedRef.current = false;
+        if (googleAudioRef.current) {
+          googleAudioRef.current.onended = null;
+          googleAudioRef.current.onerror = null;
+          googleAudioRef.current.pause();
+          googleAudioRef.current.src = '';
+          googleAudioRef.current = null;
+        }
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(0);
+        setCurrentPosition(0);
+        setGoogleLoading(false);
+      }
+      // Kill browser TTS playback
+      if (isSpeakingRef.current) {
+        isSpeakingRef.current = false;
+        speechSynthesis.cancel();
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(0);
+        setCurrentPosition(0);
+      }
+    }
+  }, [text]);
+
   // Sync voiceLanguage when app language changes — stop any current playback first
   useEffect(() => {
     // Stop current playback to prevent double audio when switching languages

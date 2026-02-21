@@ -207,8 +207,8 @@ export default function RootLayout({
                   {/* Reading mode overlay for distraction-free reading / Lesemodus-Overlay für ablenkungsfreies Lesen / Suprapunere mod citire pentru lectură fără distrageri */}
                   <ReadingModeOverlay />
 
-                  {/* Pasul 2102001: Mobile — pt-14 for thin header, pb-24 for bottom bar; Desktop — pt-16 for top nav */}
-                  <main className="relative z-10 pt-14 pb-24 lg:pb-0 lg:pt-16">
+                  {/* Pasul 2102003: Mobile — pt-12 for ultra-thin header, pb-24 for bottom bar; Desktop — pt-16 for top nav */}
+                  <main className="relative z-10 pt-12 pb-24 lg:pb-0 lg:pt-16">
                     <ErrorBoundary>
                       {children}
                     </ErrorBoundary>
