@@ -676,10 +676,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Save language to localStorage / Sprache in localStorage speichern
+  // Save language to localStorage and update HTML lang attribute for SEO
+  // Sprache in localStorage speichern und HTML lang-Attribut für SEO aktualisieren
   useEffect(() => {
     if (mounted) {
       localStorage.setItem('radikal-language', language);
+      // Pasul 2102005: Dynamic HTML lang for better SEO
+      document.documentElement.lang = language;
     }
   }, [language, mounted]);
 

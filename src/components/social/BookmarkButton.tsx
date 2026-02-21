@@ -253,7 +253,7 @@ export function BookmarksList({ userId, collectionId }: BookmarksListProps) {
             <a href={`/blog/${bookmark.slug}`} className="flex-shrink-0">
               <img
                 src={bookmark.image_url}
-                alt=""
+                alt={bookmark.title || 'Bookmark'}
                 className="w-20 h-20 object-cover rounded-lg"
               />
             </a>

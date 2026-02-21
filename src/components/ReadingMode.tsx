@@ -8,6 +8,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { FaBook, FaTimes, FaFont, FaMinus, FaPlus, FaGlasses } from 'react-icons/fa';
 import { useLanguage } from '@/hooks/useLanguage';
+import '@/styles/readingMode.css';
 
 interface ReadingModeContextType {
   isReadingMode: boolean;
@@ -162,15 +163,15 @@ export function ReadingModeToggle() {
   return (
     <button
       onClick={toggleReadingMode}
-      className={`flex-shrink-0 flex items-center gap-0.5 xs:gap-1 px-1.5 xs:px-2 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-300 ${
+      className={`flex-shrink-0 flex items-center gap-0.5 xs:gap-1 px-1 xs:px-2 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-300 ${
         isReadingMode
           ? 'bg-blue-500 text-white shadow-lg'
           : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-200 dark:hover:bg-white/20'
       }`}
       title={isReadingMode ? t.exitReadingMode : t.readingMode}
     >
-      <FaGlasses className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-      <span className="text-[0.6rem] xs:text-xs sm:text-sm font-semibold whitespace-nowrap leading-tight">{t.focusMode}</span>
+      <FaGlasses className="w-3.5 h-3.5 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+      <span className="hidden xs:inline text-[0.6rem] xs:text-xs sm:text-sm font-semibold whitespace-nowrap leading-tight">{t.focusMode}</span>
     </button>
   );
 }
@@ -361,100 +362,6 @@ export function ReadingModeOverlay() {
           </div>
         </div>
       </div>
-      
-      {/* Reading mode styles with zoom effect */}
-      <style jsx global>{`
-        @keyframes readingModeZoomIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-100%);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out forwards;
-        }
-        
-        /* CRITICAL: Prevent background scroll when reading mode is active */
-        body.reading-mode {
-          overflow: hidden !important;
-          position: fixed !important;
-          width: 100% !important;
-          height: 100% !important;
-        }
-        
-        .reading-mode {
-          padding-top: 70px;
-        }
-        .reading-mode nav {
-          display: none !important;
-        }
-        .reading-mode footer {
-          display: none !important;
-        }
-        
-        /* Drop cap for reading mode */
-        .reading-drop-cap {
-          float: left;
-          font-size: 4.5em;
-          line-height: 0.85;
-          padding-right: 0.1em;
-          margin-right: 0.05em;
-          margin-top: 0.05em;
-          font-weight: 600;
-          font-family: 'Cinzel', Georgia, 'Times New Roman', serif;
-        }
-        
-        /* Pasul 2102001: Force reading-mode-content paragraphs to inherit parent font-size */
-        .reading-mode-content p {
-          font-size: inherit !important;
-        }
-        
-        .reading-mode .blog-content-backdrop {
-          position: relative;
-          z-index: 9985;
-          background: white;
-          padding: 2rem;
-          border-radius: 1rem;
-          max-width: 720px !important;
-          margin: 0 auto;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-          animation: readingModeZoomIn 0.4s ease-out forwards;
-        }
-        .dark .reading-mode .blog-content-backdrop {
-          background: #1a1a1a;
-        }
-        .reading-mode .blog-content-backdrop .prose {
-          font-size: calc(var(--reading-font-size, 100%) * 1.15);
-          line-height: 1.9;
-        }
-        .reading-mode .blog-content-backdrop p {
-          margin-bottom: 1.5em;
-        }
-        .reading-mode .reading-controls,
-        .reading-mode .emoji-reactions,
-        .reading-mode .share-section,
-        .reading-mode .related-posts,
-        .reading-mode .comments-section,
-        .reading-mode .post-actions {
-          display: none !important;
-        }
-      `}</style>
     </>
   );
 }

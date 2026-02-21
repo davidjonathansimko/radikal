@@ -152,7 +152,7 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(true); // Always visible from start
   const [isMobile, setIsMobile] = useState(false);
-  const [bottomOffset, setBottomOffset] = useState(24); // Dynamic bottom offset
+  const [bottomOffset, setBottomOffset] = useState(90); // Pasul 2102005: Default above mobile bottom bar
 
   // Detect mobile and calculate scroll progress
   useEffect(() => {
@@ -167,7 +167,8 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
 
   // Keep circular progress above footer — never descend below it
   useEffect(() => {
-    const defaultBottom = 24;
+    // Pasul 2102005: Default bottom accounts for mobile bottom bar (~80px) or desktop (24px)
+    const defaultBottom = isMobile ? 90 : 24;
     const margin = 16; // space between button and footer top
     const btnH = isMobile ? 40 : size;
 
@@ -288,7 +289,7 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   return (
     <button
       onClick={scrollToTop}
-      className="fixed right-4 sm:right-6 z-[100] transition-all duration-150 cursor-pointer group shadow-lg hover:shadow-xl"
+      className="fixed right-4 sm:right-6 z-[220] transition-all duration-150 cursor-pointer group shadow-lg hover:shadow-xl"
       style={{ opacity: 1, transform: 'scale(1)', bottom: `${bottomOffset}px` }}
       aria-label="Scroll to top"
     >

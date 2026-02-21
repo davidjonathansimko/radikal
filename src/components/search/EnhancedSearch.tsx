@@ -413,7 +413,7 @@ export default function EnhancedSearch({
                   {result.image_url && (
                     <img
                       src={result.image_url}
-                      alt=""
+                      alt={result.title || 'Search result'}
                       className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                     />
                   )}

@@ -26,18 +26,24 @@ html.pwa-mode body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Pasul 2102001: PWA mode — fixed elements stay at edges, background extends behind safe areas */
-/* Inner content uses its own padding to clear the status bar / home indicator */
+/* Pasul 2102005: ALL browsers — extend header/bottom behind status bar & home indicator */
+/* viewport-fit: cover makes viewport extend behind system UI; safe-area-inset compensates */
+[data-mobile-nav="top"] {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 html.pwa-mode [data-mobile-nav="top"] {
   top: 0 !important;
-  padding-top: env(safe-area-inset-top, 0px);
 }
 
 html.pwa-mode [data-mobile-nav="bottom"] {
   bottom: 0 !important;
 }
 
-/* Pasul 2102003: PWA mode — main content needs extra top padding for safe area */
+/* Pasul 2102005: main content padding — accounts for safe-area in both browser and PWA */
+main {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 3rem);
+}
 html.pwa-mode main {
   padding-top: calc(env(safe-area-inset-top, 0px) + 3rem) !important;
 }

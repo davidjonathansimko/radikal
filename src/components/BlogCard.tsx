@@ -8,6 +8,9 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+
+// Pasul 2102005: Generic blur placeholder for faster perceived loading
+const BLUR_PLACEHOLDER = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z';
 import { BlogPost } from '@/types';
 import { useLanguage } from '@/hooks/useLanguage';
 import { calculateReadingTime } from '@/utils/readingTime';
@@ -94,6 +97,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
                   alt={getTitle()}
                   width={80}
                   height={80}
+                  placeholder="blur"
+                  blurDataURL={BLUR_PLACEHOLDER}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
@@ -131,6 +136,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
                 src={post.image_url}
                 alt={getTitle()}
                 fill
+                placeholder="blur"
+                blurDataURL={BLUR_PLACEHOLDER}
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
             ) : (
@@ -197,6 +204,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
               src={post.image_url}
               alt={getTitle()}
               fill
+              placeholder="blur"
+              blurDataURL={BLUR_PLACEHOLDER}
               className="object-cover transition-transform duration-500 group-hover:scale-110"
             />
           ) : (

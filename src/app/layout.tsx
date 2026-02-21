@@ -83,8 +83,8 @@ export default function RootLayout({
   return (
     <html lang="de" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        {/* Initialize theme before page loads to prevent flash / Theme vor dem Laden der Seite initialisieren um Blitzen zu verhindern / Inițializează tema înainte de încărcarea paginii pentru a preveni blitz-ul */}
-        {/* For Tailwind darkMode: 'class' - add 'dark' class for dark mode, 'light' for light mode / Für Tailwind darkMode: 'class' - 'dark' Klasse für Dark Mode, 'light' für Light Mode hinzufügen / Pentru Tailwind darkMode: 'class' - adaugă clasa 'dark' pentru modul întunecat, 'light' pentru modul luminos */}
+        {/* Pasul 2102005: Initialize theme + language before page loads */}
+        {/* Set lang attribute from localStorage for SEO / Setze lang-Attribut aus localStorage für SEO */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -94,6 +94,10 @@ export default function RootLayout({
                   document.documentElement.classList.add('light');
                 } else {
                   document.documentElement.classList.add('dark');
+                }
+                var savedLang = localStorage.getItem('radikal-language');
+                if (savedLang) {
+                  document.documentElement.lang = savedLang;
                 }
               })();
             `,

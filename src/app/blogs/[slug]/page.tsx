@@ -1086,6 +1086,8 @@ export default function BlogPostPage() {
                 alt={displayTitle || post.title}
                 width={1200}
                 height={600}
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z"
                 className="w-full h-64 sm:h-96 object-cover"
               />
             </div>
@@ -1163,10 +1165,10 @@ export default function BlogPostPage() {
             
             {/* Mobile layout: responsive rows */}
             <div className="md:hidden flex flex-col gap-2">
-              {/* Pasul 2102003: Row 1: FontSize + PDF + Focus — compact, no overflow */}
-              <div className="flex items-center justify-between gap-1 w-full overflow-hidden">
+              {/* Pasul 2102005: Row 1: FontSize + PDF + Focus — flex-wrap to prevent text cut-off */}
+              <div className="flex items-center justify-between gap-1 w-full">
                 <FontSizeControls />
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0 min-w-0">
                   <PrintButton variant="icon" showLabel />
                   <ReadingModeToggle />
                 </div>

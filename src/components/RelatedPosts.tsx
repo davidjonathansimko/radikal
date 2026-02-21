@@ -199,14 +199,16 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
                   src={post.image_url}
                   alt={getTitle(post)}
                   fill
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
               </div>
             )}
             
-            {/* Content - title at top, date+readmore at bottom, aligned with image */}
-            <div className="p-1.5 pt-1 sm:p-2.5 flex-1 min-w-0 flex flex-col justify-start sm:justify-between self-stretch">
+            {/* Pasul 2102005: Content - reduced top gap for tighter card layout */}
+            <div className="p-1.5 pt-0.5 sm:p-2 sm:pt-1 flex-1 min-w-0 flex flex-col justify-start sm:justify-between self-stretch">
               <h3 className="font-medium text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug mb-0.5 sm:mb-1">
                 {getTitle(post)}
               </h3>
