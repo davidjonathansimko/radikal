@@ -162,7 +162,7 @@ export function ReadingModeToggle() {
   return (
     <button
       onClick={toggleReadingMode}
-      className={`flex items-center gap-0.5 xs:gap-1 px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-300 ${
+      className={`flex-shrink-0 flex items-center gap-0.5 xs:gap-1 px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-300 ${
         isReadingMode
           ? 'bg-blue-500 text-white shadow-lg'
           : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60 hover:bg-gray-200 dark:hover:bg-white/20'

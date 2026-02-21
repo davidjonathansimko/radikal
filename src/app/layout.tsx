@@ -131,12 +131,8 @@ export default function RootLayout({
         {/* Cinzel für Titel, EB Garamond für Text, Montserrat für Blog */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Preload Cinzel for faster first paint (used in titles) */}
-        <link 
-          rel="preload"
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&display=swap"
-          as="style"
-        />
+        {/* Pasul 2102000: Removed preload for Cinzel — it caused "preloaded but not used" console warnings */}
+        {/* The stylesheet link below loads Cinzel anyway; preload duplicated the request with mismatched weights */}
         {/* Google Fonts: Cinzel + EB Garamond + Montserrat (with cyrillic) - optimized weights */}
         <link 
           href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700&display=swap&subset=cyrillic,latin-ext" 

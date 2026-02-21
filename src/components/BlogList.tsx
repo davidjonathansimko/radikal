@@ -508,15 +508,15 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 </button>
               </div>
 
-              {/* Share buttons — all in one row, never overflow */}
-              <div className="flex items-center gap-2 w-full overflow-hidden">
+              {/* Pasul 2102000: Share buttons — all in one row, flex-wrap fallback for long labels (Russian) */}
+              <div className="flex items-center gap-2 w-full">
                 <span className="text-gray-700 dark:text-white/70 flex-shrink-0 font-bold text-sm">
                   {language === 'de' ? 'Teilen:' : 
                    language === 'en' ? 'Share:' : 
                    language === 'ro' ? 'Distribuie:' : 
                    'Отправить:'}
                 </span>
-                <div className="flex items-center gap-3 flex-shrink-0 share-buttons-row">
+                <div className="flex items-center gap-3 flex-shrink min-w-0 share-buttons-row">
                 <button
                   onClick={(e) => {
                     e.preventDefault();

@@ -35,11 +35,11 @@ export default function PrintButton({ className = '', variant = 'button', showLa
     return (
       <button
         onClick={handlePrint}
-        className={`px-2 xs:px-2.5 sm:px-3 py-1 xs:py-1.5 sm:py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-all no-print flex items-center gap-1 xs:gap-1.5 ${className}`}
+        className={`flex-shrink-0 px-2 xs:px-2.5 sm:px-3 py-1 xs:py-1.5 sm:py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-all no-print flex items-center gap-1 xs:gap-1.5 ${className}`}
         title={t.saveAsPdf}
       >
-        <FaDownload className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
-        <span className="text-xs xs:text-sm sm:text-sm font-semibold">{t.pdf}</span>
+        <FaDownload className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+        <span className="text-xs xs:text-sm sm:text-sm font-semibold whitespace-nowrap">{t.pdf}</span>
       </button>
     );
   }
@@ -50,8 +50,8 @@ export default function PrintButton({ className = '', variant = 'button', showLa
       className={`inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-white/80 transition-all no-print ${className}`}
       title={t.saveAsPdf}
     >
-      <FaDownload className="w-4 h-4 sm:w-5 sm:h-5" />
-      <span className="text-xs sm:text-sm font-medium">{t.pdf}</span>
+      <FaDownload className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">{t.pdf}</span>
     </button>
   );
 }
