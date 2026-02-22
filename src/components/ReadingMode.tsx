@@ -62,10 +62,9 @@ const translations = {
 
 export function ReadingModeProvider({ children }: { children: ReactNode }) {
   const [isReadingMode, setIsReadingMode] = useState(false);
-  const [fontSize, setFontSize] = useState(110); // 110% = default for better readability
+  const [fontSize, setFontSize] = useState(100); // Pasul 2202000: 100% = standard default
   // Store Reading Mode specific font size separately from blog font size
-  // Start at 110% for reading mode / Startet bei 110% für Lesemodus / Începe la 110% pentru mod citire
-  const [readingModeFontSize, setReadingModeFontSize] = useState(110);
+  const [readingModeFontSize, setReadingModeFontSize] = useState(100);
   
   // Use ref to store scroll position (doesn't cause re-renders)
   // Verwende ref um Scroll-Position zu speichern (verursacht keine Re-Renders)
@@ -106,9 +105,9 @@ export function ReadingModeProvider({ children }: { children: ReactNode }) {
           window.scrollTo(0, scrollY);
         });
       }
-      // Reset reading mode font size to 110% when exiting
-      setReadingModeFontSize(110);
-      setFontSize(110);
+      // Reset reading mode font size to 100% when exiting
+      setReadingModeFontSize(100);
+      setFontSize(100);
     }
   }, [isReadingMode]);
 
@@ -127,8 +126,8 @@ export function ReadingModeProvider({ children }: { children: ReactNode }) {
   };
   
   const resetFontSize = () => {
-    setReadingModeFontSize(120);
-    setFontSize(120);
+    setReadingModeFontSize(100);
+    setFontSize(100);
   };
 
   return (
@@ -330,10 +329,10 @@ export function ReadingModeOverlay() {
           )}
           
           {/* Blog content with drop cap effect and proper formatting */}
-          {/* Pasul 2102003: Apply font-size directly to each <p> via inline style to bypass prose overrides */}
+          {/* Pasul 2202000: Use rem-based font scaling that produces visible changes per step */}
           <div 
             className="max-w-none text-gray-800 dark:text-white/90 leading-relaxed reading-mode-content text-justify"
-            style={{ fontSize: `clamp(0.9rem, ${fontSize / 100}rem, 2.5rem)`, lineHeight: '2' }}
+            style={{ fontSize: `${fontSize / 62.5}rem`, lineHeight: '2' }}
           >
             {blogContent && blogContent.length > 0 ? (
               <>
@@ -344,7 +343,7 @@ export function ReadingModeOverlay() {
                   const dropCapMatch = blogContent.match(/^([\s"„""«»'\u201C\u201D\u201E\u201F\u00AB\u00BB]*[A-Za-zÀ-ÿА-Яа-яĂăÂâÎîȘșȚț])/);
                   const dropCapText = dropCapMatch ? dropCapMatch[0] : blogContent.charAt(0);
                   const remainingText = blogContent.slice(dropCapText.length);
-                  const pFontSize = `clamp(0.9rem, ${fontSize / 100}rem, 2.5rem)`;
+                  const pFontSize = `${fontSize / 62.5}rem`;
                   
                   return (
                     <>

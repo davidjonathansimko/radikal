@@ -221,21 +221,30 @@ p, li, span, div {
   text-wrap: pretty;
 }
 
-/* 📖 Bible reference highlighting - Bold and red / Bibelreferenz-Hervorhebung / Evidențiere referințe biblice */
+/* 📖 Pasul 2202000: Bible reference highlighting — white + bold (references like "Judas 1, Vers 3") */
+/* Bibelreferenz-Hervorhebung — weiß + fett / Evidențiere referințe biblice — alb + bold */
 .bible-ref {
   font-weight: 700;
-  color: #ef4444;
+  color: #ffffff;
   transition: color 0.2s ease;
 }
 
-/* Dark mode: brighter red for dark backgrounds / Dunkel-Modus: helleres Rot / Mod întunecat: roșu mai deschis */
-.dark .bible-ref {
-  color: #f87171;
-}
-
-/* Light mode: darker red for readability / Hell-Modus: dunkleres Rot / Mod luminos: roșu mai închis */
+/* Light mode: dark color for readability / Hell-Modus: dunkel für Lesbarkeit */
 :root:not(.dark) .bible-ref,
 .light .bible-ref {
+  color: #1a1a1a;
+}
+
+/* 📖 Pasul 2202000: Words of Jesus — always red / Worte Jesu — immer rot / Cuvintele lui Isus — mereu roșu */
+.jesus-words {
+  color: #ef4444;
+  font-weight: 400;
+}
+.dark .jesus-words {
+  color: #f87171;
+}
+:root:not(.dark) .jesus-words,
+.light .jesus-words {
   color: #dc2626;
 }
 
@@ -730,7 +739,12 @@ html.light body {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.55));
   backdrop-filter: blur(2px);
   border-radius: 1rem;
-  padding: 2rem;
+  padding: 1rem 0.75rem;
+}
+@media (min-width: 640px) {
+  .blog-content-backdrop {
+    padding: 2rem;
+  }
 }
 
 .light .blog-content-backdrop {

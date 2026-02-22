@@ -376,6 +376,8 @@ export default function BlogPostPage() {
         setPost(data);
         // Update originalSlugRef to the real DB slug
         originalSlugRef.current = data.slug;
+        // Pasul 2202000: Increment view count (fire-and-forget, non-blocking)
+        supabase.from('blog_posts').update({ views: (data.views || 0) + 1 }).eq('id', data.id).then(() => {});
         await loadAdjacentArticles(data.created_at);
         if (data.show_intro_modal && (data.modal_question || data.modal_title)) {
           setShowIntroModal(true);
@@ -427,6 +429,8 @@ export default function BlogPostPage() {
           originalSlugRef.current = matchedPost.slug;
           // Fix the URL to the correct slug so future refreshes work
           window.history.replaceState(null, '', `/blogs/${matchedPost.slug}`);
+          // Pasul 2202000: Increment view count (fire-and-forget)
+          supabase.from('blog_posts').update({ views: (matchedPost.views || 0) + 1 }).eq('id', matchedPost.id).then(() => {});
           await loadAdjacentArticles(matchedPost.created_at);
           if (matchedPost.show_intro_modal && (matchedPost.modal_question || matchedPost.modal_title)) {
             setShowIntroModal(true);
@@ -1116,6 +1120,18 @@ export default function BlogPostPage() {
               <span>{calculateReadingTime(post.content || '', language).text}</span>
             </span>
 
+            {/* Pasul 2202000: Social proof — view count display */}
+            {typeof post.views === 'number' && post.views > 0 && (
+              <span className="flex items-center gap-1 whitespace-nowrap text-gray-500 dark:text-white/50">
+                <span className="mx-0.5">·</span>
+                <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>{post.views.toLocaleString()}</span>
+              </span>
+            )}
+
             {/* BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts */}
             {/* <div className="xs:hidden flex-shrink-0">
               <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-2 !py-1 !text-[10px] !gap-0.5" />
@@ -1189,6 +1205,19 @@ export default function BlogPostPage() {
               className="blog-body-text text-gray-800 dark:text-white/95 leading-relaxed transition-all duration-200"
               style={{ fontSize: `${fontSize}%` }}
             >
+              {/* Pasul 2202000: Show skeleton while translating to avoid Romanian flash */}
+              {language !== 'ro' && !translatedContent ? (
+                <div className="space-y-4 animate-pulse">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-full" />
+                      <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-11/12" />
+                      <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-10/12" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+              <>
               {/* Apply Drop Cap effect to first paragraph / Drop Cap Effekt auf ersten Absatz anwenden / Aplică efectul Drop Cap la primul paragraf */}
               {displayContent && displayContent.split('\n\n').map((paragraph, index) => {
                 // First paragraph gets drop cap effect / Erster Absatz bekommt Drop Cap Effekt / Primul paragraf primește efectul Drop Cap
@@ -1217,6 +1246,8 @@ export default function BlogPostPage() {
                 }
                 return null;
               })}
+              </>
+              )}
             </div>
           </div>
         </div>

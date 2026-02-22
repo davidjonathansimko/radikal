@@ -94,6 +94,9 @@ export default function Navigation() {
   // Abschnitts-Fortschrittsanzeige in der oberen Leiste (nur Startseite)
   // Indicator progres secțiune în bara de sus (doar pagina principală)
   const isHomePage = pathname === '/';
+  // Pasul 2202000: Blog reading progress pill in header (blog detail pages)
+  const isBlogDetailPage = pathname.startsWith('/blogs/') && pathname !== '/blogs';
+  const [blogReadProgress, setBlogReadProgress] = useState(0);
   const homeSections = useMemo(() => [
     { id: 'hero', title: { de: 'RADIKAL.', en: 'RADIKAL.', ro: 'RADIKAL.', ru: 'РАДИКАЛ.' } },
     { id: 'about', title: { de: 'Über', en: 'About', ro: 'Despre', ru: 'О нас' } },
@@ -318,6 +321,21 @@ export default function Navigation() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
+  // Pasul 2202000: Track reading progress on blog detail pages for header pill
+  useEffect(() => {
+    if (!isBlogDetailPage) { setBlogReadProgress(0); return; }
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      if (docHeight > 0) {
+        setBlogReadProgress(Math.min(Math.round((scrollTop / docHeight) * 100), 100));
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // initial
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isBlogDetailPage]);
+
   // Handle language change with persistence
   const handleLanguageChange = async (newLang: 'de' | 'en' | 'ro' | 'ru') => {
     setLanguage(newLang);
@@ -399,8 +417,8 @@ export default function Navigation() {
     <div className="fixed top-0 left-0 right-0 z-[210] lg:hidden" data-mobile-nav="top">
       {/* Pasul 2102001: Blurred dark background bar — extends edge-to-edge, thin compact bar */}
       <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-black/10 dark:border-white/10" />
-      {/* Pasul 2102003: ultra-compact py-0.5, pushed up to fill top gap */}
-      <div className="relative flex items-center justify-between px-3 py-0.5">
+      {/* Pasul 2202000: zero vertical padding — header height comes only from logo+hamburger intrinsic size */}
+      <div className="relative flex items-center justify-between px-3 py-0">
       {/* Logo — top left */}
       <Link href="/" className="pointer-events-auto flex items-center">
         <Image
@@ -436,6 +454,27 @@ export default function Navigation() {
               <div 
                 className="h-full bg-black/40 dark:bg-white/40 rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${sectionProgress * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pasul 2202000: Blog reading progress pill — between logo and hamburger (blog detail pages only) */}
+      {/* Lese-Fortschritts-Pill — zwischen Logo und Hamburger (nur Blog-Detailseiten) */}
+      {/* Pilulă progres citire — între logo și hamburger (doar pagini detaliu blog) */}
+      {isBlogDetailPage && blogReadProgress > 0 && !isMobileMenuOpen && (
+        <div className="flex-1 flex justify-center px-2 animate-fadeIn">
+          <div className="flex items-center gap-1.5 bg-black/10 dark:bg-white/10 backdrop-blur-sm rounded-full border border-black/10 dark:border-white/10 px-3 py-0.5">
+            {/* Reading progress percentage / Lesefortschritt in Prozent / Procent progres citire */}
+            <span className="font-cinzel text-[10px] font-semibold text-black/60 dark:text-white/60 tracking-wider tabular-nums">
+              {blogReadProgress}%
+            </span>
+            {/* Mini progress bar / Mini-Fortschrittsleiste / Bară de progres mini */}
+            <div className="w-10 h-[3px] bg-black/10 dark:bg-white/10 rounded-full overflow-hidden flex-shrink-0">
+              <div 
+                className="h-full bg-black/50 dark:bg-white/50 rounded-full transition-all duration-200 ease-out"
+                style={{ width: `${blogReadProgress}%` }}
               />
             </div>
           </div>
