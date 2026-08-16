@@ -49,12 +49,26 @@ export const metadata: Metadata = {
   authors: [{ name: 'D.S.' }],
   creator: 'D.S.',
   publisher: 'Radikal.',
-  metadataBase: new URL('https://radikal-blog.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radikal.blog'),
   manifest: '/manifest.json',
+  alternates: {
+    canonical: '/',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: 'RADIKAL. - Radikale Bibellehre Blog',
     description: 'Entdecke radikale Bibellehren und tiefgreifende geistliche Einsichten.',
-    url: 'https://radikal-blog.vercel.app',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radikal.blog',
     siteName: 'RADIKAL.',
     locale: 'de_DE',
     type: 'website',

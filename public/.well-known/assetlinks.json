@@ -1,0 +1,18 @@
+[
+  {
+    "_comment_1": "TEMPLATE - Digital Asset Links for Trusted Web Activity (Play Store).",
+    "_comment_2": "Replace REPLACE_WITH_YOUR_SHA256_FINGERPRINT below, then commit + push.",
+    "_comment_3": "Get it with: keytool -list -v -keystore android.keystore -alias android",
+    "_comment_4": "Keep the colons, e.g. AB:CD:EF:01:23:...  (95 characters total)",
+    "_comment_5": "IMPORTANT: if you enable Play App Signing, Google re-signs your app with ITS OWN key. Add that fingerprint too (see the second entry of sha256_cert_fingerprints below). Find it in Play Console > Setup > App integrity > App signing key certificate.",
+    "_comment_6": "Verify after deploy: https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.radikal.blog&relation=delegate_permission/common.handle_all_urls",
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "blog.radikal.app",
+      "sha256_cert_fingerprints": [
+        "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
+      ]
+    }
+  }
+]

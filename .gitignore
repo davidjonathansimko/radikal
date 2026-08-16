@@ -105,3 +105,7 @@ jest.setup.js
 # Misc
 *.tgz
 .vercel
+
+# LOCAL ONLY - personal guides, never push to GitHub
+GHID_*.md
+_local/

@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -20,7 +21,7 @@
     "date-fns": "^3.6.0",
     "gsap": "^3.14.2",
     "isomorphic-dompurify": "^2.35.0",
-    "next": "15.5.7",
+    "next": "15.5.23",
     "next-themes": "^0.3.0",
     "nodemailer": "^7.0.11",
     "react": "^18.2.0",

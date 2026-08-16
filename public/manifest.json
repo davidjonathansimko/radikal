@@ -2,34 +2,49 @@
   "name": "RADIKAL. Blog",
   "short_name": "RADIKAL",
   "description": "Biblical teaching and inspiration - Biblische Lehre und Inspiration",
+  "id": "/",
+  "scope": "/",
   "start_url": "/",
-  "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone"],
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/radikal.logo.schwarz.hintergrund.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/radikal.logo.schwarz.hintergrund.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
       "src": "/exampleblog002.jpg",
-      "sizes": "1280x720",
+      "sizes": "720x436",
       "type": "image/jpeg",
       "form_factor": "wide"
     }
   ],
   "categories": ["education", "lifestyle", "news"],
-  "lang": "de-DE"
+  "lang": "de-DE",
+  "dir": "ltr"
 }

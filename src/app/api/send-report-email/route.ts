@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       </blockquote>
       
       <p style="margin-top: 20px;">
-        <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://radikal.vercel.app'}/blogs/${blogSlug}" 
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radikal.blog'}/blogs/${blogSlug}" 
            style="background: #e74c3c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
           ${language === 'de' ? 'Zum Blogbeitrag' : 
             language === 'en' ? 'View Blog Post' : 

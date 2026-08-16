@@ -3,7 +3,7 @@
 // Ermöglicht Offline-Funktionalität und Caching für PWA
 // Activează funcționalitatea offline și caching pentru PWA
 
-const CACHE_NAME = 'radikal-v2'; // Updated to force cache refresh
+const CACHE_NAME = 'radikal-v3'; // Updated to force cache refresh
 const OFFLINE_URL = '/offline';
 
 // Resources to cache immediately on install
@@ -12,7 +12,8 @@ const PRECACHE_URLS = [
   '/offline',
   '/blogs',
   '/manifest.json',
-  '/radikal.logo.schwarz.hintergrund.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 // Install event - precache essential resources
