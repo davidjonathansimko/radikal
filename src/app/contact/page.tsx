@@ -459,10 +459,8 @@ export default function ContactPage() {
               
               <div className="space-y-4">
                 {/*
-                  Only show your email if:
-                  - The user is logged in (user is not null), or
-                  - The logged-in user is you (user.email === 'davidsimko22@yahoo.com')
-                  This protects your email from being visible to the public.
+                  Only show the contact email to logged in users.
+                  This protects the address from public email harvesting / spam bots.
                   If not logged in, this section is hidden.
                 */}
                 {user && (

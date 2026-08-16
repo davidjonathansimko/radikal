@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useStickyHeader } from '@/hooks/useStickyHeader';
 import { createClient } from '@/lib/supabase';
+import { isAdminUser } from '@/lib/isAdmin';
 import { User } from '@supabase/supabase-js';
 import { FaSun, FaMoon, FaSearch } from 'react-icons/fa';
 // FaHeart + FaBookmark commented out - replaced by custom SVG / FaHeart + FaBookmark auskommentiert - ersetzt durch benutzerdefiniertes SVG
@@ -144,10 +145,7 @@ export default function Navigation() {
       setUser(session?.user ?? null);
       
       // Check if user is admin / Prüfen, ob Benutzer Admin ist / Verifică dacă utilizatorul este admin
-      if (session?.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || 
-          session?.user?.email === 'davidsimko22@yahoo.com') {
-        setIsAdmin(true);
-      }
+      setIsAdmin(isAdminUser(session?.user));
       setLoading(false);
     };
 
@@ -159,12 +157,7 @@ export default function Navigation() {
         setUser(session?.user ?? null);
         
         // Update admin status / Admin-Status aktualisieren / Actualizează starea de admin
-        if (session?.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || 
-            session?.user?.email === 'davidsimko22@yahoo.com') {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
+        setIsAdmin(isAdminUser(session?.user));
         setLoading(false);
       }
     );
