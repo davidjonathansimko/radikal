@@ -2,20 +2,30 @@
 // Sends email when a comment is reported / Sendet E-Mail wenn ein Kommentar gemeldet wird / Trimite email când un comentariu este raportat
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-// Initialize Resend lazily to avoid build errors / Resend verzögert initialisieren um Build-Fehler zu vermeiden / Inițializează Resend leneș pentru a evita erorile de build
-const getResend = () => {
-  if (!process.env.RESEND_API_KEY) {
+// SMTP transporter (same provider as contact form / newsletter)
+// SMTP-Transporter (gleicher Anbieter wie Kontaktformular / Newsletter)
+// Transporter SMTP (același furnizor ca formularul de contact / newsletter)
+const getTransporter = () => {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
     return null;
   }
-  return new Resend(process.env.RESEND_API_KEY);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '465'),
+    secure: true, // true for port 465 (SSL)
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const resend = getResend();
-    if (!resend) {
+    const transporter = getTransporter();
+    if (!transporter) {
       return NextResponse.json(
         { error: 'Email service not configured' },
         { status: 503 }
@@ -97,20 +107,18 @@ export async function POST(request: NextRequest) {
     `;
 
     // Send email / E-Mail senden / Trimite emailul
-    const { data, error } = await resend.emails.send({
-      from: 'RADIKAL Blog <onboarding@resend.dev>',
-      to: ['radikalblog@gmx.de'],
+    // Sent from your own domain address so it does not land in spam
+    // Wird von deiner eigenen Domain-Adresse gesendet, damit es nicht im Spam landet
+    // Trimis de pe adresa propriului domeniu ca să nu ajungă în spam
+    const info = await transporter.sendMail({
+      from: `"RADIKAL Blog" <${process.env.SMTP_USER}>`,
+      to: process.env.ADMIN_EMAIL || process.env.SMTP_USER,
       subject: subject,
       html: emailContent,
-      replyTo: reporterEmail,
+      replyTo: reporterEmail || undefined,
     });
 
-    if (error) {
-      console.error('Error sending report email:', error);
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
-    }
-
-    console.log('✅ Report email sent successfully:', data);
+    console.log('✅ Report email sent successfully:', info.messageId);
     return NextResponse.json({ success: true });
 
   } catch (error) {
