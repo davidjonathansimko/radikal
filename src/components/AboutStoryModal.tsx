@@ -1,6 +1,7 @@
 // AboutStoryModal - Interactive cinematic storytelling about "radikal"
 // Features: full background image with blur/sepia, GSAP clipPath text animations
 // dust particles, film grain, tutorial, countdown
+// test comment
 
 'use client';
 
