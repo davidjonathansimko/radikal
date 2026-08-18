@@ -247,8 +247,8 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('[Google TTS] API error:', response.status, errorData);
-      
+      console.error('[Google TTS] API error:', response.status, JSON.stringify(errorData));
+
       // Return specific error for quota exceeded
       if (response.status === 429) {
         return NextResponse.json(
@@ -256,9 +256,36 @@ export async function POST(request: NextRequest) {
           { status: 429 }
         );
       }
-      
+
+      // Surface Google's real reason so the cause is diagnosable from the browser
+      // instead of a bare "403". Google puts it in error.message / error.status.
+      const g = (errorData as { error?: { message?: string; status?: string; details?: unknown } }).error;
+      const googleMessage = g?.message || 'Unknown Google TTS error';
+      const googleStatus = g?.status || String(response.status);
+
+      let hint = '';
+      if (response.status === 403) {
+        if (/API has not been used|is disabled/i.test(googleMessage)) {
+          hint = 'Cloud Text-to-Speech API is not enabled for this Google Cloud project.';
+        } else if (/referer|referrer|API_KEY_HTTP_REFERRER|blocked/i.test(googleMessage)) {
+          hint = 'The API key has Application restrictions (HTTP referrers). Server-side calls send no referrer. Set Application restrictions to "None".';
+        } else if (/billing/i.test(googleMessage)) {
+          hint = 'Billing is not enabled on the Google Cloud project.';
+        } else if (/API_KEY_SERVICE_BLOCKED|restricted/i.test(googleMessage)) {
+          hint = 'The API key API restrictions do not include Cloud Text-to-Speech API.';
+        } else {
+          hint = 'Check: API enabled, billing active, key restrictions, and that the key value in Vercel is correct.';
+        }
+      }
+
       return NextResponse.json(
-        { error: 'Google Cloud TTS request failed', details: errorData },
+        {
+          error: 'Google Cloud TTS request failed',
+          googleStatus,
+          googleMessage,
+          hint,
+          details: errorData,
+        },
         { status: response.status }
       );
     }

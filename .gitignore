@@ -109,3 +109,4 @@ jest.setup.js
 # LOCAL ONLY - personal guides, never push to GitHub
 GHID_*.md
 _local/
+build_out.txt

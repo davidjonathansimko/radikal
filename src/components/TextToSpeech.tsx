@@ -756,32 +756,28 @@ export default function TextToSpeech({
     return URL.createObjectURL(blob);
   }, []);
 
-  const googlePlayChunk = useCallback(async (chunkText: string): Promise<void> => {
-    // Client-side cache key: simple hash of text + params
-    const cacheKey = `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`;
-    
-    let blobUrl: string;
-    let fromCache = false;
-    
-    // Check client-side memory cache first (stores base64 strings)
-    const cachedBase64 = clientAudioCacheRef.current.get(cacheKey);
-    if (cachedBase64) {
-      console.log('[TTS Client Cache] ✅ HIT — using cached audio');
-      try {
-        blobUrl = base64ToBlobUrl(cachedBase64);
-        fromCache = true;
-      } catch {
-        // Corrupted cache entry — delete and refetch
-        console.warn('[TTS Client Cache] Corrupted cache entry, refetching...');
-        clientAudioCacheRef.current.delete(cacheKey);
-        fromCache = false;
-        // Fall through to fetch below
-        blobUrl = '';
-      }
-    }
+  // Build the client-side cache key for a chunk (text + voice params)
+  const googleCacheKey = useCallback((chunkText: string) =>
+    `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`,
+  [voiceLanguage, googleVoiceGender, rate]);
 
-    // Fetch from server if not cached or cache was corrupted
-    if (!fromCache) {
+  // Tracks chunks whose audio is currently being downloaded, so we never
+  // fire two identical requests (prefetch + playback) at the same time.
+  const googleInFlightRef = useRef<Map<string, Promise<string>>>(new Map());
+
+  // Downloads (or reuses) the base64 audio for one chunk. Playback-agnostic:
+  // this is what makes prefetching the NEXT chunk possible while the current
+  // one is still being spoken — that gap was the audible pause.
+  const googleFetchBase64 = useCallback(async (chunkText: string): Promise<string> => {
+    const cacheKey = googleCacheKey(chunkText);
+
+    const cached = clientAudioCacheRef.current.get(cacheKey);
+    if (cached) return cached;
+
+    const inFlight = googleInFlightRef.current.get(cacheKey);
+    if (inFlight) return inFlight;
+
+    const request = (async () => {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -792,24 +788,60 @@ export default function TextToSpeech({
           voiceGender: googleVoiceGender,
         }),
       });
-      
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         if (err.error === 'quota_exceeded') {
           throw new Error('quota_exceeded');
         }
-        throw new Error(`Google TTS failed: ${res.status}`);
+        // Log the real reason returned by the server so a bare "403" is
+        // actionable instead of mysterious.
+        console.error(
+          `[Google TTS] HTTP ${res.status}`,
+          '\n  Google says :', err.googleMessage || err.error || '(no message)',
+          '\n  Status      :', err.googleStatus || '(none)',
+          '\n  Likely cause:', err.hint || '(none)'
+        );
+        throw new Error(
+          `Google TTS failed: ${res.status}${err.googleMessage ? ` — ${err.googleMessage}` : ''}`
+        );
       }
-      
+
       const data = await res.json();
       if (!data.audioContent) {
         throw new Error('Google TTS returned empty audio content');
       }
-      
-      // Store raw base64 in cache, create Blob URL for playback
+
       clientAudioCacheRef.current.set(cacheKey, data.audioContent);
-      console.log(`[TTS Client Cache] 💾 SAVED — ${clientAudioCacheRef.current.size} chunks cached`);
-      blobUrl = base64ToBlobUrl(data.audioContent);
+      return data.audioContent as string;
+    })();
+
+    googleInFlightRef.current.set(cacheKey, request);
+    try {
+      return await request;
+    } finally {
+      googleInFlightRef.current.delete(cacheKey);
+    }
+  }, [googleCacheKey, voiceLanguage, rate, googleVoiceGender]);
+
+  // Fire-and-forget warm-up of an upcoming chunk. Errors are swallowed on
+  // purpose — if it fails, normal playback will simply retry later.
+  const googlePrefetchChunk = useCallback((chunkText?: string) => {
+    if (!chunkText) return;
+    googleFetchBase64(chunkText).catch(() => {});
+  }, [googleFetchBase64]);
+
+  const googlePlayChunk = useCallback(async (chunkText: string): Promise<void> => {
+    const cacheKey = googleCacheKey(chunkText);
+
+    let blobUrl: string;
+    try {
+      const base64 = await googleFetchBase64(chunkText);
+      blobUrl = base64ToBlobUrl(base64);
+    } catch (err) {
+      // Corrupted cache entry — drop it so the next attempt refetches cleanly
+      clientAudioCacheRef.current.delete(cacheKey);
+      throw err;
     }
 
     // Play audio using Blob URL — browsers trust these unlike data: URLs
@@ -844,7 +876,7 @@ export default function TextToSpeech({
         reject(playErr);
       });
     });
-  }, [voiceLanguage, rate, googleVoiceGender, base64ToBlobUrl]);
+  }, [googleCacheKey, googleFetchBase64, base64ToBlobUrl]);
 
   // Ref to track pause state for Google TTS chunk loop
   const googleIsPausedRef = useRef(false);
@@ -880,6 +912,11 @@ export default function TextToSpeech({
     updateMediaSession(true, false);
 
     let offsetBefore = fromPosition;
+
+    // Warm up the first two chunks: playback starts fast AND the second chunk
+    // is already downloaded before the first one finishes speaking.
+    googlePrefetchChunk(chunks[0]);
+    googlePrefetchChunk(chunks[1]);
     
     for (let i = 0; i < chunks.length; i++) {
       // Check if this session is still the current one
@@ -901,6 +938,10 @@ export default function TextToSpeech({
         setProgress(chunkProgress);
         setCurrentPosition(offsetBefore);
         
+        // Start downloading the NEXT chunk while this one plays — this is what
+        // removes the silent gap between chunks.
+        googlePrefetchChunk(chunks[i + 1]);
+
         await googlePlayChunk(chunks[i]);
         offsetBefore += chunks[i].length;
       } catch (err: unknown) {
@@ -943,7 +984,7 @@ export default function TextToSpeech({
       releaseWakeLock();
       updateMediaSession(false, false);
     }
-  }, [text, cleanText, googleSplitChunks, googlePlayChunk, requestWakeLock, releaseWakeLock, updateMediaSession]);
+  }, [text, cleanText, googleSplitChunks, googlePlayChunk, googlePrefetchChunk, requestWakeLock, releaseWakeLock, updateMediaSession]);
 
   const stopGoogleSpeaking = useCallback(() => {
     // Increment session to kill any running playback loop
@@ -978,7 +1019,11 @@ export default function TextToSpeech({
   const resumeGoogleSpeaking = useCallback(() => {
     googleIsPausedRef.current = false;
     if (googleAudioRef.current) {
-      googleAudioRef.current.play();
+      // .play() returns a Promise that can reject (e.g. browser autoplay policy).
+      // Without .catch() this produces an unhandled rejection and, on some
+      // browsers, leaves the UI stuck in "playing" state.
+      const p = googleAudioRef.current.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
     }
     setIsPaused(false);
     updateMediaSession(true, false);
