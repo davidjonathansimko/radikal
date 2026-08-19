@@ -39,8 +39,10 @@ function setMemoryCache(key: string, audioContent: string) {
 }
 
 // ===== Generate a stable cache key from text + params =====
-function generateCacheKey(text: string, language: string, voiceGender: string, speakingRate: number): string {
-  const input = `${text}|${language}|${voiceGender}|${speakingRate}`;
+// `voiceName` is part of the key so that changing the voice generation
+// (WaveNet -> Neural2) automatically invalidates old cached audio.
+function generateCacheKey(text: string, language: string, voiceGender: string, speakingRate: number, voiceName = ''): string {
+  const input = `${text}|${language}|${voiceGender}|${speakingRate}|${voiceName}`;
   return crypto.createHash('sha256').update(input).digest('hex');
 }
 
@@ -116,6 +118,61 @@ const WAVENET_VOICES: Record<string, { languageCode: string; name?: string; ssml
   'sk': { languageCode: 'sk-SK', ssmlGender: 'MALE' }, // No specific male voice name — let Google auto-select
 };
 
+// ===== VOICE PROFILES — verified against the live Google voice list (19 Aug 2026) =====
+//
+// Quality ladder:  Standard  <  WaveNet  <  Neural2  <  Chirp3-HD  <  Studio
+//
+// DECISION: Chirp3-HD for all four site languages.
+//   - It is the most human-sounding tier available in ALL of de/en/ro/ru.
+//   - Studio was rejected: it does NOT exist for ro-RO or ru-RU (Google returns
+//     "400: Voice does not exist"), its free tier is 10x smaller (100k vs 1M)
+//     and it costs 10x more ($160 vs ~$30 per 1M characters).
+//   - Chirp3-HD free tier: 1.000.000 characters / month, recurring.
+//
+// Voices below were picked by listening to generated samples
+// (see scripts/generate-selected-samples.js).
+//
+// `ssml: false` => Chirp3-HD voices. They do NOT support SSML tags or the
+// `pitch` parameter and would return 400 Bad Request. We send plain text instead —
+// which is fine, because those voices generate natural pauses on their own.
+type VoiceProfile = {
+  languageCode: string;
+  name?: string;
+  ssmlGender: string;
+  ssml: boolean;      // may we send SSML + pitch to this voice?
+  fallback?: VoiceProfile;
+};
+
+const VOICE_PROFILES: Record<string, VoiceProfile> = {
+  'de': {
+    languageCode: 'de-DE', name: 'de-DE-Chirp3-HD-Iapetus', ssmlGender: 'MALE', ssml: false,
+    // de-DE-Wavenet-B no longer exists; -H is the current male WaveNet voice.
+    fallback: { languageCode: 'de-DE', name: 'de-DE-Neural2-H', ssmlGender: 'MALE', ssml: true },
+  },
+  'en': {
+    languageCode: 'en-US', name: 'en-US-Chirp3-HD-Enceladus', ssmlGender: 'MALE', ssml: false,
+    fallback: { languageCode: 'en-US', name: 'en-US-Neural2-D', ssmlGender: 'MALE', ssml: true },
+  },
+  // Romanian: Chirp3-HD is the ONLY male voice family Google offers.
+  // The fallback is female because nothing else male exists for ro-RO.
+  'ro': {
+    languageCode: 'ro-RO', name: 'ro-RO-Chirp3-HD-Enceladus', ssmlGender: 'MALE', ssml: false,
+    fallback: { languageCode: 'ro-RO', name: 'ro-RO-Wavenet-B', ssmlGender: 'FEMALE', ssml: true },
+  },
+  'ru': {
+    languageCode: 'ru-RU', name: 'ru-RU-Chirp3-HD-Charon', ssmlGender: 'MALE', ssml: false,
+    fallback: { languageCode: 'ru-RU', name: 'ru-RU-Wavenet-D', ssmlGender: 'MALE', ssml: true },
+  },
+};
+
+// Resolve the best available voice: verified profile first, WaveNet map as last resort.
+function resolveVoice(language: string): VoiceProfile {
+  if (VOICE_PROFILES[language]) return VOICE_PROFILES[language];
+  const w = WAVENET_VOICES[language];
+  if (w) return { ...w, ssml: true };
+  return VOICE_PROFILES['de'];
+}
+
 // Maximum text length per request (Google limit is 5000 bytes for SSML)
 // buildSSML() adds <break> tags + <speak><prosody> wrapper which inflates size
 // We use 2000 chars to stay safely under 5000 bytes after SSML expansion
@@ -130,20 +187,24 @@ function buildSSML(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
   
-  // Add natural pauses after sentence-ending punctuation
-  // Period, exclamation, question mark → 500ms pause
-  escaped = escaped.replace(/([.!?])\s+/g, '$1<break time="500ms"/> ');
+  // Add natural pauses after sentence-ending punctuation.
+  // NOTE: Neural2 already produces its own natural sentence pauses.
+  // Long uniform breaks (500ms) make the reading sound mechanical, so we keep
+  // them short and only reinforce the rhythm slightly.
+  escaped = escaped.replace(/([.!?])\s+/g, '$1<break time="250ms"/> ');
   
-  // Add shorter pauses after commas and semicolons → 250ms
-  escaped = escaped.replace(/([,;:])\s+/g, '$1<break time="250ms"/> ');
+  // Add shorter pauses after commas and semicolons → 120ms
+  escaped = escaped.replace(/([,;:])\s+/g, '$1<break time="120ms"/> ');
   
-  // Add pause after ellipsis → 700ms for dramatic effect
-  escaped = escaped.replace(/(\.\.\.)\s*/g, '$1<break time="700ms"/> ');
+  // Add pause after ellipsis → 450ms for dramatic effect
+  escaped = escaped.replace(/(\.\.\.)\s*/g, '$1<break time="450ms"/> ');
   
-  // Add pause after em-dash — → 400ms
-  escaped = escaped.replace(/(—|–)\s*/g, '$1<break time="400ms"/> ');
+  // Add pause after em-dash — → 250ms
+  escaped = escaped.replace(/(—|–)\s*/g, '$1<break time="250ms"/> ');
   
-  const ssml = `<speak><prosody rate="95%" pitch="-1st">${escaped}</prosody></speak>`;
+  // No <prosody> wrapper: rate is already controlled via audioConfig.speakingRate,
+  // and forcing pitch here fights the voice's own natural intonation.
+  const ssml = `<speak>${escaped}</speak>`;
   
   // Safety check: if SSML exceeds 4900 bytes, fall back to plain text without breaks
   if (new TextEncoder().encode(ssml).length > 4900) {
@@ -152,7 +213,7 @@ function buildSSML(text: string): string {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
-    return `<speak><prosody rate="95%" pitch="-1st">${plainEscaped}</prosody></speak>`;
+    return `<speak>${plainEscaped}</speak>`;
   }
   
   return ssml;
@@ -180,11 +241,11 @@ export async function POST(request: NextRequest) {
     // Truncate to max length (caller should chunk text before sending)
     const truncatedText = text.substring(0, MAX_TEXT_LENGTH);
 
-    // Select voice based on language (always male)
-    const voiceConfig = WAVENET_VOICES[language] || WAVENET_VOICES['de'];
+    // Select voice based on language (always male) — Neural2 preferred, WaveNet fallback
+    const voiceConfig = resolveVoice(language);
 
     // ===== CACHE LOOKUP: Check if we already have this audio cached =====
-    const cacheKey = generateCacheKey(truncatedText, language, voiceGender, speakingRate);
+    const cacheKey = generateCacheKey(truncatedText, language, voiceGender, speakingRate, voiceConfig.name || '');
     
     // Layer 1: In-memory cache (fastest — same server instance)
     const memoryCached = getFromMemoryCache(cacheKey);
@@ -219,31 +280,51 @@ export async function POST(request: NextRequest) {
 
     // Google Cloud TTS API request
     // https://cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize
-    const response = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input: {
-            ssml: buildSSML(truncatedText)
-          },
-          voice: {
-            languageCode: voiceConfig.languageCode,
-            ...(voiceConfig.name && { name: voiceConfig.name }),
-            ssmlGender: voiceConfig.ssmlGender,
-          },
-          audioConfig: {
-            audioEncoding: 'MP3', // MP3 — universally supported on all browsers incl. Safari/iOS
-            speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
-            pitch: -2.0, // Lower pitch for warmer, deeper male voice
-            volumeGainDb: 2.0, // Louder for clarity
-            sampleRateHertz: 24000, // High quality sample rate
-            effectsProfileId: ['large-home-entertainment-class-device'], // Best quality audio profile
-          },
-        }),
-      }
-    );
+    //
+    // NOTE: Chirp3-HD requests occasionally hang indefinitely. Without an abort
+    // signal the serverless function would block until the platform timeout and
+    // the player would freeze mid-article. Always bound the request.
+    const synthesize = (voice: VoiceProfile) => {
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 20000);
+      return fetch(
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+        {
+          method: 'POST',
+          signal: ac.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            // Chirp3-HD / Studio voices reject SSML -> send plain text for them.
+            input: voice.ssml ? { ssml: buildSSML(truncatedText) } : { text: truncatedText },
+            voice: {
+              languageCode: voice.languageCode,
+              ...(voice.name && { name: voice.name }),
+              ssmlGender: voice.ssmlGender,
+            },
+            audioConfig: {
+              audioEncoding: 'MP3', // MP3 — universally supported on all browsers incl. Safari/iOS
+              speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
+              // `pitch` is not supported by Chirp3-HD -> only send it for SSML-capable voices.
+              // 0.0 = natural. Lowering it artificially made the voice sound "processed"/robotic.
+              ...(voice.ssml && { pitch: 0.0 }),
+              volumeGainDb: 0.0, // No gain — avoids clipping the peaks
+              sampleRateHertz: 24000, // High quality sample rate
+              effectsProfileId: ['handset-class-device'], // Tuned for phones/laptops, not big TVs
+            },
+          }),
+        }
+      ).finally(() => clearTimeout(timer));
+    };
+
+    let response = await synthesize(voiceConfig);
+
+    // If the preferred voice is unavailable/rejected, retry once with the fallback voice.
+    if (!response.ok && (response.status === 400 || response.status === 404) && voiceConfig.fallback) {
+      console.warn(
+        `[Google TTS] Voice "${voiceConfig.name}" rejected (${response.status}) — falling back to "${voiceConfig.fallback.name}"`
+      );
+      response = await synthesize(voiceConfig.fallback);
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
