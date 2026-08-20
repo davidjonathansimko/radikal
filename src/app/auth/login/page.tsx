@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
+import { clearGuestMode } from '@/hooks/useGuestMode';
 import { FaGoogle, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function LoginPage() {
@@ -80,6 +81,9 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+        // Pasul C4: utilizatorul s-a autentificat -> iesim din modul vizitator
+        // User logged in -> leave guest mode / Benutzer angemeldet -> Gast-Modus verlassen
+        clearGuestMode();
         // Pasul 12005: Mark login as successful so modal-active stays during redirect
         document.body.dataset.loginSuccess = 'true';
         setLoginSuccess(true);

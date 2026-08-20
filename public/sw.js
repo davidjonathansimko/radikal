@@ -3,14 +3,20 @@
 // Ermöglicht Offline-Funktionalität und Caching für PWA
 // Activează funcționalitatea offline și caching pentru PWA
 
-const CACHE_NAME = 'radikal-v3'; // Updated to force cache refresh
+// ⚠️ BUMP THIS ON EVERY DEPLOY THAT CHANGES public/ OR THE APP SHELL.
+// Older versions kept a fixed name, so after a Vercel deploy the browser was
+// served OLD hashed /_next/static chunks while the new HTML asked for new ones.
+// React then failed to hydrate and the whole shell (logo, progress bar, menu,
+// language/theme/search buttons) silently disappeared — the exact bug users hit.
+const SW_VERSION = 'v4';
+const SHELL_CACHE = `radikal-shell-${SW_VERSION}`;   // HTML pages
+const ASSET_CACHE = `radikal-assets-${SW_VERSION}`;  // immutable hashed assets + images
+const CACHE_NAME = SHELL_CACHE; // kept for the CLEAR_CACHE message below
 const OFFLINE_URL = '/offline';
 
-// Resources to cache immediately on install
+// Keep this list tiny: only things guaranteed to exist.
 const PRECACHE_URLS = [
-  '/',
   '/offline',
-  '/blogs',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -18,122 +24,144 @@ const PRECACHE_URLS = [
 
 // Install event - precache essential resources
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
-  
+  console.log('[SW] Installing Service Worker', SW_VERSION);
+
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[SW] Caching essential resources');
-        return cache.addAll(PRECACHE_URLS);
-      })
-      .then(() => {
-        console.log('[SW] Service Worker installed successfully');
-        return self.skipWaiting();
-      })
+    caches.open(SHELL_CACHE)
+      .then((cache) =>
+        // addAll() fails atomically if ONE url 404s, which would leave the app
+        // without a service worker at all. Cache them individually instead.
+        Promise.all(PRECACHE_URLS.map((url) => cache.add(url).catch(() => {})))
+      )
+      .then(() => self.skipWaiting())
       .catch((error) => {
         console.error('[SW] Failed to cache resources:', error);
       })
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up EVERY cache that is not from this version
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker...');
-  
+  console.log('[SW] Activating Service Worker', SW_VERSION);
+
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
-              console.log('[SW] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
+    (async () => {
+      const names = await caches.keys();
+      await Promise.all(
+        names
+          .filter((n) => n !== SHELL_CACHE && n !== ASSET_CACHE
+            && n !== 'offline-comments' && n !== 'offline-newsletter')
+          .map((n) => {
+            console.log('[SW] Deleting old cache:', n);
+            return caches.delete(n);
           })
-        );
-      })
-      .then(() => {
-        console.log('[SW] Service Worker activated');
-        return self.clients.claim();
-      })
+      );
+      if (self.registration.navigationPreload) {
+        await self.registration.navigationPreload.enable().catch(() => {});
+      }
+      await self.clients.claim();
+      console.log('[SW] Service Worker activated');
+    })()
   );
 });
 
-// Fetch event - Network first, fallback to cache strategy
+// ---------------------------------------------------------------------------
+// Fetch strategy
+//
+// Golden rule: NEVER cache anything related to authentication or data.
+// The previous version intercepted Supabase requests, so an expired
+// /auth/v1/user response was replayed from cache. getSession() then hung,
+// the 3s safety timeout fired ("Session check timeout"), analytics returned
+// 401, and login/logout became impossible until the user wiped the cache.
+// ---------------------------------------------------------------------------
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
-  
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
-    return;
-  }
-  
-  // Let Google Fonts requests pass through directly - don't intercept
-  if (url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com')) {
-    return; // Let the browser handle these directly
-  }
-  
-  // Skip cross-origin requests except for Supabase
-  if (url.origin !== self.location.origin) {
-    // Only handle Supabase requests
-    if (!url.hostname.includes('supabase.co')) {
-      return;
-    }
-  }
-  
-  // Skip API routes (always fetch fresh)
-  if (url.pathname.startsWith('/api/')) {
+
+  if (request.method !== 'GET') return;
+
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
     return;
   }
 
-  event.respondWith(
-    // Try network first
-    fetch(request)
-      .then((response) => {
-        // Don't cache bad responses
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
-        
-        // Clone response for caching
-        const responseToCache = response.clone();
-        
-        // Cache successful responses
-        caches.open(CACHE_NAME)
-          .then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        
-        return response;
-      })
-      .catch(async () => {
-        // Network failed, try cache
-        const cachedResponse = await caches.match(request);
-        
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        
-        // If navigating to a page, show offline page
-        if (request.mode === 'navigate') {
-          const offlineResponse = await caches.match(OFFLINE_URL);
-          if (offlineResponse) {
-            return offlineResponse;
-          }
-        }
-        
-        // Return a basic offline response for other resources
-        return new Response('Offline', {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: new Headers({
-            'Content-Type': 'text/plain',
-          }),
-        });
-      })
-  );
+  // 1. Anything cross-origin (Supabase, Google Fonts, Vercel, analytics…) is
+  //    left completely alone. No interception, no caching, ever.
+  if (url.origin !== self.location.origin) return;
+
+  // 2. Never touch API routes, auth callbacks, RSC payloads or ranged media.
+  if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/auth')) return;
+  if (url.pathname.startsWith('/_next/data/')) return;
+  if (url.searchParams.has('_rsc')) return;
+  if (request.headers.has('range')) return;
+
+  // 3. Hashed build output is immutable -> cache-first (fast, always correct,
+  //    and a NEW deploy has NEW filenames so it can never go stale).
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(cacheFirst(request, ASSET_CACHE));
+    return;
+  }
+
+  // 4. Icons / images -> cache-first as well.
+  if (/\.(?:png|jpg|jpeg|svg|webp|avif|gif|ico|woff2?)$/i.test(url.pathname)) {
+    event.respondWith(cacheFirst(request, ASSET_CACHE));
+    return;
+  }
+
+  // 5. Page navigations -> network-first with a short timeout, cache only as
+  //    an offline fallback. Guarantees users always get the current deploy.
+  if (request.mode === 'navigate') {
+    event.respondWith(navigationHandler(event));
+    return;
+  }
+
+  // Everything else: straight to the network, untouched.
 });
+
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200 && response.type === 'basic') {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return new Response('', { status: 504, statusText: 'Offline' });
+  }
+}
+
+async function navigationHandler(event) {
+  const cache = await caches.open(SHELL_CACHE);
+  try {
+    const preload = await event.preloadResponse;
+    const response = preload || (await fetchWithTimeout(event.request, 5000));
+    if (response && response.status === 200 && response.type === 'basic') {
+      cache.put(event.request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(event.request);
+    if (cached) return cached;
+    const offline = await cache.match(OFFLINE_URL);
+    if (offline) return offline;
+    return new Response('Offline', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: new Headers({ 'Content-Type': 'text/plain' }),
+    });
+  }
+}
+
+function fetchWithTimeout(request, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(request, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
 
 // Push notification event
 self.addEventListener('push', (event) => {
@@ -283,9 +311,13 @@ self.addEventListener('message', (event) => {
   }
   
   if (event.data.type === 'CLEAR_CACHE') {
-    caches.delete(CACHE_NAME).then(() => {
-      console.log('[SW] Cache cleared');
-      event.ports[0].postMessage({ success: true });
-    });
+    caches.keys()
+      .then((names) => Promise.all(names.map((n) => caches.delete(n))))
+      .then(() => {
+        console.log('[SW] All caches cleared');
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ success: true });
+        }
+      });
   }
 });

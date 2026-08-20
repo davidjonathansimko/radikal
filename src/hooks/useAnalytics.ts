@@ -126,18 +126,25 @@ export function useAnalytics() {
       });
       
       if (sessionUpsertError) {
-        // Try simple insert if upsert fails
-        const { error: sessionInsertError } = await supabase.from('analytics_sessions').insert({
-          session_id: sessionId.current,
-          first_page: pathname,
-          last_page: pathname,
-          page_count: 1,
-          referrer: document.referrer || null,
-          ...sessionDeviceInfo,
-        });
-        
-        if (sessionInsertError && !sessionInsertError.message.includes('duplicate')) {
-          console.debug('Analytics: Session insert issue:', sessionInsertError.code);
+        // Pasul A2: NU mai facem insert de rezervă — el genera "409 Conflict"
+        // în consolă când rândul există deja. Reîncercăm doar ca upsert care
+        // ignoră duplicatele (nu produce conflict).
+        const { error: sessionRetryError } = await supabase
+          .from('analytics_sessions')
+          .upsert({
+            session_id: sessionId.current,
+            first_page: pathname,
+            last_page: pathname,
+            page_count: 1,
+            referrer: document.referrer || null,
+            ...sessionDeviceInfo,
+          }, {
+            onConflict: 'session_id',
+            ignoreDuplicates: true,
+          });
+
+        if (sessionRetryError) {
+          console.debug('Analytics: Session upsert issue:', sessionRetryError.code);
         }
       } else {
         console.log('✅ Session tracked');

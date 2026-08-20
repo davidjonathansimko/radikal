@@ -11,12 +11,12 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { FaSearch, FaTimes, FaSpinner, FaClock, FaFire, FaArrowRight } from 'react-icons/fa';
 import Image from 'next/image';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase';
 
-// Initialize Supabase client for client-side search fallback
+// Pasul A1: folosim clientul Supabase SINGLETON (evită "Multiple GoTrueClient instances detected")
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+const supabase = supabaseUrl && supabaseKey ? createClient() : null;
 
 // Translations / Übersetzungen
 const translations = {

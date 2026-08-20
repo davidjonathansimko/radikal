@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
 import AboutStoryModal from '@/components/AboutStoryModal';
+import AboutIntroQuote from '@/components/AboutIntroQuote';
 
 export default function AboutPage() {
   // Protect this route - redirect to home if modal not completed / Diese Route schützen - zur Startseite weiterleiten wenn Modal nicht abgeschlossen / Protejează această rută - redirecționează la pagină principală dacă modalul nu este finalizat
@@ -18,8 +19,17 @@ export default function AboutPage() {
   // Get language / Sprache abrufen / Obține limba
   const { language } = useLanguage();
   
-  // State for story modal / Zustand für Geschichte-Modal / Stare pentru modalul povestii
-  const [showStoryModal, setShowStoryModal] = useState(true);
+  // Short verse screen shown before the page itself.
+  // Kurzer Versbildschirm, der vor der Seite selbst gezeigt wird.
+  // Ecran scurt cu verset, afișat înainte de pagina propriu-zisă.
+  // ⏱️ Durata se schimbă din INTRO_DURATION_MS în src/components/AboutIntroQuote.tsx
+  const [showIntro, setShowIntro] = useState(true);
+
+  // The story is now OPTIONAL: it only starts when the user presses the
+  // "Discover RADIKAL" button, never automatically.
+  // Die Geschichte ist jetzt OPTIONAL: sie startet nur per Knopfdruck.
+  // Povestea este acum OPȚIONALĂ: pornește doar la apăsarea butonului.
+  const [showStoryModal, setShowStoryModal] = useState(false);
   
   // Handle story modal completion / Story-Modal Abschluss behandeln / Gestionează finalizarea modalului povestii
   const handleStoryComplete = () => {
@@ -54,7 +64,10 @@ export default function AboutPage() {
 
   return (
     <>
-      {/* Story Modal - appears every time About page is visited */}
+      {/* Verse intro — shown once per visit, then the page appears */}
+      {showIntro && <AboutIntroQuote onFinish={() => setShowIntro(false)} />}
+
+      {/* Story Modal - now only opened via the "Discover RADIKAL" button */}
       {showStoryModal && (
         <AboutStoryModal 
           onComplete={handleStoryComplete}
@@ -73,12 +86,40 @@ export default function AboutPage() {
              language === 'ro' ? 'Despre Noi' : 
              'О нас'}
           </h1>
-          <p className="text-xl text-black/80 dark:text-white/80 max-w-2xl mx-auto leading-relaxed animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {language === 'de' ? 'Entdecke RADIKAL' : 
-             language === 'en' ? 'Discover RADIKAL' : 
-             language === 'ro' ? 'Descoperă RADIKAL' : 
-             'Открой RADIKAL'}
-          </p>
+
+          {/* "Discover RADIKAL" — same bouncing animation as the
+              "Discover more" button on the homepage. Starts the story. */}
+          <button
+            type="button"
+            onClick={() => setShowStoryModal(true)}
+            className="mx-auto flex flex-col items-center gap-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors duration-300 animate-heartbeat animate-fadeIn"
+            style={{ animationDelay: '0.2s' }}
+            aria-label={
+              language === 'de' ? 'Entdecke RADIKAL' :
+              language === 'en' ? 'Discover RADIKAL' :
+              language === 'ro' ? 'Descoperă RADIKAL' :
+              'Открой RADIKAL'
+            }
+          >
+            <span className="text-xl sm:text-2xl font-semibold">
+              {language === 'de' ? 'Entdecke RADIKAL' : 
+               language === 'en' ? 'Discover RADIKAL' : 
+               language === 'ro' ? 'Descoperă RADIKAL' : 
+               'Открой RADIKAL'}
+            </span>
+            <svg 
+              className="w-8 h-8" 
+              fill="currentColor" 
+              viewBox="0 0 511.994 511.994"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path d="M403.079,310.458c-3.627-7.232-11.008-11.797-19.093-11.797h-64v-85.333c0-11.776-9.536-21.333-21.333-21.333H213.32 c-11.776,0-21.333,9.557-21.333,21.333v85.333h-64c-8.064,0-15.445,4.565-19.072,11.797c-3.605,7.232-2.837,15.872,2.027,22.336 l128,170.667c4.011,5.376,10.347,8.533,17.045,8.533c6.72,0,13.056-3.157,17.067-8.533l128-170.667 C405.917,326.33,406.685,317.69,403.079,310.458z"/>
+              <path d="M298.663,128.001H213.33c-11.797,0-21.333,9.536-21.333,21.333c0,11.797,9.536,21.333,21.333,21.333h85.333 c11.797,0,21.333-9.536,21.333-21.333C319.996,137.537,310.46,128.001,298.663,128.001z"/>
+              <path d="M298.663,64.001H213.33c-11.797,0-21.333,9.536-21.333,21.333s9.536,21.333,21.333,21.333h85.333 c11.797,0,21.333-9.536,21.333-21.333S310.46,64.001,298.663,64.001z"/>
+              <path d="M298.664,0H213.33c-11.797,0-21.333,9.536-21.333,21.333c0,11.798,9.536,21.334,21.333,21.334h85.333 c11.797,0,21.333-9.536,21.333-21.333C319.997,9.536,310.461,0,298.664,0z"/>
+            </svg>
+          </button>
         </header>
 
         {/* Main content / Hauptinhalt / Conținut principal */}
@@ -92,25 +133,31 @@ export default function AboutPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-black dark:text-white">
-                {language === 'de' ? 'Unsere Mission: Ein Schmerzensruf um die Wahrheit' : 
-                 language === 'en' ? 'Our Mission: A Cry for Truth' : 
-                 language === 'ro' ? 'Misiunea Noastră: Un strigăt pentru Adevăr' : 
-                 'Наша миссия: Крик о правде'}
+                {language === 'de' ? '' : 
+                 language === 'en' ? '' : 
+                 language === 'ro' ? 'Cuvânt Înainte' : 
+                 ''}
               </h2>
             </div>
             <div className="text-black/80 dark:text-white/80 leading-relaxed space-y-4">
               
               <p>
-                {language === 'de' ? 'RADIKAL entstand aus der Schmerz über das Schweigen des Wortes in unseren Gemeinden. Die Wahrheit mag verwunden, aber die Ungewissheit bringt den Tod. Lieber durch das Wort erschüttert werden, als in der Lüge zugrunde zu gehen.' : 
-                 language === 'en' ? 'RADIKAL was born out of the pain of the silence of the Word in our churches. Truth may wound, but uncertainty brings death. Better to be shaken by the Word than to perish in the lie.' : 
-                 language === 'ro' ? 'RADIKAL s-a născut din durerea tăcerii Cuvântului în bisericile noastre. Adevărul poate răni, dar incertitudinea aduce moartea. Mai bine să fii zguduit de Cuvânt decât să pieri în minciună.' : 
-                 'RADIKAL возник из боли молчания Слова в наших церквах. Истина может ранить, но неопределенность приносит смерть. Лучше быть потрясенным Словом, чем погибнуть во лжи.'}
+                {language === 'de' ? 'Wenn du dich dafür entscheidest, Menschen zu gefallen, hörst du auf, ein Diener Christi zu sein. Die Menschenfurcht, die Angst, anzuecken, und der Wunsch nach Akzeptanz sind zur Normalität geworden. Sie haben zur Verwässerung der Wahrheit und zu Verwirrung geführt, sodass sie niemanden mehr stört, sondern gefällig ist. Eine verwässerte Wahrheit, eine versüßte Botschaft und ein Glaube, der niemanden mehr stört, aber auch niemanden mehr rettet, ist nicht mehr die Wahrheit, sondern eine Lüge.' : 
+                 language === 'en' ? 'When you choose to please men, you cease to be a servant of Christ. The fear of man, the dread of causing offense, and the desire to be accepted have become the norm, leading to the dilution of truth and to confusion, so that it no longer disturbs anyone but is pleasing instead. A diluted truth, a sugarcoated message, and a faith that no longer offends anyone, but also saves no one, is no longer the truth, but a lie.' : 
+                 language === 'ro' ? 'Când alegi să placi oamenilor, încetezi să mai fii slujitorul lui Hristos. Frica de oameni, teama de a nu deranja și dorința de a fi acceptați au devenit normale și au condus la diluarea adevărului și la confuzie, astfel încât acesta să nu mai deranjeze pe nimeni, ci să fie plăcut. Un adevăr diluat, un mesaj îndulcit și o credință care nu mai deranjează pe nimeni, dar nici nu mai salvează pe nimeni, nu mai reprezintă adevărul, ci o minciună.' : 
+                 'Когда ты решаешь угождать людям, ты перестаешь быть слугой Христа. Страх перед людьми, боязнь кого-то задеть и желание быть принятыми стали нормой. Это привело к размыванию истины и к путанице, из-за чего она больше никого не беспокоит, а лишь ублажает слух. Размытая истина, подслащенное послание и вера, которая больше никого не задевает, но и никого не спасает, — это уже не истина, а ложь.'}
               </p>
               <p>
-                {language === 'de' ? 'Wo laute Kompromisse die Lehre ersticken, suchen ehrliche Christen nach dem vergessenen Fundament – denn Gottes Wort ist keine menschliche Meinung, sondern die Einheit von Gebote und Gnade. ' : 
-                 language === 'en' ? 'Where loud compromises stifle doctrine, honest Christians seek the forgotten foundation – because God’s Word is not a human opinion, but the unity of command and grace.' : 
-                 language === 'ro' ? 'Acolo unde compromisurile zgomotoase sufocă doctrina, creștinii sinceri caută fundamentul uitat – pentru că Cuvântul lui Dumnezeu nu este o opinie umană, ci unitatea dintre poruncă și har.' : 
-                 'Там, где громкие компромиссы душат доктрину, честные христиане ищут забытый фундамент – потому что Слово Божье не человеческое мнение, а единство заповеди и благодати.'}
+                {language === 'de' ? 'Jesus Christus ist derselbe gestern, heute und in Ewigkeit. Sein Wort ist die absolute Wahrheit, die heiligt, befreit und jede Versuchung durch die Kraft von „Es steht geschrieben!“ besiegt.' : 
+                 language === 'en' ? 'Jesus Christ is the same yesterday, today, and forever. His Word is the absolute truth that sanctifies, sets free, and defeats every temptation through the power of "It is written!".' : 
+                 language === 'ro' ? 'Isus Hristos este Același ieri, azi și în veci. Cuvântul Său este adevărul absolut care sfințește, eliberează și învinge orice ispită prin puterea lui „Este scris!”.' : 
+                 'Иисус Христос вчера, сегодня и вовеки тот же. Его Слово — это абсолютная истина, которая освящает, освобождает и побеждает любое искушение силой слов «Написано!».'}
+              </p>
+              <p>
+                {language === 'de' ? 'Darum habe ich RADIKAL geschaffen. Denn „radikal“ bedeutet nicht Extremismus, sondern die Rückkehr zum Wesentlichen, zum lateinischen radix – der Wurzel. Es bedeutet, den Kompromiss zu verweigern und seinen Anker tief in der einzigen Wahrheit zu verankern, die sich niemals ändert: dem Wort Gottes.' : 
+                 language === 'en' ? 'That is why I created RADIKAL. Because "radical" does not mean extremism, but a return to the essence, to the Latin radix—meaning root. It means refusing compromise and anchoring oneself deeply in the only truth that never changes: the Word of God.' : 
+                 language === 'ro' ? 'De aceea am creat RADIKAL. Pentru că „radical” nu înseamnă extremism, ci întoarcere la esență, la latinescul radix – rădăcină. Înseamnă să refuzi compromisul și să îți înfigi adânc ancora în singurul adevăr care nu se schimbă niciodată: Cuvântul lui Dumnezeu.' : 
+                 'Поэтому я создал RADIKAL. Ведь «радикальный» означает не экстремизм, а возвращение к сути, к латинскому radix — корень. Это значит отказаться от компромиссов и глубоко укорениться в единственной истине, которая никогда не меняется: в Слове Божьем.'}
               </p>
             </div>
           </section>
@@ -229,7 +276,7 @@ export default function AboutPage() {
               </h2>
               <div className="max-w-2xl mx-auto">
                 <div className="w-24 h-24 bg-black/20 dark:bg-white/20 rounded-full mx-auto mb-6 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-black dark:text-white">D</span>
+                  <span className="text-2xl font-bold text-black dark:text-white">D. I. Simko</span>
                 </div>
                 
                 <div className="flex justify-center gap-4">

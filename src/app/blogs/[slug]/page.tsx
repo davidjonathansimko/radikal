@@ -17,6 +17,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useGuestMode, isGuestMode } from '@/hooks/useGuestMode';
 import { createClient } from '@/lib/supabase';
 import ReadingProgress, { CircularReadingProgress } from '@/components/ReadingProgress';
 import { calculateReadingTime, getShortReadingTime } from '@/utils/readingTime';
@@ -228,6 +229,9 @@ export default function BlogPostPage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [commentLikes, setCommentLikes] = useState<Map<string, { likes: number; dislikes: number; userReaction: 'like' | 'dislike' | null }>>(new Map());
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set()); // Track which comments have expanded replies / Verfolge welche Kommentare erweiterte Antworten haben
+
+  // Pasul C2: modul vizitator — fara comentarii / Guest mode — no comments
+  const { isGuest } = useGuestMode();
   
   // State for article navigation (prev/next) / Status für Artikelnavigation (vorheriger/nächster) / Stare pentru navigare articol (anterior/următor)
   const [prevArticle, setPrevArticle] = useState<{ slug: string; title: string } | null>(null);
@@ -493,6 +497,9 @@ export default function BlogPostPage() {
 
   // Load comments for this post / Kommentare für diesen Post laden / Încărcă comentariile pentru această postare
   const loadComments = async (passedSlug?: string) => {
+    // Pasul C2: vizitatorii nu incarca deloc comentariile
+    if (isGuestMode()) return;
+
     const querySlug = passedSlug || originalSlugRef.current;
     if (!querySlug) return;
     
@@ -1354,8 +1361,27 @@ export default function BlogPostPage() {
           </div>
         </div>
 
+        {/* Pasul C2: Vizitatorii NU au acces la comentarii */}
+        {/* Guests have NO access to comments / Gäste haben KEINEN Zugriff auf Kommentare */}
+        {isGuest && (
+          <section className="comments-section animate-fadeIn" style={{ animationDelay: '1s' }}>
+            <div className="glass-effect rounded-xl p-6 text-center">
+              <p className="text-white/80">
+                {language === 'de' ? 'Kommentare sind nur für registrierte Benutzer sichtbar.' :
+                 language === 'en' ? 'Comments are only visible to registered users.' :
+                 language === 'ro' ? 'Comentariile sunt vizibile doar pentru utilizatorii înregistrați.' :
+                 'Комментарии видны только зарегистрированным пользователям.'}
+              </p>
+            </div>
+          </section>
+        )}
+
         {/* Comments section / Kommentarbereich / Secțiune comentarii */}
-        <section id="comments" className="comments-section animate-fadeIn" style={{ animationDelay: '1s' }}>
+        <section
+          id="comments"
+          className="comments-section animate-fadeIn"
+          style={{ animationDelay: '1s', display: isGuest ? 'none' : undefined }}
+        >
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
             <TfiComment />
             {language === 'de' ? 'Kommentare' : 

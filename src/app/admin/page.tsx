@@ -12,6 +12,7 @@ import { isAdminUser } from '@/lib/isAdmin';
 import { BlogPost } from '@/types';
 import { autoTranslateBlogPost } from '@/utils/translation';
 import ImageUpload from '@/components/ImageUpload';
+import ReelsAdmin from '@/components/admin/ReelsAdmin';
 import { 
   FaPlus, 
   FaEdit, 
@@ -630,6 +631,11 @@ export default function AdminPage() {
             </form>
           </div>
         )}
+
+        {/* Reels admin panel / Panou de administrare Reels */}
+        <section className="animate-fadeIn mb-12" style={{ animationDelay: '0.5s' }}>
+          <ReelsAdmin />
+        </section>
 
         {/* Posts list / Posts-Liste */}
         <section className="animate-fadeIn" style={{ animationDelay: '0.6s' }}>

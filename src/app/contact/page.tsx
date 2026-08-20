@@ -260,10 +260,10 @@ export default function ContactPage() {
              'Контакт'}
           </h1>
           <p className="text-xl text-black/80 dark:text-white/80 max-w-2xl mx-auto leading-relaxed animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {language === 'de' ? 'Wir freuen uns auf deine Nachricht und Fragen' : 
-             language === 'en' ? 'We look forward to your message and questions' : 
-             language === 'ro' ? 'Așteptăm cu nerăbdare mesajul și întrebările tale' : 
-             'Мы с нетерпением ждем ваших сообщений и вопросов'}
+            {language === 'de' ? '' : 
+             language === 'en' ? '' : 
+             language === 'ro' ? '' : 
+             ''}
           </p>
         </header>
 
@@ -508,53 +508,6 @@ export default function ContactPage() {
                                                           'Местоположение'}</p>
                     <p className="text-black dark:text-white">Deutschland</p>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Social links / Soziale Links */}
-            <div className="glass-effect rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
-              <h3 className="text-xl font-bold text-black dark:text-white mb-6">
-                {language === 'de' ? 'Folge uns' : 
-                 language === 'en' ? 'Follow Us' : 
-                 language === 'ro' ? 'Urmărește-ne' : 
-                 'Следите за нами'}
-              </h3>
-              
-              <div className="space-y-3">
-                <a 
-                  href="mailto:radikal@radikal.blog"
-                  className="flex items-center gap-3 p-3 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded-lg transition-colors duration-200"
-                >
-                  <FaEnvelope className="text-xl text-black dark:text-white" />
-                  <span className="text-black dark:text-white">radikal@radikal.blog</span>
-                </a>
-              </div>
-            </div>
-
-            {/* FAQ section / FAQ-Bereich */}
-            <div className="glass-effect rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '1s' }}>
-              <h3 className="text-xl font-bold text-black dark:text-white mb-6">
-                {language === 'de' ? 'Häufig gestellte Fragen' : 
-                 language === 'en' ? 'Frequently Asked Questions' : 
-                 language === 'ro' ? 'Întrebări Frecvente' : 
-                 'Часто задаваемые вопросы'}
-              </h3>
-              
-              <div className="space-y-4 text-sm">
-                <div>
-                  <h4 className="text-black dark:text-white font-medium mb-1">
-                    {language === 'de' ? 'Wie schnell antworten Sie?' : 
-                     language === 'en' ? 'How fast do you respond?' : 
-                     language === 'ro' ? 'Cât de repede răspundeți?' : 
-                     'Как быстро вы отвечаете?'}
-                  </h4>
-                  <p className="text-black/70 dark:text-white/70">
-                    {language === 'de' ? 'Ich antworte normalerweise innerhalb von 24 Stunden auf alle Nachrichten.' : 
-                     language === 'en' ? 'I typically respond to all messages within 24 hours.' : 
-                     language === 'ro' ? 'De obicei răspund la toate mesajele în 24 de ore.' : 
-                     'Я обычно отвечаю на все сообщения в течение 24 часов.'}
-                  </p>
                 </div>
               </div>
             </div>

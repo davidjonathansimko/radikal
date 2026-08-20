@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { isGuestMode } from '@/hooks/useGuestMode';
 
 export function useRouteProtection() {
   const router = useRouter();
@@ -30,9 +31,32 @@ export function useRouteProtection() {
           return;
         }
 
-        // Check if user is authenticated
+        // Pasul C3: modul VIZITATOR — utilizatorul a ales "Continuă ca vizitator".
+        // Poate naviga liber, dar comentariile si notificarile sunt blocate
+        // separat (vezi useGuestMode).
+        // Guest mode — allowed to browse, comments/notifications blocked elsewhere.
+        if (isGuestMode()) {
+          setIsAllowed(true);
+          setIsChecking(false);
+          return;
+        }
+
+        // Check if user is authenticated.
+        //
+        // IMPORTANT: getSession() reads the token from local storage and never
+        // touches the network. getUser() does a round trip and used to be the
+        // FIRST check — so a slow connection, an offline moment or (previously)
+        // a stale cached auth response made it throw, and the catch below threw
+        // the user back to the home page with a broken shell. Local first,
+        // network only as a fallback.
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+
+        let user = session?.user ?? null;
+        if (!user) {
+          const { data } = await supabase.auth.getUser();
+          user = data.user;
+        }
 
         if (user) {
           // Authenticated user - check if they have selected a language
@@ -54,9 +78,19 @@ export function useRouteProtection() {
         }
       } catch (error) {
         console.error('Error checking route access:', error);
-        // On error, redirect to home to be safe
-        router.push('/');
-        setIsAllowed(false);
+        // A network hiccup must NOT log the user out of the UI. If we still
+        // have a stored session and a chosen language, let them keep browsing.
+        const hasLocalSession =
+          typeof window !== 'undefined' &&
+          !!localStorage.getItem('radikalSelectedLanguage') &&
+          Object.keys(localStorage).some((k) => k.startsWith('sb-') && k.includes('auth-token'));
+
+        if (hasLocalSession) {
+          setIsAllowed(true);
+        } else {
+          router.push('/');
+          setIsAllowed(false);
+        }
       } finally {
         setIsChecking(false);
       }

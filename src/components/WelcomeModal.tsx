@@ -23,10 +23,10 @@ const bibleVerses = {
 };
 
 const bibleReferences = {
-  de: '...',
-  en: "...",
-  ro: '...',
-  ru: '...'
+  de: '',
+  en: '',
+  ro: '',
+  ru: ''
 };
 
 const translations = {
@@ -277,6 +277,32 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
     }
   };
 
+  // Pasul C1: Continua ca VIZITATOR / Continue as GUEST / Als GAST fortfahren
+  // Vizitatorul NU vede si NU scrie comentarii, NU are notificari de blog.
+  // Poate DOAR sa dea like si sa foloseasca emoji.
+  const handleGuest = () => {
+    if (!selectedLanguage) return;
+
+    // Marcam modul vizitator DOAR pentru sesiunea curenta (nu localStorage,
+    // ca sa nu ocoleasca permanent inregistrarea)
+    sessionStorage.setItem('radikalGuestMode', '1');
+    sessionStorage.setItem('radikalGuestLanguage', selectedLanguage);
+    sessionStorage.removeItem('radikalPendingLanguage');
+
+    // Curatam complet blocarea scroll-ului si ascunderea nav/footer
+    document.body.classList.remove('modal-open', 'modal-active');
+    document.documentElement.classList.remove('modal-open', 'modal-active');
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.height = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.documentElement.style.overflow = '';
+
+    onComplete(selectedLanguage, true);
+  };
+
 
 
   return (
@@ -473,7 +499,7 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
           <div className="flex-1 flex items-center justify-center" ref={verseContainerRef}>
             <div className="text-center max-w-4xl mx-auto px-6 relative">
               {/* Exclamation mark - appears first */}
-              <div className="text-6xl mb-12 welcome-fade-in" style={{ color: textColor }}>!</div>
+              <div className="text-6xl mb-12 welcome-fade-in" style={{ color: textColor }}></div>
               
               {/* Bible verse with GSAP word-by-word animation - like someone speaking */}
               <blockquote 
@@ -557,6 +583,29 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                     <div className="text-4xl mb-3" style={{ color: textColor }}>⌘</div>
                     <div className="text-xl md:text-2xl font-bold transition-colors" style={{ color: textColor }}>
                       {translations.loginOption[selectedLanguage]}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Pasul C1: Continue as Guest / Als Gast fortfahren / Continuă ca vizitator */}
+                <button
+                  onClick={handleGuest}
+                  className="group w-full max-w-md rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl backdrop-blur-sm"
+                  style={{ backgroundColor: bgTransparent, borderWidth: '1px', borderStyle: 'solid', borderColor: borderColor }}
+                >
+                  <div className="text-center">
+                    <div className="text-3xl mb-2" style={{ color: textColor }}>◎</div>
+                    <div className="text-base md:text-lg font-semibold transition-colors" style={{ color: textColor }}>
+                      {selectedLanguage === 'de' ? 'Als Gast fortfahren' :
+                       selectedLanguage === 'en' ? 'Continue as guest' :
+                       selectedLanguage === 'ro' ? 'Continuă ca vizitator' :
+                       'Продолжить как гость'}
+                    </div>
+                    <div className="text-xs mt-2 leading-relaxed" style={{ color: textVeryLight }}>
+                      {selectedLanguage === 'de' ? 'Ohne Kommentare und ohne Blog-Benachrichtigungen' :
+                       selectedLanguage === 'en' ? 'Without comments and without blog notifications' :
+                       selectedLanguage === 'ro' ? 'Fără comentarii și fără notificări de blog' :
+                       'Без комментариев и без уведомлений блога'}
                     </div>
                   </div>
                 </button>

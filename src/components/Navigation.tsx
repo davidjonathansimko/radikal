@@ -20,6 +20,12 @@ import { FaSun, FaMoon, FaSearch } from 'react-icons/fa';
 // FaHeart + FaBookmark commented out - replaced by custom SVG / FaHeart + FaBookmark auskommentiert - ersetzt durch benutzerdefiniertes SVG
 // import { FaHeart, FaBookmark } from 'react-icons/fa';
 import SearchModal from '@/components/SearchModal';
+import ReelsIcon from '@/components/ReelsIcon';
+import dynamic from 'next/dynamic';
+
+// PERFORMANTA: ReelsModal aduce cu el GSAP. Il incarcam DOAR cand
+// utilizatorul apasa pe butonul Reels, ca sa nu ingreunam prima incarcare.
+const ReelsModal = dynamic(() => import('@/components/ReelsModal'), { ssr: false });
 
 // Custom like/thumbs-up SVG icon for Liked Posts / Benutzerdefiniertes Like-SVG für Gelikte Beiträge / Pictogramă SVG like personalizată pentru Postări Apreciate
 const HeartIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -120,6 +126,8 @@ export default function Navigation() {
   
   // Search modal state / Such-Modal-Status / Stare modal căutare
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Reels — modal tip YouTube Shorts / Reels modal
+  const [isReelsOpen, setIsReelsOpen] = useState(false);
   
   // Language dropdown state / Sprach-Dropdown-Status / Stare dropdown limbă
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
@@ -592,6 +600,17 @@ export default function Navigation() {
             <span className="text-[10px] font-semibold opacity-70">
               {language === 'de' ? 'Thema' : language === 'en' ? 'Theme' : language === 'ro' ? 'Temă' : 'Тема'}
             </span>
+          </button>
+
+          {/* Reels — la DREAPTA butonului de tema */}
+          {/* Culoarea vine din `text-black/70 dark:text-white/70` -> iconul urmeaza tema automat */}
+          <button
+            onClick={() => { tapLight(); setIsReelsOpen(true); }}
+            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-200 group"
+            title="Reels"
+          >
+            <ReelsIcon className="w-[22px] h-[22px] animate-heartbeat transition-transform duration-300 group-hover:scale-110" />
+            <span className="text-[10px] font-semibold opacity-70">Reels</span>
           </button>
         </div>
       </div>
@@ -1128,6 +1147,7 @@ export default function Navigation() {
     )}
 
     <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    <ReelsModal isOpen={isReelsOpen} onClose={() => setIsReelsOpen(false)} />
     </>
   );
 }
