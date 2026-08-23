@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
@@ -13,8 +13,49 @@ import { BlogPost } from '@/types';
 import { autoTranslateBlogPost } from '@/utils/translation';
 import ImageUpload from '@/components/ImageUpload';
 import ReelsAdmin from '@/components/admin/ReelsAdmin';
+import StoryContentAdmin from '@/components/admin/StoryContentAdmin';
+import MaintenanceAdmin from '@/components/admin/MaintenanceAdmin';
+import IntroTextAdmin from '@/components/admin/IntroTextAdmin';
+import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
+import AdminRequestsPanel from '@/components/admin/AdminRequestsPanel';
+import { countPendingRequests } from '@/lib/adminRoles';
+import BibleRefPicker from '@/components/admin/BibleRefPicker';
+// Pasul 2208001 — efecte de imagine (sepia / vignette / noise / grain)
+import ImageEffectsEditor from '@/components/admin/ImageEffectsEditor';
+import NewsAdmin from '@/components/admin/NewsAdmin';
+import CategoriesAdmin from '@/components/admin/CategoriesAdmin';
+import CategoryPicker from '@/components/CategoryPicker';
+import { fetchCategories, matchesSelectedCategories, type Category } from '@/lib/categories';
+// Pasul 2208002 — punctul 3 (audio pregenerat) si punctul 10 (previzualizare)
+import BlogAudioGenerator from '@/components/admin/BlogAudioGenerator';
+import CustomAudioManager from '@/components/admin/CustomAudioManager';
+import BlogPreviewModal from '@/components/admin/BlogPreviewModal';
+import { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
+import AdminListFilterBar from '@/components/admin/AdminListFilterBar';
+// Pasul A08 — pictograme SVG monocrome (fara emoji colorate)
+import {
+  IconDocument,
+  IconFilm,
+  IconWrench,
+  IconWindow,
+  IconUsers,
+  IconBell,
+  IconPlus,
+  IconChart,
+  IconMegaphone,
+  IconTag,
+  // Pasul 2308006-B — pictograme monocrome pentru butoanele din lista
+  IconEye,
+  IconPencil,
+  IconSend,
+  IconTrash,
+  IconSpinner,
+} from '@/components/admin/AdminIcons';
+// Pasul 2308006-D — limba panoului, salvata per utilizator
+import { useAdminLang } from '@/hooks/useAdminLang';
+import AdminLangSwitcher from '@/components/admin/AdminLangSwitcher';
+import { useAdminListFilter } from '@/components/admin/useAdminListFilter';
 import { 
-  FaPlus, 
   FaEdit, 
   FaTrash, 
   FaEye, 
@@ -25,8 +66,7 @@ import {
   FaLanguage,
   FaSpinner,
   FaBell,
-  FaEnvelope,
-  FaChartLine
+  FaEnvelope
 } from 'react-icons/fa';
 import Link from 'next/link';
 
@@ -41,6 +81,11 @@ export default function AdminPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Pasul 2308004 (C) — rubricile din admin
+  const [mainTab, setMainTab] = useState<'create' | 'settings'>('create');
+  const [subTab, setSubTab] = useState<string>('blogs');
+  // Pasul 2308005 (D) — cate cereri asteapta aprobarea (bulina rosie)
+  const [pendingCount, setPendingCount] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [creating, setCreating] = useState(false);
@@ -58,6 +103,130 @@ export default function AdminPage() {
     modal_title: '',
     modal_question: ''
   });
+
+  // Pasul 2108002 — fragmente marcate manual ca referinte biblice
+  const [bibleRefs, setBibleRefs] = useState<string[]>([]);
+
+  // ------------------------------------------------------------------
+  // Pasul 2208001 — efecte de imagine + blog STATIC / DINAMIC
+  // ------------------------------------------------------------------
+  /** true = blog DINAMIC (are butonul „Play Blog"); false = static, ca până acum */
+  const [isDynamic, setIsDynamic] = useState(false);
+  /** Efectele IMAGINII articolului */
+  const [postEffects, setPostEffects] = useState<ImageEffectSettings>(DEFAULT_IMAGE_EFFECTS);
+  /** Efectele MODALULUI „Play Blog" — complet separate */
+  const [modalEffects, setModalEffects] = useState<ImageEffectSettings>(DEFAULT_IMAGE_EFFECTS);
+  const [modalBgOpacity, setModalBgOpacity] = useState(35);
+
+  // ------------------------------------------------------------------
+  // Pasul A15 — opacitate + umbra, reglabile la FIECARE blog in parte
+  // (imaginea articolului si imaginea de fundal). Valorile merg in
+  // coloanele adaugate de `STEP_A15_IMAGE_OPACITY.sql`.
+  // ------------------------------------------------------------------
+  const [postImageOpacity, setPostImageOpacity] = useState(100);
+  const [postImageShadow, setPostImageShadow] = useState(30);
+  const [backgroundOpacity, setBackgroundOpacity] = useState(100);
+  const [backgroundShadow, setBackgroundShadow] = useState(0);
+  const [modalBgShadow, setModalBgShadow] = useState(0);
+
+  // ------------------------------------------------------------------
+  // Pasul A17 — CATEGORII
+  // `allCategories` = lista din baza de date (se incarca o singura data).
+  // `postCategoryIds` = ce categorii are blogul pe care il editezi acum.
+  // `filterCategoryIds` = ce categorii sunt bifate in FILTRUL listei.
+  // ------------------------------------------------------------------
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [postCategoryIds, setPostCategoryIds] = useState<string[]>([]);
+  const [filterCategoryIds, setFilterCategoryIds] = useState<string[]>([]);
+
+  /**
+   * Pasul A18 — in ce limbi ai incarcat inregistrarea ta pentru blogul
+   * pe care il editezi. Generatorul TTS le sare, iar cand incarci sau
+   * stergi ceva, lista se actualizeaza singura.
+   */
+  const [customAudioLangs, setCustomAudioLangs] = useState<string[]>([]);
+
+  // Pasul 2308006-D — limba panoului de administrare (salvata per cont)
+  const { lang: adminLang, setLang: setAdminLang, t: adminT } = useAdminLang();
+
+  /**
+   * Pasul 2308006-F — „acest articol este pentru pagina News".
+   * Bifat + publicat = apare la News. Ciorna = nu il vede nimeni.
+   */
+  const [isNews, setIsNews] = useState(false);
+
+  useEffect(() => {
+    void fetchCategories().then(setAllCategories);
+  }, []);
+
+  /** Pasul 2208002 (punctul 10) — fereastra de previzualizare a articolului */
+  const [showPreview, setShowPreview] = useState(false);
+
+  /** Coloanele de efecte, gata de trimis la Supabase */
+  const effectColumns = () => ({
+    effect_noise: postEffects.effectNoise,
+    effect_grain: postEffects.effectGrain,
+    effect_sepia: postEffects.effectSepia,
+    effect_vignette: postEffects.effectVignette,
+    sepia_intensity: postEffects.sepiaIntensity,
+    vignette_intensity: postEffects.vignetteIntensity,
+    grain_opacity: postEffects.grainOpacity,
+    is_dynamic: isDynamic,
+    modal_background_opacity: modalBgOpacity,
+    modal_effect_noise: modalEffects.effectNoise,
+    modal_effect_grain: modalEffects.effectGrain,
+    modal_effect_sepia: modalEffects.effectSepia,
+    modal_effect_vignette: modalEffects.effectVignette,
+    modal_sepia_intensity: modalEffects.sepiaIntensity,
+    modal_vignette_intensity: modalEffects.vignetteIntensity,
+    modal_grain_opacity: modalEffects.grainOpacity,
+    // Pasul 2308005 (E) — efecte noi
+    effect_bw: Boolean(postEffects.effectBw),
+    effect_bloom: Boolean(postEffects.effectBloom),
+    effect_letterbox: Boolean(postEffects.effectLetterbox),
+    effect_light_leak: Boolean(postEffects.effectLightLeak),
+    modal_effect_bw: Boolean(modalEffects.effectBw),
+    modal_effect_bloom: Boolean(modalEffects.effectBloom),
+    modal_effect_letterbox: Boolean(modalEffects.effectLetterbox),
+    modal_effect_light_leak: Boolean(modalEffects.effectLightLeak),
+    // Pasul 2308006-E — cat de tare se vede fiecare efect
+    noise_intensity: postEffects.noiseIntensity ?? 35,
+    bw_intensity: postEffects.bwIntensity ?? 50,
+    bloom_intensity: postEffects.bloomIntensity ?? 50,
+    letterbox_size: postEffects.letterboxSize ?? 8,
+    light_leak_intensity: postEffects.lightLeakIntensity ?? 50,
+    modal_noise_intensity: modalEffects.noiseIntensity ?? 35,
+    modal_bw_intensity: modalEffects.bwIntensity ?? 50,
+    modal_bloom_intensity: modalEffects.bloomIntensity ?? 50,
+    modal_letterbox_size: modalEffects.letterboxSize ?? 8,
+    modal_light_leak_intensity: modalEffects.lightLeakIntensity ?? 50,
+    // Pasul A15 — opacitate / umbra per blog
+    post_image_opacity: postImageOpacity,
+    post_image_shadow: postImageShadow,
+    background_opacity: backgroundOpacity,
+    background_shadow: backgroundShadow,
+    modal_background_shadow: modalBgShadow,
+    // Pasul A17 — in ce categorii intra acest blog
+    category_ids: postCategoryIds,
+    // Pasul 2308006-F — articol pentru pagina News
+    is_news: isNews,
+    news_pinned_at: isNews ? new Date().toISOString() : null,
+  });
+
+  // Pasul 2108002 — cautare + filtru an/luna pentru articole (separat de reels)
+  //
+  // Pasul A17 — INAINTE de cautare si de filtrul pe an, taiem lista dupa
+  // categoriile bifate. Asa „2026 → august" se aplica deja doar peste
+  // categoria aleasa, exact ca in imaginea trimisa.
+  const postsByCategory = useMemo(
+    () => posts.filter((p) => matchesSelectedCategories(p.category_ids, filterCategoryIds)),
+    [posts, filterCategoryIds],
+  );
+
+  const postsFilter = useAdminListFilter<BlogPost>(
+    postsByCategory,
+    useCallback((p: BlogPost) => `${p.title} ${p.excerpt ?? ''} ${p.slug ?? ''}`, []),
+  );
 
   // Supabase client / Supabase-Client
   const supabase = createClient();
@@ -83,6 +252,10 @@ export default function AdminPage() {
       // Real protection is enforced by RLS in Supabase - this only hides the UI.
       if (isAdminUser(user)) {
         setIsAdmin(true);
+        // Pasul 2308005 (D): cate cereri asteapta aprobarea?
+        // Daca tabelul nu exista inca (SQL nerulat), functia intoarce 0
+        // si nu se strica nimic — bulina pur si simplu nu apare.
+        countPendingRequests().then(setPendingCount);
         // Load posts after admin verification with slight delay to prevent race condition
         setTimeout(() => loadPosts(), 100);
       } else {
@@ -174,7 +347,11 @@ export default function AdminPage() {
         // Modal intro fields
         show_intro_modal: formData.show_intro_modal,
         modal_title: formData.modal_title || null,
-        modal_question: formData.modal_question || null
+        modal_question: formData.modal_question || null,
+        // Pasul 2108002: fragmente marcate manual ca referinte biblice (apar cu rosu)
+        bible_refs: bibleRefs,
+        // Pasul 2208001: efecte de imagine + blog static/dinamic
+        ...effectColumns()
       };
 
       const { error } = await supabase
@@ -236,7 +413,11 @@ export default function AdminPage() {
           // Modal intro fields
           show_intro_modal: formData.show_intro_modal,
           modal_title: formData.modal_title || null,
-          modal_question: formData.modal_question || null
+          modal_question: formData.modal_question || null,
+          // Pasul 2108002: referinte biblice marcate manual
+          bible_refs: bibleRefs,
+          // Pasul 2208001: efecte de imagine + blog static/dinamic
+          ...effectColumns()
         })
         .eq('id', editingPost.id);
 
@@ -300,6 +481,62 @@ export default function AdminPage() {
       modal_title: post.modal_title || '',
       modal_question: post.modal_question || ''
     });
+    // Pasul 2108002: incarcam si referintele marcate manual
+    setBibleRefs(Array.isArray(post.bible_refs) ? post.bible_refs : []);
+    // Pasul 2208001: efectele si tipul (static/dinamic)
+    setIsDynamic(Boolean(post.is_dynamic));
+    setPostEffects({
+      effectNoise: Boolean(post.effect_noise),
+      effectGrain: Boolean(post.effect_grain),
+      effectSepia: Boolean(post.effect_sepia),
+      effectVignette: Boolean(post.effect_vignette),
+      sepiaIntensity: post.sepia_intensity ?? DEFAULT_IMAGE_EFFECTS.sepiaIntensity,
+      vignetteIntensity: post.vignette_intensity ?? DEFAULT_IMAGE_EFFECTS.vignetteIntensity,
+      grainOpacity: post.grain_opacity ?? DEFAULT_IMAGE_EFFECTS.grainOpacity,
+      // Pasul 2308005 (E)
+      effectBw: Boolean(post.effect_bw),
+      effectBloom: Boolean(post.effect_bloom),
+      effectLetterbox: Boolean(post.effect_letterbox),
+      effectLightLeak: Boolean(post.effect_light_leak),
+      // Pasul 2308006-E — intensitatile (implicite daca SQL-ul nu e rulat)
+      noiseIntensity: post.noise_intensity ?? 35,
+      bwIntensity: post.bw_intensity ?? 50,
+      bloomIntensity: post.bloom_intensity ?? 50,
+      letterboxSize: post.letterbox_size ?? 8,
+      lightLeakIntensity: post.light_leak_intensity ?? 50,
+    });
+    setModalEffects({
+      effectNoise: Boolean(post.modal_effect_noise),
+      effectGrain: Boolean(post.modal_effect_grain),
+      effectSepia: Boolean(post.modal_effect_sepia),
+      effectVignette: Boolean(post.modal_effect_vignette),
+      sepiaIntensity: post.modal_sepia_intensity ?? DEFAULT_IMAGE_EFFECTS.sepiaIntensity,
+      vignetteIntensity: post.modal_vignette_intensity ?? DEFAULT_IMAGE_EFFECTS.vignetteIntensity,
+      grainOpacity: post.modal_grain_opacity ?? DEFAULT_IMAGE_EFFECTS.grainOpacity,
+      // Pasul 2308005 (E)
+      effectBw: Boolean(post.modal_effect_bw),
+      effectBloom: Boolean(post.modal_effect_bloom),
+      effectLetterbox: Boolean(post.modal_effect_letterbox),
+      effectLightLeak: Boolean(post.modal_effect_light_leak),
+      // Pasul 2308006-E — intensitatile pentru „Play Blog"
+      noiseIntensity: post.modal_noise_intensity ?? 35,
+      bwIntensity: post.modal_bw_intensity ?? 50,
+      bloomIntensity: post.modal_bloom_intensity ?? 50,
+      letterboxSize: post.modal_letterbox_size ?? 8,
+      lightLeakIntensity: post.modal_light_leak_intensity ?? 50,
+    });
+    setModalBgOpacity(post.modal_background_opacity ?? 35);
+    // Pasul A15 — daca SQL-ul nu a fost inca rulat, coloanele lipsesc si
+    // folosim valorile implicite; nimic nu se strica.
+    setPostImageOpacity(post.post_image_opacity ?? 100);
+    setPostImageShadow(post.post_image_shadow ?? 30);
+    setBackgroundOpacity(post.background_opacity ?? 100);
+    setBackgroundShadow(post.background_shadow ?? 0);
+    setModalBgShadow(post.modal_background_shadow ?? 0);
+    // Pasul 2308006-F
+    setIsNews(Boolean(post.is_news));
+    // Pasul A17
+    setPostCategoryIds(Array.isArray(post.category_ids) ? post.category_ids : []);
     setShowCreateForm(false);
   };
 
@@ -317,6 +554,24 @@ export default function AdminPage() {
       modal_title: '',
       modal_question: ''
     });
+    setBibleRefs([]);
+    // Pasul 2208001
+    setIsDynamic(false);
+    setPostEffects(DEFAULT_IMAGE_EFFECTS);
+    setModalEffects(DEFAULT_IMAGE_EFFECTS);
+    setModalBgOpacity(35);
+    // Pasul A15
+    setPostImageOpacity(100);
+    setPostImageShadow(30);
+    setBackgroundOpacity(100);
+    setBackgroundShadow(0);
+    setModalBgShadow(0);
+    // Pasul A17
+    setPostCategoryIds([]);
+    // Pasul A18
+    setCustomAudioLangs([]);
+    // Pasul 2308006-F
+    setIsNews(false);
   };
 
   // Send newsletter notification for a specific post / Newsletter-Benachrichtigung für einen bestimmten Post senden
@@ -401,6 +656,17 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Admin header / Admin-Kopfbereich */}
         <header className="mb-12">
+          {/* Pasul 2308006-D — alegerea limbii panoului, sus in dreapta.
+              Se salveaza pentru contul tau, deci alt admin poate avea alta
+              limba fara sa va incurcati. */}
+          <div className="mb-4 flex items-center justify-end">
+            <AdminLangSwitcher
+              lang={adminLang}
+              onChange={setAdminLang}
+              label={adminT('lang.label')}
+            />
+          </div>
+
           <h1 className="text-4xl font-bold text-white mb-4 animate-fadeIn">
             Admin Dashboard
           </h1>
@@ -408,26 +674,37 @@ export default function AdminPage() {
             Verwalte deine Blog-Posts und Inhalte
           </p>
           
-          {/* Action buttons / Aktions-Buttons */}
+          {/* Action buttons / Aktions-Buttons
+              Pasul A09 — „Neuen Post erstellen" apare DOAR la Blogs.
+              Inainte statea mereu sus, chiar si cand erai la Reels sau la
+              Setari, desi nu are nicio legatura cu ele. Acum butonul de
+              creare urmeaza rubrica in care te afli:
+                Creare → Blogs : „Neuen Post erstellen"
+                Creare → Reels : butonul de creare este in panoul de reels
+                Setari         : niciun buton de creare */}
           <div className="flex flex-wrap gap-4 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
-            <button
-              onClick={() => {
-                setShowCreateForm(true);
-                setEditingPost(null);
-                resetForm();
-              }}
-              className="btn-primary flex items-center gap-2"
-            >
-              <FaPlus />
-              <span>Neuen Post erstellen</span>
-            </button>
-            
-            {/* Analytics Dashboard Link / Analytics-Dashboard-Link */}
+            {mainTab === 'create' && subTab === 'blogs' && (
+              <button
+                onClick={() => {
+                  setShowCreateForm(true);
+                  setEditingPost(null);
+                  resetForm();
+                }}
+                className="btn-primary flex items-center gap-2"
+              >
+                <IconPlus className="h-4 w-4" />
+                <span>Neuen Post erstellen</span>
+              </button>
+            )}
+
+            {/* Analytics Dashboard Link / Analytics-Dashboard-Link
+                Pasul A09 — fara degradeul albastru-mov. Stil RADIKAL:
+                contur discret, alb pe negru. */}
             <Link
               href="/admin/analytics"
-              className="btn-secondary flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-6 py-3 rounded-lg transition-all duration-300"
+              className="flex items-center gap-2 rounded-lg border border-white/20 px-6 py-3 text-white/80 transition-colors duration-300 hover:border-white/40 hover:bg-white/10 hover:text-white"
             >
-              <FaChartLine />
+              <IconChart className="h-4 w-4" />
               <span>Analytics Dashboard</span>
             </Link>
           </div>
@@ -502,6 +779,31 @@ export default function AdminPage() {
                   rows={12}
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Vollständiger Inhalt des Blog-Posts"
+                />
+              </div>
+
+              {/* Pasul 2108002: marcarea manuală a referințelor biblice */}
+              <BibleRefPicker
+                content={formData.content}
+                value={bibleRefs}
+                onChange={setBibleRefs}
+              />
+
+              {/* Pasul A17 — in ce categorii intra acest blog.
+                  Poti bifa mai multe deodata (familie + căsnicie). */}
+              <div className="rounded-lg border border-white/15 bg-white/5 p-4 [&_*]:text-white">
+                <label className="mb-1 block text-sm font-medium text-white/80">
+                  Categorii
+                </label>
+                <p className="mb-3 text-xs text-white/50">
+                  Ajută cititorii să găsească articolul. Poți alege mai multe.
+                </p>
+                <CategoryPicker
+                  categories={allCategories}
+                  value={postCategoryIds}
+                  onChange={setPostCategoryIds}
+                  lang="ro"
+                  placeholder="Caută o categorie…"
                 />
               </div>
 
@@ -592,6 +894,170 @@ export default function AdminPage() {
                 )}
               </div>
 
+              {/* ===== Pasul 2208001 — STATIC sau DINAMIC + efecte de imagine ===== */}
+              <div className="border-t border-white/20 pt-6 mt-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <span>🎞️</span> Blog-Typ &amp; Bildeffekte
+                </h3>
+
+                <div className="grid sm:grid-cols-2 gap-3 mb-5">
+                  <button
+                    type="button"
+                    onClick={() => setIsDynamic(false)}
+                    className={`rounded-lg border px-4 py-3 text-left transition-colors ${
+                      !isDynamic
+                        ? 'border-blue-400 bg-blue-500/20 text-white'
+                        : 'border-white/20 bg-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="block font-semibold">Statisch</span>
+                    <span className="block text-xs opacity-70">Genau wie bisher.</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsDynamic(true)}
+                    className={`rounded-lg border px-4 py-3 text-left transition-colors ${
+                      isDynamic
+                        ? 'border-purple-400 bg-purple-500/20 text-white'
+                        : 'border-white/20 bg-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="block font-semibold">Dynamisch</span>
+                    <span className="block text-xs opacity-70">
+                      Zusätzlich der „Play Blog&ldquo;-Button auf dem Bild.
+                    </span>
+                  </button>
+                </div>
+
+                {/* Efectele IMAGINII articolului */}
+                <div className="[&_*]:text-white">
+                  <ImageEffectsEditor
+                    title="Effekte für das Beitragsbild"
+                    hint="Noise und Grain sind getrennt — du kannst eines oder beide wählen."
+                    imageUrl={formData.image_url}
+                    value={postEffects}
+                    onChange={setPostEffects}
+                    previewAspect="16/9"
+                  />
+                </div>
+
+                {/* Efectele MODALULUI „Play Blog" — doar pentru bloguri dinamice */}
+                {isDynamic && (
+                  <div className="mt-4 [&_*]:text-white">
+                    <ImageEffectsEditor
+                      title={'Effekte NUR für das „Play Blog"-Modal'}
+                      hint="Getrennte Einstellungen — das Modal darf ganz anders aussehen als das Beitragsbild."
+                      imageUrl={formData.image_url}
+                      value={modalEffects}
+                      onChange={setModalEffects}
+                      backgroundOpacity={modalBgOpacity}
+                      onBackgroundOpacityChange={setModalBgOpacity}
+                      previewAspect="9/16"
+                    />
+                  </div>
+                )}
+
+                {/* ------------------------------------------------------------
+                    Pasul A15 — opacitate si umbra, reglabile la ACEST blog.
+                    Sunt lucruri separate de „efecte": aici alegi doar cat de
+                    tare se vede imaginea si cat de puternica ii este umbra.
+                    ------------------------------------------------------------ */}
+                <div className="mt-4 rounded-lg border border-white/15 bg-white/5 p-4">
+                  <h4 className="mb-1 text-sm font-semibold text-white">
+                    Transparenz &amp; Schatten (nur für diesen Beitrag)
+                  </h4>
+                  <p className="mb-4 text-xs text-white/60">
+                    Gilt nur für diesen Blog — jeder Beitrag darf anders aussehen.
+                  </p>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {([
+                      ['Beitragsbild — Deckkraft', postImageOpacity, setPostImageOpacity, '%'],
+                      ['Beitragsbild — Schatten', postImageShadow, setPostImageShadow, '%'],
+                      ['Hintergrundbild — Deckkraft', backgroundOpacity, setBackgroundOpacity, '%'],
+                      ['Hintergrundbild — Schatten', backgroundShadow, setBackgroundShadow, '%'],
+                    ] as const).map(([label, value, setter, unit]) => (
+                      <label key={label} className="block">
+                        <span className="mb-1 flex items-center justify-between text-xs text-white/80">
+                          {label}
+                          <span className="tabular-nums text-white/60">{value}{unit}</span>
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={value}
+                          onChange={(e) => setter(Number(e.target.value))}
+                          className="w-full cursor-pointer accent-white"
+                        />
+                      </label>
+                    ))}
+
+                    {isDynamic && (
+                      <label className="block">
+                        <span className="mb-1 flex items-center justify-between text-xs text-white/80">
+                          {'„Play Blog" — Schatten'}
+                          <span className="tabular-nums text-white/60">{modalBgShadow}%</span>
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={modalBgShadow}
+                          onChange={(e) => setModalBgShadow(Number(e.target.value))}
+                          className="w-full cursor-pointer accent-white"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pasul 2208002 (punctul 3) — audio generat O SINGURA DATA.
+                    Apare doar la blogurile dinamice si doar dupa ce articolul
+                    a fost salvat (are un `slug`). */}
+                {isDynamic && editingPost?.slug && (
+                  <BlogAudioGenerator
+                    slug={editingPost.slug}
+                    title={formData.title}
+                    text={formData.content}
+                    language="ro"
+                    createdAt={editingPost?.created_at ?? null}
+                    // Pasul A18 — limbile in care ai incarcat vocea ta
+                    customAudioLangs={customAudioLangs}
+                  />
+                )}
+
+                {isDynamic && !editingPost?.slug && (
+                  <p className="mt-4 rounded-lg border border-white/15 bg-white/5 p-3 text-xs text-white/60">
+                    🎧 Salvează întâi articolul. După aceea apare butonul
+                    „Generează audio&ldquo;, care creează vocea <strong>o singură dată</strong>,
+                    ca cititorii să nu producă niciun cost.
+                  </p>
+                )}
+
+                {/* Pasul A18 — inregistrarile TALE, pe limbi.
+                    In limbile in care incarci un fisier, TTS-ul nu se mai
+                    genereaza deloc; in restul, ramane ca pana acum. */}
+                {isDynamic && editingPost?.id && (
+                  <div className="mt-4 [&_*]:text-white">
+                    <CustomAudioManager
+                      blogId={editingPost.id}
+                      onLangsChange={setCustomAudioLangs}
+                    />
+                  </div>
+                )}
+
+                {/* Pasul 2208002 (punctul 10) — previzualizarea intregului articol */}
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(true)}
+                  className="mt-4 w-full rounded-lg border border-white/25 px-4 py-2.5 text-sm text-white/85 transition-colors hover:bg-white/10"
+                >
+                  👁️ Previzualizează articolul întreg
+                </button>
+              </div>
+
               {/* Publish checkbox / Veröffentlichen-Checkbox */}
               <div className="flex items-center gap-3">
                 <input
@@ -605,6 +1071,33 @@ export default function AdminPage() {
                 <label htmlFor="published" className="text-white/80">
                   Post veröffentlichen
                 </label>
+              </div>
+
+              {/* -----------------------------------------------------------
+                  Pasul 2308006-F — „Acest articol este pentru pagina News".
+                  Asa nu mai incarci video-uri sau fisiere audio separate
+                  (care ar costa spatiu si ar avea limita de marime):
+                  folosesti articolul, cu tot ce stie el deja — poze, audio,
+                  „Play Blog".
+                  ----------------------------------------------------------- */}
+              <div className="rounded-lg border border-white/10 p-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="isNews"
+                    checked={isNews}
+                    onChange={(e) => setIsNews(e.target.checked)}
+                    className="w-5 h-5 rounded border-white/20 bg-white/10"
+                  />
+                  <label htmlFor="isNews" className="text-white/80">
+                    Articol pentru pagina „News&ldquo;
+                  </label>
+                </div>
+                <p className="mt-2 text-xs text-white/40">
+                  Apare pe pagina News doar dacă este și <strong>publicat</strong>,
+                  iar rubrica News este pornită din Setări → News.
+                  Dacă rămâne ciornă, nu îl vede nimeni.
+                </p>
               </div>
 
               {/* Form actions / Formular-Aktionen */}
@@ -632,12 +1125,187 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Reels admin panel / Panou de administrare Reels */}
-        <section className="animate-fadeIn mb-12" style={{ animationDelay: '0.5s' }}>
-          <ReelsAdmin />
-        </section>
+        {/* =================================================================
+            Pasul 2308004 (C) — RUBRICI
+            Inainte totul era o gramada, unul sub altul. Acum exista doua
+            rubrici mari, fiecare cu sub-rubrici. Continutul NU a fost
+            modificat, doar grupat — deci nimic nu se poate strica.
+            ================================================================= */}
+        <nav className="mb-8 flex flex-wrap gap-2 border-b border-white/10 pb-3">
+          {([
+            { id: 'create', label: 'Creare' },
+            { id: 'settings', label: 'Setări' },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setMainTab(t.id);
+                // Fiecare rubrica isi deschide prima sub-rubrica
+                setSubTab(t.id === 'create' ? 'blogs' : 'working');
+              }}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                mainTab === t.id
+                  ? 'bg-white text-black'
+                  : 'text-white/60 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              {t.label}
+              {/* Pasul 2308005 (D): vezi din prima ca ai ceva de aprobat */}
+              {t.id === 'settings' && pendingCount > 0 && (
+                <span className="ml-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* ---------- Sub-rubrici ----------
+            Pasul A04 — ORDONARE.
+            Inainte sub-rubricile erau puse la gramada, fara nicio logica.
+            Acum sunt grupate si au fiecare o pictograma, iar grupurile sunt
+            despartite vizual. Ordinea urmeaza fluxul real de lucru:
+              Creare : intai continutul lung (Blogs), apoi cel scurt (Reels)
+              Setari : intai site-ul, apoi ce vede cititorul (Modals),
+                       apoi oamenii (Utilizatori) si la final ce te asteapta
+                       pe tine (Notificari). */}
+        <div className="mb-8 flex flex-wrap items-center gap-1">
+          {(mainTab === 'create'
+            ? ([
+                // Pasul 2308006-D — etichetele urmeaza limba aleasa de tine sus
+                { id: 'blogs', label: adminT('tabs.blogs'), Icon: IconDocument, group: 'Conținut' },
+                { id: 'reels', label: adminT('tabs.reels'), Icon: IconFilm, group: 'Conținut' },
+              ] as const)
+            : ([
+                { id: 'working', label: 'Site în lucru', Icon: IconWrench, group: 'Site' },
+                { id: 'modals', label: 'Modals', Icon: IconWindow, group: 'Site' },
+                // Pasul A16 — noutati despre RADIKAL, invitatii, anunturi, reclame
+                { id: 'news', label: adminT('tabs.news'), Icon: IconMegaphone, group: 'Site' },
+                // Pasul A17 — categoriile blogurilor
+                { id: 'categories', label: adminT('tabs.categories'), Icon: IconTag, group: 'Site' },
+                { id: 'users', label: adminT('tabs.users'), Icon: IconUsers, group: 'Oameni' },
+                { id: 'requests', label: 'Notificări', Icon: IconBell, group: 'Oameni' },
+              ] as const)
+          ).map((t, i, arr) => (
+            <React.Fragment key={t.id}>
+              {/* Linie subtire de despartire intre grupuri */}
+              {i > 0 && arr[i - 1].group !== t.group && (
+                <span
+                  aria-hidden="true"
+                  className="mx-2 h-4 w-px shrink-0 bg-white/15"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setSubTab(t.id)}
+                title={t.group}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors ${
+                  subTab === t.id
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/50 hover:bg-white/10'
+                }`}
+              >
+                {/* Pasul A08 — pictograme SVG monocrome, nu emoji colorate */}
+                <t.Icon className="h-3.5 w-3.5" />
+                {t.label}
+                {/* Bulina rosie: cate cereri asteapta */}
+                {t.id === 'requests' && pendingCount > 0 && (
+                  <span className="ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* ---------- SETĂRI → Site în lucru ---------- */}
+        {mainTab === 'settings' && subTab === 'working' && (
+          <section className="glass-effect animate-fadeIn mb-12 rounded-2xl p-6">
+            <h2 className="mb-1 text-xl font-bold text-white">Site în lucru</h2>
+            <p className="mb-5 text-xs text-white/50">
+              Îngheață site-ul pentru vizitatori cât timp lucrezi la el.
+            </p>
+            <MaintenanceAdmin />
+          </section>
+        )}
+
+        {/* ---------- SETĂRI → Modals ---------- */}
+        {mainTab === 'settings' && subTab === 'modals' && (
+          <section className="animate-fadeIn mb-12 space-y-8">
+            <div className="glass-effect rounded-2xl p-6">
+              <h2 className="mb-1 text-xl font-bold text-white">Text sub logo (intrare)</h2>
+              <p className="mb-5 text-xs text-white/50">
+                Textul care apare sub logo-ul RADIKAL, înainte de modalul cu versetul.
+              </p>
+              <IntroTextAdmin />
+            </div>
+
+            <StoryContentAdmin />
+          </section>
+        )}
+
+        {/* ---------- SETĂRI → News (pasul A16) ---------- */}
+        {mainTab === 'settings' && subTab === 'news' && (
+          <section className="animate-fadeIn mb-12">
+            <div className="glass-effect rounded-2xl p-6">
+              <h2 className="mb-1 text-xl font-bold text-white">News</h2>
+              <p className="mb-5 text-xs text-white/50">
+                Tot ce e nou: noutăți despre RADIKAL, invitații, anunțuri, reclame, poze.
+                Fiecare știre poate avea text în toate cele 4 limbi.
+              </p>
+              <NewsAdmin />
+            </div>
+          </section>
+        )}
+
+        {/* ---------- SETĂRI → Categorii (pasul A17) ---------- */}
+        {mainTab === 'settings' && subTab === 'categories' && (
+          <section className="animate-fadeIn mb-12">
+            <div className="glass-effect rounded-2xl p-6">
+              <h2 className="mb-1 text-xl font-bold text-white">Categorii</h2>
+              <p className="mb-5 text-xs text-white/50">
+                Familie, prietenie, credință, frică, păcat, iubire, închinare… și oricâte
+                altele vrei. Fiecare categorie are nume în toate cele 4 limbi, ca fiecare
+                cititor să o vadă în limba lui.
+              </p>
+              <CategoriesAdmin />
+            </div>
+          </section>
+        )}
+
+        {/* ---------- SETĂRI → Utilizatori și drepturi ---------- */}
+        {mainTab === 'settings' && subTab === 'users' && (
+          <section className="glass-effect animate-fadeIn mb-12 rounded-2xl p-6">
+            <h2 className="mb-1 text-xl font-bold text-white">Utilizatori și drepturi</h2>
+            <p className="mb-5 text-xs text-white/50">
+              Cine mai poate lucra la RADIKAL și exact ce poate face.
+            </p>
+            <AdminUsersPanel />
+          </section>
+        )}
+
+        {/* ---------- SETĂRI → Notificări ---------- */}
+        {mainTab === 'settings' && subTab === 'requests' && (
+          <section className="glass-effect animate-fadeIn mb-12 rounded-2xl p-6">
+            <h2 className="mb-1 text-xl font-bold text-white">Notificări</h2>
+            <p className="mb-5 text-xs text-white/50">
+              Ce au propus sub-adminii. Nimic nu ajunge public până nu aprobi tu.
+            </p>
+            <AdminRequestsPanel />
+          </section>
+        )}
+
+        {/* ---------- CREARE → Reels ---------- */}
+        {mainTab === 'create' && subTab === 'reels' && (
+          <section className="animate-fadeIn mb-12">
+            <ReelsAdmin />
+          </section>
+        )}
 
         {/* Posts list / Posts-Liste */}
+        {mainTab === 'create' && subTab === 'blogs' && (
         <section className="animate-fadeIn" style={{ animationDelay: '0.6s' }}>
           <h2 className="text-2xl font-bold text-white mb-8">
             Alle Blog-Posts ({posts.length})
@@ -655,7 +1323,43 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {posts.map((post) => (
+              {/* Pasul A17 — alegi INTAI categoria, apoi anul si luna.
+                  Se pot bifa mai multe categorii deodata. */}
+              <div className="rounded-xl border border-white/15 bg-white/5 p-4 [&_*]:text-white">
+                <p className="mb-2 text-xs font-medium text-white/70">
+                  Filtrează după categorie
+                </p>
+                <CategoryPicker
+                  categories={allCategories}
+                  value={filterCategoryIds}
+                  onChange={setFilterCategoryIds}
+                  lang="ro"
+                  placeholder="Caută o categorie…"
+                />
+              </div>
+
+              {/* Pasul 2108002: căutare + filtru an/lună, separat de cel al reels-urilor */}
+              <AdminListFilterBar
+                placeholder="Caută în articole…"
+                search={postsFilter.search}
+                setSearch={postsFilter.setSearch}
+                year={postsFilter.year}
+                setYear={postsFilter.setYear}
+                month={postsFilter.month}
+                setMonth={postsFilter.setMonth}
+                years={postsFilter.years}
+                monthNames={postsFilter.monthNames}
+                totalCount={posts.length}
+                filteredCount={postsFilter.filtered.length}
+                isFiltering={postsFilter.isFiltering}
+                onReset={postsFilter.reset}
+              />
+
+              {postsFilter.visible.length === 0 && (
+                <p className="text-white/60 text-sm">Niciun articol nu corespunde căutării.</p>
+              )}
+
+              {postsFilter.visible.map((post) => (
                 <div key={post.id} className="glass-effect rounded-xl p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     {/* Post info / Post-Info */}
@@ -685,48 +1389,86 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    {/* Action buttons / Aktions-Buttons */}
+                    {/* Action buttons / Aktions-Buttons
+                        Pasul 2308006-B: pictograme monocrome, in stil RADIKAL.
+                        Culoarea vine din text, deci se potrivesc pe orice fundal. */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => window.open(`/blogs/${post.slug}`, '_blank')}
-                        className="p-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors duration-200"
+                        className="p-2 rounded-lg border border-white/15 text-white/60 transition-colors duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white"
                         title="Ansehen"
                       >
-                        <FaEye />
+                        <IconEye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => startEditing(post)}
-                        className="p-2 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 rounded-lg transition-colors duration-200"
+                        className="p-2 rounded-lg border border-white/15 text-white/60 transition-colors duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white"
                         title="Bearbeiten"
                       >
-                        <FaEdit />
+                        <IconPencil className="w-4 h-4" />
                       </button>
                       {/* Newsletter button - only for published posts / Newsletter-Button - nur für veröffentlichte Posts */}
                       {post.published && (
                         <button
                           onClick={() => sendNewsletterNotification(post)}
                           disabled={sendingNewsletter}
-                          className="p-2 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 rounded-lg border border-white/15 text-white/60 transition-colors duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Newsletter an Abonnenten senden"
                         >
-                          {sendingNewsletter ? <FaSpinner className="animate-spin" /> : <FaBell />}
+                          {sendingNewsletter
+                            ? <IconSpinner className="w-4 h-4 animate-spin" />
+                            : <IconSend className="w-4 h-4" />}
                         </button>
                       )}
                       <button
                         onClick={() => deletePost(post.id)}
-                        className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors duration-200"
+                        className="p-2 rounded-lg border border-red-400/25 text-red-400/70 transition-colors duration-200 hover:border-red-400/60 hover:bg-red-500/10 hover:text-red-300"
                         title="Löschen"
                       >
-                        <FaTrash />
+                        <IconTrash className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </div>
               ))}
+
+              {postsFilter.hiddenCount > 0 && !postsFilter.showAll && (
+                <button
+                  type="button"
+                  onClick={() => postsFilter.setShowAll(true)}
+                  className="w-full rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10"
+                >
+                  Arată toate ({postsFilter.hiddenCount} ascunse)
+                </button>
+              )}
+
+              {postsFilter.showAll && !postsFilter.isFiltering && (
+                <button
+                  type="button"
+                  onClick={() => postsFilter.setShowAll(false)}
+                  className="w-full rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10"
+                >
+                  Arată doar ultimele 5
+                </button>
+              )}
             </div>
           )}
         </section>
+        )}
       </div>
+
+      {/* Pasul 2208002 (punctul 10) — previzualizarea articolului intreg */}
+      <BlogPreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        title={formData.title}
+        excerpt={formData.excerpt}
+        content={formData.content}
+        imageUrl={formData.image_url}
+        tags={formData.tags.split(',').map((t) => t.trim()).filter(Boolean)}
+        effects={postEffects}
+        isDynamic={isDynamic}
+      />
     </div>
   );
 }

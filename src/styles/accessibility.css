@@ -232,21 +232,28 @@ select:focus-visible {
 }
 
 /* Live region styling */
-[role="alert"] {
+/* Pasul 2108002 — IMPORTANT:
+   Aceste reguli erau GLOBALE si stricau componentele reale:
+     - `[role="status"]` punea o bara verde la stanga  -> "linia verde" din About
+     - `[role="dialog"]` forta position:fixed + display:flex pe RAND
+       -> asezarea distrusa a modalului de cautare
+   Acum se aplica DOAR daca adaugi explicit `data-a11y-style` pe element,
+   deci nu mai afecteaza niciun modal existent. */
+[role="alert"][data-a11y-style] {
   padding: 1rem;
   border-left: 4px solid #ef4444;
   background-color: rgba(239, 68, 68, 0.1);
   margin: 1rem 0;
 }
 
-[role="status"] {
+[role="status"][data-a11y-style] {
   padding: 0.5rem 1rem;
   border-left: 4px solid #22c55e;
   background-color: rgba(34, 197, 94, 0.1);
 }
 
 /* Dialog/Modal accessibility */
-[role="dialog"] {
+[role="dialog"][data-a11y-style] {
   position: fixed;
   inset: 0;
   display: flex;
@@ -255,13 +262,13 @@ select:focus-visible {
   z-index: 1000;
 }
 
-[role="dialog"] .dialog-backdrop {
+[role="dialog"][data-a11y-style] .dialog-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
 }
 
-[role="dialog"] .dialog-content {
+[role="dialog"][data-a11y-style] .dialog-content {
   position: relative;
   z-index: 1;
   max-width: 90vw;

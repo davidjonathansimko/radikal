@@ -109,4 +109,23 @@ jest.setup.js
 # LOCAL ONLY - personal guides, never push to GitHub
 GHID_*.md
 _local/
+
+# Fisiere generate cand rulezi build sau teste (nu au ce cauta pe GitHub)
 build_out.txt
+build_log.txt
+jest-out.txt
+*-out.txt
+*.log
+
+# Note personale in romana (doar local, nu pe GitHub)
+schimbari.md
+INDEX_FISIERE.md
+INDEX_*.md
+NOTITE_*.md
+
+# Fisiere temporare de sistem / editor
+*.tmp
+*.bak
+*.orig
+*.rej
+.history/

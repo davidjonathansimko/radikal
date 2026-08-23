@@ -222,6 +222,19 @@ export function ReadingModeOverlay() {
   // State for blog content / Zustand für Blog-Inhalt / Stare pentru conținut blog
   const [blogTitle, setBlogTitle] = React.useState('');
   const [blogContent, setBlogContent] = React.useState('');
+
+  // ------------------------------------------------------------------
+  // Pasul A14 — trimiterile biblice trebuie sa fie ROSII si in modul Focus.
+  //
+  // De ce nu erau: aici luam doar `textContent` din articol, adica textul
+  // GOL, fara `<span class="bible-ref">`. Culoarea se pierdea pe drum.
+  //
+  // Solutia: pe langa text, culegem si LISTA trimiterilor exact asa cum
+  // le-a marcat pagina de articol (`.bible-ref`). Asa prindem si cartile
+  // standard, si trimiterile adaugate manual de admin — fara sa dublam
+  // logica de recunoastere.
+  // ------------------------------------------------------------------
+  const [detectedRefs, setDetectedRefs] = React.useState<string[]>([]);
   
   // Extract blog content when reading mode is activated
   React.useEffect(() => {
@@ -235,6 +248,14 @@ export function ReadingModeOverlay() {
       // Get blog content from the prose container - preserve paragraph structure
       const contentElement = document.querySelector('#blog-content .prose > div');
       if (contentElement) {
+        // Pasul A14 — culegem trimiterile biblice deja marcate in articol
+        const refs = new Set<string>();
+        contentElement.querySelectorAll('.bible-ref').forEach((el) => {
+          const t = (el as HTMLElement).textContent?.trim();
+          if (t) refs.add(t);
+        });
+        setDetectedRefs([...refs]);
+
         // Extract text from each paragraph element to preserve structure
         const paragraphs: string[] = [];
         const pElements = contentElement.querySelectorAll('p');
@@ -261,6 +282,31 @@ export function ReadingModeOverlay() {
       }
     }
   }, [isReadingMode]);
+
+  // ------------------------------------------------------------------
+  // Pasul A14 — coloreaza trimiterile biblice dintr-un paragraf.
+  // Foloseste aceeasi clasa `.bible-ref` ca pagina de articol, deci
+  // culoarea rosie vine din `globals.css` si ramane peste tot la fel.
+  // ------------------------------------------------------------------
+  const highlightRefs = React.useCallback(
+    (text: string): React.ReactNode => {
+      if (detectedRefs.length === 0) return text;
+
+      // Cele mai lungi primele, ca „1 Corinteni 13:4" sa nu fie taiat de „1 Corinteni"
+      const sorted = [...detectedRefs].sort((a, b) => b.length - a.length);
+      const escaped = sorted.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const re = new RegExp(`(${escaped.join('|')})`, 'g');
+
+      return text.split(re).map((part, i) =>
+        detectedRefs.includes(part) ? (
+          <span key={i} className="bible-ref">{part}</span>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        ),
+      );
+    },
+    [detectedRefs],
+  );
 
   if (!isReadingMode) return null;
 
@@ -350,7 +396,8 @@ export function ReadingModeOverlay() {
                       <span className="reading-drop-cap">{dropCapText}</span>
                       {remainingText.split(/\n\n+/).map((paragraph, index) => (
                         <p key={index} style={{ fontSize: pFontSize, lineHeight: '2', marginBottom: '1.5em', textIndent: index > 0 ? '0' : 'inherit' }}>
-                          {paragraph.trim()}
+                          {/* Pasul A14 — trimiterile biblice apar cu rosu si aici */}
+                          {highlightRefs(paragraph.trim())}
                         </p>
                       ))}
                     </>

@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { BackToTopIcon, scrollElementToTop } from '@/components/BackToTopShared';
 
 interface ReadingProgressProps {
   // Target element ID to track scroll progress / Ziel-Element-ID zur Verfolgung des Scroll-Fortschritts
@@ -163,7 +164,9 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   }, []);
   
   // Adjust size for mobile
-  const actualSize = isMobile ? 40 : size;
+  // Pasul 2208001: pe mobil butonul era 40px — prea mic pentru deget.
+  // +25% -> 50px (desktop ramane la `size`).
+  const actualSize = isMobile ? 50 : size;
 
   // Keep circular progress above footer — never descend below it
   useEffect(() => {
@@ -184,8 +187,17 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
       const footerVisibleHeight = windowHeight - footerRect.top;
 
       if (footerVisibleHeight > 0) {
-        // Footer is partially/fully visible — keep button above it
-        setBottomOffset(footerVisibleHeight + margin);
+        // Footer is partially/fully visible — keep button above it.
+        //
+        // Pasul 2308006-A — REPARATIE MOBIL:
+        // pe telefon footer-ul este foarte inalt (coloanele se aseaza una sub
+        // alta). Cand ajungeai jos in articol, `footerVisibleHeight` devenea
+        // mai mare decat inaltimea ecranului, iar butonul era impins DEASUPRA
+        // ecranului — de aceea sageata nu se mai vedea deloc pe mobil, desi
+        // pe desktop aparea. Acum limitam cat de sus poate urca butonul, ca sa
+        // ramana mereu vizibil.
+        const maxBottom = Math.max(defaultBottom, windowHeight - btnH - 3 * margin);
+        setBottomOffset(Math.min(footerVisibleHeight + margin, maxBottom));
       } else {
         // Footer not visible yet — stay at default
         setBottomOffset(defaultBottom);
@@ -246,8 +258,9 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   const offset = circumference - (progress / 100) * circumference;
 
   // Scroll to top handler / Scroll nach oben Handler
+  // Pasul 2208002 (punctul 16): aceeasi comanda ca la `BackToTopButton`.
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollElementToTop(null);
   };
 
   if (!showInCorner) {
@@ -320,16 +333,14 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
           />
         </svg>
         
-        {/* Arrow up icon - black in light mode, white in dark mode / Pfeil nach oben Icon */}
+        {/* Pasul 2208002 (punctul 16): iconul si comanda de derulare vin acum
+            din `BackToTopShared`, deci sunt EXACT aceleasi ca la butonul
+            „înapoi sus" de pe paginile simple. Un singur loc de modificat. */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <svg 
-            className="w-4 h-4 md:w-5 md:h-5 text-black dark:text-white group-hover:scale-110 transition-transform"
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
+          <BackToTopIcon
+            size={22}
+            className="text-black dark:text-white animate-heartbeat group-hover:scale-110 transition-transform"
+          />
         </div>
       </div>
     </button>

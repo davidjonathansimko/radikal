@@ -12,6 +12,8 @@ import Image from 'next/image';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { createClient } from '@/lib/supabase';
+// Pasul 2208001 — vizitatorul ramane vizitator pana apasa butonul din hamburger
+import { isGuestMode } from '@/hooks/useGuestMode';
 
 // Dynamic import for WelcomeModal (includes GSAP, loaded only when needed)
 const WelcomeModal = dynamic(() => import('@/components/WelcomeModal'), { ssr: false });
@@ -97,6 +99,21 @@ export default function HomePage() {
             setShowSplash(true);
             sessionStorage.setItem('radikalSplashShown', 'true');
           }
+        } else if (isGuestMode()) {
+          // Pasul 2208001 — VIZITATOR ACTIV.
+          // Pana acum, orice „Zurück zur Startseite" din aplicatie il arunca
+          // inapoi la ecranul de alegere (logo + Anmelden + Continue as guest),
+          // pentru ca aici se afisa MEREU WelcomeModal cand nu exista sesiune.
+          // Acum vizitatorul vede pagina principala normala, ca un utilizator
+          // logat. SINGURUL loc care il scoate din modul vizitator ramane
+          // butonul din meniul hamburger (acela apeleaza `clearGuestMode()`).
+          const savedLanguage =
+            localStorage.getItem('radikalSelectedLanguage') ||
+            sessionStorage.getItem('radikalGuestLanguage');
+          if (savedLanguage) {
+            setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
+          }
+          setShowModal(false);
         } else {
           // User is NOT logged in — ALWAYS show WelcomeModal (registration required)
           // Benutzer ist NICHT eingeloggt — IMMER WelcomeModal anzeigen (Registrierung erforderlich)
@@ -122,12 +139,16 @@ export default function HomePage() {
               setLanguage('de');
             }
             setShowModal(false);
+          } else if (isGuestMode()) {
+            // Pasul 2208001 — si aici vizitatorul ramane vizitator
+            setShowModal(false);
           } else {
             setShowModal(true);
           }
         } catch {
           // Both getSession and getUser failed — show modal
-          setShowModal(true);
+          // Pasul 2208001: dar NU aruncam afara un vizitator activ
+          setShowModal(!isGuestMode());
         }
       } finally {
         if (!cancelled) {
@@ -151,6 +172,9 @@ export default function HomePage() {
         if (savedLanguage) {
           // User was previously logged in — let them through (session will refresh)
           setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
+          setShowModal(false);
+        } else if (isGuestMode()) {
+          // Pasul 2208001 — vizitatorul activ nu trebuie trimis la ecranul de start
           setShowModal(false);
         } else {
           // No evidence of prior login — show modal

@@ -38,6 +38,31 @@ export function clearGuestMode(): void {
   }
 }
 
+// ---------------------------------------------------------------------
+// Pasul 2208001: IDENTITATE ANONIMA pentru like-uri
+// ---------------------------------------------------------------------
+// Vizitatorul nu are cont, deci nu are `auth.uid()`. Ii dam un id aleator
+// care traieste in localStorage, ca sa-si recunoasca propriile like-uri
+// chiar si dupa ce inchide sesiunea. Nu contine NIMIC personal.
+export const GUEST_ID_KEY = 'radikalGuestId';
+
+export function getGuestId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    let id = localStorage.getItem(GUEST_ID_KEY);
+    if (!id) {
+      id =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `g-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+      localStorage.setItem(GUEST_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return null;
+  }
+}
+
 export function useGuestMode() {
   // Pornim mereu cu `false` ca sa nu existe hydration mismatch intre
   // server si client. Valoarea reala se seteaza imediat dupa montare.

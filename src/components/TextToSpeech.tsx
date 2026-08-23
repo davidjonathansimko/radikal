@@ -16,6 +16,9 @@ interface TextToSpeechProps {
   lang?: string;
   className?: string;
   compact?: boolean;
+  /** Pasul 21082026 — optionale: ajuta la identificarea audio-ului in Supabase */
+  blogSlug?: string;
+  blogTitle?: string;
 }
 
 interface VoiceOption {
@@ -260,6 +263,8 @@ export default function TextToSpeech({
   lang,
   className = '',
   compact = false,
+  blogSlug,
+  blogTitle,
 }: TextToSpeechProps) {
   const { language } = useLanguage();
   const t = translations[language as keyof typeof translations] || translations.de;
@@ -273,6 +278,8 @@ export default function TextToSpeech({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+  // Pasul 2208001: viteza implicita revine la 0.9x — 1x suna prea rapid.
+  // Default speed back to 0.9x (1x sounded too fast). Changeable by the user.
   const [rate, setRate] = useState(0.9);
   const [voices, setVoices] = useState<VoiceOption[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
@@ -889,6 +896,9 @@ export default function TextToSpeech({
           language: voiceLanguage,
           speakingRate: rate,
           voiceGender: googleVoiceGender,
+          // Pasul 21082026 — identificarea articolului in tabelul tts_cache
+          blogSlug,
+          blogTitle,
         }),
       });
 

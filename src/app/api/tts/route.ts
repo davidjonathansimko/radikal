@@ -65,7 +65,15 @@ async function getFromSupabaseCache(cacheKey: string): Promise<string | null> {
   }
 }
 
-async function saveToSupabaseCache(cacheKey: string, audioContent: string, language: string, voiceGender: string): Promise<void> {
+async function saveToSupabaseCache(
+  cacheKey: string,
+  audioContent: string,
+  language: string,
+  voiceGender: string,
+  // Pasul 21082026 — ca sa se vada in Supabase carui articol ii apartine audio-ul
+  blogSlug?: string | null,
+  blogTitle?: string | null,
+): Promise<void> {
   if (!supabase) return;
   try {
     await supabase
@@ -75,6 +83,8 @@ async function saveToSupabaseCache(cacheKey: string, audioContent: string, langu
         audio_content: audioContent,
         language,
         voice_gender: voiceGender,
+        blog_slug: blogSlug || null,
+        blog_title: blogTitle || null,
         created_at: new Date().toISOString(),
       }, { onConflict: 'cache_key' });
   } catch {
@@ -231,7 +241,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { text, language = 'de', speakingRate = 0.9 } = body;
+    const { text, language = 'de', speakingRate = 0.9, blogSlug = null, blogTitle = null } = body;
     const voiceGender = 'male'; // Always use male voice
 
     if (!text || typeof text !== 'string') {
@@ -378,7 +388,7 @@ export async function POST(request: NextRequest) {
     // Layer 1: Memory cache
     setMemoryCache(cacheKey, audioContent);
     // Layer 2: Supabase DB (async — don't wait for it to return response faster)
-    saveToSupabaseCache(cacheKey, audioContent, language, voiceGender).catch(() => {});
+    saveToSupabaseCache(cacheKey, audioContent, language, voiceGender, blogSlug, blogTitle).catch(() => {});
 
     console.log('[TTS Cache] 💾 SAVED to cache — next request will be instant');
 

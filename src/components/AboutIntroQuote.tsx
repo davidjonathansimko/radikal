@@ -158,6 +158,11 @@ export default function AboutIntroQuote({ onFinish }: AboutIntroQuoteProps) {
             style={{
               color: textColor,
               textShadow: '0 0 20px rgba(255,255,255,0.15)',
+              // Anulam explicit linia verticala pe care globals.css o pune pe
+              // orice <blockquote> (`border-left: 3px solid currentColor`).
+              borderLeft: 'none',
+              paddingLeft: 0,
+              outline: 'none',
             }}
           >
             <span className="inline tracking-wider">&quot;</span>

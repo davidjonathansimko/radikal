@@ -34,6 +34,26 @@ interface BlogListProps {
   filterMonth?: number | null; // 0-indexed (0 = January)
 }
 
+// Pasul 2208002 (punctul 13) — coloanele de care are nevoie LISTA de bloguri.
+// `content` (textul intreg al articolului) NU este cerut: pe card se afiseaza
+// doar `excerpt`, iar articolele lungi ar incarca degeaba sute de kilobytes.
+const BLOG_LIST_COLUMNS = [
+  'id',
+  'title',
+  'slug',
+  'excerpt',
+  'image_url',
+  'tags',
+  'created_at',
+  'updated_at',
+  'published',
+  'likes_count',
+  // Pasul 2308001 — CORECTARE: `views` NU exista in `blog_posts`.
+  // Il ceream degeaba, iar Postgres respingea INTREAGA cerere cu
+  // „column blog_posts.views does not exist", deci nu se incarca niciun blog.
+  'is_dynamic',
+].join(', ');
+
 export default function BlogList({ initialPosts = [], showOlderButton = true, filterYear = null, filterMonth = null }: BlogListProps) {
   // Get language context / Sprachkontext abrufen / Obține contextul limbii
   const { language } = useLanguage();
@@ -100,9 +120,14 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
       const to = from + 9;
 
       // Build query with optional month filter / Query mit optionalem Monatsfilter erstellen / Construiește query cu filtru opțional pe lună
+      // Pasul 2208002 (punctul 13): `blog_posts` are acum multe coloane
+      // (efecte de imagine, setarile modalului etc.). Pentru LISTA nu avem
+      // nevoie de ele — mai ales de `content`, care este cel mai mare camp.
+      // Cerem doar ce se foloseste efectiv, deci lista se incarca mai repede
+      // si consuma mai putin trafic pe telefon.
       let query = supabase
         .from('blog_posts')
-        .select('*')
+        .select(BLOG_LIST_COLUMNS)
         .eq('published', true)
         .order('created_at', { ascending: false });
 
@@ -117,14 +142,47 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
           .lte('created_at', endOfMonth.toISOString());
       }
 
-      const { data, error } = await query.range(from, to);
+      let { data, error } = await query.range(from, to);
+
+      // Pasul 2308001 — PLASA DE SIGURANTA.
+      // Codul `42703` inseamna „coloana nu exista". Se poate intampla daca un
+      // fisier SQL nu a fost inca rulat (de exemplu `is_dynamic`). Inainte,
+      // asta lasa pagina complet goala: „Keine Blogs gefunden".
+      // Acum cerem pur si simplu toate coloanele si mergem mai departe, ca sa
+      // NU ramana niciodata cititorul fara articole.
+      if (error && (error as { code?: string }).code === '42703') {
+        console.warn(
+          '[BlogList] O coloană lipsește din `blog_posts` — reîncerc cu toate coloanele. ' +
+          'Probabil un fișier SQL nu a fost încă rulat.',
+          error.message,
+        );
+
+        let fallback = supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('published', true)
+          .order('created_at', { ascending: false });
+
+        if (filterYear !== null && filterMonth !== null) {
+          const s = new Date(filterYear, filterMonth, 1);
+          const e = new Date(filterYear, filterMonth + 1, 0, 23, 59, 59, 999);
+          fallback = fallback.gte('created_at', s.toISOString()).lte('created_at', e.toISOString());
+        }
+
+        const retry = await fallback.range(from, to);
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         console.error('Error loading posts:', error);
         return;
       }
 
-      const newPosts = data || [];
+      // Pasul 2208002 (punctul 13): cerem o lista explicita de coloane, deci
+      // TypeScript nu mai poate deduce singur tipul. Randurile au exact
+      // campurile de care are nevoie cardul, asa ca precizarea este sigura.
+      const newPosts = (data || []) as unknown as BlogPost[];
       
       if (reset) {
         setPosts(newPosts);
@@ -215,18 +273,35 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     translatePosts();
   }, [language, posts, translateBatch]);
 
-  // Get translated or original text / Übersetzten oder originalen Text abrufen / Obține textul tradus sau original
-  const getTranslatedTitle = (post: BlogPost) => {
-    if (language === 'ro') return post.title;
-    return translatedPosts.get(post.id)?.title || post.title;
+  // Pasul 2308001 — GATA CU SCLIPIREA ÎN ROMÂNĂ.
+  //
+  // Înainte scria `|| post.title`. Adică: „dacă traducerea nu a venit încă,
+  // arată româna". De aceea, o clipă, cititorul german vedea textul românesc
+  // și abia apoi se schimba. Arăta neîngrijit.
+  //
+  // Acum ordinea este:
+  //   1. traducerea proaspătă de la DeepL
+  //   2. traducerea salvată în baza de date (title_de, title_en, …)
+  //   3. NIMIC — un loc gol, până vine traducerea
+  // Româna nu se mai arată niciodată unui cititor care a ales altă limbă.
+  const localized = (post: BlogPost, field: 'title' | 'excerpt'): string => {
+    if (language === 'ro') return (post[field] as string) ?? '';
+
+    const fresh = translatedPosts.get(post.id)?.[field];
+    if (fresh) return fresh as string;
+
+    const stored = (post as unknown as Record<string, unknown>)[`${field}_${language}`];
+    if (typeof stored === 'string' && stored.trim()) return stored;
+
+    return '';
   };
 
-  const getTranslatedExcerpt = (post: BlogPost) => {
-    if (language === 'ro') return post.excerpt;
-    return translatedPosts.get(post.id)?.excerpt || post.excerpt;
-  };
+  const getTranslatedTitle = (post: BlogPost) => localized(post, 'title');
+
+  const getTranslatedExcerpt = (post: BlogPost) => localized(post, 'excerpt');
 
   const getTranslatedTags = (post: BlogPost): string[] => {
+    if (language !== 'ro' && !translatedPosts.get(post.id)) return [];
     const tags = language === 'ro' ? post.tags : (translatedPosts.get(post.id)?.tags || post.tags);
     if (!tags) return [];
     return Array.isArray(tags) ? tags : [tags];
@@ -430,6 +505,32 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
               <header className="mb-2">
                 <h2 className="text-lg sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-200">
                   {getTranslatedTitle(post)}
+                  {/* Pasul 2208002 (punctul 6) — INDICATOR pentru blogurile dinamice.
+                      Un mic semn discret, langa titlu, care arata ca articolul
+                      poate fi ASCULTAT („Play Blog"). Pentru articolele obisnuite
+                      nu apare absolut nimic — cardul ramane exact ca inainte. */}
+                  {post.is_dynamic && (
+                    <span
+                      title={
+                        language === 'de' ? 'Dieser Artikel kann angehört werden' :
+                        language === 'ro' ? 'Acest articol poate fi ascultat' :
+                        language === 'ru' ? 'Эту статью можно послушать' :
+                        'This article can be listened to'
+                      }
+                      aria-label={
+                        language === 'de' ? 'Hörbarer Artikel' :
+                        language === 'ro' ? 'Articol care poate fi ascultat' :
+                        language === 'ru' ? 'Аудио-статья' :
+                        'Listenable article'
+                      }
+                      className="ml-2 inline-flex translate-y-[-2px] items-center gap-1 rounded-full border border-gray-400/50 dark:border-white/25 px-2 py-[2px] align-middle text-[10px] font-medium tracking-wide text-gray-700 dark:text-white/75"
+                    >
+                      <svg width="9" height="9" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                        <path d="M3 1.5v11l9-5.5-9-5.5z" />
+                      </svg>
+                      PLAY
+                    </span>
+                  )}
                 </h2>
               
               {/* Post metadata with theme-aware colors / Post-Metadaten mit themenabhängigen Farben / Metadate postare cu culori adaptate la temă */}
@@ -462,6 +563,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                     alt={getTranslatedTitle(post)}
                     width={800}
                     height={400}
+                    /* Pasul 21082026 — performanta: nu mai descarcam 800px pe mobil */
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 800px"
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z"
                     className="w-full h-28 sm:h-64 object-cover hover:scale-105 transition-transform duration-300"

@@ -38,6 +38,74 @@ export interface BlogPost {
   likes?: number; // Alternative likes field / Alternatives Likes-Feld
   views?: number; // Number of views / Anzahl der Aufrufe
   comments_count: number; // Number of comments / Anzahl der Kommentare
+  // Pasul 2108002: fragmente marcate manual de admin ca referinte biblice (afisate cu rosu)
+  bible_refs?: string[] | null;
+
+  // ---- Pasul 2208001: efecte de imagine + blog DINAMIC („Play Blog") ----
+  effect_noise?: boolean;
+  effect_grain?: boolean;
+  effect_sepia?: boolean;
+  effect_vignette?: boolean;
+  sepia_intensity?: number;
+  vignette_intensity?: number;
+  grain_opacity?: number;
+  /** true = articolul are butonul „Play Blog" si modalul dinamic */
+  is_dynamic?: boolean;
+  /** Setari SEPARATE, doar pentru modalul „Play Blog" */
+  modal_background_opacity?: number;
+
+  // Pasul A15 — opacitate / umbra reglabile la fiecare blog in parte.
+  // Sunt optionale: daca `STEP_A15_IMAGE_OPACITY.sql` nu a fost rulat,
+  // pur si simplu lipsesc si se folosesc valorile implicite.
+  /** Opacitatea imaginii articolului, 0-100 */
+  post_image_opacity?: number;
+  /** Intensitatea umbrei imaginii articolului, 0-100 */
+  post_image_shadow?: number;
+  /** Opacitatea imaginii de fundal din articol, 0-100 */
+  background_opacity?: number;
+  /** Umbra imaginii de fundal din articol, 0-100 */
+  background_shadow?: number;
+  /** Umbra fundalului din modalul „Play Blog", 0-100 */
+  modal_background_shadow?: number;
+
+  /**
+   * Pasul A17 — categoriile in care intra articolul.
+   * Un articol poate fi in mai multe deodata (familie + casnicie).
+   * Vine din `STEP_2308000_CATEGORII.sql`.
+   */
+  category_ids?: string[];
+  modal_effect_noise?: boolean;
+  modal_effect_grain?: boolean;
+  modal_effect_sepia?: boolean;
+  modal_effect_vignette?: boolean;
+  modal_sepia_intensity?: number;
+  modal_vignette_intensity?: number;
+  modal_grain_opacity?: number;
+  // ---- Pasul 2308005 (E): efecte cinematice noi (optionale => continutul vechi nu e afectat) ----
+  effect_bw?: boolean;
+  effect_bloom?: boolean;
+  effect_letterbox?: boolean;
+  effect_light_leak?: boolean;
+  modal_effect_bw?: boolean;
+  modal_effect_bloom?: boolean;
+  modal_effect_letterbox?: boolean;
+  modal_effect_light_leak?: boolean;
+  // Pasul 2308006-E — cat de tare se vede fiecare efect (0–100).
+  // Toate sunt optionale: daca SQL-ul nu a fost rulat, se folosesc
+  // valorile implicite si nimic nu se strica.
+  noise_intensity?: number;
+  bw_intensity?: number;
+  bloom_intensity?: number;
+  letterbox_size?: number;
+  light_leak_intensity?: number;
+  modal_noise_intensity?: number;
+  modal_bw_intensity?: number;
+  modal_bloom_intensity?: number;
+  modal_letterbox_size?: number;
+  modal_light_leak_intensity?: number;
+  // Pasul 2308006-F — articol marcat pentru pagina „News"
+  is_news?: boolean;
+  news_pinned_at?: string | null;
   // Modal intro question fields / Modal-Intro-Frage-Felder
   modal_title?: string; // Modal title in German / Modal-Titel auf Deutsch
   modal_title_en?: string; // Modal title in English / Modal-Titel auf Englisch

@@ -39,14 +39,16 @@ const BlogCard: React.FC<BlogCardProps> = ({
   const { language } = useLanguage();
 
   // Get title based on language / Titel basierend auf Sprache abrufen
-  // Priority: translatedTitle prop (DeepL) > language-specific DB field > default title
+  // Pasul 2308001: dacă cititorul a ales altă limbă și traducerea nu a sosit
+  // încă, NU mai arătăm româna („post.title"). Lăsăm gol o clipă.
+  // Sclipirea în română era mai urâtă decât un loc gol pentru o fracțiune de secundă.
   const getTitle = () => {
     if (translatedTitle) return translatedTitle;
     switch (language) {
-      case 'de': return post.title_de || post.title;
-      case 'en': return post.title_en || post.title;
+      case 'de': return post.title_de || '';
+      case 'en': return post.title_en || '';
       case 'ro': return post.title_ro || post.title;
-      case 'ru': return post.title_ru || post.title;
+      case 'ru': return post.title_ru || '';
       default: return post.title;
     }
   };
@@ -56,10 +58,10 @@ const BlogCard: React.FC<BlogCardProps> = ({
   const getExcerpt = () => {
     if (translatedExcerpt) return translatedExcerpt;
     switch (language) {
-      case 'de': return post.excerpt_de || post.excerpt;
-      case 'en': return post.excerpt_en || post.excerpt;
+      case 'de': return post.excerpt_de || '';
+      case 'en': return post.excerpt_en || '';
       case 'ro': return post.excerpt_ro || post.excerpt;
-      case 'ru': return post.excerpt_ru || post.excerpt;
+      case 'ru': return post.excerpt_ru || '';
       default: return post.excerpt;
     }
   };
@@ -136,6 +138,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
                 src={post.image_url}
                 alt={getTitle()}
                 fill
+                /* Pasul 2308007 — pe telefon incarcam o poza mica, nu una de desktop */
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                 placeholder="blur"
                 blurDataURL={BLUR_PLACEHOLDER}
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -204,6 +208,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
               src={post.image_url}
               alt={getTitle()}
               fill
+              /* Pasul 2308007 — pe telefon incarcam o poza mica, nu una de desktop */
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
               className="object-cover transition-transform duration-500 group-hover:scale-110"

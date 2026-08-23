@@ -126,25 +126,45 @@ export function useAnalytics() {
       });
       
       if (sessionUpsertError) {
-        // Pasul A2: NU mai facem insert de rezervă — el genera "409 Conflict"
-        // în consolă când rândul există deja. Reîncercăm doar ca upsert care
-        // ignoră duplicatele (nu produce conflict).
-        const { error: sessionRetryError } = await supabase
-          .from('analytics_sessions')
-          .upsert({
-            session_id: sessionId.current,
-            first_page: pathname,
-            last_page: pathname,
-            page_count: 1,
-            referrer: document.referrer || null,
-            ...sessionDeviceInfo,
-          }, {
-            onConflict: 'session_id',
-            ignoreDuplicates: true,
-          });
+        // Pasul 2308006-G: daca serverul spune „nu ai voie" (RLS), a doua
+        // incercare va da exact aceeasi eroare. Inainte reincercam oricum si
+        // in consola aparea de DOUA ori „401 (Unauthorized)" la fiecare
+        // pagina. Acum ne oprim din prima si scriem un mesaj clar.
+        //
+        // Cauza reala: vizitatorii nelogati nu aveau dreptul sa scrie in
+        // `analytics_sessions`, deci statisticile inregistrau doar userii
+        // logati. Se repara ruland STEP_2308006_FIXES.sql.
+        const denied =
+          sessionUpsertError.code === '42501' ||
+          sessionUpsertError.code === 'PGRST301' ||
+          /permission|denied|unauthorized/i.test(sessionUpsertError.message || '');
 
-        if (sessionRetryError) {
-          console.debug('Analytics: Session upsert issue:', sessionRetryError.code);
+        if (denied) {
+          console.debug(
+            'Analytics: sesiunea nu a putut fi salvata (lipsesc drepturile RLS). ' +
+            'Ruleaza STEP_2308006_FIXES.sql in Supabase.'
+          );
+        } else {
+          // Pasul A2: NU mai facem insert de rezervă — el genera "409 Conflict"
+          // în consolă când rândul există deja. Reîncercăm doar ca upsert care
+          // ignoră duplicatele (nu produce conflict).
+          const { error: sessionRetryError } = await supabase
+            .from('analytics_sessions')
+            .upsert({
+              session_id: sessionId.current,
+              first_page: pathname,
+              last_page: pathname,
+              page_count: 1,
+              referrer: document.referrer || null,
+              ...sessionDeviceInfo,
+            }, {
+              onConflict: 'session_id',
+              ignoreDuplicates: true,
+            });
+
+          if (sessionRetryError) {
+            console.debug('Analytics: Session upsert issue:', sessionRetryError.code);
+          }
         }
       } else {
         console.log('✅ Session tracked');

@@ -14,6 +14,7 @@ import Navigation from '@/components/Navigation';
 import FooterComponent from '@/components/FooterComponent';
 import { ReadingModeProvider, ReadingModeOverlay } from '@/components/ReadingMode';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import MaintenanceGate from '@/components/MaintenanceGate';
 // Organization Schema for SEO / Organisations-Schema für SEO / Schema Organizație pentru SEO
 import { OrganizationSchema } from '@/components/schema';
 
@@ -23,6 +24,7 @@ const ServiceWorkerRegistration = dynamic(() => import('@/components/ServiceWork
 const OfflineIndicator = dynamic(() => import('@/components/ServiceWorkerRegistration').then(m => ({ default: m.OfflineIndicator })));
 const CookieConsent = dynamic(() => import('@/components/CookieConsent'));
 const ToastProvider = dynamic(() => import('@/components/ToastNotifications'));
+const InstallAppPrompt = dynamic(() => import('@/components/InstallAppPrompt'));
 
 // BackgroundAnimation commented out for restoration later / BackgroundAnimation auskommentiert für spätere Wiederherstellung / BackgroundAnimation comentat pentru restaurare ulterioară
 // import BackgroundAnimation from '@/components/BackgroundAnimation';
@@ -165,7 +167,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="RADIKAL" />
-        <link rel="apple-touch-icon" href="/radikal.logo.schwarz.hintergrund.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
         
         {/* Android: Fullscreen immersive mode hint / Android: Fullscreen-Immersiv-Modus-Hinweis */}
         <meta name="mobile-web-app-capable" content="yes" />
@@ -213,6 +215,11 @@ export default function RootLayout({
               <ToastProvider>
                 {/* Reading mode for font size adjustments / Lesemodus für Schriftgrößenanpassungen / Mod citire pentru ajustări dimensiune font */}
                 <ReadingModeProvider>
+                  {/* Pasul 2308004 (A) — poarta „mod în lucru".
+                      Cat timp modul e pornit, vizitatorii vad DOAR ecranul cu
+                      lucrari: fara navigatie, fara intro, fara login/guest.
+                      Adminul trece prin poarta si lucreaza normal. */}
+                  <MaintenanceGate>
                   {/* Noise/Grain texture overlay for aesthetic effect / Rausch/Körnung-Textur-Overlay für ästhetischen Effekt / Suprapunere textură zgomot/granulație pentru efect estetic */}
                   <div className="noise-overlay" aria-hidden="true" />
                   
@@ -244,8 +251,12 @@ export default function RootLayout({
                   {/* GDPR Cookie Consent Banner / DSGVO Cookie-Einwilligungs-Banner / Banner Consimțământ Cookie GDPR */}
                   <CookieConsent />
                   
+                  {/* Pasul 2308008: banner „instaleaza aplicatia" (PWA) */}
+                  <InstallAppPrompt />
+                  
                   {/* Organization Schema for SEO / Organisations-Schema für SEO / Schema Organizație pentru SEO */}
                   <OrganizationSchema />
+                  </MaintenanceGate>
                 </ReadingModeProvider>
               </ToastProvider>
             </AnalyticsProvider>

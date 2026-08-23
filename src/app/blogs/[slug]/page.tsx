@@ -17,7 +17,13 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useGuestMode, isGuestMode } from '@/hooks/useGuestMode';
+import { useGuestMode, isGuestMode, getGuestId } from '@/hooks/useGuestMode';
+import ImageEffectLayers, { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
+import { buildBibleRefRegex } from '@/lib/bibleRefPattern';
+// Pasul 2208002 (punctul 11) — modalul „Play Blog" se descarca DOAR cand
+// cititorul apasa Play. Pentru articolele obisnuite nu intra deloc in pagina,
+// deci articolele statice raman la fel de rapide ca inainte.
+const PlayBlogModal = dynamic(() => import('@/components/PlayBlogModal'), { ssr: false });
 import { createClient } from '@/lib/supabase';
 import ReadingProgress, { CircularReadingProgress } from '@/components/ReadingProgress';
 import { calculateReadingTime, getShortReadingTime } from '@/utils/readingTime';
@@ -100,75 +106,28 @@ export default function BlogPostPage() {
       .substring(0, 80); // Limit length / Länge begrenzen
   }, []);
 
+  // Pasul 2108002: mutat aici, deasupra lui highlightBibleReferences,
+  // pentru ca acea functie citeste `post.bible_refs`.
+  const [post, setPost] = useState<BlogPost | null>(null);
+
   // 📖 Highlight Bible references in blog text / Bibelreferenzen im Blogtext hervorheben / Evidențiază referințele biblice în textul blogului
   const highlightBibleReferences = useCallback((text: string): React.ReactNode => {
-    // Bible book names in all 4 languages (Romanian, German, English, Russian)
-    // Bibelbuchnamen in allen 4 Sprachen / Numele cărților biblice în toate cele 4 limbi
-    const bibleBooks = [
-      // Romanian / Rumänisch / Română
-      'Geneza', 'Exodul', 'Leviticul', 'Numeri', 'Deuteronomul',
-      'Iosua', 'Judecători', 'Rut', 'Samuel', 'Împărați', 'Cronici',
-      'Ezra', 'Neemia', 'Estera', 'Iov', 'Psalmii', 'Psalmi', 'Psalmul',
-      'Proverbele', 'Proverbe', 'Eclesiastul', 'Cântarea Cântărilor',
-      'Isaia', 'Ieremia', 'Plângerile', 'Ezechiel', 'Daniel', 'Osea',
-      'Ioel', 'Amos', 'Obadia', 'Iona', 'Mica', 'Naum', 'Habacuc',
-      'Țefania', 'Hagai', 'Zaharia', 'Maleahi',
-      'Matei', 'Marcu', 'Luca', 'Ioan', 'Faptele Apostolilor', 'Faptele',
-      'Romani', 'Corinteni', 'Galateni', 'Efeseni', 'Filipeni',
-      'Coloseni', 'Tesaloniceni', 'Timotei', 'Tit', 'Filimon',
-      'Evrei', 'Iacov', 'Petru', 'Iuda', 'Apocalipsa',
-      // German / Deutsch / Germană
-      'Genesis', 'Exodus', 'Levitikus', 'Numeri', 'Deuteronomium',
-      'Josua', 'Richter', 'Ruth', 'Könige', 'Chronik',
-      'Esra', 'Nehemia', 'Ester', 'Hiob', 'Psalmen', 'Psalm',
-      'Sprüche', 'Prediger', 'Hoheslied',
-      'Jesaja', 'Jeremia', 'Klagelieder', 'Hesekiel', 'Hosea',
-      'Joel', 'Obadja', 'Jona', 'Micha', 'Nahum', 'Habakuk',
-      'Zefanja', 'Haggai', 'Sacharja', 'Maleachi',
-      'Matthäus', 'Markus', 'Lukas', 'Johannes', 'Apostelgeschichte',
-      'Römer', 'Korinther', 'Galater', 'Epheser', 'Philipper',
-      'Kolosser', 'Thessalonicher', 'Timotheus', 'Titus', 'Philemon',
-      'Hebräer', 'Jakobus', 'Judas', 'Offenbarung',
-      // English / Englisch / Engleză
-      'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
-      'Joshua', 'Judges', 'Ruth', 'Kings', 'Chronicles',
-      'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Psalm',
-      'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Song of Songs',
-      'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea',
-      'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
-      'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
-      'Matthew', 'Mark', 'Luke', 'John', 'Acts',
-      'Romans', 'Corinthians', 'Galatians', 'Ephesians', 'Philippians',
-      'Colossians', 'Thessalonians', 'Timothy', 'Titus', 'Philemon',
-      'Hebrews', 'James', 'Peter', 'Jude', 'Revelation',
-      // Russian / Russisch / Rusă
-      'Бытие', 'Исход', 'Левит', 'Числа', 'Второзаконие',
-      'Иисус Навин', 'Судей', 'Руфь', 'Царств', 'Паралипоменон',
-      'Ездра', 'Неемия', 'Есфирь', 'Иов', 'Псалом', 'Псалмы', 'Псалтирь',
-      'Притчи', 'Екклесиаст', 'Песня Песней',
-      'Исаия', 'Иеремия', 'Плач Иеремии', 'Иезекииль', 'Даниил', 'Осия',
-      'Иоиль', 'Амос', 'Авдий', 'Иона', 'Михей', 'Наум', 'Аввакум',
-      'Софония', 'Аггей', 'Захария', 'Малахия',
-      'Матфей', 'Марка', 'Лука', 'Иоанна', 'Деяния',
-      'Римлянам', 'Коринфянам', 'Галатам', 'Ефесянам', 'Филиппийцам',
-      'Колоссянам', 'Фессалоникийцам', 'Тимофею', 'Титу', 'Филимону',
-      'Евреям', 'Иакова', 'Петра', 'Иуды', 'Откровение',
-    ];
+    // Pasul 2208002 (punctul 5): lista cartilor biblice si intreg tiparul
+    // au fost mutate in `src/lib/bibleRefPattern.ts`, ca sa poata fi TESTATE.
+    // Aici a ramas doar partea care coloreaza textul.
 
-    // Remove duplicates and sort by length (longest first to avoid partial matches)
-    // Duplikate entfernen und nach Länge sortieren / Elimină duplicatele și sortează după lungime
-    const uniqueBooks = [...new Set(bibleBooks)].sort((a, b) => b.length - a.length);
-    
-    // Escape special regex characters in book names
-    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const bookPattern = uniqueBooks.map(escapeRegex).join('|');
-    
-    // Pattern: optional opening paren + optional number + book name + chapter:verse(-verse) + optional closing paren
-    // Muster: optionale öffnende Klammer + optionale Zahl + Buchname + Kapitel:Vers(-Vers) + optionale schließende Klammer
-    const bibleRefRegex = new RegExp(
-      `(\\(?\\s*(?:\\d\\s*)?(?:${bookPattern})\\s+\\d{1,3}(?:\\s*[:\\s]\\s*\\d{1,3}(?:\\s*[-–]\\s*\\d{1,3})?)?\\s*\\)?)`,
-      'gi'
-    );
+    // Pe langa detectarea automata folosim si fragmentele marcate MANUAL
+    // de admin (`blog_posts.bible_refs`).
+    const rawManual = (post as unknown as { bible_refs?: unknown })?.bible_refs;
+    const manualRefs = (Array.isArray(rawManual) ? rawManual : [])
+      .filter((r): r is string => typeof r === 'string' && r.trim().length > 0)
+      .sort((a: string, b: string) => b.length - a.length);
+
+    // Pasul 2208002 (punctul 5) — tot tiparul a fost mutat in
+    // `src/lib/bibleRefPattern.ts`, ca sa poata fi TESTAT. Testele sunt in
+    // `src/lib/__tests__/bibleRefPattern.test.ts` si acopera si bug-ul
+    // „Lukas 20,21–22". Aici a ramas doar colorarea.
+    const bibleRefRegex = buildBibleRefRegex(manualRefs);
 
     const parts = text.split(bibleRefRegex);
     
@@ -191,13 +150,17 @@ export default function BlogPostPage() {
       bibleRefRegex.lastIndex = 0;
       return part;
     });
-  }, []);
+    // Pasul 2108002: depinde de `post`, ca fragmentele marcate manual
+    // sa fie aplicate imediat ce articolul s-a incarcat.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post]);
   
   // Reading mode for font size adjustments / Lesemodus für Schriftgrößenanpassungen / Mod citire pentru ajustări dimensiune font
   const { fontSize } = useReadingMode();
   
   // Component state / Komponentenstatus / Stare componentă
-  const [post, setPost] = useState<BlogPost | null>(null);
+  // Pasul 2108002: `post` este declarat aici, INAINTE de highlightBibleReferences,
+  // pentru ca acea functie citeste `post.bible_refs`.
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -232,6 +195,75 @@ export default function BlogPostPage() {
 
   // Pasul C2: modul vizitator — fara comentarii / Guest mode — no comments
   const { isGuest } = useGuestMode();
+
+  // ------------------------------------------------------------------
+  // Pasul 2208001 — BLOG DINAMIC („Play Blog")
+  // ------------------------------------------------------------------
+  const [isPlayOpen, setIsPlayOpen] = useState(false);
+
+  /** Efectele imaginii ARTICOLULUI (alese la creare) */
+  const postEffects: ImageEffectSettings = useMemo(() => {
+    const p = (post ?? {}) as unknown as Record<string, unknown>;
+    return {
+      effectNoise: Boolean(p.effect_noise),
+      effectGrain: Boolean(p.effect_grain),
+      effectSepia: Boolean(p.effect_sepia),
+      effectVignette: Boolean(p.effect_vignette),
+      sepiaIntensity: (p.sepia_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.sepiaIntensity,
+      vignetteIntensity: (p.vignette_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.vignetteIntensity,
+      grainOpacity: (p.grain_opacity as number) ?? DEFAULT_IMAGE_EFFECTS.grainOpacity,
+      // Pasul 2308005 (E)
+      effectBw: Boolean(p.effect_bw),
+      effectBloom: Boolean(p.effect_bloom),
+      effectLetterbox: Boolean(p.effect_letterbox),
+      effectLightLeak: Boolean(p.effect_light_leak),
+      // Pasul 2308006-E — intensitatile alese in admin
+      noiseIntensity: (p.noise_intensity as number) ?? 35,
+      bwIntensity: (p.bw_intensity as number) ?? 50,
+      bloomIntensity: (p.bloom_intensity as number) ?? 50,
+      letterboxSize: (p.letterbox_size as number) ?? 8,
+      lightLeakIntensity: (p.light_leak_intensity as number) ?? 50,
+    };
+  }, [post]);
+
+  /** Efectele MODALULUI — complet separate de cele ale imaginii */
+  const modalEffects: ImageEffectSettings = useMemo(() => {
+    const p = (post ?? {}) as unknown as Record<string, unknown>;
+    return {
+      effectNoise: Boolean(p.modal_effect_noise),
+      effectGrain: Boolean(p.modal_effect_grain),
+      effectSepia: Boolean(p.modal_effect_sepia),
+      effectVignette: Boolean(p.modal_effect_vignette),
+      sepiaIntensity: (p.modal_sepia_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.sepiaIntensity,
+      vignetteIntensity: (p.modal_vignette_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.vignetteIntensity,
+      grainOpacity: (p.modal_grain_opacity as number) ?? DEFAULT_IMAGE_EFFECTS.grainOpacity,
+      // Pasul 2308005 (E)
+      effectBw: Boolean(p.modal_effect_bw),
+      effectBloom: Boolean(p.modal_effect_bloom),
+      effectLetterbox: Boolean(p.modal_effect_letterbox),
+      effectLightLeak: Boolean(p.modal_effect_light_leak),
+      // Pasul 2308006-E — intensitatile pentru „Play Blog"
+      noiseIntensity: (p.modal_noise_intensity as number) ?? 35,
+      bwIntensity: (p.modal_bw_intensity as number) ?? 50,
+      bloomIntensity: (p.modal_bloom_intensity as number) ?? 50,
+      letterboxSize: (p.modal_letterbox_size as number) ?? 8,
+      lightLeakIntensity: (p.modal_light_leak_intensity as number) ?? 50,
+    };
+  }, [post]);
+
+  const modalBackgroundOpacity = useMemo(() => {
+    const p = (post ?? {}) as unknown as Record<string, unknown>;
+    return (p.modal_background_opacity as number) ?? 35;
+  }, [post]);
+
+  // Link partajat („?play=1") -> deschidem direct modalul dinamic.
+  // Daca aplicatia nu e instalata, browserul deschide oricum www.radikal.blog
+  // si ajunge tot aici, deci comportamentul e identic.
+  useEffect(() => {
+    if (!post?.is_dynamic || typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('play') === '1') setIsPlayOpen(true);
+  }, [post]);
   
   // State for article navigation (prev/next) / Status für Artikelnavigation (vorheriger/nächster) / Stare pentru navigare articol (anterior/următor)
   const [prevArticle, setPrevArticle] = useState<{ slug: string; title: string } | null>(null);
@@ -310,6 +342,12 @@ export default function BlogPostPage() {
         background-repeat: no-repeat;
         z-index: -2;
         pointer-events: none;
+        opacity: ${(post.background_opacity ?? 100) / 100};
+        filter: ${
+          (post.background_shadow ?? 0) > 0
+            ? `brightness(${1 - (post.background_shadow ?? 0) / 200})`
+            : 'none'
+        };
       `;
       document.body.appendChild(bgDiv);
       
@@ -358,7 +396,7 @@ export default function BlogPostPage() {
       document.body.style.backgroundRepeat = '';
       document.body.style.backgroundColor = '';
     };
-  }, [post?.image_url, theme]); // Only re-run when image URL or theme changes (not entire post object)
+  }, [post?.image_url, post?.background_opacity, post?.background_shadow, theme]); // Only re-run when image URL or theme changes (not entire post object)
 
   // Load blog post data / Blog-Post-Daten laden / Încărcă datele postării de blog
   // Pasul 1302003: If exact slug not found, try ilike search as fallback
@@ -380,8 +418,24 @@ export default function BlogPostPage() {
         setPost(data);
         // Update originalSlugRef to the real DB slug
         originalSlugRef.current = data.slug;
-        // Pasul 2202000: Increment view count (fire-and-forget, non-blocking)
-        supabase.from('blog_posts').update({ views: (data.views || 0) + 1 }).eq('id', data.id).then(() => {});
+        // Pasul 2308006-G — REPARATIE contor vizualizari.
+        //
+        // Inainte faceam UPDATE direct pe `blog_posts` din browser. Doua
+        // probleme: (1) un vizitator nelogat NU are voie sa scrie in tabela
+        // (regulile RLS), (2) daca doi cititori deschideau articolul in
+        // acelasi timp, unul dintre ei pierdea numaratoarea. De aceea in
+        // consola aparea „PATCH … 400 (Bad Request)" la FIECARE articol si
+        // contorul practic nu crestea.
+        //
+        // Acum chemam functia `increment_blog_views` din baza de date
+        // (fisier: STEP_2308006_FIXES.sql). Ea are voie sa scrie si aduna
+        // corect. Daca functia inca nu a fost creata, nu se intampla nimic
+        // rau — doar nu se numara, fara eroare rosie in consola.
+        void supabase
+          .rpc('increment_blog_views', { p_post_id: data.id })
+          .then(({ error: viewsError }) => {
+            if (viewsError) console.debug('Views counter skipped:', viewsError.code);
+          });
         await loadAdjacentArticles(data.created_at);
         if (data.show_intro_modal && (data.modal_question || data.modal_title)) {
           setShowIntroModal(true);
@@ -465,7 +519,10 @@ export default function BlogPostPage() {
         .lt('created_at', currentCreatedAt)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        // Pasul 2308006-G: `.single()` arunca eroarea 406 cand NU exista
+        // articol mai vechi (adica la cel mai vechi articol). `.maybeSingle()`
+        // returneaza linistit `null`.
+        .maybeSingle();
 
       if (prevData) {
         setPrevArticle({ slug: prevData.slug, title: prevData.title });
@@ -479,7 +536,9 @@ export default function BlogPostPage() {
         .gt('created_at', currentCreatedAt)
         .order('created_at', { ascending: true })
         .limit(1)
-        .single();
+        // Pasul 2308006-G: la fel ca mai sus — la cel mai nou articol nu
+        // exista „urmatorul", deci nu are voie sa fie eroare.
+        .maybeSingle();
 
       if (nextData) {
         setNextArticle({ slug: nextData.slug, title: nextData.title });
@@ -537,6 +596,16 @@ export default function BlogPostPage() {
         .single();
       
       setIsLiked(!!data);
+    } else if (!user && querySlug) {
+      // Pasul 2208001: like-ul vizitatorului, dupa id-ul anonim
+      const guestId = getGuestId();
+      if (guestId) {
+        const { data } = await supabase.rpc('guest_liked_post', {
+          p_post_id: querySlug,
+          p_guest_id: guestId,
+        });
+        setIsLiked(data === true);
+      }
     }
   };
 
@@ -631,9 +700,23 @@ export default function BlogPostPage() {
   };
 
   // Get display text (translated or original) / Anzeigetext abrufen (übersetzt oder original) / Obține textul pentru afișare (tradus sau original)
-  const displayTitle = language === 'ro' ? post?.title : (translatedTitle || post?.title);
-  const displayContent = language === 'ro' ? post?.content : (translatedContent || post?.content);
-  const displayExcerpt = language === 'ro' ? post?.excerpt : (translatedExcerpt || post?.excerpt);
+  //
+  // Pasul 2308003 — DE CE apărea o clipită textul în română:
+  // pana venea traducerea, `translatedX || post.x` afisa ORIGINALUL romanesc.
+  // Cateva sute de milisecunde mai tarziu sosea traducerea si textul „sarea".
+  // Acum, cat timp traducerea nu e gata, nu aratam text deloc (`''`) —
+  // in locul lui se vede scheletul de incarcare care exista deja.
+  // Rezultat: fara clipire, fara text gresit, nicio secunda.
+  const waitingForTranslation = language !== 'ro' && !translatedTitle;
+  const displayTitle = language === 'ro'
+    ? post?.title
+    : (translatedTitle || (waitingForTranslation ? '' : post?.title));
+  const displayContent = language === 'ro'
+    ? post?.content
+    : (translatedContent || '');
+  const displayExcerpt = language === 'ro'
+    ? post?.excerpt
+    : (translatedExcerpt || (waitingForTranslation ? '' : post?.excerpt));
   const displayTags = language === 'ro' ? (post?.tags || []) : (translatedTags.length > 0 ? translatedTags : (post?.tags || []));
 
   // Update browser tab title with translated blog title
@@ -819,8 +902,26 @@ export default function BlogPostPage() {
 
   // Handle post like / Post-Like behandeln / Gestionează like-ul postării
   const handleLike = async () => {
+    // Pasul 2208001: si VIZITATORII pot da like (id anonim + RPC).
     if (!user) {
-      showLoginRequired('bloglike');
+      const guestId = getGuestId();
+      if (!guestId) {
+        showLoginRequired('bloglike');
+        return;
+      }
+      const next = !isLiked;
+      setIsLiked(next); // optimist
+      try {
+        const { data, error } = await supabase.rpc('toggle_post_like_guest', {
+          p_post_id: originalSlugRef.current,
+          p_guest_id: guestId,
+        });
+        if (error) throw error;
+        if (typeof data === 'boolean') setIsLiked(data);
+      } catch (error) {
+        setIsLiked(!next);
+        console.error('Error handling guest like:', error);
+      }
       return;
     }
 
@@ -1056,6 +1157,25 @@ export default function BlogPostPage() {
       
       {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
       <CircularReadingProgress />
+
+      {/* Pasul 2208001 — modalul „Play Blog" pentru articolele dinamice */}
+      {post.is_dynamic && (
+        <PlayBlogModal
+          isOpen={isPlayOpen}
+          onClose={() => setIsPlayOpen(false)}
+          title={displayTitle || post.title}
+          text={displayContent || post.content || ''}
+          imageUrl={post.image_url || null}
+          slug={originalSlugRef.current || post.slug}
+          // Pasul A18 — ca sa poata gasi inregistrarea proprie pe limbi
+          blogId={post.id}
+          language={language}
+          effects={modalEffects}
+          backgroundOpacity={modalBackgroundOpacity}
+          isLiked={isLiked}
+          onToggleLike={handleLike}
+        />
+      )}
       
       {/* Floating Table of Contents for desktop / Schwebendes Inhaltsverzeichnis für Desktop / Cuprins flotant pentru desktop */}
       <FloatingTableOfContents contentSelector="#blog-content" />
@@ -1091,16 +1211,76 @@ export default function BlogPostPage() {
 
           {/* 1. Featured image FIRST / Hauptbild ZUERST / Imagine principală PRIMA */}
           {post.image_url && (
-            <div className="mb-6 rounded-2xl overflow-hidden animate-fadeIn">
+            <div
+              className="relative mb-6 rounded-2xl overflow-hidden animate-fadeIn"
+              style={{
+                // Pasul A15 — umbra imaginii, reglata la acest blog (0-100).
+                // 0 = fara umbra. Daca SQL-ul nu a fost rulat, ramane 30.
+                boxShadow:
+                  (post.post_image_shadow ?? 30) > 0
+                    ? `0 ${Math.round((post.post_image_shadow ?? 30) * 0.4)}px ${Math.round(
+                        (post.post_image_shadow ?? 30) * 0.9,
+                      )}px rgba(0,0,0,${((post.post_image_shadow ?? 30) / 100) * 0.75})`
+                    : 'none',
+              }}
+            >
               <Image
                 src={post.image_url}
                 alt={displayTitle || post.title}
                 width={1200}
                 height={600}
+                priority
+                /* Pasul 21082026 — performanta: imaginea hero se serveste la dimensiunea reala */
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1200px"
                 placeholder="blur"
                 blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z"
                 className="w-full h-64 sm:h-96 object-cover"
+                /* Pasul A15 — cat de vizibila e imaginea acestui blog */
+                style={{ opacity: (post.post_image_opacity ?? 100) / 100 }}
               />
+
+              {/* Pasul 2208001 — efectele imaginii alese la crearea articolului */}
+              <ImageEffectLayers settings={postEffects} zIndex={1} />
+
+              {/* Pasul 2308001 — BLOG DINAMIC: butonul „Play Blog".
+                  MULT mai mare si exact pe MIJLOCUL imaginii, ca sa fie
+                  imposibil de ratat. Pulseaza ca o inima, ca omul sa
+                  observe imediat ca poate asculta articolul. */}
+              {post.is_dynamic && (
+                <button
+                  onClick={() => setIsPlayOpen(true)}
+                  className="play-blog-enter absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-white"
+                  style={{ animationDelay: '0.9s' }}
+                  aria-label="Play Blog"
+                >
+                  {/* Cercul mare, cu bataie de inima */}
+                  <span
+                    className="play-blog-heartbeat flex items-center justify-center rounded-full bg-black/50 shadow-2xl ring-1 ring-white/25 backdrop-blur-md transition-transform duration-300 group-hover:scale-105"
+                    style={{ width: 'clamp(88px, 22vw, 124px)', height: 'clamp(88px, 22vw, 124px)' }}
+                  >
+                    <svg
+                      viewBox="0 0 60 60"
+                      fill="none" stroke="currentColor" strokeWidth="2.6"
+                      strokeLinecap="round" strokeLinejoin="round"
+                      aria-hidden="true"
+                      style={{ width: 'clamp(52px, 13vw, 74px)', height: 'clamp(52px, 13vw, 74px)' }}
+                    >
+                      <circle cx="30" cy="30" r="27" />
+                      <path d="M24 19l18 11-18 11V19z" fill="currentColor" stroke="none" />
+                    </svg>
+                  </span>
+
+                  <span
+                    className="rounded-full bg-black/55 px-4 py-1.5 font-semibold tracking-wide shadow-lg backdrop-blur-md"
+                    style={{ fontSize: 'clamp(13px, 3.4vw, 16px)' }}
+                  >
+                    {language === 'de' ? 'Blog abspielen' :
+                     language === 'en' ? 'Play Blog' :
+                     language === 'ro' ? 'Redă blogul' :
+                     'Слушать блог'}
+                  </span>
+                </button>
+              )}
             </div>
           )}
 
@@ -1203,6 +1383,8 @@ export default function BlogPostPage() {
               <TextToSpeech 
                 text={displayContent || post.content || ''} 
                 compact
+                blogSlug={post.slug}
+                blogTitle={displayTitle || post.title}
               />
             </div>
           </div>

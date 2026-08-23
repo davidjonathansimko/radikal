@@ -126,13 +126,21 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
         Bild hochladen
       </label>
       
-      {/* Upload area */}
+      {/* Upload area
+          Pasul A10 — REPARARE MOBIL.
+          `aspect-[2/1]` fixa inaltimea in functie de latime. Pe telefon,
+          latimea fiind mica, chenarul iesea foarte scund — iar textul
+          „Bild hochladen (Schnell)" si butoanele Demo Bild / Natur ieseau
+          in afara chenarului si pareau taiate.
+          Acum pe telefon folosim o inaltime MINIMA (chenarul creste cat are
+          nevoie), iar proportia fixa ramane doar de la tablete in sus, unde
+          oricum arata bine. */}
       <div
-        className={`relative border-2 border-dashed rounded-lg transition-all duration-200 ${
+        className={`relative w-full border-2 border-dashed rounded-lg transition-all duration-200 ${
           dragOver
             ? 'border-blue-400 bg-blue-400/10'
             : 'border-white/30 hover:border-white/50'
-        } ${preview ? 'aspect-video' : 'aspect-[2/1]'}`}
+        } ${preview ? 'aspect-video' : 'min-h-[240px] sm:min-h-0 sm:aspect-[2/1]'}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -181,21 +189,21 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
         ) : (
           // Upload prompt
           <div
-            className="flex flex-col items-center justify-center h-full p-8 cursor-pointer"
+            className="flex h-full w-full cursor-pointer flex-col items-center justify-center px-4 py-6 sm:p-8"
             onClick={() => fileInputRef.current?.click()}
           >
-            <FaImage className="text-4xl text-white/40 mb-4" />
-            <div className="text-center">
+            <FaImage className="mb-3 text-3xl text-white/40 sm:text-4xl" />
+            <div className="w-full text-center">
               <p className="text-white/80 font-medium mb-2">
                 Bild hochladen (Schnell)
               </p>
-              <p className="text-white/60 text-sm mb-2">
+              <p className="mb-2 text-xs text-white/60 sm:text-sm">
                 Klicken Sie hier oder ziehen Sie ein Bild hierher
               </p>
-              <p className="text-white/40 text-xs mb-3">
+              <p className="mb-3 text-[11px] text-white/40 sm:text-xs">
                 Unterstützte Formate: JPG, PNG, GIF (max. 5MB)
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap justify-center gap-2">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -204,7 +212,7 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
                     setPreview(demoUrl);
                     onImageUploaded(demoUrl);
                   }}
-                  className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs rounded transition-colors"
+                  className="rounded border border-white/20 px-3 py-1 text-xs text-white/70 transition-colors hover:border-white/40 hover:bg-white/10 hover:text-white"
                 >
                   Demo Bild
                 </button>
@@ -216,7 +224,7 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
                     setPreview(natureUrl);
                     onImageUploaded(natureUrl);
                   }}
-                  className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs rounded transition-colors"
+                  className="rounded border border-white/20 px-3 py-1 text-xs text-white/70 transition-colors hover:border-white/40 hover:bg-white/10 hover:text-white"
                 >
                   Natur
                 </button>

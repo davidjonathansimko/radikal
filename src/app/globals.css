@@ -230,9 +230,10 @@ p, li, span, div {
 }
 
 /* Light mode: dark color for readability / Hell-Modus: dunkel für Lesbarkeit */
+/* Pasul 21082026: rosu inchis in loc de gri, contrast ~7.4:1 pe alb (WCAG AAA) */
 :root:not(.dark) .bible-ref,
 .light .bible-ref {
-  color: #1a1a1a;
+  color: #8f1414;
 }
 
 /* 📖 Pasul 2202000: Words of Jesus — always red / Worte Jesu — immer rot / Cuvintele lui Isus — mereu roșu */
@@ -272,6 +273,229 @@ blockquote, .verse, .bible-verse {
   border-left: none;
   padding-left: 0;
   text-align: center;
+}
+
+/* ===== Pasul A06 — REELS: butoane mai discrete =====
+   Butoanele de like / share / articol erau prea „tari" si furau ochiul de
+   la text, stricand designul curat al reel-ului. Acum stau la 55% opacitate
+   si revin la 100% cand pui degetul sau mouse-ul pe ele — deci sunt la fel
+   de usor de folosit, dar nu mai deranjeaza vizual.                        */
+.reel-actions {
+  opacity: 0.55;
+  transition: opacity 400ms ease;
+}
+.reel-actions:hover,
+.reel-actions:focus-within,
+.reel-actions:active {
+  opacity: 1;
+}
+/* Pe ecrane tactile nu exista hover, deci le lasam putin mai vizibile. */
+@media (hover: none) {
+  .reel-actions {
+    opacity: 0.62;
+  }
+}
+
+/* ===== Pasul 21082026 — REELS: efect NOISE / SAND GRAIN =====
+   Pasul 2308001 — CORECTARE „margini pătrățoase":
+   Stratul era `inset: 0`, dar animatia il muta cu pana la 2%. La fiecare
+   deplasare ramanea o dunga goala pe margine, iar ochiul o citea ca pe un
+   dreptunghi taiat. Acum stratul este mai MARE decat imaginea (`inset: -25%`),
+   deci oricat s-ar misca, marginile nu se descopera niciodata.
+   In plus, boabele au acum o masca fina la margini, ca sa se topeasca
+   in imagine in loc sa se termine brusc.                                */
+.reel-noise {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 240px 240px;
+  mix-blend-mode: overlay;
+  will-change: transform;
+  animation: reelGrainShift 0.6s steps(3) infinite;
+}
+
+/* Boabele se misca foarte putin -> pare film, nu textura statica.
+   Pasul 2308001: deplasare in PIXELI, nu in procente. Procentele se
+   raportau la latimea elementului, deci pe ecrane late saltul devenea
+   mare si vizibil. In pixeli, miscarea este la fel de fina peste tot. */
+@keyframes reelGrainShift {
+  0%   { transform: translate3d(0, 0, 0); }
+  33%  { transform: translate3d(-6px, 4px, 0); }
+  66%  { transform: translate3d(4px, -6px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* Respectam alegerea utilizatorului pentru animatii reduse */
+@media (prefers-reduced-motion: reduce) {
+  .reel-noise {
+    animation: none;
+  }
+}
+
+/* ===== Pasul 2208001 — DYNAMIC GRAIN NOISE =====
+   Efect separat de `.reel-noise`: boabe mai mari, miscare mai vie,
+   ca la un film vechi proiectat pe perete.
+   Se aplica peste IMAGINE si TEXT, dar NICIODATA peste butoane,
+   bara de progres sau share — de aceea elementul are `pointer-events: none`
+   si se pune pe un strat cu z-index sub butoane.
+   Opacitatea se regleaza din admin prin `--grain-opacity`.            */
+.dynamic-grain {
+  position: absolute;
+  inset: -50%;
+  pointer-events: none;
+  opacity: var(--grain-opacity, 0.25);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 260px 260px;
+  mix-blend-mode: overlay;
+  will-change: transform;
+  animation: dynamicGrainDrift 0.5s steps(4) infinite;
+}
+
+/* Pasul 2308001: si aici deplasarea este in pixeli, din acelasi motiv */
+@keyframes dynamicGrainDrift {
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(-8px, 6px, 0); }
+  50%  { transform: translate3d(6px, -8px, 0); }
+  75%  { transform: translate3d(-5px, -3px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dynamic-grain {
+    animation: none;
+  }
+}
+
+/* ===== Pasul 2208001 — butonul „Play Blog": batai de inima ===== */
+.play-blog-heartbeat {
+  animation: playBlogHeartbeat 1.9s ease-in-out infinite;
+}
+
+@keyframes playBlogHeartbeat {
+  0%, 100% { transform: scale(1); }
+  14%      { transform: scale(1.11); }
+  28%      { transform: scale(1); }
+  42%      { transform: scale(1.07); }
+  56%      { transform: scale(1); }
+}
+
+/* Intrarea lina dupa incarcarea paginii */
+.play-blog-enter {
+  animation: playBlogEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes playBlogEnter {
+  from { opacity: 0; transform: translateY(14px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-blog-heartbeat,
+  .play-blog-enter,
+  .play-blog-page {
+    animation: none;
+  }
+}
+
+/* ===== Pasul 2308005 (E) — efecte cinematografice noi =====
+   Toate sunt DISCRETE. Un efect care se vede clar e un efect prost:
+   trebuie simtit, nu observat. */
+
+/* Halation — luminile calde se difuzeaza usor, ca pe pelicula.
+   `screen` face ca stratul sa se vada doar unde imaginea e luminoasa. */
+.cine-bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    rgba(255, 238, 210, 0.16) 0%,
+    rgba(255, 226, 190, 0.07) 38%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  animation: cineBloomBreathe 7s ease-in-out infinite;
+}
+
+@keyframes cineBloomBreathe {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+/* Scurgere de lumina dintr-un colt — se misca foarte lent */
+.cine-light-leak {
+  position: absolute;
+  inset: -10%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 176, 102, 0.22) 0%,
+    rgba(255, 140, 80, 0.10) 18%,
+    rgba(0, 0, 0, 0) 42%
+  );
+  animation: cineLeakDrift 14s ease-in-out infinite;
+}
+
+@keyframes cineLeakDrift {
+  0%, 100% { transform: translate(0, 0)      scale(1);    opacity: 0.75; }
+  50%      { transform: translate(3%, -2%)   scale(1.06); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cine-bloom,
+  .cine-light-leak {
+    animation: none;
+  }
+}
+
+/* ===== Pasul 2308004 (A) — mesajul din modul „în lucru" =====
+   Apare DUPA logo, nu odata cu el, ca la modalul de intro. */
+.maintenance-message {
+  animation: maintenanceFadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes maintenanceFadeUp {
+  from { opacity: 0; filter: blur(6px); transform: translateY(16px); }
+  to   { opacity: 1; filter: blur(0);   transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maintenance-message { animation: none; }
+}
+
+/* ===== Pasul 2308003 — Play Blog: schimbarea paginii de text =====
+   Fiecare pagina noua intra lin, cu un usor blur si o mica ridicare.
+   Asa nu mai pare o derulare statica, ci o experienta, ca la reels. */
+.play-blog-page {
+  animation: playBlogPageIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes playBlogPageIn {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   Pasul 21082026 — Referinte biblice: rosu, adaptat la tema
+   Tema deschisa este definita mai sus (#8f1414).
+   Aici doar tema intunecata: rosu mai deschis, lizibil pe negru.
+   Contrast ~8.1:1 pe negru (WCAG AAA).
+   ============================================================ */
+.dark .bible-ref {
+  color: #ff8a80;
+  font-weight: 700;
 }
 
 /* ===== DROP CAP / LITERĂ INIȚIALĂ MARE ===== */
