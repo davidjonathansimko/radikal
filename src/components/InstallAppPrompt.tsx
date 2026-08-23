@@ -15,6 +15,16 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISS_KEY = 'radikal-install-dismissed';
+// Pasul 2308009 — cat de rar apare bannerul.
+//   • o singura data pe fila de browser (sessionStorage);
+//   • daca ai apasat „Mai tarziu", tace 14 zile;
+//   • daca ai instalat-o, nu mai apare niciodata;
+//   • pe o vizita lunga apare ca reminder abia dupa 3 minute,
+//     iar imediat dupa deschiderea paginii dupa 25 de secunde.
+const SESSION_KEY = 'radikal-install-shown';
+const SNOOZE_DAYS = 14;
+const FIRST_DELAY_MS = 25_000;
+const LONG_VISIT_MS = 180_000;
 
 const texts = {
   de: {
@@ -65,16 +75,37 @@ export default function InstallAppPrompt() {
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     if (standalone) return;
 
-    if (localStorage.getItem(DISMISS_KEY)) return;
+    const dismissed = localStorage.getItem(DISMISS_KEY);
+    if (dismissed === 'installed') return;
+    // „Mai tarziu" → liniste 14 zile.
+    if (dismissed) {
+      const when = Number(dismissed);
+      if (Number.isFinite(when) && Date.now() - when < SNOOZE_DAYS * 86_400_000) return;
+    }
+    // Deja l-a vazut in aceasta fila → il lasam in pace pana revine.
+    if (sessionStorage.getItem(SESSION_KEY)) return;
 
     setCookiesAnswered(!!localStorage.getItem('cookie-consent'));
     const onCookieAnswer = () => setCookiesAnswered(true);
     window.addEventListener('cookie-consent-updated', onCookieAnswer);
 
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const reveal = () => {
+      if (sessionStorage.getItem(SESSION_KEY)) return;
+      sessionStorage.setItem(SESSION_KEY, '1');
+      setCanShow(true);
+    };
+
+    // Chrome retrimite `beforeinstallprompt` la fiecare schimbare de pagina.
+    // Pornim numaratoarea o singura data, altfel s-ar aduna zeci de temporizatoare.
+    let scheduled = false;
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
       setDeferred(event as BeforeInstallPromptEvent);
-      setCanShow(true);
+      if (scheduled) return;
+      scheduled = true;
+      // Nu sarim in fata cititorului: asteptam sa se uite putin prin site.
+      timers.push(setTimeout(reveal, FIRST_DELAY_MS));
     };
 
     const onInstalled = () => {
@@ -88,17 +119,16 @@ export default function InstallAppPrompt() {
     // iPhone/iPad: Safari nu trimite `beforeinstallprompt`, deci aratam pasii manual.
     const ua = window.navigator.userAgent;
     const iosSafari = /iPad|iPhone|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-    let timer: ReturnType<typeof setTimeout> | undefined;
     if (iosSafari) {
       setIsIos(true);
-      timer = setTimeout(() => setCanShow(true), 8000);
+      timers.push(setTimeout(reveal, LONG_VISIT_MS));
     }
 
     return () => {
       window.removeEventListener('cookie-consent-updated', onCookieAnswer);
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
       window.removeEventListener('appinstalled', onInstalled);
-      if (timer) clearTimeout(timer);
+      timers.forEach(clearTimeout);
     };
   }, []);
 

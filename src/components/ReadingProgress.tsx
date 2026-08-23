@@ -151,7 +151,8 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   showInCorner = true
 }) => {
   const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(true); // Always visible from start
+  // Pasul 2308009: apare doar dupa ce cititorul a derulat in jos.
+  const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [bottomOffset, setBottomOffset] = useState(110); // Pasul 2202000: Higher default for PWA bottom bar + safe-area
 
@@ -173,7 +174,6 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
     // Pasul 2202000: Default bottom accounts for mobile bottom bar (~80px) + safe-area (~34px) or desktop (24px)
     const defaultBottom = isMobile ? 110 : 24;
     const margin = 16; // space between button and footer top
-    const btnH = isMobile ? 40 : size;
 
     const adjustPosition = () => {
       // Find the main site footer (the one in layout)
@@ -189,14 +189,13 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
       if (footerVisibleHeight > 0) {
         // Footer is partially/fully visible — keep button above it.
         //
-        // Pasul 2308006-A — REPARATIE MOBIL:
-        // pe telefon footer-ul este foarte inalt (coloanele se aseaza una sub
-        // alta). Cand ajungeai jos in articol, `footerVisibleHeight` devenea
-        // mai mare decat inaltimea ecranului, iar butonul era impins DEASUPRA
-        // ecranului — de aceea sageata nu se mai vedea deloc pe mobil, desi
-        // pe desktop aparea. Acum limitam cat de sus poate urca butonul, ca sa
-        // ramana mereu vizibil.
-        const maxBottom = Math.max(defaultBottom, windowHeight - btnH - 3 * margin);
+        // Pasul 2308009 — REPARATIE: pe telefon footer-ul este foarte inalt
+        // (coloanele se aseaza una sub alta). Cand ajungeai jos in articol,
+        // `footerVisibleHeight` devenea cat tot ecranul, iar butonul urca pana
+        // in coltul din DREAPTA SUS, peste bara de progres — exact ce se vedea
+        // in captura de ecran. Acum butonul nu poate urca mai sus de un sfert
+        // din ecran, deci ramane mereu jos, langa bara de control.
+        const maxBottom = Math.max(defaultBottom, windowHeight * 0.25);
         setBottomOffset(Math.min(footerVisibleHeight + margin, maxBottom));
       } else {
         // Footer not visible yet — stay at default
@@ -232,8 +231,8 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
       const total = document.documentElement.scrollHeight - window.innerHeight;
       const percentage = total > 0 ? Math.min(100, (scrolled / total) * 100) : 0;
       setProgress(percentage);
-      // Always visible, no need to hide based on scroll position
-      setIsVisible(true);
+      // Pasul 2308009: sus de tot butonul nu are rost — apare dupa ~300px.
+      setIsVisible(scrolled > 300);
     };
 
     let ticking = false;
@@ -302,8 +301,15 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   return (
     <button
       onClick={scrollToTop}
-      className="fixed right-4 sm:right-6 z-[250] transition-all duration-150 cursor-pointer group shadow-lg hover:shadow-xl"
-      style={{ opacity: 1, transform: 'scale(1)', bottom: `${bottomOffset}px` }}
+      className="fixed right-4 sm:right-6 z-[250] transition-all duration-300 cursor-pointer group shadow-lg hover:shadow-xl"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'scale(1)' : 'scale(0.8)',
+        pointerEvents: isVisible ? 'auto' : 'none',
+        bottom: `${bottomOffset}px`,
+      }}
+      aria-hidden={!isVisible}
+      tabIndex={isVisible ? 0 : -1}
       aria-label="Scroll to top"
     >
       <div className="relative">

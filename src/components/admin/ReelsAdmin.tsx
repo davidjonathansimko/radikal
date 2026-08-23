@@ -366,13 +366,19 @@ export default function ReelsAdmin() {
         reference: localizedRef,
         backgroundImageUrl: (r.background_image_url as string) ?? null,
         audioUrl: (r.audio_url as string) ?? null,
-        // Pasul 2308000: rândurile alese manual și stilul literelor.
-        // Rândurile manuale sunt scrise în română, deci le folosim doar
-        // pentru descărcarea în română. Altfel textul tradus nu s-ar potrivi.
-        manualPages:
-          exportLang === 'ro' && Array.isArray(r.manual_pages)
-            ? (r.manual_pages as string[])
-            : null,
+        // Pasul 2308009: rândurile alese manual sunt acum traduse rând cu rând
+        // și salvate despărțite prin linie nouă. Le folosim în ORICE limbă,
+        // dar doar dacă numărul de rânduri este același ca în original —
+        // altfel lăsăm împărțirea automată, ca textul să nu apară rupt.
+        manualPages: (() => {
+          const manualRo = Array.isArray(r.manual_pages)
+            ? (r.manual_pages as string[]).map((p) => (p || '').trim()).filter(Boolean)
+            : [];
+          if (manualRo.length === 0) return null;
+          if (exportLang === 'ro') return manualRo;
+          const parts = localized.split('\n').map((p) => p.trim()).filter(Boolean);
+          return parts.length === manualRo.length ? parts : null;
+        })(),
         uppercase: Boolean(r.uppercase_text),
         onProgress: setExportProgress,
         effects: {

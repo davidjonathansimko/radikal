@@ -30,7 +30,7 @@ import { fetchCategories, matchesSelectedCategories, type Category } from '@/lib
 import BlogAudioGenerator from '@/components/admin/BlogAudioGenerator';
 import CustomAudioManager from '@/components/admin/CustomAudioManager';
 import BlogPreviewModal from '@/components/admin/BlogPreviewModal';
-import { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
+import ImageEffectLayers, { DEFAULT_IMAGE_EFFECTS, effectsFilter, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import AdminListFilterBar from '@/components/admin/AdminListFilterBar';
 // Pasul A08 — pictograme SVG monocrome (fara emoji colorate)
 import {
@@ -971,7 +971,8 @@ export default function AdminPage() {
                     Gilt nur für diesen Blog — jeder Beitrag darf anders aussehen.
                   </p>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-5 lg:grid-cols-[1fr_auto]">
+                  <div className="grid gap-4 sm:grid-cols-2 min-w-0">
                     {([
                       ['Beitragsbild — Deckkraft', postImageOpacity, setPostImageOpacity, '%'],
                       ['Beitragsbild — Schatten', postImageShadow, setPostImageShadow, '%'],
@@ -1010,6 +1011,80 @@ export default function AdminPage() {
                         />
                       </label>
                     )}
+                  </div>
+
+                  {/* ----------------------------------------------------------
+                      Pasul 2308009 — PREVIZUALIZARE LIVE.
+                      Aceleasi formule ca pe pagina publica, ca sa vezi exact
+                      ce se intampla cand tragi de fiecare cursor.
+                      ---------------------------------------------------------- */}
+                  <div className="lg:w-[300px]">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/60">
+                      So sieht es aus
+                    </p>
+
+                    {formData.image_url ? (
+                      <div className="grid gap-3">
+                        {/* Imaginea articolului */}
+                        <div>
+                          <p className="mb-1 text-[11px] text-white/50">Beitragsbild</p>
+                          <div
+                            className="relative overflow-hidden rounded-lg bg-black"
+                            style={{
+                              aspectRatio: '16 / 9',
+                              boxShadow:
+                                postImageShadow > 0
+                                  ? `0 ${Math.round(postImageShadow * 0.4)}px ${Math.round(
+                                      postImageShadow * 0.9,
+                                    )}px rgba(0,0,0,${(postImageShadow / 100) * 0.75})`
+                                  : 'none',
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={formData.image_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              style={{ opacity: postImageOpacity / 100, filter: effectsFilter(postEffects) }}
+                            />
+                            <ImageEffectLayers settings={postEffects} zIndex={2} />
+                          </div>
+                        </div>
+
+                        {/* Imaginea de fundal a paginii, cu valul de deasupra */}
+                        <div>
+                          <p className="mb-1 text-[11px] text-white/50">Hintergrundbild (Seite)</p>
+                          <div
+                            className="relative overflow-hidden rounded-lg bg-black"
+                            style={{ aspectRatio: '16 / 9' }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={formData.image_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              style={{
+                                opacity: backgroundOpacity / 100,
+                                filter:
+                                  backgroundShadow > 0
+                                    ? `brightness(${1 - backgroundShadow / 200})`
+                                    : 'none',
+                              }}
+                            />
+                            {/* Acelasi val ca pe pagina publica (tema intunecata) */}
+                            <div className="absolute inset-0 bg-black/50" />
+                            <p className="absolute inset-0 flex items-center justify-center px-3 text-center text-[11px] leading-snug text-white">
+                              Beispieltext — so gut ist der Text lesbar
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-white/20 px-3 text-center text-xs text-white/40">
+                        Lade zuerst ein Bild hoch — dann siehst du hier sofort, was jeder Regler bewirkt.
+                      </div>
+                    )}
+                  </div>
                   </div>
                 </div>
 

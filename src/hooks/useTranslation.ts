@@ -11,6 +11,49 @@ interface TranslationCache {
   [key: string]: string;
 }
 
+// ---------------------------------------------------------------------------
+// Pasul 2308009 — UN SINGUR cache, comun tuturor paginilor.
+//
+// Inainte, fiecare componenta avea propriul `useRef`. Cand treceai de pe blog
+// pe meniu si inapoi, componenta se re-monta, cache-ul disparea si se cerea din
+// nou aceeasi traducere. De aceea vedeai la nesfarsit "DeepL: Translating..."
+// in consola. Acum:
+//   1. cache-ul sta in afara componentelor → supravietuieste navigarii;
+//   2. este salvat in `sessionStorage` → supravietuieste si unui refresh (F5),
+//      pana cand inchizi fila.
+// Costul la DeepL era deja zero (serverul are cache in Supabase), dar acum nu
+// se mai face nici macar cererea catre server.
+// ---------------------------------------------------------------------------
+const STORE_KEY = 'radikal-translation-cache';
+const MAX_ENTRIES = 500;
+
+const sharedCache: TranslationCache = (() => {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(sessionStorage.getItem(STORE_KEY) || '{}') as TranslationCache;
+  } catch {
+    return {};
+  }
+})();
+
+let persistTimer: ReturnType<typeof setTimeout> | undefined;
+function persistCache() {
+  if (typeof window === 'undefined') return;
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    try {
+      const keys = Object.keys(sharedCache);
+      // Nu lasam cache-ul sa creasca la nesfarsit — sessionStorage are limita.
+      if (keys.length > MAX_ENTRIES) {
+        keys.slice(0, keys.length - MAX_ENTRIES).forEach((k) => delete sharedCache[k]);
+      }
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(sharedCache));
+    } catch {
+      /* sessionStorage plin sau blocat — mergem mai departe fara persistenta */
+    }
+  }, 400);
+}
+
 interface UseTranslationReturn {
   translate: (text: string, targetLang: string, sourceLang?: string, autoDetect?: boolean) => Promise<string>;
   translateBatch: (texts: string[], targetLang: string, sourceLang?: string, autoDetect?: boolean) => Promise<string[]>;
@@ -24,7 +67,7 @@ export function useTranslation(): UseTranslationReturn {
   const [error, setError] = useState<string | null>(null);
   
   // Cache to avoid re-translating the same text / Cache um Neu-Übersetzung zu vermeiden / Cache pentru a evita re-traducerea aceluiași text
-  const cacheRef = useRef<TranslationCache>({});
+  const cacheRef = useRef<TranslationCache>(sharedCache);
 
   // Generate cache key / Cache-Schlüssel generieren / Generează cheia cache
   const getCacheKey = (text: string, targetLang: string, sourceLang: string) => {
@@ -84,6 +127,7 @@ export function useTranslation(): UseTranslationReturn {
       
       // Store in cache / Im Cache speichern / Stochează în cache
       cacheRef.current[cacheKey] = data.translatedText;
+      persistCache();
       
       return data.translatedText;
     } catch (err) {
@@ -179,6 +223,7 @@ export function useTranslation(): UseTranslationReturn {
         const cacheKey = getCacheKey(texts[originalIndex], targetLang, autoDetect ? 'auto' : sourceLang);
         cacheRef.current[cacheKey] = translated;
       });
+      persistCache();
 
       console.log('✅ DeepL: Batch translation successful');
       return results;
@@ -194,7 +239,12 @@ export function useTranslation(): UseTranslationReturn {
 
   // Clear translation cache / Übersetzungs-Cache leeren / Golește cache-ul de traduceri
   const clearCache = useCallback(() => {
-    cacheRef.current = {};
+    Object.keys(sharedCache).forEach((k) => delete sharedCache[k]);
+    try {
+      sessionStorage.removeItem(STORE_KEY);
+    } catch {
+      /* ignoram */
+    }
     console.log('🗑️ DeepL: Translation cache cleared');
   }, []);
 

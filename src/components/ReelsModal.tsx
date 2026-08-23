@@ -116,11 +116,35 @@ function rotateFromStoredOffset<T>(items: T[]): T[] {
 // ---------------------------------------------------------------------------
 // TRADUCERE DeepL — traduce reels-urile in limba selectata si salveaza
 // rezultatul in baza de date, ca sa nu platim de doua ori pentru acelasi text.
+//
+// Pasul 2308009 — RANDURILE ALESE MANUAL raman aceleasi in orice limba.
+// Inainte traduceam tot textul intr-o bucata, iar la afisare se reimpartea
+// automat: 4 randuri scrise de tine in romana ajungeau 2 randuri in germana.
+// Acum traducem FIECARE RAND separat si il tinem minte separat (randurile sunt
+// despartite prin linie noua in `content_<limba>`).
 // ---------------------------------------------------------------------------
+function splitPages(text: string | null | undefined): string[] {
+  return (text || '')
+    .split('\n')
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+function manualPagesOf(row: Record<string, unknown>): string[] {
+  return Array.isArray(row.manual_pages)
+    ? (row.manual_pages as string[]).map((p) => (p || '').trim()).filter(Boolean)
+    : [];
+}
+
 async function translateMissing(
   rows: Record<string, unknown>[],
   language: string,
-  onTranslated: (id: string, content: string, reference: string | null) => void
+  onTranslated: (
+    id: string,
+    content: string,
+    reference: string | null,
+    pages: string[] | null
+  ) => void
 ) {
   if (!rows || rows.length === 0) return;
 
@@ -132,39 +156,63 @@ async function translateMissing(
 
     // Textul e deja in limba ceruta -> nu traducem
     if (source === language) continue;
-    // Avem deja traducerea salvata -> nu traducem din nou
-    if (row[`content_${language}`]) continue;
+
+    const manual = manualPagesOf(row);
+    const cached = row[`content_${language}`] as string | null;
+
+    // Avem deja traducerea salvata SI are acelasi numar de randuri -> gata.
+    // (Pentru reels-urile traduse inainte de pasul 2308009, numarul nu se
+    // potriveste, deci le traducem o singura data din nou, corect.)
+    if (cached && (manual.length === 0 || splitPages(cached).length === manual.length)) {
+      continue;
+    }
 
     const originalContent = (row.content as string) || '';
     const originalReference = (row.reference as string) || '';
-    if (!originalContent.trim()) continue;
+    if (manual.length === 0 && !originalContent.trim()) continue;
 
     try {
+      // Cu randuri manuale trimitem o LISTA (fiecare rand separat).
+      // Fara ele, trimitem textul intreg, ca pana acum.
+      const payload =
+        manual.length > 0
+          ? [...manual, originalReference]
+          : originalReference
+            ? `${originalContent}\n---\n${originalReference}`
+            : originalContent;
+
       const res = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: originalReference
-            ? `${originalContent}\n---\n${originalReference}`
-            : originalContent,
-          targetLang: language,
-          sourceLang: source,
-        }),
+        body: JSON.stringify({ text: payload, targetLang: language, sourceLang: source }),
       });
 
       if (!res.ok) continue;
 
       const json = await res.json();
-      const translatedRaw: string = json.translatedText || json.translation || json.text || '';
-      if (!translatedRaw) continue;
+      const raw = json.translatedText ?? json.translation ?? json.text;
 
-      const [tContent, tReference] = translatedRaw.split('\n---\n');
-      const finalContent = (tContent || '').trim();
-      const finalReference = (tReference || '').trim() || null;
-      if (!finalContent) continue;
+      let finalPages: string[] | null = null;
+      let finalContent = '';
+      let finalReference: string | null = null;
+
+      if (manual.length > 0) {
+        const list: string[] = Array.isArray(raw) ? raw : [];
+        // Ultimul element este referinta, restul sunt randurile.
+        const translatedPages = list.slice(0, manual.length).map((p) => (p || '').trim()).filter(Boolean);
+        if (translatedPages.length !== manual.length) continue;
+        finalPages = translatedPages;
+        finalContent = translatedPages.join('\n');
+        finalReference = (list[manual.length] || '').trim() || null;
+      } else {
+        const [tContent, tReference] = String(raw || '').split('\n---\n');
+        finalContent = (tContent || '').trim();
+        finalReference = (tReference || '').trim() || null;
+        if (!finalContent) continue;
+      }
 
       // Afisam imediat
-      onTranslated(id, finalContent, finalReference);
+      onTranslated(id, finalContent, finalReference, finalPages);
 
       // Salvam in cache, ca sa nu mai cerem data viitoare
       await supabase.rpc('cache_reel_translation', {
@@ -394,7 +442,9 @@ export function ReelSlide({
       tlRef.current?.kill();
       tlRef.current = null;
       const words = wordsRef.current.filter(Boolean);
-      gsap.set(words, { opacity: 0 });
+      // Pasul 2308009: fara cuvinte pe ecran (text inca netradus), GSAP
+      // scria „target not found" in consola la fiecare derulare.
+      if (words.length > 0) gsap.set(words, { opacity: 0 });
       if (citeRef.current) gsap.set(citeRef.current, { opacity: 0 });
     };
 
@@ -927,14 +977,17 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
               effect_bloom: Boolean(row.effect_bloom),
               effect_letterbox: Boolean(row.effect_letterbox),
               effect_light_leak: Boolean(row.effect_light_leak),
-              // Pasul 2308006-A — randurile alese manual (daca exista).
-              // Le folosim DOAR pe romana: ele sunt scrise de tine in romana,
-              // iar la celelalte limbi textul vine tradus de DeepL si se
-              // imparte automat, altfel cititorul german ar vedea romaneste.
-              manual_pages:
-                isRo && Array.isArray(row.manual_pages)
-                  ? (row.manual_pages as string[])
-                  : null,
+              // Pasul 2308009 — randurile alese manual raman ACELEASI in orice
+              // limba. Traducerea salvata tine randurile despartite prin linie
+              // noua; le folosim doar daca numarul se potriveste cu originalul,
+              // altfel lasam impartirea automata (ca sa nu arate rupt).
+              manual_pages: (() => {
+                const manualRo = manualPagesOf(row);
+                if (manualRo.length === 0) return null;
+                if (isRo) return manualRo;
+                const parts = splitPages(translated);
+                return parts.length === manualRo.length ? parts : null;
+              })(),
             };
           });
 
@@ -949,10 +1002,19 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
           );
 
           // Traducem in fundal ce nu are inca traducere pentru limba curenta
-          translateMissing(rows, language, (id, content, reference) => {
+          translateMissing(rows, language, (id, content, reference, pages) => {
             if (cancelled) return;
             setReels((prev) =>
-              prev.map((r) => (r.id === id ? { ...r, content, reference: reference || r.reference } : r))
+              prev.map((r) =>
+                r.id === id
+                  ? {
+                      ...r,
+                      content,
+                      reference: reference || r.reference,
+                      manual_pages: pages ?? r.manual_pages,
+                    }
+                  : r
+              )
             );
           });
 
