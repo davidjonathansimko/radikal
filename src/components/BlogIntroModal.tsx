@@ -76,8 +76,36 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     };
   }, []);
 
+  // Pasul 2308010 — textul scris de TINE, pentru limba curenta.
+  // Daca exista, are prioritate absoluta: nici DeepL, nici textul de rezerva
+  // nu il inlocuiesc. DeepL traduce corect gramatical, dar nu stie ce ai vrut
+  // sa spui — „Nu te lăsa... distras" devenea „Gib nicht auf... Abgelenkt".
+  const manualTitle = useCallback(() => {
+    switch (language) {
+      case 'de': return (post.modal_title_de || '').trim();
+      case 'en': return (post.modal_title_en || '').trim();
+      case 'ru': return (post.modal_title_ru || '').trim();
+      case 'ro': return (post.modal_title_ro || '').trim();
+      default: return '';
+    }
+  }, [language, post]);
+
+  const manualQuestion = useCallback(() => {
+    switch (language) {
+      case 'de': return (post.modal_question_de || '').trim();
+      case 'en': return (post.modal_question_en || '').trim();
+      case 'ru': return (post.modal_question_ru || '').trim();
+      case 'ro': return (post.modal_question_ro || '').trim();
+      default: return '';
+    }
+  }, [language, post]);
+
   // Get title and question based on language (original or already translated in database)
   const getModalTitle = useCallback(() => {
+    // Textul tau, scris de mana, bate orice traducere automata.
+    const mine = manualTitle();
+    if (mine) return mine;
+
     // If we have a DeepL translation, use it / Dacă avem traducere DeepL, o folosim
     if (translatedModalTitle) return translatedModalTitle;
 
@@ -97,9 +125,12 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
       case 'ru': return post.modal_title_ru || (waiting ? '' : 'Ты ищешь истину?');
       default: return waiting ? '' : (post.modal_title || 'Suchst du die Wahrheit?');
     }
-  }, [language, post, translatedModalTitle]);
+  }, [language, post, translatedModalTitle, manualTitle]);
 
   const getModalQuestion = useCallback(() => {
+    const mine = manualQuestion();
+    if (mine) return mine;
+
     // If we have a DeepL translation, use it / Dacă avem traducere DeepL, o folosim
     if (translatedModalQuestion) return translatedModalQuestion;
 
@@ -113,7 +144,7 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
       case 'ru': return post.modal_question_ru || (waiting ? '' : 'Это слово не для всех, а только для тех, кто готов принять истину и волю Божью. А ты?');
       default: return waiting ? '' : (post.modal_question || 'Dieses Wort ist nicht für alle, sondern nur für diejenigen, die bereit sind, die Wahrheit und Gottes Willen anzunehmen. Und du?');
     }
-  }, [language, post, translatedModalQuestion]);
+  }, [language, post, translatedModalQuestion, manualQuestion]);
 
   // 🌐 DeepL: Auto-translate modal title and question when language changes
   // Folosește DeepL pentru traducere automată când limba nu este Română
@@ -121,6 +152,15 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     const translateModalContent = async () => {
       // Skip if Romanian (original language) or no modal content
       if (language === 'ro' || (!post.modal_title && !post.modal_question)) {
+        setTranslatedModalTitle('');
+        setTranslatedModalQuestion('');
+        return;
+      }
+
+      // Pasul 2308010: ai scris tu textul in limba asta -> nu mai chemam DeepL.
+      const mineTitle = manualTitle();
+      const mineQuestion = manualQuestion();
+      if (mineTitle && mineQuestion) {
         setTranslatedModalTitle('');
         setTranslatedModalQuestion('');
         return;
@@ -146,7 +186,7 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     };
 
     translateModalContent();
-  }, [post.modal_title, post.modal_question, language, translate]);
+  }, [post.modal_title, post.modal_question, language, translate, manualTitle, manualQuestion]);
 
   // Typewriter effect for title
   useEffect(() => {

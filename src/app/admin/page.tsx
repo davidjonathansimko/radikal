@@ -101,7 +101,16 @@ export default function AdminPage() {
     // Modal intro fields
     show_intro_modal: false,
     modal_title: '',
-    modal_question: ''
+    modal_question: '',
+    // Pasul 2308010 — traducerea scrisa de mana, pe limbi (gol = DeepL)
+    modal_title_de: '',
+    modal_question_de: '',
+    modal_title_en: '',
+    modal_question_en: '',
+    modal_title_ro: '',
+    modal_question_ro: '',
+    modal_title_ru: '',
+    modal_question_ru: '',
   });
 
   // Pasul 2108002 — fragmente marcate manual ca referinte biblice
@@ -161,6 +170,21 @@ export default function AdminPage() {
 
   /** Pasul 2208002 (punctul 10) — fereastra de previzualizare a articolului */
   const [showPreview, setShowPreview] = useState(false);
+
+  /**
+   * Pasul 2308010 — traducerile scrise de mana pentru modalul de intro.
+   * Camp gol -> trimitem `null`, adica „foloseste DeepL, ca pana acum".
+   */
+  const modalLangColumns = () => ({
+    modal_title_de: formData.modal_title_de.trim() || null,
+    modal_question_de: formData.modal_question_de.trim() || null,
+    modal_title_en: formData.modal_title_en.trim() || null,
+    modal_question_en: formData.modal_question_en.trim() || null,
+    modal_title_ro: formData.modal_title_ro.trim() || null,
+    modal_question_ro: formData.modal_question_ro.trim() || null,
+    modal_title_ru: formData.modal_title_ru.trim() || null,
+    modal_question_ru: formData.modal_question_ru.trim() || null,
+  });
 
   /** Coloanele de efecte, gata de trimis la Supabase */
   const effectColumns = () => ({
@@ -348,6 +372,7 @@ export default function AdminPage() {
         show_intro_modal: formData.show_intro_modal,
         modal_title: formData.modal_title || null,
         modal_question: formData.modal_question || null,
+        ...modalLangColumns(),
         // Pasul 2108002: fragmente marcate manual ca referinte biblice (apar cu rosu)
         bible_refs: bibleRefs,
         // Pasul 2208001: efecte de imagine + blog static/dinamic
@@ -414,6 +439,7 @@ export default function AdminPage() {
           show_intro_modal: formData.show_intro_modal,
           modal_title: formData.modal_title || null,
           modal_question: formData.modal_question || null,
+          ...modalLangColumns(),
           // Pasul 2108002: referinte biblice marcate manual
           bible_refs: bibleRefs,
           // Pasul 2208001: efecte de imagine + blog static/dinamic
@@ -479,7 +505,15 @@ export default function AdminPage() {
       // Modal fields
       show_intro_modal: post.show_intro_modal || false,
       modal_title: post.modal_title || '',
-      modal_question: post.modal_question || ''
+      modal_question: post.modal_question || '',
+      modal_title_de: post.modal_title_de || '',
+      modal_question_de: post.modal_question_de || '',
+      modal_title_en: post.modal_title_en || '',
+      modal_question_en: post.modal_question_en || '',
+      modal_title_ro: post.modal_title_ro || '',
+      modal_question_ro: post.modal_question_ro || '',
+      modal_title_ru: post.modal_title_ru || '',
+      modal_question_ru: post.modal_question_ru || '',
     });
     // Pasul 2108002: incarcam si referintele marcate manual
     setBibleRefs(Array.isArray(post.bible_refs) ? post.bible_refs : []);
@@ -552,7 +586,15 @@ export default function AdminPage() {
       // Reset modal fields
       show_intro_modal: false,
       modal_title: '',
-      modal_question: ''
+      modal_question: '',
+      modal_title_de: '',
+      modal_question_de: '',
+      modal_title_en: '',
+      modal_question_en: '',
+      modal_title_ro: '',
+      modal_question_ro: '',
+      modal_title_ru: '',
+      modal_question_ru: '',
     });
     setBibleRefs([]);
     // Pasul 2208001
@@ -890,6 +932,53 @@ export default function AdminPage() {
                     <p className="text-purple-300/70 text-xs">
                       💡 Die Übersetzung in andere Sprachen erfolgt automatisch.
                     </p>
+
+                    {/* --------------------------------------------------------
+                        Pasul 2308010 — SCRIE TU TEXTUL, PE FIECARE LIMBĂ.
+                        Gol = traduce DeepL (ca până acum).
+                        Scris = se folosește EXACT ce ai scris tu.
+                        -------------------------------------------------------- */}
+                    <details className="rounded-lg border border-purple-500/30 bg-black/20 p-3">
+                      <summary className="cursor-pointer text-sm font-semibold text-purple-200">
+                        Eigene Übersetzung schreiben (optional)
+                      </summary>
+                      <p className="mt-2 text-xs text-purple-300/70">
+                        Leer lassen = DeepL übersetzt automatisch. Ausgefüllt = genau dein Text
+                        wird angezeigt. Nützlich, wenn die Maschine den Sinn verfehlt
+                        („Nu te lăsa… distras&ldquo; → „Lass dich nicht… ablenken&ldquo;).
+                      </p>
+
+                      <div className="mt-3 grid gap-4">
+                        {([
+                          ['de', 'Deutsch'],
+                          ['en', 'English'],
+                          ['ro', 'Română'],
+                          ['ru', 'Русский'],
+                        ] as const).map(([code, name]) => (
+                          <div key={code} className="grid gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-white/50">
+                              {name}
+                            </p>
+                            <input
+                              type="text"
+                              name={`modal_title_${code}`}
+                              value={formData[`modal_title_${code}` as keyof typeof formData] as string}
+                              onChange={handleInputChange}
+                              className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              placeholder="Titel — leer = automatisch"
+                            />
+                            <textarea
+                              name={`modal_question_${code}`}
+                              value={formData[`modal_question_${code}` as keyof typeof formData] as string}
+                              onChange={handleInputChange}
+                              rows={2}
+                              className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              placeholder="Frage/Text — leer = automatisch"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                   </div>
                 )}
               </div>
@@ -996,6 +1085,21 @@ export default function AdminPage() {
                     ))}
 
                     {isDynamic && (
+                      <>
+                      <label className="block">
+                        <span className="mb-1 flex items-center justify-between text-xs text-white/80">
+                          {'„Play Blog" — Deckkraft'}
+                          <span className="tabular-nums text-white/60">{modalBgOpacity}%</span>
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={modalBgOpacity}
+                          onChange={(e) => setModalBgOpacity(Number(e.target.value))}
+                          className="w-full cursor-pointer accent-white"
+                        />
+                      </label>
                       <label className="block">
                         <span className="mb-1 flex items-center justify-between text-xs text-white/80">
                           {'„Play Blog" — Schatten'}
@@ -1010,6 +1114,7 @@ export default function AdminPage() {
                           className="w-full cursor-pointer accent-white"
                         />
                       </label>
+                      </>
                     )}
                   </div>
 
@@ -1078,6 +1183,37 @@ export default function AdminPage() {
                             </p>
                           </div>
                         </div>
+
+                        {/* Modalul „Play Blog" — 9:16, exact ca pe telefon */}
+                        {isDynamic && (
+                          <div>
+                            <p className="mb-1 text-[11px] text-white/50">{'„Play Blog"'}</p>
+                            <div
+                              className="relative mx-auto overflow-hidden rounded-lg bg-black"
+                              style={{ aspectRatio: '9 / 16', maxHeight: '260px' }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={formData.image_url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                style={{
+                                  opacity: modalBgOpacity / 100,
+                                  filter: [
+                                    effectsFilter(modalEffects),
+                                    modalBgShadow > 0 ? `brightness(${1 - modalBgShadow / 200})` : '',
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' '),
+                                }}
+                              />
+                              <ImageEffectLayers settings={modalEffects} zIndex={2} />
+                              <p className="absolute inset-0 z-[3] flex items-center justify-center px-4 text-center font-cinzel text-[11px] italic leading-relaxed text-white">
+                                So erscheint der gesprochene Text
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-white/20 px-3 text-center text-xs text-white/40">

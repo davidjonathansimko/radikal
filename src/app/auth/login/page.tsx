@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
 import { clearGuestMode } from '@/hooks/useGuestMode';
+import { ADMIN_ENTRY_KEY } from '@/lib/maintenance';
 import { FaGoogle, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function LoginPage() {
@@ -31,6 +32,17 @@ export default function LoginPage() {
   // Verfolgt ob Login erfolgreich war um modal-active während Weiterleitung beizubehalten
   // Urmărește dacă login-ul a fost reușit pentru a păstra modal-active în timpul redirecționării
   const [loginSuccess, setLoginSuccess] = useState(false);
+
+  // Pasul 2308010 — s-a intrat prin usa ascunsa din ecranul „in lucru".
+  // Atunci pagina arata DOAR autentificarea: fara înregistrare, fara altceva.
+  const [adminEntry, setAdminEntry] = useState(false);
+  useEffect(() => {
+    try {
+      setAdminEntry(sessionStorage.getItem(ADMIN_ENTRY_KEY) === '1');
+    } catch {
+      /* sessionStorage blocat */
+    }
+  }, []);
   
   // Supabase client / Supabase-Client
   const supabase = createClient();
@@ -314,6 +326,7 @@ export default function LoginPage() {
             </button>
 
             {/* Sign up link / Registrierungs-Link */}
+            {!adminEntry && (
             <div className="text-center">
               <span className="text-white/60 text-sm">
                 {language === 'de' ? 'Haben Sie noch kein Konto?' : 
@@ -331,6 +344,7 @@ export default function LoginPage() {
                  'Регистрация'}
               </Link>
             </div>
+            )}
           </div>
         </div>
 

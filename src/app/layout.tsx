@@ -226,6 +226,13 @@ export default function RootLayout({
                   {/* Background animation component commented out for restoration later / Hintergrundanimations-Komponente für spätere Wiederherstellung auskommentiert / Componenta animație fundal comentată pentru restaurare ulterioară */}
                   {/* <BackgroundAnimation /> */}
                     
+                  {/* Pasul 2308010 — „Sari la conținut": invizibil cu mausul,
+                      apare la prima apăsare de Tab. Ajută cititorul de ecran și
+                      pe cine navighează doar de la tastatură. */}
+                  <a href="#main-content" className="skip-link">
+                    Zum Inhalt springen
+                  </a>
+
                   {/* Main navigation / Hauptnavigation / Navigare principală */}
                   <Navigation />
                   
@@ -233,7 +240,7 @@ export default function RootLayout({
                   <ReadingModeOverlay />
 
                   {/* Pasul 2102003: Mobile — pt-12 for ultra-thin header, pb-24 for bottom bar; Desktop — pt-16 for top nav */}
-                  <main className="relative z-10 pt-12 pb-24 lg:pb-0 lg:pt-16">
+                  <main id="main-content" tabIndex={-1} className="relative z-10 pt-12 pb-24 lg:pb-0 lg:pt-16">
                     <ErrorBoundary>
                       {children}
                     </ErrorBoundary>

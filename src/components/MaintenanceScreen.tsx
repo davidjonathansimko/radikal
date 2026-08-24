@@ -15,9 +15,11 @@
 // =====================================================================
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import {
   buildMaintenanceMessage,
+  ADMIN_ENTRY_KEY,
   type MaintenanceSettings,
   type MaintenanceLanguage,
 } from '@/lib/maintenance';
@@ -28,11 +30,35 @@ export default function MaintenanceScreen({
   settings: MaintenanceSettings;
 }) {
   const { language } = useLanguage();
+  const router = useRouter();
   const lang = (['ro', 'de', 'en', 'ru'].includes(language)
     ? language
     : 'de') as MaintenanceLanguage;
 
   const message = buildMaintenanceMessage(settings, lang);
+
+  // -------------------------------------------------------------------
+  // Pasul 2308010 — USA ASCUNSA A ADMINULUI
+  // Tii apasat pe cuvantul „radikal." timp de 2 secunde si ajungi direct
+  // la pagina de login. O apasare scurta, din greseala, nu face nimic —
+  // deci un vizitator nu poate ocoli ecranul de lucrari.
+  // -------------------------------------------------------------------
+  const holdTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = setTimeout(() => {
+      sessionStorage.setItem(ADMIN_ENTRY_KEY, '1');
+      router.push('/auth/login');
+    }, 2000);
+  };
+
+  const cancelHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  };
+
+  React.useEffect(() => cancelHold, []);
 
   return (
     <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center overflow-hidden bg-black px-6 text-white">
@@ -53,8 +79,17 @@ export default function MaintenanceScreen({
       )}
 
       <div className="relative z-10 flex flex-col items-center text-center">
-        {/* Logo — apare primul, exact ca la intro */}
-        <h1 className="play-blog-enter font-cinzel text-4xl font-bold tracking-tight sm:text-5xl">
+        {/* Logo — apare primul, exact ca la intro.
+            Este si usa ascunsa a adminului (apasare lunga, 2 secunde). */}
+        <h1
+          onPointerDown={startHold}
+          onPointerUp={cancelHold}
+          onPointerLeave={cancelHold}
+          onPointerCancel={cancelHold}
+          onContextMenu={(e) => e.preventDefault()}
+          className="play-blog-enter cursor-default select-none font-cinzel text-4xl font-bold tracking-tight sm:text-5xl"
+          style={{ WebkitTouchCallout: 'none' }}
+        >
           radikal<span className="opacity-70">.</span>
         </h1>
 

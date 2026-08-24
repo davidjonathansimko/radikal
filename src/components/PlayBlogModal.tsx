@@ -48,6 +48,12 @@ export interface PlayBlogModalProps {
   language: string;
   effects: ImageEffectSettings;
   backgroundOpacity: number; // 0–100
+  /**
+   * Pasul 2308010 — cat de intunecata este imaginea de fundal (0–100).
+   * Valoarea era salvata in `modal_background_shadow`, dar nu ajungea
+   * niciodata aici, asa ca reglajul din admin nu facea nimic.
+   */
+  backgroundShadow?: number;
   isLiked: boolean;
   onToggleLike: () => void;
 }
@@ -70,6 +76,7 @@ export default function PlayBlogModal({
   language,
   effects,
   backgroundOpacity,
+  backgroundShadow = 0,
   isLiked,
   onToggleLike,
 }: PlayBlogModalProps) {
@@ -447,7 +454,15 @@ export default function PlayBlogModal({
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: effectsFilter(effects), opacity: backgroundOpacity / 100 }}
+          style={{
+            filter: [
+              effectsFilter(effects),
+              backgroundShadow > 0 ? `brightness(${1 - backgroundShadow / 200})` : '',
+            ]
+              .filter(Boolean)
+              .join(' '),
+            opacity: backgroundOpacity / 100,
+          }}
         />
       )}
       <ImageEffectLayers settings={effects} zIndex={1} />
@@ -467,10 +482,11 @@ export default function PlayBlogModal({
       </button>
       )}
 
-      {/* ---------- LIKE (sub „×") + SHARE (sub Like) ---------- */}
+      {/* ---------- LIKE (sub „×") + SHARE (sub Like) ----------
+          Pasul 2308010: butoanele erau prea inghesuite; sub ele e loc destul. */}
       {!frozen && (
       <div
-        className={`absolute right-4 top-[76px] z-30 flex flex-col items-center gap-3 transition-opacity duration-700 ${
+        className={`absolute right-4 top-[86px] z-30 flex flex-col items-center gap-5 transition-opacity duration-700 ${
           uiVisible ? 'opacity-70' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -616,22 +632,36 @@ export default function PlayBlogModal({
                       style={{
                         opacity,
                         filter: reduceMotion ? 'none' : `blur(${blurPx}px)`,
+                        // Pasul 2308010 — SENZATIA DE SCRIS DE MANA.
+                        // Pe langa deplasare adaugam o inclinare si o marire
+                        // foarte mici: litera pare ca este trasa pe hartie,
+                        // nu ca se aprinde dintr-odata. Valorile sunt
+                        // intentionat mici — la 3° si 4% ochiul simte miscarea,
+                        // dar nu o observa ca efect.
                         transform: reduceMotion
                           ? 'none'
-                          : `translate(${shiftPx}px, ${liftPx}px)`,
+                          : spoken
+                            ? 'translate(0px, 0px) rotate(0deg) scale(1)'
+                            : `translate(${shiftPx}px, ${liftPx}px) rotate(-3deg) scale(0.96)`,
+                        transformOrigin: '0% 100%',
                         transition: reduceMotion
                           ? 'none'
                           : // 800 ms + „power2.out" = exact ca timeline-ul GSAP din reels
                             'opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), ' +
-                            'filter 800ms cubic-bezier(0.22, 1, 0.36, 1), ' +
-                            'transform 800ms cubic-bezier(0.22, 1, 0.36, 1)',
+                            'filter 700ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+                            // Pentru miscare folosim o curba cu o urma de elan
+                            // („overshoot"), ca la varful unui condei ridicat
+                            // de pe hartie.
+                            'transform 820ms cubic-bezier(0.16, 1.02, 0.28, 1)',
                         // Pasul A03 — intarzierea literelor este PLAFONATA la
                         // 6 litere (max 132 ms). Asa „Gerechtigkeit" se scrie
                         // in acelasi ritm ca „und", iar textul nu ramane
                         // treptat in urma vocii.
+                        // Pasul 2308010: 26 ms in loc de 22 — literele se
+                        // insiruie putin mai vizibil, ca la scris.
                         transitionDelay: reduceMotion
                           ? '0ms'
-                          : `${Math.min(li, 6) * 22}ms`,
+                          : `${Math.min(li, 6) * 26}ms`,
                       }}
                     >
                       {ch}

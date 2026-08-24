@@ -115,6 +115,9 @@ export interface BlogPost {
   modal_question_en?: string; // Modal question in English / Modal-Frage auf Englisch
   modal_question_ro?: string; // Modal question in Romanian / Modal-Frage auf Rumänisch
   modal_question_ru?: string; // Modal question in Russian / Modal-Frage auf Russisch
+  // Pasul 2308010 — textul scris manual in germana are prioritate fata de DeepL
+  modal_title_de?: string;
+  modal_question_de?: string;
   show_intro_modal?: boolean; // Whether to show intro modal / Ob Intro-Modal angezeigt werden soll
 }
 

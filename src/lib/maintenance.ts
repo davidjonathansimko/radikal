@@ -20,6 +20,13 @@ import { createClient } from '@/lib/supabase';
 
 export const MAINTENANCE_KEY = 'site_maintenance';
 
+/**
+ * Pasul 2308010 — semnul ca adminul a folosit usa ascunsa (apasare lunga pe
+ * logo). Traieste doar in fila curenta de browser: se sterge singur cand
+ * inchizi fila, deci nu poate fi lasat deschis din greseala.
+ */
+export const ADMIN_ENTRY_KEY = 'radikal-admin-entry';
+
 export type MaintenanceLanguage = 'ro' | 'de' | 'en' | 'ru';
 
 export interface MaintenanceSettings {
@@ -60,6 +67,18 @@ export const DEFAULT_MESSAGE_NO_DATE: Record<MaintenanceLanguage, string> = {
   de: 'Es wird an der Website gearbeitet. Wir sind bald zurück.',
   en: 'The website is under construction. We will be back soon.',
   ru: 'На сайте ведутся работы. Мы скоро вернёмся.',
+};
+
+/**
+ * Pasul 2308010 — propozitia cu data, adaugata dupa textul tau.
+ * Inainte, daca scriai un mesaj propriu („Wir arbeiten") si nu puneai `{date}`
+ * in el, data aleasa nu aparea NICAIERI. Acum o adaugam automat la final.
+ */
+export const BACK_ON_SENTENCE: Record<MaintenanceLanguage, string> = {
+  ro: 'Revenim la data de {date}.',
+  de: 'Wir sind zurück am {date}.',
+  en: 'We will be back on {date}.',
+  ru: 'Мы вернёмся {date}.',
 };
 
 /** Numele lunilor, ca data sa se citeasca frumos in fiecare limba */
@@ -104,7 +123,10 @@ export function buildMaintenanceMessage(
 
   if (custom) {
     // Adminul poate folosi {date} oriunde in textul lui
-    return custom.includes('{date}') ? custom.replace('{date}', dateText) : custom;
+    if (custom.includes('{date}')) return custom.replace('{date}', dateText);
+    // Nu a pus {date}, dar a ales o data -> o adaugam noi, ca sa nu se piarda.
+    if (dateText) return `${custom} ${BACK_ON_SENTENCE[lang].replace('{date}', dateText)}`;
+    return custom;
   }
 
   if (!dateText) return DEFAULT_MESSAGE_NO_DATE[lang];

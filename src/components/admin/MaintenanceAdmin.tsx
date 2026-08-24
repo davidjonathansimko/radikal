@@ -141,6 +141,14 @@ export default function MaintenanceAdmin() {
         </span>
       </label>
 
+      {/* Pasul 2308010 — usa ascunsa, ca sa nu ramai blocat afara */}
+      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+        🔑 <strong>Dacă te deloghezi cât timp modul e pornit:</strong> ține apăsat 2 secunde
+        pe cuvântul <strong>„radikal.&ldquo;</strong> de pe ecranul de lucrări. Te duce direct la
+        pagina de autentificare. O apăsare scurtă nu face nimic, deci un vizitator nu poate
+        ocoli ecranul din greșeală.
+      </p>
+
       {/* --- Data revenirii --- */}
       <div>
         <label htmlFor="return-date" className="mb-1 block text-xs font-medium uppercase tracking-wide text-white/50">

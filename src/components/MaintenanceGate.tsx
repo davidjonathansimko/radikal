@@ -14,19 +14,29 @@
 // =====================================================================
 
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
-import { useMaintenance } from '@/lib/maintenance';
+import { useMaintenance, ADMIN_ENTRY_KEY } from '@/lib/maintenance';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
 
 export default function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const { settings, loading } = useMaintenance();
+  const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  // Pasul 2308010 — adminul a tinut apasat pe logo si vrea sa se autentifice.
+  const [adminEntry, setAdminEntry] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const supabase = createClient();
+
+    try {
+      setAdminEntry(sessionStorage.getItem(ADMIN_ENTRY_KEY) === '1');
+    } catch {
+      /* sessionStorage blocat — usa ascunsa ramane inchisa */
+    }
 
     supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
@@ -56,8 +66,12 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
     return <div className="fixed inset-0 z-[10000] bg-black" aria-hidden="true" />;
   }
 
-  // In lucru + vizitator normal -> totul inghetat
-  if (!isAdmin) return <MaintenanceScreen settings={settings} />;
+  // In lucru + vizitator normal -> totul inghetat.
+  // Singura exceptie: adminul care a folosit usa ascunsa poate ajunge la login.
+  if (!isAdmin) {
+    if (adminEntry && pathname?.startsWith('/auth/login')) return <>{children}</>;
+    return <MaintenanceScreen settings={settings} />;
+  }
 
   // In lucru + admin -> lucreaza normal, dar cu un memento vizibil
   return (

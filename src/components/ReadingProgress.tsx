@@ -171,11 +171,18 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
 
   // Keep circular progress above footer — never descend below it
   useEffect(() => {
-    // Pasul 2202000: Default bottom accounts for mobile bottom bar (~80px) + safe-area (~34px) or desktop (24px)
-    const defaultBottom = isMobile ? 110 : 24;
+    // Pasul 2308010: pe telefon bara de jos (Limbă / Căutare / Temă / Reels)
+    // sta la ~18px + inaltimea ei. Sageata trebuie sa fie EXACT langa ea,
+    // in dreapta, nu deasupra. 86px o aseaza la aceeasi inaltime cu bara.
+    const defaultBottom = isMobile ? 86 : 24;
     const margin = 16; // space between button and footer top
 
     const adjustPosition = () => {
+      // Pasul 2308010 — PE TELEFON NU MAI URCAM DELOC.
+      // Bara de jos acopera oricum footer-ul, deci nu are ce sa incurce.
+      // Ridicarea automata era singurul motiv pentru care sageata fugea in sus.
+      if (isMobile) { setBottomOffset(defaultBottom); return; }
+
       // Find the main site footer (the one in layout)
       const footer = document.querySelector('footer.relative');
       if (!footer) { setBottomOffset(defaultBottom); return; }
@@ -187,15 +194,9 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
       const footerVisibleHeight = windowHeight - footerRect.top;
 
       if (footerVisibleHeight > 0) {
-        // Footer is partially/fully visible — keep button above it.
-        //
-        // Pasul 2308009 — REPARATIE: pe telefon footer-ul este foarte inalt
-        // (coloanele se aseaza una sub alta). Cand ajungeai jos in articol,
-        // `footerVisibleHeight` devenea cat tot ecranul, iar butonul urca pana
-        // in coltul din DREAPTA SUS, peste bara de progres — exact ce se vedea
-        // in captura de ecran. Acum butonul nu poate urca mai sus de un sfert
-        // din ecran, deci ramane mereu jos, langa bara de control.
-        const maxBottom = Math.max(defaultBottom, windowHeight * 0.25);
+        // Pe desktop footer-ul e scund, deci ridicarea are sens; o limitam
+        // totusi la o cincime de ecran, ca sa nu ajunga niciodata sus.
+        const maxBottom = Math.max(defaultBottom, windowHeight * 0.2);
         setBottomOffset(Math.min(footerVisibleHeight + margin, maxBottom));
       } else {
         // Footer not visible yet — stay at default

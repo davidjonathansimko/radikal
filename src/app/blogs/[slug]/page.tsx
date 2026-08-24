@@ -1172,6 +1172,7 @@ export default function BlogPostPage() {
           language={language}
           effects={modalEffects}
           backgroundOpacity={modalBackgroundOpacity}
+          backgroundShadow={post.modal_background_shadow ?? 0}
           isLiked={isLiked}
           onToggleLike={handleLike}
         />

@@ -63,6 +63,8 @@ export function useAnalytics() {
   const pathname = usePathname();
   const supabase = createClient();
   const sessionId = useRef<string>('');
+  // Pasul 2308010 — sesiunea completa se scrie o singura data pe vizita.
+  const sessionSaved = useRef(false);
   const lastActivity = useRef<number>(Date.now());
   const pageStartTime = useRef<number>(Date.now());
 
@@ -113,17 +115,31 @@ export function useAnalytics() {
 
       // Skip session read due to RLS policy issues - just try to insert/upsert
       // Session tracking is done via upsert to avoid SELECT permission issues
-      const { error: sessionUpsertError } = await supabase.from('analytics_sessions').upsert({
-        session_id: sessionId.current,
-        first_page: pathname,
-        last_page: pathname,
-        page_count: 1,
-        referrer: document.referrer || null,
-        ...sessionDeviceInfo,
-      }, { 
-        onConflict: 'session_id',
-        ignoreDuplicates: false 
-      });
+      //
+      // Pasul 2308010 — SESIUNEA SE SCRIE O SINGURA DATA.
+      // Inainte, la fiecare pagina trimiteam din nou intreaga sesiune
+      // (`first_page`, dispozitiv, browser…) si suprascriam prima pagina cu
+      // ultima. In consola vedeai „✅ Session tracked" de zeci de ori.
+      // Acum: prima data scriem sesiunea intreaga, apoi doar actualizam
+      // ultima pagina — o cerere mult mai mica.
+      const firstTime = !sessionSaved.current;
+      const sessionRow = firstTime
+        ? {
+            session_id: sessionId.current,
+            first_page: pathname,
+            last_page: pathname,
+            page_count: 1,
+            referrer: document.referrer || null,
+            ...sessionDeviceInfo,
+          }
+        : {
+            session_id: sessionId.current,
+            last_page: pathname,
+          };
+
+      const { error: sessionUpsertError } = await supabase
+        .from('analytics_sessions')
+        .upsert(sessionRow, { onConflict: 'session_id', ignoreDuplicates: false });
       
       if (sessionUpsertError) {
         // Pasul 2308006-G: daca serverul spune „nu ai voie" (RLS), a doua
@@ -141,9 +157,11 @@ export function useAnalytics() {
 
         if (denied) {
           console.debug(
-            'Analytics: sesiunea nu a putut fi salvata (lipsesc drepturile RLS). ' +
-            'Ruleaza STEP_2308006_FIXES.sql in Supabase.'
+            'Analytics: sesiunea nu a putut fi salvata (lipsesc drepturile pe tabel). ' +
+            'Ruleaza STEP_2308009_ANALYTICS_GRANTS.sql in Supabase.'
           );
+          // Nu mai are rost sa incercam la fiecare pagina.
+          sessionSaved.current = true;
         } else {
           // Pasul A2: NU mai facem insert de rezervă — el genera "409 Conflict"
           // în consolă când rândul există deja. Reîncercăm doar ca upsert care
@@ -164,9 +182,12 @@ export function useAnalytics() {
 
           if (sessionRetryError) {
             console.debug('Analytics: Session upsert issue:', sessionRetryError.code);
+          } else {
+            sessionSaved.current = true;
           }
         }
-      } else {
+      } else if (firstTime) {
+        sessionSaved.current = true;
         console.log('✅ Session tracked');
       }
 

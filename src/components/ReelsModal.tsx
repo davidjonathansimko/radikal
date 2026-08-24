@@ -652,7 +652,7 @@ export function ReelSlide({
           ca sa nu fure ochiul de la text. La atingere / hover revin la
           opacitate deplina, deci raman la fel de usor de folosit. */}
       {!chromeless && (
-      <div className="reel-actions absolute right-4 sm:right-6 bottom-24 flex flex-col items-center gap-6">
+      <div className="reel-actions absolute right-4 sm:right-6 bottom-24 flex flex-col items-center gap-8">
         {/* LIKE — mereu prezent, si pentru reels fara blog */}
         <button
           onClick={() => onToggleLike(reel)}
