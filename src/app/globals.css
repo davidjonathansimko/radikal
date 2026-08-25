@@ -1231,13 +1231,24 @@ body {
 }
 
 /*
-  Pasul 2508000 — `.btn-solid`: butoane cu fundal propriu (negru, alb sau o
-  poza dedesubt). Isi pastreaza EXACT culorile scrise in componenta, pe orice
-  tema. Fara asta, regulile de mai sus le faceau textul negru.
+  Pasul 2508001 — `.btn-solid` NU mai primeste nicio culoare de aici.
+
+  Greseala de la pasul 2508000: scrisesem `color: inherit`. Acesta bate
+  `text-white` din Tailwind (are specificitate mai mare), deci butoanele
+  mosteneau culoarea inchisa a paginii → text negru pe fundal negru.
+  Acum clasa doar EXCLUDE butonul din regulile generale de mai sus, iar
+  culoarea scrisa in componenta (`text-white`, `text-black`) ramane valabila.
 */
-.light .btn-solid,
-.light .btn-solid * {
-  color: inherit;
+
+/* Plasa de siguranta: culoarea ceruta explicit in componenta castiga mereu. */
+.light .btn-solid.text-white,
+.light .btn-solid .text-white {
+  color: #ffffff !important;
+}
+
+.light .btn-solid.text-black,
+.light .btn-solid .text-black {
+  color: #000000 !important;
 }
 
 /* Light theme specific text overrides */
@@ -1259,7 +1270,7 @@ body {
 
 /* Navigation and interactive elements */
 .light nav:not(.force-white-text):not(.force-white-text *),
-.light nav *:not(.force-white-text):not(.force-white-text *) {
+.light nav *:not(.force-white-text):not(.force-white-text *):not(.btn-solid):not(.btn-solid *):not(.btn-primary) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
@@ -1424,6 +1435,19 @@ body {
   }
 }
 
+/* Pasul 2508001 — nimic nu are voie sa iasa in dreapta ecranului.
+   Pe telefoanele inguste, playerul de muzica si barele de reglaj puteau
+   depasi latimea si ramaneau taiate la margine. */
+.global-music-player,
+.blog-music-player {
+  max-width: calc(100vw - 30px);
+  box-sizing: border-box;
+}
+
+input[type='range'] {
+  max-width: 100%;
+}
+
 /* Glass effect with theme support - updated with dark blue-black shadow */
 .glass-effect {
   background: rgba(255, 255, 255, 0.1);
@@ -1450,7 +1474,7 @@ body {
 .btn-primary {
   padding: 0.75rem 1.5rem;
   background-color: #1f2937;
-  color: #ffffff;
+  color: #ffffff !important;
   font-weight: 600;
   border: 1px solid transparent;
   border-radius: 0.5rem;
@@ -1481,7 +1505,8 @@ body {
 /* Light theme specific overrides */
 .light .btn-primary {
   background-color: #000000;
-  color: #ffffff;
+  /* `!important` pentru ca regulile generale de mai sus folosesc tot `!important` */
+  color: #ffffff !important;
   border-color: #000000;
 }
 
@@ -1491,7 +1516,7 @@ body {
 
 .light .btn-secondary {
   background-color: transparent;
-  color: #000000;
+  color: #000000 !important;
   border-color: rgba(0, 0, 0, 0.3);
 }
 

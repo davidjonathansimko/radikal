@@ -64,6 +64,8 @@ export default function ReelsAdmin() {
   // Volumul este mereu 100% — reglajul se face din butoanele telefonului.
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
   const [backgroundOpacity, setBackgroundOpacity] = useState(15);
+  // Pasul 2508001 — aceeasi poza, dar pe TEMA LUMINOASA. `null` = ca la intuneric.
+  const [backgroundOpacityLight, setBackgroundOpacityLight] = useState<number | null>(null);
   const [effectNoise, setEffectNoise] = useState(false);
   // Pasul 2208001: „grain" este un efect SEPARAT de „noise" (poți alege ambele)
   const [effectGrain, setEffectGrain] = useState(false);
@@ -106,6 +108,7 @@ export default function ReelsAdmin() {
     setAudioUrl('');
     setBackgroundImageUrl('');
     setBackgroundOpacity(15);
+    setBackgroundOpacityLight(null);
     setEffectNoise(false);
     setEffectGrain(false);
     setGrainOpacity(25);
@@ -215,6 +218,7 @@ export default function ReelsAdmin() {
         audio_volume: 100,
         background_image_url: backgroundImageUrl.trim() || null,
         background_opacity: backgroundOpacity,
+        background_opacity_light: backgroundOpacityLight,
         effect_noise: effectNoise,
         effect_grain: effectGrain,
         grain_opacity: grainOpacity,
@@ -236,9 +240,22 @@ export default function ReelsAdmin() {
       };
 
       // Pasul 2208001: acelasi formular si creeaza, si modifica.
-      const { error } = editingId
-        ? await supabase.from('reels').update(payload).eq('id', editingId)
-        : await supabase.from('reels').insert(payload);
+      const send = (body: Record<string, unknown>) =>
+        editingId
+          ? supabase.from('reels').update(body).eq('id', editingId)
+          : supabase.from('reels').insert(body);
+
+      let { error } = await send(payload);
+
+      // Pasul 2508001: daca `STEP_2508001_REEL_LIGHT.sql` nu a fost rulat,
+      // coloana noua nu exista. Salvam atunci fara ea, ca sa nu pierzi munca.
+      if (error?.code === '42703') {
+        const { background_opacity_light: _omit, ...withoutLight } = payload;
+        ({ error } = await send(withoutLight));
+        if (!error) {
+          notify('ok', 'Salvat. Reglajul pentru tema luminoasă are nevoie de STEP_2508001_REEL_LIGHT.sql.');
+        }
+      }
 
       if (error) {
         notify('err', `Eroare la salvare: ${error.message}`);
@@ -281,6 +298,9 @@ export default function ReelsAdmin() {
       setAudioUrl((r.audio_url as string) ?? '');
       setBackgroundImageUrl((r.background_image_url as string) ?? '');
       setBackgroundOpacity((r.background_opacity as number) ?? 15);
+      setBackgroundOpacityLight(
+        typeof r.background_opacity_light === 'number' ? (r.background_opacity_light as number) : null,
+      );
       setEffectNoise(Boolean(r.effect_noise));
       setEffectGrain(Boolean(r.effect_grain));
       setGrainOpacity((r.grain_opacity as number) ?? 25);
@@ -643,6 +663,36 @@ export default function ReelsAdmin() {
                   disabled={!backgroundImageUrl}
                   className="w-full accent-black dark:accent-white disabled:opacity-40"
                 />
+                <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
+                  Se folosește pe tema întunecată (fundal negru).
+                </p>
+              </div>
+
+              {/* Pasul 2508001 — pe tema luminoasă fundalul e ALB, deci aceeași
+                  poză arată cu totul altfel. Aici alegi separat cât de deschisă
+                  să fie. Gol = exact ca la tema întunecată. */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
+                  Opacitate pe tema luminoasă: {backgroundOpacityLight ?? backgroundOpacity}%
+                  {backgroundOpacityLight === null && ' (ca la întuneric)'}
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={backgroundOpacityLight ?? backgroundOpacity}
+                  onChange={(e) => setBackgroundOpacityLight(Number(e.target.value))}
+                  disabled={!backgroundImageUrl}
+                  className="w-full accent-black dark:accent-white disabled:opacity-40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBackgroundOpacityLight(null)}
+                  disabled={backgroundOpacityLight === null}
+                  className="mt-1 rounded-lg border border-black/15 dark:border-white/15 px-3 py-1 text-[11px] text-black/70 dark:text-white/70 transition-colors hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-40"
+                >
+                  La fel ca tema întunecată
+                </button>
               </div>
 
               <div>

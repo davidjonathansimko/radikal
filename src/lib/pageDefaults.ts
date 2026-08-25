@@ -32,6 +32,7 @@ let loaded: Promise<void> | null = null;
 export function ensurePageDefaultsLoaded(): Promise<void> {
   if (!loaded) {
     loaded = Promise.all([
+      import('@/app/about/page'),
       import('@/app/impressum/page'),
       import('@/app/datenschutz/page'),
       import('@/app/news/page'),

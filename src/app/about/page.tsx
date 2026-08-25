@@ -11,6 +11,118 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
 import AboutStoryModal from '@/components/AboutStoryModal';
 import AboutIntroQuote from '@/components/AboutIntroQuote';
+import { usePageText } from '@/lib/pageContent';
+import { registerPageDefaults } from '@/lib/pageDefaults';
+
+// =====================================================================
+// Pasul 2508001 — textul paginii, adunat intr-o lista.
+// Inainte statea imprastiat printre elementele de aranjament, cate un
+// „daca limba e de, scrie asta, altfel asta" la fiecare rand. Asa nu putea
+// fi editat din admin. Acum sta aici, iar tu il poti schimba din
+// Setari -> Pagini, in orice limba, fara programator.
+// Textul de aici ramane copia de siguranta: „Inapoi la original" il aduce
+// inapoi oricand.
+// =====================================================================
+const translations = {
+  de: {
+    loading: 'Wird geladen...',
+    title: 'Über uns',
+    discover: 'Entdecke RADIKAL',
+    missionTitle: '',
+    missionP1: 'Wenn du dich dafür entscheidest, Menschen zu gefallen, hörst du auf, ein Diener Christi zu sein. Die Menschenfurcht, die Angst, anzuecken, und der Wunsch nach Akzeptanz sind zur Normalität geworden. Sie haben zur Verwässerung der Wahrheit und zu Verwirrung geführt, sodass sie niemanden mehr stört, sondern gefällig ist. Eine verwässerte Wahrheit, eine versüßte Botschaft und ein Glaube, der niemanden mehr stört, aber auch niemanden mehr rettet, ist nicht mehr die Wahrheit, sondern eine Lüge.',
+    missionP2: 'Jesus Christus ist derselbe gestern, heute und in Ewigkeit. Sein Wort ist die absolute Wahrheit, die heiligt, befreit und jede Versuchung durch die Kraft von „Es steht geschrieben!“ besiegt.',
+    missionP3: 'Darum habe ich RADIKAL geschaffen. Denn „radikal“ bedeutet nicht Extremismus, sondern die Rückkehr zum Wesentlichen, zum lateinischen radix – der Wurzel. Es bedeutet, den Kompromiss zu verweigern und seinen Anker tief in der einzigen Wahrheit zu verankern, die sich niemals ändert: dem Wort Gottes.',
+    valuesTitle: 'Unsere Werte',
+    value1Title: 'Demut',
+    value1Text: 'Ich erhebe mich über niemanden. Ich nehme an keiner Debatte teil – ich schreibe nur. Du allein entscheidest, ob du bleibst oder gehst. „Wer meint, etwas zu sein, obwohl er nichts ist, der betrügt sich selbst.“ (Galater 6,3)',
+    value2Title: 'Biblische Erkenntnis – absolut notwendig',
+    value2Text: 'Der Mangel an Erkenntnis bringt uns geistlich um. „Mein Volk geht zugrunde aus Mangel an Erkenntnis.“ (Hosea 4,6)',
+    value3Title: 'Das Wort des Menschen ist Trug',
+    value3Text: 'Aber das Wort des Herrn ist ohne Trug. „Verflucht ist der Mann, der auf Menschen vertraut.“ (Jeremia 17,5)',
+    value4Title: 'Wachsamkeit',
+    value4Text: 'Der Schlaf der Toten. „Wache auf, der du schläfst, und stehe auf aus den Toten, so wird Christus dich erleuchten!“ (Epheser 5,14)',
+    authorTitle: 'Über den Autor',
+    authorName: 'D. I. Simko',
+    ctaTitle: 'Entdecke',
+    ctaText: '...',
+    ctaBlogs: 'Blogs entdecken',
+    ctaContact: 'Kontakt',
+  },
+  en: {
+    loading: 'Loading...',
+    title: 'About Us',
+    discover: 'Discover RADIKAL',
+    missionTitle: '',
+    missionP1: 'When you choose to please men, you cease to be a servant of Christ. The fear of man, the dread of causing offense, and the desire to be accepted have become the norm, leading to the dilution of truth and to confusion, so that it no longer disturbs anyone but is pleasing instead. A diluted truth, a sugarcoated message, and a faith that no longer offends anyone, but also saves no one, is no longer the truth, but a lie.',
+    missionP2: 'Jesus Christ is the same yesterday, today, and forever. His Word is the absolute truth that sanctifies, sets free, and defeats every temptation through the power of “It is written!”.',
+    missionP3: 'That is why I created RADIKAL. Because “radical” does not mean extremism, but a return to the essence, to the Latin radix—meaning root. It means refusing compromise and anchoring oneself deeply in the only truth that never changes: the Word of God.',
+    valuesTitle: 'Our Values',
+    value1Title: 'Humility',
+    value1Text: 'I will not exalt myself above anyone. I will not engage in any debate – I only write. You alone decide whether you stay or go. “For if anyone thinks he is something when he is nothing, he deceives himself.” (Galatians 6:3)',
+    value2Title: 'Biblical Insight – Absolutely Essential',
+    value2Text: 'Lack of insight is spiritually deadly. “My people are destroyed for lack of knowledge.” (Hosea 4:6)',
+    value3Title: 'Man’s Word is Deception',
+    value3Text: 'But the word of the Lord is without deception. “Cursed is the man who trusts in man.” (Jeremiah 17:5)',
+    value4Title: 'Vigilance',
+    value4Text: 'The sleep of the dead. “Awake, O sleeper, and arise from the dead, and Christ will shine on you!” (Ephesians 5:14)',
+    authorTitle: 'About the Author',
+    authorName: 'D. I. Simko',
+    ctaTitle: 'Discover',
+    ctaText: '...',
+    ctaBlogs: 'Explore Blogs',
+    ctaContact: 'Contact',
+  },
+  ro: {
+    loading: 'Se încarcă...',
+    title: 'Despre Noi',
+    discover: 'Descoperă RADIKAL',
+    missionTitle: 'Cuvânt Înainte',
+    missionP1: 'Când alegi să placi oamenilor, încetezi să mai fii slujitorul lui Hristos. Frica de oameni, teama de a nu deranja și dorința de a fi acceptați au devenit normale și au condus la diluarea adevărului și la confuzie, astfel încât acesta să nu mai deranjeze pe nimeni, ci să fie plăcut. Un adevăr diluat, un mesaj îndulcit și o credință care nu mai deranjează pe nimeni, dar nici nu mai salvează pe nimeni, nu mai reprezintă adevărul, ci o minciună.',
+    missionP2: 'Isus Hristos este Același ieri, azi și în veci. Cuvântul Său este adevărul absolut care sfințește, eliberează și învinge orice ispită prin puterea lui „Este scris!”.',
+    missionP3: 'De aceea am creat RADIKAL. Pentru că „radical” nu înseamnă extremism, ci întoarcere la esență, la latinescul radix – rădăcină. Înseamnă să refuzi compromisul și să îți înfigi adânc ancora în singurul adevăr care nu se schimbă niciodată: Cuvântul lui Dumnezeu.',
+    valuesTitle: 'Valorile Noastre',
+    value1Title: 'Umilință',
+    value1Text: 'Nu mă voi ridica deasupra nimănui. Nu voi participa la nicio dezbatere – eu doar scriu. Tu singur decizi dacă rămâi sau pleci. „Căci dacă cineva se crede ceva, deși nu este nimic, se înșală pe sine însuși.” (Galateni 6:3)',
+    value2Title: 'Să cunosc Biblia – absolut esențial',
+    value2Text: 'Lipsa de cunoștință este spiritual mortală. „Poporul Meu piere din lipsa de cunoștință.” (Osea 4:6)',
+    value3Title: 'Cuvântul omului este înșelător',
+    value3Text: 'Dar cuvântul Domnului este fără înșelare. „Blestemat este omul care se încrede în om.” (Ieremia 17:5)',
+    value4Title: 'Vigilență',
+    value4Text: 'Somnul morților. „Trezește-te, tu care dormi, și scoală-te din morți, și Hristos te va lumina!” (Efeseni 5:14)',
+    authorTitle: 'Despre Autor',
+    authorName: 'D. I. Simko',
+    ctaTitle: 'Descoperă',
+    ctaText: '...',
+    ctaBlogs: 'Explorează Blogurile',
+    ctaContact: 'Contact',
+  },
+  ru: {
+    loading: 'Загрузка...',
+    title: 'О нас',
+    discover: 'Открой RADIKAL',
+    missionTitle: '',
+    missionP1: 'Когда ты решаешь угождать людям, ты перестаешь быть слугой Христа. Страх перед людьми, боязнь кого-то задеть и желание быть принятыми стали нормой. Это привело к размыванию истины и к путанице, из-за чего она больше никого не беспокоит, а лишь ублажает слух. Размытая истина, подслащенное послание и вера, которая больше никого не задевает, но и никого не спасает, — это уже не истина, а ложь.',
+    missionP2: 'Иисус Христос вчера, сегодня и вовеки тот же. Его Слово — это абсолютная истина, которая освящает, освобождает и побеждает любое искушение силой слов «Написано!».',
+    missionP3: 'Поэтому я создал RADIKAL. Ведь «радикальный» означает не экстремизм, а возвращение к сути, к латинскому radix — корень. Это значит отказаться от компромиссов и глубоко укорениться в единственной истине, которая никогда не меняется: в Слове Божьем.',
+    valuesTitle: 'Наши ценности',
+    value1Title: 'Смирение',
+    value1Text: 'Я не возвышусь над кем-либо. Я не буду участвовать в дебатах – я только пишу. Только ты решаешь, остаться или уйти. «Ибо если кто думает, что он что-то, хотя он ничто, тот обманывает самого себя.» (Галатам 6:3)',
+    value2Title: 'Библейское познание – абсолютно необходимо',
+    value2Text: 'Отсутствие познания духовно губительно. «Мой народ погибает за недостатком знания.» (Осия 4:6)',
+    value3Title: 'Слово человека – обман',
+    value3Text: 'Но слово Господа без обмана. «Проклят человек, который надеется на человека.» (Иеремия 17:5)',
+    value4Title: 'Бдительность',
+    value4Text: 'Сон мертвых. «Проснись, спящий, и встань из мертвых, и Христос осветит тебя!» (Ефесянам 5:14)',
+    authorTitle: 'Об авторе',
+    authorName: 'D. I. Simko',
+    ctaTitle: 'Открой',
+    ctaText: '...',
+    ctaBlogs: 'Исследовать блоги',
+    ctaContact: 'Контакт',
+  },
+};
+
+registerPageDefaults('about', translations);
 
 export default function AboutPage() {
   // Protect this route - redirect to home if modal not completed / Diese Route schützen - zur Startseite weiterleiten wenn Modal nicht abgeschlossen / Protejează această rută - redirecționează la pagină principală dacă modalul nu este finalizat
@@ -18,6 +130,7 @@ export default function AboutPage() {
   
   // Get language / Sprache abrufen / Obține limba
   const { language } = useLanguage();
+  const t = usePageText('about', translations, language);
   
   // Short verse screen shown before the page itself.
   // Kurzer Versbildschirm, der vor der Seite selbst gezeigt wird.
@@ -47,10 +160,7 @@ export default function AboutPage() {
             <div className="w-2 h-2 rounded-full bg-black/40 dark:bg-white/40 animate-pull-refresh-dot" style={{ animationDelay: '300ms' }} />
           </div>
           <p className="text-gray-700 dark:text-white/60">
-            {language === 'de' ? 'Wird geladen...' : 
-             language === 'en' ? 'Loading...' : 
-             language === 'ro' ? 'Se încarcă...' : 
-             'Загрузка...'}
+            {t.loading}
           </p>
         </div>
       </div>
@@ -81,10 +191,7 @@ export default function AboutPage() {
         {/* Page header / Seitenkopf / Antet pagină */}
         <header className="text-center mb-16">
           <h1 className="text-4xl sm:text-5xl font-bold text-black dark:text-white mb-6 animate-fadeIn">
-            {language === 'de' ? 'Über uns' : 
-             language === 'en' ? 'About Us' : 
-             language === 'ro' ? 'Despre Noi' : 
-             'О нас'}
+            {t.title}
           </h1>
 
           {/* "Discover RADIKAL" — same bouncing animation as the
@@ -94,18 +201,10 @@ export default function AboutPage() {
             onClick={() => setShowStoryModal(true)}
             className="mx-auto flex flex-col items-center gap-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors duration-300 animate-heartbeat animate-fadeIn"
             style={{ animationDelay: '0.2s' }}
-            aria-label={
-              language === 'de' ? 'Entdecke RADIKAL' :
-              language === 'en' ? 'Discover RADIKAL' :
-              language === 'ro' ? 'Descoperă RADIKAL' :
-              'Открой RADIKAL'
-            }
+            aria-label={t.discover}
           >
             <span className="text-xl sm:text-2xl font-semibold">
-              {language === 'de' ? 'Entdecke RADIKAL' : 
-               language === 'en' ? 'Discover RADIKAL' : 
-               language === 'ro' ? 'Descoperă RADIKAL' : 
-               'Открой RADIKAL'}
+              {t.discover}
             </span>
             <svg 
               className="w-8 h-8" 
@@ -133,42 +232,21 @@ export default function AboutPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-black dark:text-white">
-                {language === 'de' ? '' : 
-                 language === 'en' ? '' : 
-                 language === 'ro' ? 'Cuvânt Înainte' : 
-                 ''}
+                {t.missionTitle}
               </h2>
             </div>
             <div className="text-black/80 dark:text-white/80 leading-relaxed space-y-4">
               
-              <p>
-                {language === 'de' ? 'Wenn du dich dafür entscheidest, Menschen zu gefallen, hörst du auf, ein Diener Christi zu sein. Die Menschenfurcht, die Angst, anzuecken, und der Wunsch nach Akzeptanz sind zur Normalität geworden. Sie haben zur Verwässerung der Wahrheit und zu Verwirrung geführt, sodass sie niemanden mehr stört, sondern gefällig ist. Eine verwässerte Wahrheit, eine versüßte Botschaft und ein Glaube, der niemanden mehr stört, aber auch niemanden mehr rettet, ist nicht mehr die Wahrheit, sondern eine Lüge.' : 
-                 language === 'en' ? 'When you choose to please men, you cease to be a servant of Christ. The fear of man, the dread of causing offense, and the desire to be accepted have become the norm, leading to the dilution of truth and to confusion, so that it no longer disturbs anyone but is pleasing instead. A diluted truth, a sugarcoated message, and a faith that no longer offends anyone, but also saves no one, is no longer the truth, but a lie.' : 
-                 language === 'ro' ? 'Când alegi să placi oamenilor, încetezi să mai fii slujitorul lui Hristos. Frica de oameni, teama de a nu deranja și dorința de a fi acceptați au devenit normale și au condus la diluarea adevărului și la confuzie, astfel încât acesta să nu mai deranjeze pe nimeni, ci să fie plăcut. Un adevăr diluat, un mesaj îndulcit și o credință care nu mai deranjează pe nimeni, dar nici nu mai salvează pe nimeni, nu mai reprezintă adevărul, ci o minciună.' : 
-                 'Когда ты решаешь угождать людям, ты перестаешь быть слугой Христа. Страх перед людьми, боязнь кого-то задеть и желание быть принятыми стали нормой. Это привело к размыванию истины и к путанице, из-за чего она больше никого не беспокоит, а лишь ублажает слух. Размытая истина, подслащенное послание и вера, которая больше никого не задевает, но и никого не спасает, — это уже не истина, а ложь.'}
-              </p>
-              <p>
-                {language === 'de' ? 'Jesus Christus ist derselbe gestern, heute und in Ewigkeit. Sein Wort ist die absolute Wahrheit, die heiligt, befreit und jede Versuchung durch die Kraft von „Es steht geschrieben!“ besiegt.' : 
-                 language === 'en' ? 'Jesus Christ is the same yesterday, today, and forever. His Word is the absolute truth that sanctifies, sets free, and defeats every temptation through the power of "It is written!".' : 
-                 language === 'ro' ? 'Isus Hristos este Același ieri, azi și în veci. Cuvântul Său este adevărul absolut care sfințește, eliberează și învinge orice ispită prin puterea lui „Este scris!”.' : 
-                 'Иисус Христос вчера, сегодня и вовеки тот же. Его Слово — это абсолютная истина, которая освящает, освобождает и побеждает любое искушение силой слов «Написано!».'}
-              </p>
-              <p>
-                {language === 'de' ? 'Darum habe ich RADIKAL geschaffen. Denn „radikal“ bedeutet nicht Extremismus, sondern die Rückkehr zum Wesentlichen, zum lateinischen radix – der Wurzel. Es bedeutet, den Kompromiss zu verweigern und seinen Anker tief in der einzigen Wahrheit zu verankern, die sich niemals ändert: dem Wort Gottes.' : 
-                 language === 'en' ? 'That is why I created RADIKAL. Because "radical" does not mean extremism, but a return to the essence, to the Latin radix—meaning root. It means refusing compromise and anchoring oneself deeply in the only truth that never changes: the Word of God.' : 
-                 language === 'ro' ? 'De aceea am creat RADIKAL. Pentru că „radical” nu înseamnă extremism, ci întoarcere la esență, la latinescul radix – rădăcină. Înseamnă să refuzi compromisul și să îți înfigi adânc ancora în singurul adevăr care nu se schimbă niciodată: Cuvântul lui Dumnezeu.' : 
-                 'Поэтому я создал RADIKAL. Ведь «радикальный» означает не экстремизм, а возвращение к сути, к латинскому radix — корень. Это значит отказаться от компромиссов и глубоко укорениться в единственной истине, которая никогда не меняется: в Слове Божьем.'}
-              </p>
+              <p>{t.missionP1}</p>
+              <p>{t.missionP2}</p>
+              <p>{t.missionP3}</p>
             </div>
           </section>
 
           {/* Values section / Werte-Bereich / Secțiune valori */}
           <section className="animate-fadeIn" style={{ animationDelay: '0.6s' }}>
             <h2 className="text-3xl font-bold text-black dark:text-white text-center mb-12">
-              {language === 'de' ? 'Unsere Werte' : 
-               language === 'en' ? 'Our Values' : 
-               language === 'ro' ? 'Valorile Noastre' : 
-               'Наши ценности'}
+              {t.valuesTitle}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Value 1 / Wert 1 / Valoare 1 */}
@@ -180,17 +258,11 @@ export default function AboutPage() {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-black dark:text-white">
-                    {language === 'de' ? 'Demut' : 
-                     language === 'en' ? 'Humility' : 
-                     language === 'ro' ? 'Umilință' : 
-                     'Смирение'}
+                    {t.value1Title}
                   </h3>
                 </div>
                 <p className="text-black/80 dark:text-white/80 leading-relaxed">
-                  {language === 'de' ? 'Ich erhebe mich über niemanden. Ich nehme an keiner Debatte teil – ich schreibe nur. Du allein entscheidest, ob du bleibst oder gehst. „Wer meint, etwas zu sein, obwohl er nichts ist, der betrügt sich selbst.“ (Galater 6,3) ' : 
-                   language === 'en' ? 'I will not exalt myself above anyone. I will not engage in any debate – I only write. You alone decide whether you stay or go. "For if anyone thinks he is something when he is nothing, he deceives himself." (Galatians 6:3)' : 
-                   language === 'ro' ? 'Nu mă voi ridica deasupra nimănui. Nu voi participa la nicio dezbatere – eu doar scriu. Tu singur decizi dacă rămâi sau pleci. "Căci dacă cineva se crede ceva, deși nu este nimic, se înșală pe sine însuși." (Galateni 6:3)' : 
-                   'Я не возвышусь над кем-либо. Я не буду участвовать в дебатах – я только пишу. Только ты решаешь, остаться или уйти. "Ибо если кто думает, что он что-то, хотя он ничто, тот обманывает самого себя." (Галатам 6:3)'}
+                  {t.value1Text}
                 </p>
               </div>
 
@@ -203,17 +275,11 @@ export default function AboutPage() {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-black dark:text-white">
-                    {language === 'de' ? 'Biblische Erkenntnis – absolut notwendig' : 
-                     language === 'en' ? 'Biblical Insight – Absolutely Essential' : 
-                     language === 'ro' ? 'Să cunosc Biblia – absolut esențial' : 
-                     'Библейское познание – абсолютно необходимо'}
+                    {t.value2Title}
                   </h3>
                 </div>
                 <p className="text-black/80 dark:text-white/80 leading-relaxed">
-                  {language === 'de' ? 'Der Mangel an Erkenntnis bringt uns geistlich um. „Mein Volk geht zugrunde aus Mangel an Erkenntnis.“ (Hosea 4,6)' :
-                   language === 'en' ? 'Lack of insight is spiritually deadly. "My people are destroyed for lack of knowledge." (Hosea 4:6)' : 
-                   language === 'ro' ? 'Lipsa de cunoștință este spiritual mortală. "Poporul Meu piere din lipsa de cunoștință." (Osea 4:6)' : 
-                   'Отсутствие познания духовно губительно. "Мой народ погибает за недостатком знания." (Осия 4:6)'}
+                  {t.value2Text}
                 </p>
               </div>
 
@@ -226,17 +292,11 @@ export default function AboutPage() {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-black dark:text-white">
-                    {language === 'de' ? 'Das Wort des Menschen ist Trug' : 
-                     language === 'en' ? 'Man\'s Word is Deception' : 
-                     language === 'ro' ? 'Cuvântul omului este înșelător' : 
-                     'Слово человека – обман'}
+                    {t.value3Title}
                   </h3>
                 </div>
                 <p className="text-black/80 dark:text-white/80 leading-relaxed">
-                  {language === 'de' ? 'Aber das Wort des Herrn ist ohne Trug. „Verflucht ist der Mann, der auf Menschen vertraut.“ (Jeremia 17,5)' : 
-                   language === 'en' ? 'But the word of the Lord is without deception. "Cursed is the man who trusts in man." (Jeremiah 17:5)' :
-                   language === 'ro' ? 'Dar cuvântul Domnului este fără înșelare. "Blestemat este omul care se încrede în om." (Ieremia 17:5)' :
-                   'Но слово Господа без обмана. "Проклят человек, который надеется на человека." (Иеремия 17:5)'}
+                  {t.value3Text}
                 </p>
               </div>
 
@@ -249,17 +309,11 @@ export default function AboutPage() {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-black dark:text-white">
-                    {language === 'de' ? 'Wachsamkeit' : 
-                     language === 'en' ? 'Vigilance' : 
-                     language === 'ro' ? 'Vigilență' : 
-                     'Бдительность'}
+                    {t.value4Title}
                   </h3>
                 </div>
                 <p className="text-black/80 dark:text-white/80 leading-relaxed">
-                  {language === 'de' ? 'Der Schlaf der Toten. „Wache auf, der du schläfst, und stehe auf aus den Toten, so wird Christus dich erleuchten!“ (Epheser 5,14)' :
-                   language === 'en' ? 'The sleep of the dead. "Awake, O sleeper, and arise from the dead, and Christ will shine on you!" (Ephesians 5:14)' :
-                   language === 'ro' ? 'Somnul morților. "Trezeste-te, tu care dormi, și scoală-te din morți, și Hristos te va lumina!" (Efeseni 5:14)' :
-                   'Сон мертвых. "Проснись, спящий, и встань из мертвых, и Христос осветит тебя!" (Ефесянам 5:14)'}
+                  {t.value4Text}
                 </p>
               </div>
             </div>
@@ -269,14 +323,11 @@ export default function AboutPage() {
           <section className="glass-effect rounded-2xl p-8 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
             <div className="text-center">
               <h2 className="text-2xl font-bold text-black dark:text-white mb-6">
-                {language === 'de' ? 'Über den Autor' : 
-                 language === 'en' ? 'About the Author' : 
-                 language === 'ro' ? 'Despre Autor' : 
-                 'Об авторе'}
+                {t.authorTitle}
               </h2>
               <div className="max-w-2xl mx-auto">
                 <div className="w-24 h-24 bg-black/20 dark:bg-white/20 rounded-full mx-auto mb-6 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-black dark:text-white">D. I. Simko</span>
+                  <span className="text-2xl font-bold text-black dark:text-white">{t.authorName}</span>
                 </div>
                 
                 <div className="flex justify-center gap-4">
@@ -290,29 +341,17 @@ export default function AboutPage() {
           <section className="text-center animate-fadeIn" style={{ animationDelay: '1s' }}>
             <div className="glass-effect rounded-2xl p-8">
               <h2 className="text-2xl font-bold text-black dark:text-white mb-4">
-                {language === 'de' ? 'Entdecke' : 
-                 language === 'en' ? 'Discover' : 
-                 language === 'ro' ? 'Descoperă' : 
-                 'Открой'}
+                {t.ctaTitle}
               </h2>
               <p className="text-black/80 dark:text-white/80 mb-6 max-w-2xl mx-auto">
-                {language === 'de' ? '...' : 
-                 language === 'en' ? '...' : 
-                 language === 'ro' ? '...' : 
-                 '...'} 
+                {t.ctaText}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/blogs" className="btn-primary">
-                  {language === 'de' ? 'Blogs entdecken' : 
-                   language === 'en' ? 'Explore Blogs' : 
-                   language === 'ro' ? 'Explorează Blogurile' : 
-                   'Исследовать блоги'}
+                  {t.ctaBlogs}
                 </Link>
                 <Link href="/contact" className="btn-secondary">
-                  {language === 'de' ? 'Kontakt' : 
-                   language === 'en' ? 'Contact' : 
-                   language === 'ro' ? 'Contact' : 
-                   'Контакт'}
+                  {t.ctaContact}
                 </Link>
               </div>
             </div>

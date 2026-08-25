@@ -50,6 +50,11 @@ export interface Reel {
   audio_volume: number;
   background_image_url: string | null;
   background_opacity: number;
+  /**
+   * Pasul 2508001 — cat de vizibila e imaginea pe TEMA LUMINOASA.
+   * `null` = foloseste valoarea de mai sus (comportamentul de pana acum).
+   */
+  background_opacity_light?: number | null;
 
   // --- Efecte vizuale optionale ---
   effect_noise: boolean;
@@ -498,6 +503,14 @@ export function ReelSlide({
 
   const words = currentText.split(' ');
 
+  // Pasul 2508001 — aceeasi poza arata altfel pe alb decat pe negru.
+  // Daca ai ales o valoare separata pentru tema luminoasa, o folosim; altfel
+  // ramane cea de la tema intunecata.
+  const bgOpacityForTheme =
+    !isDark && typeof reel.background_opacity_light === 'number'
+      ? reel.background_opacity_light
+      : reel.background_opacity;
+
   // Filtrul imaginii de fundal — sepia subtil + (Pasul 2308005) alb-negru.
   // Contrastul mic compenseaza „platitudinea" pe care o da grayscale simplu.
   const filterValue = (() => {
@@ -522,7 +535,7 @@ export function ReelSlide({
           className="pointer-events-none absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: `url(${reel.background_image_url})`,
-            opacity: Math.min(100, Math.max(0, reel.background_opacity)) / 100,
+            opacity: Math.min(100, Math.max(0, bgOpacityForTheme)) / 100,
             filter: filterValue,
           }}
         />
@@ -907,6 +920,10 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
         // STEP_2308000_CATEGORII.sql nu a fost rulat, coloana nu exista.
         const MANUAL_PAGES_COLUMN = 'manual_pages, ';
 
+        // Pasul 2508001 — aceeasi grija: daca STEP_2508001_REEL_LIGHT.sql nu a
+        // fost rulat, coloana nu exista si intreaga lista ar disparea.
+        const LIGHT_COLUMN = 'background_opacity_light, ';
+
         const runQuery = (columns: string) =>
           supabase
             .from('reels')
@@ -916,7 +933,12 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
             .order('created_at', { ascending: false });
 
         // Incercam pe rand, de la „tot" spre „minimul sigur".
-        let { data, error } = await runQuery(MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS);
+        let { data, error } = await runQuery(
+          LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
+        );
+        if (error?.code === '42703') {
+          ({ data, error } = await runQuery(MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS));
+        }
         if (error?.code === '42703') {
           ({ data, error } = await runQuery(NEW_EFFECT_COLUMNS + BASE_COLUMNS));
         }
@@ -964,6 +986,10 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
               audio_volume: 100,
               background_image_url: (row.background_image_url as string) ?? null,
               background_opacity: (row.background_opacity as number) ?? 15,
+              background_opacity_light:
+                typeof row.background_opacity_light === 'number'
+                  ? (row.background_opacity_light as number)
+                  : null,
 
               effect_noise: Boolean(row.effect_noise),
               effect_grain: Boolean(row.effect_grain),
