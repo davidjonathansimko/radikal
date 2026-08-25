@@ -92,8 +92,11 @@ export default function BackToTopButton({
         visible
           ? 'opacity-100 translate-y-0 pointer-events-auto'
           : 'opacity-0 translate-y-3 pointer-events-none',
-        // MOBIL: aceeasi inaltime ca bara de jos, lipit in dreapta
-        'right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+18px)]',
+        // MOBIL: Pasul 2508000 — DEASUPRA barei de optiuni, nu peste ea.
+        // Bara (Limba/Cautare/Tema/Reels) sta la ~18px + inaltimea ei; la 18px
+        // sageata o taia in doua (vezi Impressum/Datenschutz). 86px o aseaza
+        // exact ca in articol.
+        'right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+86px)]',
         // DESKTOP: dreapta-jos, fara bara de optiuni
         'lg:right-8 lg:bottom-8',
       ].join(' ')}

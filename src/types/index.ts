@@ -67,6 +67,10 @@ export interface BlogPost {
   background_shadow?: number;
   /** Umbra fundalului din modalul „Play Blog", 0-100 */
   modal_background_shadow?: number;
+  // Pasul 2508000 — aceleasi doua reglaje, dar pentru TEMA LUMINOASA.
+  // `null`/lipsa = foloseste valorile de la tema intunecata.
+  modal_background_opacity_light?: number | null;
+  modal_background_shadow_light?: number | null;
 
   /**
    * Pasul A17 — categoriile in care intra articolul.

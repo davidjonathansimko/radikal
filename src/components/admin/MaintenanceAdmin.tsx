@@ -289,8 +289,10 @@ export default function MaintenanceAdmin() {
         type="button"
         onClick={save}
         disabled={saving}
-        className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-          settings.enabled ? 'bg-amber-600 hover:bg-amber-700' : 'bg-purple-600 hover:bg-purple-700'
+        className={`btn-solid rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50 ${
+          settings.enabled
+            ? 'bg-amber-600 text-white'
+            : 'bg-black text-white dark:bg-white dark:text-black'
         }`}
       >
         {saving ? 'Se salvează…' : 'Salvează setările'}

@@ -123,7 +123,7 @@ export default function IntroTextAdmin() {
         type="button"
         onClick={save}
         disabled={saving}
-        className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
+            className="btn-solid rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50 dark:bg-white dark:text-black"
       >
         {saving ? 'Se salvează…' : 'Salvează'}
       </button>

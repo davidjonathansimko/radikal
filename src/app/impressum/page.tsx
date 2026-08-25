@@ -8,6 +8,8 @@
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
+import { usePageText } from '@/lib/pageContent';
+import { registerPageDefaults } from '@/lib/pageDefaults';
 
 // Translations for Impressum page
 const translations = {
@@ -191,10 +193,12 @@ const translations = {
   },
 };
 
+// Pasul 2508000 — anuntam textul original panoului de admin
+registerPageDefaults('impressum', translations);
+
 export default function ImpressumPage() {
   const { language } = useLanguage();
-  const t = translations[language as keyof typeof translations] || translations.de;
-  
+  const t = usePageText('impressum', translations, language);  
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white py-20 transition-colors duration-300">
       {/* Pasul 2208001: buton „inapoi sus" dupa ce se deruleaza */}

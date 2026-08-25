@@ -1189,25 +1189,37 @@ body {
   color: #1a1a1a !important;
 }
 
-.light p:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light span:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light div:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light a:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light button:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light label:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text) {
+/* =====================================================================
+   Pasul 2508000 — DE CE ERAU BUTOANELE NEGRE PE NEGRU
+   ---------------------------------------------------------------------
+   Regulile de mai jos fac textul negru pe tema luminoasa. Sunt necesare,
+   pentru ca multe componente au fost scrise „gandind intunecat" si au doar
+   `text-white`, fara varianta pentru lumina.
+   PROBLEMA: regula prindea si BUTOANELE cu fundal inchis (Editeaza, Play
+   Blog, sagetile de pe poze). Ele primeau text negru pe fundal negru si
+   deveneau ilizibile — exact ce se vedea in capturile de ecran.
+   SOLUTIA: `.btn-solid` = „am fundal propriu, lasa-mi culorile in pace".
+   Este exclus peste tot mai jos, la fel ca `.force-white-text`.
+   ===================================================================== */
+.light p:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light span:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light div:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light a:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not(.btn-primary),
+.light button:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not(.btn-primary),
+.light label:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
 /* Force ALL text colors in light mode */
-.light .text-white:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/90:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/80:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/70:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/60:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/50:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/40:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/30:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text),
-.light .text-white\/20:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text) {
+.light .text-white:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/90:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/80:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/70:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/60:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/50:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/40:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/30:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *),
+.light .text-white\/20:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *) {
   color: #1a1a1a !important;
 }
 
@@ -1216,6 +1228,16 @@ body {
 .force-white-text,
 .force-white-text * {
   color: white !important;
+}
+
+/*
+  Pasul 2508000 — `.btn-solid`: butoane cu fundal propriu (negru, alb sau o
+  poza dedesubt). Isi pastreaza EXACT culorile scrise in componenta, pe orice
+  tema. Fara asta, regulile de mai sus le faceau textul negru.
+*/
+.light .btn-solid,
+.light .btn-solid * {
+  color: inherit;
 }
 
 /* Light theme specific text overrides */
@@ -1241,8 +1263,8 @@ body {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
-.light button:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *),
-.light button *:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *) {
+.light button:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *):not(.btn-solid):not(.btn-solid *):not(.btn-primary),
+.light button:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *):not(.btn-solid):not(.btn-primary) *:not(.force-white-text):not(.force-white-text *):not(.btn-solid *) {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
@@ -1416,12 +1438,21 @@ body {
   box-shadow: 0 12px 40px 0 rgba(10, 15, 30, 0.6), 0 6px 20px 0 rgba(20, 30, 60, 0.35);
 }
 
-/* Update button styles for light theme */
+/* =====================================================================
+   Pasul 2508000 — BUTOANE IN STIL RADIKAL, pe ambele teme.
+   ---------------------------------------------------------------------
+   Inainte, pe tema luminoasa butoanele deveneau albastre (#3b82f6) sau
+   gri (#6b7280). Albastrul nu are ce cauta intr-un site alb-negru si, pe
+   fundal alb, textul negru de pe el aproape nu se citea.
+   Acum: plin = negru cu alb, secundar = contur negru pe alb.
+   Pe tema intunecata: plin = alb cu negru, secundar = contur alb.
+   ===================================================================== */
 .btn-primary {
   padding: 0.75rem 1.5rem;
   background-color: #1f2937;
-  color: white;
+  color: #ffffff;
   font-weight: 600;
+  border: 1px solid transparent;
   border-radius: 0.5rem;
   transition: all 0.3s ease;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -1434,32 +1465,39 @@ body {
 
 .btn-secondary {
   padding: 0.5rem 1rem;
-  background-color: #4b5563;
-  color: white;
+  background-color: transparent;
+  color: #ffffff;
   font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 0.5rem;
   transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
-  background-color: #374151;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 /* Light theme specific overrides */
 .light .btn-primary {
-  background-color: #3b82f6;
+  background-color: #000000;
+  color: #ffffff;
+  border-color: #000000;
 }
 
 .light .btn-primary:hover {
-  background-color: #2563eb;
+  background-color: #1f2937;
 }
 
 .light .btn-secondary {
-  background-color: #6b7280;
+  background-color: transparent;
+  color: #000000;
+  border-color: rgba(0, 0, 0, 0.3);
 }
 
 .light .btn-secondary:hover {
-  background-color: #4b5563;
+  background-color: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.6);
 }
 
 /* Animation for floating geometric shapes */

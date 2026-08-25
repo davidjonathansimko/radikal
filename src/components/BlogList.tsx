@@ -457,7 +457,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
               const cardWidth = carousel.offsetWidth;
               carousel.scrollTo({ left: (activeSlide - 1) * cardWidth, behavior: 'smooth' });
             }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-40 bg-black/60 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/20 active:scale-90 transition-all"
+            className="btn-solid absolute left-2 top-1/2 -translate-y-1/2 z-40 bg-black/85 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/40 dark:border-white/20 active:scale-90 transition-all"
             aria-label="Previous blog"
             style={{ pointerEvents: 'auto' }}
           >
@@ -473,7 +473,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
               const cardWidth = carousel.offsetWidth;
               carousel.scrollTo({ left: (activeSlide + 1) * cardWidth, behavior: 'smooth' });
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-40 bg-black/60 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/20 active:scale-90 transition-all"
+            className="btn-solid absolute right-2 top-1/2 -translate-y-1/2 z-40 bg-black/85 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/40 dark:border-white/20 active:scale-90 transition-all"
             aria-label="Next blog"
             style={{ pointerEvents: 'auto' }}
           >

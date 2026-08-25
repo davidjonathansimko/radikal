@@ -182,7 +182,7 @@ export default function StoryContentAdmin() {
             key={l.key}
             type="button"
             onClick={() => setLang(l.key)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`btn-solid rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               lang === l.key
                 ? 'bg-black dark:bg-white text-white dark:text-black'
                 : 'bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 hover:bg-black/10 dark:hover:bg-white/20'
@@ -206,7 +206,7 @@ export default function StoryContentAdmin() {
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="ml-auto rounded-lg bg-black dark:bg-white px-5 py-2 text-sm font-semibold text-white dark:text-black transition-opacity hover:opacity-80"
+            className="btn-solid ml-auto rounded-lg bg-black dark:bg-white px-5 py-2 text-sm font-semibold text-white dark:text-black transition-opacity hover:opacity-80"
           >
             Editează
           </button>
@@ -247,7 +247,7 @@ export default function StoryContentAdmin() {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="ml-auto rounded-lg bg-black dark:bg-white px-5 py-2 text-sm font-semibold text-white dark:text-black transition-opacity hover:opacity-80 disabled:opacity-50"
+              className="btn-solid ml-auto rounded-lg bg-black dark:bg-white px-5 py-2 text-sm font-semibold text-white dark:text-black transition-opacity hover:opacity-80 disabled:opacity-50"
             >
               {saving ? 'Se salvează…' : 'Salvează'}
             </button>

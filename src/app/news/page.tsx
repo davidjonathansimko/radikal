@@ -14,6 +14,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
+import { usePageText } from '@/lib/pageContent';
+import { registerPageDefaults } from '@/lib/pageDefaults';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
 
@@ -56,6 +58,9 @@ const T: Record<Lang, Record<string, string>> = {
   },
 };
 
+// Pasul 2508000 — anuntam textul original panoului de admin
+registerPageDefaults('news', T);
+
 /** Un rand din lista, indiferent de unde vine (stire sau blog). */
 interface NewsEntry {
   id: string;
@@ -71,8 +76,7 @@ interface NewsEntry {
 export default function NewsPage() {
   const { language } = useLanguage();
   const lang = (['ro', 'de', 'en', 'ru'].includes(language) ? language : 'de') as Lang;
-  const t = T[lang];
-
+  const t = usePageText('news', T, lang);
   const [entries, setEntries] = useState<NewsEntry[]>([]);
   const [loading, setLoading] = useState(true);
 

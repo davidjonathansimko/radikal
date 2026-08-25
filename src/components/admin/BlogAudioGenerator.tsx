@@ -296,12 +296,12 @@ export default function BlogAudioGenerator({
               onClick={() => toggleLang(l.code)}
               disabled={busy || mine}
               title={mine ? 'Ai încărcat înregistrarea ta — TTS nu mai e necesar.' : undefined}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
+              className={`btn-solid rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
                 mine
-                  ? 'border-white/15 bg-white/5 text-white/40 line-through'
+                  ? 'border-black/15 bg-black/5 text-black/40 line-through dark:border-white/15 dark:bg-white/5 dark:text-white/40'
                   : on
-                  ? 'border-purple-400 bg-purple-500/25 text-white'
-                  : 'border-white/20 bg-white/5 text-white/60 hover:bg-white/10'
+                  ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+                  : 'border-black/20 bg-black/5 text-black/60 hover:bg-black/10 dark:border-white/20 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10'
               }`}
             >
               {l.name} {mine ? '🎙' : has ? '✓' : ''}
@@ -362,7 +362,7 @@ export default function BlogAudioGenerator({
         type="button"
         onClick={generate}
         disabled={busy || !slug || !selected.length}
-        className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="btn-solid rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
       >
         {busy ? 'Se generează…' : 'Generează audio'}
       </button>

@@ -441,7 +441,12 @@ export default function PlayBlogModal({
   const modal = (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[9999] overflow-hidden bg-black text-white"
+      // Pasul 2508000: `force-white-text`.
+      // Modalul „Play Blog" este mereu un ecran negru, de cinema — indiferent
+      // de tema aleasa de cititor. Fara aceasta clasa, regula globala pentru
+      // tema luminoasa facea textul si butoanele NEGRE peste imaginea inchisa
+      // si nu se mai vedea nimic (vezi captura „playblogblack").
+      className="force-white-text fixed inset-0 z-[9999] overflow-hidden bg-black text-white"
       role="dialog"
       aria-modal="true"
       aria-label={title}

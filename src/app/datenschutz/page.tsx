@@ -8,6 +8,8 @@
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
+import { usePageText } from '@/lib/pageContent';
+import { registerPageDefaults } from '@/lib/pageDefaults';
 
 // Translations for Datenschutz page
 const translations = {
@@ -351,9 +353,12 @@ const translations = {
   },
 };
 
+// Pasul 2508000 — anuntam textul original panoului de admin
+registerPageDefaults('datenschutz', translations);
+
 export default function DatenschutzPage() {
   const { language } = useLanguage();
-  const t = translations[language as keyof typeof translations] || translations.de;
+  const t = usePageText('datenschutz', translations, language);
   
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white py-20 transition-colors duration-300">

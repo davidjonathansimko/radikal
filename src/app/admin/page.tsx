@@ -16,6 +16,7 @@ import ReelsAdmin from '@/components/admin/ReelsAdmin';
 import StoryContentAdmin from '@/components/admin/StoryContentAdmin';
 import MaintenanceAdmin from '@/components/admin/MaintenanceAdmin';
 import IntroTextAdmin from '@/components/admin/IntroTextAdmin';
+import PageContentAdmin from '@/components/admin/PageContentAdmin';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRequestsPanel from '@/components/admin/AdminRequestsPanel';
 import { countPendingRequests } from '@/lib/adminRoles';
@@ -138,6 +139,13 @@ export default function AdminPage() {
   const [backgroundShadow, setBackgroundShadow] = useState(0);
   const [modalBgShadow, setModalBgShadow] = useState(0);
 
+  // Pasul 2508000 — aceleasi doua reglaje, dar pentru TEMA LUMINOASA.
+  // `null` = „foloseste valorile de la tema intunecata" (comportamentul de pana acum).
+  const [modalBgOpacityLight, setModalBgOpacityLight] = useState<number | null>(null);
+  const [modalBgShadowLight, setModalBgShadowLight] = useState<number | null>(null);
+  /** Ce tema previzualizezi acum in panoul „Play Blog" */
+  const [previewTheme, setPreviewTheme] = useState<'dark' | 'light'>('dark');
+
   // ------------------------------------------------------------------
   // Pasul A17 — CATEGORII
   // `allCategories` = lista din baza de date (se incarca o singura data).
@@ -230,6 +238,9 @@ export default function AdminPage() {
     background_opacity: backgroundOpacity,
     background_shadow: backgroundShadow,
     modal_background_shadow: modalBgShadow,
+    // Pasul 2508000 — reglaje separate pentru tema luminoasa
+    modal_background_opacity_light: modalBgOpacityLight,
+    modal_background_shadow_light: modalBgShadowLight,
     // Pasul A17 — in ce categorii intra acest blog
     category_ids: postCategoryIds,
     // Pasul 2308006-F — articol pentru pagina News
@@ -567,6 +578,12 @@ export default function AdminPage() {
     setBackgroundOpacity(post.background_opacity ?? 100);
     setBackgroundShadow(post.background_shadow ?? 0);
     setModalBgShadow(post.modal_background_shadow ?? 0);
+    setModalBgOpacityLight(
+      typeof post.modal_background_opacity_light === 'number' ? post.modal_background_opacity_light : null,
+    );
+    setModalBgShadowLight(
+      typeof post.modal_background_shadow_light === 'number' ? post.modal_background_shadow_light : null,
+    );
     // Pasul 2308006-F
     setIsNews(Boolean(post.is_news));
     // Pasul A17
@@ -608,6 +625,9 @@ export default function AdminPage() {
     setBackgroundOpacity(100);
     setBackgroundShadow(0);
     setModalBgShadow(0);
+    // Pasul 2508000
+    setModalBgOpacityLight(null);
+    setModalBgShadowLight(null);
     // Pasul A17
     setPostCategoryIds([]);
     // Pasul A18
@@ -744,7 +764,7 @@ export default function AdminPage() {
                 contur discret, alb pe negru. */}
             <Link
               href="/admin/analytics"
-              className="flex items-center gap-2 rounded-lg border border-white/20 px-6 py-3 text-white/80 transition-colors duration-300 hover:border-white/40 hover:bg-white/10 hover:text-white"
+              className="flex items-center gap-2 rounded-lg border border-black/25 px-6 py-3 text-black/80 transition-colors duration-300 hover:border-black/50 hover:bg-black/5 hover:text-black dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:bg-white/10 dark:hover:text-white"
             >
               <IconChart className="h-4 w-4" />
               <span>Analytics Dashboard</span>
@@ -1086,34 +1106,104 @@ export default function AdminPage() {
 
                     {isDynamic && (
                       <>
-                      <label className="block">
-                        <span className="mb-1 flex items-center justify-between text-xs text-white/80">
-                          {'„Play Blog" — Deckkraft'}
-                          <span className="tabular-nums text-white/60">{modalBgOpacity}%</span>
-                        </span>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={modalBgOpacity}
-                          onChange={(e) => setModalBgOpacity(Number(e.target.value))}
-                          className="w-full cursor-pointer accent-white"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1 flex items-center justify-between text-xs text-white/80">
-                          {'„Play Blog" — Schatten'}
-                          <span className="tabular-nums text-white/60">{modalBgShadow}%</span>
-                        </span>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={modalBgShadow}
-                          onChange={(e) => setModalBgShadow(Number(e.target.value))}
-                          className="w-full cursor-pointer accent-white"
-                        />
-                      </label>
+                      {/* ------------------------------------------------------
+                          Pasul 2508000 — „Play Blog" are reglaje SEPARATE
+                          pentru fiecare temă. Aceeași poză arată altfel pe alb
+                          decât pe negru: pe temă luminoasă poza rămânea o pată
+                          neagră și textul aproape dispărea.
+                          ------------------------------------------------------ */}
+                      <div className="sm:col-span-2 flex items-center gap-2">
+                        <span className="text-xs text-white/60">{'Reglaje „Play Blog" pentru:'}</span>
+                        {([
+                          ['dark', 'Temă întunecată'],
+                          ['light', 'Temă luminoasă'],
+                        ] as const).map(([id, label]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setPreviewTheme(id)}
+                            className={`btn-solid rounded-full border px-3 py-1 text-xs transition-colors ${
+                              previewTheme === id
+                                ? 'border-transparent bg-white text-black'
+                                : 'border-white/25 text-white/60 hover:bg-white/10'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {previewTheme === 'dark' ? (
+                        <>
+                          <label className="block">
+                            <span className="mb-1 flex items-center justify-between text-xs text-white/80">
+                              {'„Play Blog" — Deckkraft'}
+                              <span className="tabular-nums text-white/60">{modalBgOpacity}%</span>
+                            </span>
+                            <input
+                              type="range" min={0} max={100}
+                              value={modalBgOpacity}
+                              onChange={(e) => setModalBgOpacity(Number(e.target.value))}
+                              className="w-full cursor-pointer accent-white"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 flex items-center justify-between text-xs text-white/80">
+                              {'„Play Blog" — Schatten'}
+                              <span className="tabular-nums text-white/60">{modalBgShadow}%</span>
+                            </span>
+                            <input
+                              type="range" min={0} max={100}
+                              value={modalBgShadow}
+                              onChange={(e) => setModalBgShadow(Number(e.target.value))}
+                              className="w-full cursor-pointer accent-white"
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <label className="block">
+                            <span className="mb-1 flex items-center justify-between text-xs text-white/80">
+                              {'Hell — Deckkraft'}
+                              <span className="tabular-nums text-white/60">
+                                {modalBgOpacityLight ?? modalBgOpacity}%
+                                {modalBgOpacityLight === null && ' (wie dunkel)'}
+                              </span>
+                            </span>
+                            <input
+                              type="range" min={0} max={100}
+                              value={modalBgOpacityLight ?? modalBgOpacity}
+                              onChange={(e) => setModalBgOpacityLight(Number(e.target.value))}
+                              className="w-full cursor-pointer accent-white"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 flex items-center justify-between text-xs text-white/80">
+                              {'Hell — Schatten'}
+                              <span className="tabular-nums text-white/60">
+                                {modalBgShadowLight ?? modalBgShadow}%
+                                {modalBgShadowLight === null && ' (wie dunkel)'}
+                              </span>
+                            </span>
+                            <input
+                              type="range" min={0} max={100}
+                              value={modalBgShadowLight ?? modalBgShadow}
+                              onChange={(e) => setModalBgShadowLight(Number(e.target.value))}
+                              className="w-full cursor-pointer accent-white"
+                            />
+                          </label>
+                          <div className="sm:col-span-2">
+                            <button
+                              type="button"
+                              onClick={() => { setModalBgOpacityLight(null); setModalBgShadowLight(null); }}
+                              disabled={modalBgOpacityLight === null && modalBgShadowLight === null}
+                              className="rounded-lg border border-white/25 px-3 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/10 disabled:opacity-40"
+                            >
+                              Gleich wie dunkles Thema
+                            </button>
+                          </div>
+                        </>
+                      )}
                       </>
                     )}
                   </div>
@@ -1187,7 +1277,9 @@ export default function AdminPage() {
                         {/* Modalul „Play Blog" — 9:16, exact ca pe telefon */}
                         {isDynamic && (
                           <div>
-                            <p className="mb-1 text-[11px] text-white/50">{'„Play Blog"'}</p>
+                            <p className="mb-1 text-[11px] text-white/50">
+                              {previewTheme === 'light' ? '„Play Blog" — helles Thema' : '„Play Blog" — dunkles Thema'}
+                            </p>
                             <div
                               className="relative mx-auto overflow-hidden rounded-lg bg-black"
                               style={{ aspectRatio: '9 / 16', maxHeight: '260px' }}
@@ -1198,17 +1290,26 @@ export default function AdminPage() {
                                 alt=""
                                 className="h-full w-full object-cover"
                                 style={{
-                                  opacity: modalBgOpacity / 100,
+                                  opacity:
+                                    (previewTheme === 'light'
+                                      ? modalBgOpacityLight ?? modalBgOpacity
+                                      : modalBgOpacity) / 100,
                                   filter: [
                                     effectsFilter(modalEffects),
-                                    modalBgShadow > 0 ? `brightness(${1 - modalBgShadow / 200})` : '',
+                                    (() => {
+                                      const s =
+                                        previewTheme === 'light'
+                                          ? modalBgShadowLight ?? modalBgShadow
+                                          : modalBgShadow;
+                                      return s > 0 ? `brightness(${1 - s / 200})` : '';
+                                    })(),
                                   ]
                                     .filter(Boolean)
                                     .join(' '),
                                 }}
                               />
                               <ImageEffectLayers settings={modalEffects} zIndex={2} />
-                              <p className="absolute inset-0 z-[3] flex items-center justify-center px-4 text-center font-cinzel text-[11px] italic leading-relaxed text-white">
+                              <p className="force-white-text absolute inset-0 z-[3] flex items-center justify-center px-4 text-center font-cinzel text-[11px] italic leading-relaxed text-white">
                                 So erscheint der gesprochene Text
                               </p>
                             </div>
@@ -1342,7 +1443,7 @@ export default function AdminPage() {
             rubrici mari, fiecare cu sub-rubrici. Continutul NU a fost
             modificat, doar grupat — deci nimic nu se poate strica.
             ================================================================= */}
-        <nav className="mb-8 flex flex-wrap gap-2 border-b border-white/10 pb-3">
+        <nav className="mb-8 flex flex-wrap gap-2 border-b border-black/10 pb-3 dark:border-white/10">
           {([
             { id: 'create', label: 'Creare' },
             { id: 'settings', label: 'Setări' },
@@ -1355,10 +1456,10 @@ export default function AdminPage() {
                 // Fiecare rubrica isi deschide prima sub-rubrica
                 setSubTab(t.id === 'create' ? 'blogs' : 'working');
               }}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              className={`btn-solid rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 mainTab === t.id
-                  ? 'bg-white text-black'
-                  : 'text-white/60 hover:bg-white/10 hover:text-white'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'text-black/60 hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white'
               }`}
             >
               {t.label}
@@ -1391,6 +1492,8 @@ export default function AdminPage() {
             : ([
                 { id: 'working', label: 'Site în lucru', Icon: IconWrench, group: 'Site' },
                 { id: 'modals', label: 'Modals', Icon: IconWindow, group: 'Site' },
+                // Pasul 2508000 — textul paginilor fixe (Despre, Contact, Impressum…)
+                { id: 'pages', label: 'Pagini', Icon: IconDocument, group: 'Site' },
                 // Pasul A16 — noutati despre RADIKAL, invitatii, anunturi, reclame
                 { id: 'news', label: adminT('tabs.news'), Icon: IconMegaphone, group: 'Site' },
                 // Pasul A17 — categoriile blogurilor
@@ -1404,17 +1507,17 @@ export default function AdminPage() {
               {i > 0 && arr[i - 1].group !== t.group && (
                 <span
                   aria-hidden="true"
-                  className="mx-2 h-4 w-px shrink-0 bg-white/15"
+                  className="mx-2 h-4 w-px shrink-0 bg-black/20 dark:bg-white/15"
                 />
               )}
               <button
                 type="button"
                 onClick={() => setSubTab(t.id)}
                 title={t.group}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors ${
+                className={`btn-solid inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${
                   subTab === t.id
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/50 hover:bg-white/10'
+                    ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+                    : 'border-black/15 text-black/60 hover:bg-black/5 dark:border-white/15 dark:text-white/50 dark:hover:bg-white/10'
                 }`}
               >
                 {/* Pasul A08 — pictograme SVG monocrome, nu emoji colorate */}
@@ -1454,6 +1557,20 @@ export default function AdminPage() {
             </div>
 
             <StoryContentAdmin />
+          </section>
+        )}
+
+        {/* ---------- SETĂRI → Pagini (pasul 2508000) ---------- */}
+        {mainTab === 'settings' && subTab === 'pages' && (
+          <section className="animate-fadeIn mb-12">
+            <div className="glass-effect rounded-2xl p-6">
+              <h2 className="mb-1 text-xl font-bold text-black dark:text-white">Textul paginilor</h2>
+              <p className="mb-5 text-xs text-black/50 dark:text-white/50">
+                Schimbi textul unei pagini, iar la salvare se traduce singur în toate limbile.
+                Oricând te poți întoarce la textul original.
+              </p>
+              <PageContentAdmin />
+            </div>
           </section>
         )}
 

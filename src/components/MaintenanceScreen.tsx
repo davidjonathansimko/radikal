@@ -61,7 +61,7 @@ export default function MaintenanceScreen({
   React.useEffect(() => cancelHold, []);
 
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center overflow-hidden bg-black px-6 text-white">
+    <div className="force-white-text fixed inset-0 z-[10000] flex flex-col items-center justify-center overflow-hidden bg-black px-6 text-white">
       {/* Imagine de fundal optionala, aleasa de admin */}
       {settings.backgroundUrl && (
         // eslint-disable-next-line @next/next/no-img-element

@@ -251,10 +251,25 @@ export default function BlogPostPage() {
     };
   }, [post]);
 
+  // Pasul 2508000 — reglaje SEPARATE pentru tema luminoasa.
+  // Aceeasi poza arata altfel pe alb decat pe negru. Daca nu ai atins
+  // reglajele pentru lumina (raman `null`), se folosesc cele intunecate,
+  // deci nimic nu se schimba de la sine.
   const modalBackgroundOpacity = useMemo(() => {
     const p = (post ?? {}) as unknown as Record<string, unknown>;
-    return (p.modal_background_opacity as number) ?? 35;
-  }, [post]);
+    const dark = (p.modal_background_opacity as number) ?? 35;
+    if (theme !== 'light') return dark;
+    const light = p.modal_background_opacity_light as number | null | undefined;
+    return typeof light === 'number' ? light : dark;
+  }, [post, theme]);
+
+  const modalBackgroundShadow = useMemo(() => {
+    const p = (post ?? {}) as unknown as Record<string, unknown>;
+    const dark = (p.modal_background_shadow as number) ?? 0;
+    if (theme !== 'light') return dark;
+    const light = p.modal_background_shadow_light as number | null | undefined;
+    return typeof light === 'number' ? light : dark;
+  }, [post, theme]);
 
   // Link partajat („?play=1") -> deschidem direct modalul dinamic.
   // Daca aplicatia nu e instalata, browserul deschide oricum www.radikal.blog
@@ -1172,7 +1187,7 @@ export default function BlogPostPage() {
           language={language}
           effects={modalEffects}
           backgroundOpacity={modalBackgroundOpacity}
-          backgroundShadow={post.modal_background_shadow ?? 0}
+          backgroundShadow={modalBackgroundShadow}
           isLiked={isLiked}
           onToggleLike={handleLike}
         />
@@ -1250,7 +1265,10 @@ export default function BlogPostPage() {
               {post.is_dynamic && (
                 <button
                   onClick={() => setIsPlayOpen(true)}
-                  className="play-blog-enter absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-white"
+                  // Pasul 2508000: `force-white-text` — butonul sta pe o poza,
+                  // deci textul si sageata raman ALBE si pe tema luminoasa.
+                  // Fara asta, regula globala le facea negre si nu se vedeau.
+                  className="play-blog-enter force-white-text absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-white"
                   style={{ animationDelay: '0.9s' }}
                   aria-label="Play Blog"
                 >

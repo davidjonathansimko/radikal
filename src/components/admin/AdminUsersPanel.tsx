@@ -154,7 +154,7 @@ export default function AdminUsersPanel() {
           type="button"
           onClick={() => void addRole()}
           disabled={busy || !email.trim()}
-          className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+          className="btn-solid rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50 dark:bg-white dark:text-black"
         >
           {busy ? 'Se adaugă…' : 'Adaugă sub-admin'}
         </button>
