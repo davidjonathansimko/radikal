@@ -204,6 +204,9 @@ export async function POST(request: NextRequest) {
         speakingRate,
         blogSlug: slug,
         blogTitle: title,
+        // Pasul 2608002 — fisierul asta se descarca si se asculta in casti,
+        // deci il cerem la cea mai buna calitate pe care o da Google.
+        hifi: true,
       }),
     });
 

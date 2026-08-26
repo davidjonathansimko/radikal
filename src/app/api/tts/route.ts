@@ -41,7 +41,7 @@ function setMemoryCache(key: string, audioContent: string) {
 // ===== Generate a stable cache key from text + params =====
 // `voiceName` is part of the key so that changing the voice generation
 // (WaveNet -> Neural2) automatically invalidates old cached audio.
-function generateCacheKey(text: string, language: string, voiceGender: string, speakingRate: number, voiceName = ''): string {
+function generateCacheKey(text: string, language: string, voiceGender: string, speakingRate: number, voiceName = '', hifi = false): string {
   const input = `${text}|${language}|${voiceGender}|${speakingRate}|${voiceName}`;
   return crypto.createHash('sha256').update(input).digest('hex');
 }
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { text, language = 'de', speakingRate = 0.9, blogSlug = null, blogTitle = null } = body;
+    const { text, language = 'de', speakingRate = 0.9, blogSlug = null, blogTitle = null, hifi = false } = body;
     const voiceGender = 'male'; // Always use male voice
 
     if (!text || typeof text !== 'string') {
@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
     const voiceConfig = resolveVoice(language);
 
     // ===== CACHE LOOKUP: Check if we already have this audio cached =====
-    const cacheKey = generateCacheKey(truncatedText, language, voiceGender, speakingRate, voiceConfig.name || '');
+    const cacheKey = generateCacheKey(truncatedText, language, voiceGender, speakingRate, voiceConfig.name || '', hifi);
     
     // Layer 1: In-memory cache (fastest — same server instance)
     const memoryCached = getFromMemoryCache(cacheKey);
@@ -312,14 +312,22 @@ export async function POST(request: NextRequest) {
               ssmlGender: voice.ssmlGender,
             },
             audioConfig: {
-              audioEncoding: 'MP3', // MP3 — universally supported on all browsers incl. Safari/iOS
+              // Pasul 2608002 — CALITATE.
+              // Ascultarea pe site foloseste `MP3` (32 kbps): sunt fisiere mici,
+              // se incarca repede si e destul pentru difuzorul telefonului.
+              // Pentru DESCARCARE trecem pe `MP3_64_KBPS` la 44,1 kHz — cea mai
+              // buna calitate MP3 pe care o ofera Google, dublul celei de pana acum.
+              audioEncoding: hifi ? 'MP3_64_KBPS' : 'MP3',
               speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
               // `pitch` is not supported by Chirp3-HD -> only send it for SSML-capable voices.
               // 0.0 = natural. Lowering it artificially made the voice sound "processed"/robotic.
               ...(voice.ssml && { pitch: 0.0 }),
               volumeGainDb: 0.0, // No gain — avoids clipping the peaks
-              sampleRateHertz: 24000, // High quality sample rate
-              effectsProfileId: ['handset-class-device'], // Tuned for phones/laptops, not big TVs
+              sampleRateHertz: hifi ? 44100 : 24000,
+              // La descarcare NU mai aplicam corectia pentru difuzor de telefon:
+              // ea taie din inalte si din josuri, adica exact ce vrei sa pastrezi
+              // cand asculti in casti sau in masina.
+              effectsProfileId: hifi ? ['headphone-class-device'] : ['handset-class-device'],
             },
           }),
         }

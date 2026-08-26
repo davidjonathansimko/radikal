@@ -173,7 +173,7 @@ export default function MediaUpload({
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
         {label}
       </label>
