@@ -19,6 +19,8 @@ import { createClient } from '@/lib/supabase';
 import ImageEffectsEditor from '@/components/admin/ImageEffectsEditor';
 import ImageUpload from '@/components/ImageUpload';
 import AdminListFilterBar from '@/components/admin/AdminListFilterBar';
+import BlogAudioGenerator from '@/components/admin/BlogAudioGenerator';
+import CustomAudioManager from '@/components/admin/CustomAudioManager';
 import MarturiiSectionsAdmin from '@/components/admin/MarturiiSectionsAdmin';
 import { useAdminListFilter } from '@/components/admin/useAdminListFilter';
 import {
@@ -86,6 +88,9 @@ export default function MarturiiAdmin() {
   const [sectionIds, setSectionIds] = useState<string[]>([]);
   const [effects, setEffects] = useState<ImageEffectSettings>(DEFAULT_IMAGE_EFFECTS);
 
+  // Limbile in care ai incarcat vocea ta — in ele nu se mai genereaza TTS.
+  const [customAudioLangs, setCustomAudioLangs] = useState<string[]>([]);
+
   // Traducerile scrise de mână, pe limbi. Gol = traduce DeepL.
   const [manual, setManual] = useState<Record<LangCode, { title: string; excerpt: string; content: string }>>({
     ro: { title: '', excerpt: '', content: '' },
@@ -94,6 +99,11 @@ export default function MarturiiAdmin() {
     ru: { title: '', excerpt: '', content: '' },
   });
   const [openLang, setOpenLang] = useState<LangCode>('de');
+
+  const editingItem = useMemo(
+    () => (editingId ? items.find((i) => i.id === editingId) ?? null : null),
+    [editingId, items],
+  );
 
   const say = useCallback((kind: 'ok' | 'err', text: string) => {
     setNote({ kind, text });
@@ -554,6 +564,30 @@ export default function MarturiiAdmin() {
             {'Are butonul „Ascultă mărturia"'}
           </label>
         </div>
+
+        {/* ------------------------- AUDIO ------------------------- */}
+        {/* Pasul 2708003 — aceleași două panouri ca la bloguri: vocea
+            generată (cu descărcare) și înregistrarea ta, pe limbi. */}
+        {editingItem ? (
+          <div className="rounded-xl bg-neutral-900 p-4 [&_*]:text-white">
+            <BlogAudioGenerator
+              slug={`m-${editingItem.slug}`}
+              title={title}
+              text={content}
+              language="ro"
+              createdAt={editingItem.created_at}
+              customAudioLangs={customAudioLangs}
+            />
+            <div className="mt-4">
+              <CustomAudioManager blogId={editingItem.id} onLangsChange={setCustomAudioLangs} />
+            </div>
+          </div>
+        ) : (
+          <p className="rounded-lg border border-black/15 bg-black/5 p-3 text-xs text-black/60 dark:border-white/15 dark:bg-white/5 dark:text-white/60">
+            🎧 Salvează întâi mărturia. După aceea apar aici butonul „Generează audio&ldquo; și
+            locul unde îți încarci propria înregistrare — cu descărcare pentru amândouă.
+          </p>
+        )}
 
         <div className="flex flex-wrap items-center gap-3">
           <button

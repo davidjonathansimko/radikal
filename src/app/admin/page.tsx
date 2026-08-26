@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
@@ -263,6 +264,18 @@ export default function AdminPage() {
     postsByCategory,
     useCallback((p: BlogPost) => `${p.title} ${p.excerpt ?? ''} ${p.slug ?? ''}`, []),
   );
+
+  // Pasul 2708003 — la editare, formularul se deschide ca un sertar CHIAR SUB
+  // articolul apăsat, nu sus de tot. Rămâne același formular, mutat doar în
+  // altă parte a paginii; de aceea folosim un „portal".
+  const [editorSlot, setEditorSlot] = useState<HTMLElement | null>(null);
+  const editingInList = Boolean(
+    editingPost && postsFilter.visible.some((p) => p.id === editingPost.id),
+  );
+  const renderInSlot = (node: React.ReactNode) => {
+    if (!editingInList) return node;
+    return editorSlot ? createPortal(node, editorSlot) : null;
+  };
 
   // Supabase client / Supabase-Client
   const supabase = createClient();
@@ -774,7 +787,7 @@ export default function AdminPage() {
         </header>
 
         {/* Create/Edit form / Erstellen/Bearbeiten-Formular */}
-        {(showCreateForm || editingPost) && (
+        {(showCreateForm || editingPost) && renderInSlot(
           <div className="glass-effect rounded-2xl p-8 mb-12 animate-fadeIn">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">
@@ -1713,7 +1726,8 @@ export default function AdminPage() {
               )}
 
               {postsFilter.visible.map((post) => (
-                <div key={post.id} className="glass-effect rounded-xl p-6">
+                <div key={post.id}>
+                <div className="glass-effect rounded-xl p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     {/* Post info / Post-Info */}
                     <div className="flex-1">
@@ -1782,6 +1796,10 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+
+                {/* Aici se deschide sertarul de editare pentru acest articol */}
+                {editingPost?.id === post.id && <div ref={setEditorSlot} className="mt-4" />}
                 </div>
               ))}
 

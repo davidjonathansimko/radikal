@@ -30,6 +30,12 @@ export interface ArticleSource {
   notFoundLabel: Record<string, string>;
   /** Numele rubricii în firimiturile de navigare (breadcrumb) */
   breadcrumbLabel: string;
+  /**
+   * Prefix pentru fișierele audio. Vocea generată se ține după adresa
+   * articolului; fără prefix, un blog și o mărturie cu aceeași adresă ar
+   * ajunge să împartă același fișier.
+   */
+  audioPrefix: string;
 }
 
 export const BLOG_SOURCE: ArticleSource = {
@@ -51,6 +57,7 @@ export const BLOG_SOURCE: ArticleSource = {
     ru: 'Запись блога не найдена',
   },
   breadcrumbLabel: 'Blogs',
+  audioPrefix: '',
 };
 
 export const TESTIMONY_SOURCE: ArticleSource = {
@@ -72,4 +79,5 @@ export const TESTIMONY_SOURCE: ArticleSource = {
     ru: 'Свидетельство не найдено',
   },
   breadcrumbLabel: 'Zeugnisse',
+  audioPrefix: 'm-',
 };

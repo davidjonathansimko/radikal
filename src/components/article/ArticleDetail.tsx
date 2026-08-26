@@ -1196,7 +1196,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           title={displayTitle || post.title}
           text={displayContent || post.content || ''}
           imageUrl={post.image_url || null}
-          slug={originalSlugRef.current || post.slug}
+          slug={`${source.audioPrefix}${originalSlugRef.current || post.slug}`}
           // Pasul A18 — ca sa poata gasi inregistrarea proprie pe limbi
           blogId={post.id}
           language={language}
@@ -1414,7 +1414,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
               <TextToSpeech 
                 text={displayContent || post.content || ''} 
                 compact
-                blogSlug={post.slug}
+                blogSlug={`${source.audioPrefix}${post.slug}`}
                 blogTitle={displayTitle || post.title}
                 blogId={post.id}
               />
