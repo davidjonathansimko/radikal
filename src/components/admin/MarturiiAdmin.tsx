@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase';
 import ImageEffectsEditor from '@/components/admin/ImageEffectsEditor';
 import ImageUpload from '@/components/ImageUpload';
 import AdminListFilterBar from '@/components/admin/AdminListFilterBar';
+import MarturiiSectionsAdmin from '@/components/admin/MarturiiSectionsAdmin';
 import { useAdminListFilter } from '@/components/admin/useAdminListFilter';
 import {
   DEFAULT_IMAGE_EFFECTS,
@@ -202,9 +203,36 @@ export default function MarturiiAdmin() {
 
         if (!editingId && user?.id) payload.author_id = user.id;
 
-        const { error } = editingId
-          ? await sb.from('testimonies').update(payload).eq('id', editingId)
-          : await sb.from('testimonies').insert(payload);
+        const send = (body: Record<string, unknown>) =>
+          editingId
+            ? sb.from('testimonies').update(body).eq('id', editingId)
+            : sb.from('testimonies').insert(body);
+
+        let { error } = await send(payload);
+
+        // Pasul 2608005 — dacă lipsesc coloanele pentru traduceri, salvăm
+        // restul și îți spunem ce fișier să rulezi. Munca ta nu se pierde.
+        const missingColumn =
+          error && (error.code === 'PGRST204' || error.code === '42703');
+
+        if (missingColumn) {
+          const withoutTranslations = { ...payload };
+          LANGS.forEach(({ code }) => {
+            delete withoutTranslations[`title_${code}`];
+            delete withoutTranslations[`excerpt_${code}`];
+            delete withoutTranslations[`content_${code}`];
+          });
+          ({ error } = await send(withoutTranslations));
+          if (!error) {
+            say(
+              'err',
+              'Salvat, DAR traducerile scrise de tine nu au fost păstrate. Rulează STEP_2608005_MARTURII_TEXTE.sql în Supabase.',
+            );
+            resetForm();
+            await load();
+            return;
+          }
+        }
 
         if (error) {
           say('err', `Nu am putut salva: ${error.message}`);
@@ -313,6 +341,11 @@ export default function MarturiiAdmin() {
 
   return (
     <div>
+      {/* Rubricile se gestioneaza aici, ca sa nu fie nevoie sa intri in baza de date. */}
+      <div className="mb-6">
+        <MarturiiSectionsAdmin onChanged={() => void load()} />
+      </div>
+
       {note && (
         <p
           className={`mb-4 rounded-lg px-4 py-2 text-sm ${
@@ -376,8 +409,7 @@ export default function MarturiiAdmin() {
           <p className={labelClass}>În ce rubrici intră</p>
           {sections.length === 0 ? (
             <p className="text-sm text-black/50 dark:text-white/50">
-              Nu există încă nicio rubrică. O creezi din baza de date (tabelul{' '}
-              <code>testimony_sections</code>).
+              Nu există încă nicio rubrică. Creează prima mai jos, în „Rubricile mărturiilor&ldquo;.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">

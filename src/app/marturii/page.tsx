@@ -207,7 +207,11 @@ export default function MarturiiPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {sections.map((s) => (
-                <div key={s.id} className="glass-effect rounded-2xl p-6">
+                <Link
+                  key={s.id}
+                  href={`/marturii/${s.slug}`}
+                  className="glass-effect group rounded-2xl p-6 transition-transform duration-300 hover:scale-[1.02]"
+                >
                   <h3 className="font-cinzel text-xl font-semibold text-black dark:text-white">
                     {s.name}
                   </h3>
@@ -216,11 +220,13 @@ export default function MarturiiPage() {
                       {s.description}
                     </p>
                   )}
-                  {/* Lista mărturiilor dintr-o rubrică vine la pasul 3. */}
-                  <span className="mt-4 inline-flex items-center gap-1 text-xs text-black/45 dark:text-white/45">
-                    {t.soon}
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-black/60 dark:text-white/60">
+                    {t.open}
+                    <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">
+                      →
+                    </span>
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           )}

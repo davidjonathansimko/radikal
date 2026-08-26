@@ -1350,14 +1350,22 @@ export default function AdminPage() {
                 )}
 
                 {/* Pasul A18 — inregistrarile TALE, pe limbi.
-                    In limbile in care incarci un fisier, TTS-ul nu se mai
-                    genereaza deloc; in restul, ramane ca pana acum. */}
-                {isDynamic && editingPost?.id && (
+                    Pasul 2608005: apar la ORICE articol salvat, nu doar la cele
+                    dinamice. Motivul: de la pasul 2608004 si butonul obisnuit de
+                    ascultare foloseste inregistrarea ta, nu doar „Play Blog".
+                    Incarci un fisier -> se aude vocea ta. Il stergi -> revine
+                    singur la vocea generata. Asa comuti oricand, in ambele sensuri. */}
+                {editingPost?.id && (
                   <div className="mt-4 [&_*]:text-white">
                     <CustomAudioManager
                       blogId={editingPost.id}
                       onLangsChange={setCustomAudioLangs}
                     />
+                    <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                      Pentru limbile în care încarci un fișier se aude vocea ta — și la butonul
+                      obișnuit de ascultare, și la „Play Blog&ldquo;. Ștergi fișierul și se revine
+                      singur la vocea generată.
+                    </p>
                   </div>
                 )}
 
