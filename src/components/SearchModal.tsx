@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -103,7 +103,37 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const { language } = useLanguage();
   const { translateBatch } = useTranslation();
   const router = useRouter();
+  const pathname = usePathname();
   const t = translations[language as keyof typeof translations] || translations.de;
+
+  // ------------------------------------------------------------------
+  // Pasul 2608006 — UNDE cautam: in bloguri sau in marturii.
+  // Daca esti deja in zona Marturii, cautarea porneste acolo. Din orice alt
+  // loc porneste in bloguri, dar poti comuta oricand din cele doua butoane.
+  // ------------------------------------------------------------------
+  const inMarturii = Boolean(pathname?.startsWith('/marturii'));
+  const [scope, setScope] = useState<'blogs' | 'marturii'>(inMarturii ? 'marturii' : 'blogs');
+
+  useEffect(() => {
+    if (isOpen) setScope(inMarturii ? 'marturii' : 'blogs');
+  }, [isOpen, inMarturii]);
+
+  const scopeLabels = {
+    blogs: language === 'de' ? 'Blogs' : language === 'en' ? 'Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги',
+    marturii:
+      language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства',
+  };
+
+  const placeholder =
+    scope === 'marturii'
+      ? language === 'de'
+        ? 'Zeugnisse durchsuchen...'
+        : language === 'en'
+          ? 'Search testimonies...'
+          : language === 'ro'
+            ? 'Caută mărturii...'
+            : 'Поиск свидетельств...'
+      : t.placeholder;
   
   // State / Zustand
   const [query, setQuery] = useState('');
@@ -246,6 +276,38 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
     setLoading(true);
     try {
+      // ---------------------------------------------------------------
+      // Pasul 2608006 — MĂRTURII. Căutăm direct în tabelul lor, în textul
+      // original ȘI în traducerile scrise de tine, ca „viu" să fie găsit
+      // indiferent de limba în care ai scris mărturia.
+      // ---------------------------------------------------------------
+      if (scope === 'marturii') {
+        if (!supabase) {
+          setResults([]);
+          setLoading(false);
+          return;
+        }
+        const term = searchQuery.trim().toLowerCase().replace(/[%_]/g, '\\$&');
+        const fields = ['title', 'excerpt', 'content'];
+        const langs = ['', '_ro', '_de', '_en', '_ru'];
+        const conditions = fields
+          .flatMap((f) => langs.map((l) => `${f}${l}.ilike.%${term}%`))
+          .join(',');
+
+        const { data: found, error: findErr } = await supabase
+          .from('testimonies')
+          .select('id, title, excerpt, image_url, created_at, slug')
+          .eq('published', true)
+          .or(conditions)
+          .order('created_at', { ascending: false })
+          .limit(8);
+
+        setResults(!findErr && found ? (found as SearchResult[]) : []);
+        setSelectedIndex(0);
+        setLoading(false);
+        return;
+      }
+
       // Try API first
       const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&lang=${language}&limit=8`);
       const data = await response.json();
@@ -376,7 +438,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     } finally {
       setLoading(false);
     }
-  }, [language]);
+  }, [language, scope]);
 
   // ------------------------------------------------------------------
   // Pasul A17 — incarcam categoriile o data, la deschiderea modalului.
@@ -443,7 +505,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     
     // Navigate to post / Zum Post navigieren
     const slug = result.slug || result.id;
-    router.push(`/blogs/${slug}`);
+    router.push(scope === 'marturii' ? `/marturii/m/${slug}` : `/blogs/${slug}`);
     onClose();
   };
 
@@ -526,7 +588,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
               type="text"
               value={query}
               onChange={handleInputChange}
-              placeholder={t.placeholder}
+              placeholder={placeholder}
               className="w-full bg-transparent px-12 sm:px-14 py-4 sm:py-5 text-base sm:text-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none border-b border-gray-200 dark:border-white/10"
             />
             {query && (
@@ -549,10 +611,30 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
               </div>
             )}
 
+            {/* Pasul 2608006 — UNDE cauți: în bloguri sau în mărturii. */}
+            <div className="mb-5 flex flex-wrap gap-2">
+              {(['blogs', 'marturii'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setScope(s)}
+                  className={`btn-solid rounded-full border px-4 py-1.5 text-sm transition-colors ${
+                    scope === s
+                      ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+                      : 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
+                  }`}
+                >
+                  {scopeLabels[s]}
+                </button>
+              ))}
+            </div>
+
             {/* Pasul A17 — CATEGORII.
                 Alegi întâi tema (familie, căsnicie, credință…), poți bifa
-                mai multe deodată, apoi cauți în interiorul lor. */}
-            {categories.length > 0 && (
+                mai multe deodată, apoi cauți în interiorul lor.
+                Pasul 2608006: categoriile sunt ale blogurilor, deci apar
+                doar când cauți în bloguri. */}
+            {scope === 'blogs' && categories.length > 0 && (
               <div className="mb-5 rounded-xl border border-gray-200 dark:border-white/10 p-4 text-gray-800 dark:text-white">
                 <p className="mb-3 text-sm text-gray-500 dark:text-white/40">
                   {language === 'de' ? 'Kategorien' :

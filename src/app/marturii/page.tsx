@@ -18,12 +18,15 @@ import { usePageText } from '@/lib/pageContent';
 import { registerPageDefaults } from '@/lib/pageDefaults';
 import BackToTopButton from '@/components/BackToTopButton';
 import MarturiiIntroQuote from '@/components/MarturiiIntroQuote';
+import { MARTURII_ACTIVE_KEY } from '@/lib/marturiiSession';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
 
 const T: Record<Lang, Record<string, string>> = {
   de: {
     // —— Ecranul de intrare (se poate schimba din Setări → Pagini)
+    // Scrie „nu" ca să oprești ecranul de intrare cu totul.
+    introEnabled: 'da',
     introVerse: 'Jesus Christus ist derselbe gestern und heute und in Ewigkeit!',
     introReference: 'Hebräer 13,8',
     introSecond: 'Der Mensch aber ist wandelbar, wandelbar wie das Wetter.',
@@ -39,6 +42,7 @@ const T: Record<Lang, Record<string, string>> = {
     back: 'Zurück zur Startseite',
   },
   en: {
+    introEnabled: 'da',
     introVerse: 'Jesus Christ is the same yesterday and today and forever!',
     introReference: 'Hebrews 13:8',
     introSecond: 'But man is changeable, changeable as the weather.',
@@ -53,6 +57,7 @@ const T: Record<Lang, Record<string, string>> = {
     back: 'Back to home',
   },
   ro: {
+    introEnabled: 'da',
     introVerse: 'Isus Hristos este același ieri și azi și în veci!',
     introReference: 'Evrei 13:8',
     introSecond: 'Dar omul este schimbător, schimbător ca vremea.',
@@ -67,6 +72,7 @@ const T: Record<Lang, Record<string, string>> = {
     back: 'Înapoi la pagina principală',
   },
   ru: {
+    introEnabled: 'da',
     introVerse: 'Иисус Христос вчера и сегодня и вовеки Тот же!',
     introReference: 'Евреям 13:8',
     introSecond: 'А человек изменчив, изменчив, как погода.',
@@ -97,12 +103,27 @@ export default function MarturiiPage() {
   const lang = (['ro', 'de', 'en', 'ru'].includes(language) ? language : 'de') as Lang;
   const t = usePageText('marturii', T, lang);
 
-  // Pasul 2608004: ecranul de intrare apare la FIECARE intrare pe pagină,
-  // exact ca la Despre. Înainte se arăta o singură dată pe filă de browser.
-  const [showIntro, setShowIntro] = useState(true);
+  // Pasul 2608006 — ecranul de intrare apare doar când VII din altă parte.
+  // Când te plimbi prin mărturii (rubrică → mărturie → înapoi) nu mai apare.
+  // Se poate și opri de tot din Setări → Pagini → Mărturii (câmpul „introEnabled").
+  const introOff = String(t.introEnabled ?? 'da').trim().toLowerCase() === 'nu';
+  const [showIntro, setShowIntro] = useState(false);
+  const [introChecked, setIntroChecked] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
+
+  useEffect(() => {
+    let alreadyInside = false;
+    try {
+      alreadyInside = sessionStorage.getItem(MARTURII_ACTIVE_KEY) === '1';
+      sessionStorage.setItem(MARTURII_ACTIVE_KEY, '1');
+    } catch {
+      /* filă privată */
+    }
+    setShowIntro(!alreadyInside);
+    setIntroChecked(true);
+  }, []);
 
   const finishIntro = useCallback(() => setShowIntro(false), []);
 
@@ -144,7 +165,10 @@ export default function MarturiiPage() {
 
   const hasSections = useMemo(() => sections.length > 0, [sections]);
 
-  if (showIntro) {
+  // Cât timp verificăm, nu clipim conținutul.
+  if (!introChecked) return <div className="min-h-screen" aria-hidden="true" />;
+
+  if (showIntro && !introOff) {
     return (
       <MarturiiIntroQuote
         onFinish={finishIntro}

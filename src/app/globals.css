@@ -1238,6 +1238,18 @@ body {
 }
 
 /*
+  Pasul 2608006 — exceptie inauntrul zonelor „mereu albe".
+  In modalul „Play Blog" tot textul este alb, pentru ca sta peste o poza
+  intunecata. Dar butoanele ALBE de la final au textul negru — si acela
+  devenea tot alb, deci invizibil (butonul de langa „Nochmal horen").
+  Regula: daca un element cere explicit `text-black`, i se respecta cererea.
+*/
+.force-white-text .text-black,
+.force-white-text .text-black * {
+  color: #000000 !important;
+}
+
+/*
   Pasul 2508001 — `.btn-solid` NU mai primeste nicio culoare de aici.
 
   Greseala de la pasul 2508000: scrisesem `color: inherit`. Acesta bate
