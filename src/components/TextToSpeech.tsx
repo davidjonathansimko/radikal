@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { fetchCustomAudioForLang } from '@/lib/customAudio';
 
 // TTS Engine type — 'browser' = built-in SpeechSynthesis, 'google' = Google Cloud WaveNet
 type TTSEngine = 'browser' | 'google';
@@ -19,6 +20,13 @@ interface TextToSpeechProps {
   /** Pasul 21082026 — optionale: ajuta la identificarea audio-ului in Supabase */
   blogSlug?: string;
   blogTitle?: string;
+  /**
+   * Pasul 2608004 — id-ul articolului, ca sa putem cauta INREGISTRAREA TA
+   * pentru limba aleasa. Daca exista una, ea se aude in locul vocii generate.
+   * Pana acum doar modalul „Play Blog" stia de ea, iar butonul obisnuit de
+   * ascultare pornea tot vocea artificiala — exact neconcordanta observata.
+   */
+  blogId?: string;
 }
 
 interface VoiceOption {
@@ -265,6 +273,7 @@ export default function TextToSpeech({
   compact = false,
   blogSlug,
   blogTitle,
+  blogId,
 }: TextToSpeechProps) {
   const { language } = useLanguage();
   const t = translations[language as keyof typeof translations] || translations.de;
@@ -1059,7 +1068,11 @@ export default function TextToSpeech({
       googleAudioRef.current = null;
     }
     if (googleBlobUrlRef.current) {
-      URL.revokeObjectURL(googleBlobUrlRef.current);
+      // Pasul 2608004: cand se aude inregistrarea ta, adresa nu este un `blob:`
+      // creat de noi, ci un link normal. Pe acela nu avem ce elibera.
+      if (googleBlobUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(googleBlobUrlRef.current);
+      }
       googleBlobUrlRef.current = null;
     }
     googleAudioKeyRef.current = '';
@@ -1076,7 +1089,13 @@ export default function TextToSpeech({
 
     let blobUrl: string | null = null;
     try {
-      blobUrl = await googleBuildFullAudio(cleanedText, session);
+      // Pasul 2608004 — INREGISTRAREA TA are intaietate.
+      // Daca ai incarcat o inregistrare proprie pentru limba aleasa, o folosim
+      // direct: nu mai generam nimic si nu mai platim nimic. Daca stergi
+      // inregistrarea, se revine singur la vocea generata.
+      const mine = blogId ? await fetchCustomAudioForLang(blogId, voiceLanguage) : null;
+      if (googleSessionRef.current !== session) return;
+      blobUrl = mine?.audio_url ?? (await googleBuildFullAudio(cleanedText, session));
     } catch (err) {
       const error = err as Error;
       if (googleSessionRef.current !== session) return;
@@ -1111,7 +1130,6 @@ export default function TextToSpeech({
     setGoogleLoading(false);
     googleBlobUrlRef.current = blobUrl;
     googleAudioKeyRef.current = wantKey;
-
     const audio = new Audio();
     googleAudioRef.current = audio;
     audio.preload = 'auto';
@@ -1172,7 +1190,7 @@ export default function TextToSpeech({
     audio.play().catch((playErr) => {
       console.warn('[Google TTS] play() rejected:', playErr?.message);
     });
-  }, [text, cleanText, googleAudioKey, googleBuildFullAudio, requestWakeLock, releaseWakeLock, updateMediaSession]);
+  }, [text, cleanText, googleAudioKey, googleBuildFullAudio, requestWakeLock, releaseWakeLock, updateMediaSession, blogId, voiceLanguage]);
 
   const stopGoogleSpeaking = useCallback(() => {
     // Invalidate any build in progress

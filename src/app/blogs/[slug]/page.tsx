@@ -1404,6 +1404,7 @@ export default function BlogPostPage() {
                 compact
                 blogSlug={post.slug}
                 blogTitle={displayTitle || post.title}
+                blogId={post.id}
               />
             </div>
           </div>

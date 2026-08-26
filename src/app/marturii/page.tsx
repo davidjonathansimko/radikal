@@ -23,6 +23,11 @@ type Lang = 'ro' | 'de' | 'en' | 'ru';
 
 const T: Record<Lang, Record<string, string>> = {
   de: {
+    // —— Ecranul de intrare (se poate schimba din Setări → Pagini)
+    introVerse: 'Jesus Christus ist derselbe gestern und heute und in Ewigkeit!',
+    introReference: 'Hebräer 13,8',
+    introSecond: 'Der Mensch aber ist wandelbar, wandelbar wie das Wetter.',
+    // —— Pagina
     title: 'Zeugnisse',
     intro: 'Hi test text Marturii',
     sectionsTitle: 'Rubriken',
@@ -34,6 +39,9 @@ const T: Record<Lang, Record<string, string>> = {
     back: 'Zurück zur Startseite',
   },
   en: {
+    introVerse: 'Jesus Christ is the same yesterday and today and forever!',
+    introReference: 'Hebrews 13:8',
+    introSecond: 'But man is changeable, changeable as the weather.',
     title: 'Testimonies',
     intro: 'Hi test text Marturii',
     sectionsTitle: 'Sections',
@@ -45,6 +53,9 @@ const T: Record<Lang, Record<string, string>> = {
     back: 'Back to home',
   },
   ro: {
+    introVerse: 'Isus Hristos este același ieri și azi și în veci!',
+    introReference: 'Evrei 13:8',
+    introSecond: 'Dar omul este schimbător, schimbător ca vremea.',
     title: 'Mărturii',
     intro: 'Hi test text Marturii',
     sectionsTitle: 'Rubrici',
@@ -56,6 +67,9 @@ const T: Record<Lang, Record<string, string>> = {
     back: 'Înapoi la pagina principală',
   },
   ru: {
+    introVerse: 'Иисус Христос вчера и сегодня и вовеки Тот же!',
+    introReference: 'Евреям 13:8',
+    introSecond: 'А человек изменчив, изменчив, как погода.',
     title: 'Свидетельства',
     intro: 'Hi test text Marturii',
     sectionsTitle: 'Рубрики',
@@ -70,8 +84,6 @@ const T: Record<Lang, Record<string, string>> = {
 
 registerPageDefaults('marturii', T);
 
-/** Ecranul de intrare se arată o singură dată pe filă de browser. */
-const INTRO_SEEN_KEY = 'radikal-marturii-intro-seen';
 
 interface Section {
   id: string;
@@ -85,29 +97,14 @@ export default function MarturiiPage() {
   const lang = (['ro', 'de', 'en', 'ru'].includes(language) ? language : 'de') as Lang;
   const t = usePageText('marturii', T, lang);
 
-  const [showIntro, setShowIntro] = useState(false);
-  const [introChecked, setIntroChecked] = useState(false);
+  // Pasul 2608004: ecranul de intrare apare la FIECARE intrare pe pagină,
+  // exact ca la Despre. Înainte se arăta o singură dată pe filă de browser.
+  const [showIntro, setShowIntro] = useState(true);
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
 
-  useEffect(() => {
-    try {
-      setShowIntro(!sessionStorage.getItem(INTRO_SEEN_KEY));
-    } catch {
-      setShowIntro(true);
-    }
-    setIntroChecked(true);
-  }, []);
-
-  const finishIntro = useCallback(() => {
-    try {
-      sessionStorage.setItem(INTRO_SEEN_KEY, '1');
-    } catch {
-      /* fila privată — atunci se arată din nou, nu e o problemă */
-    }
-    setShowIntro(false);
-  }, []);
+  const finishIntro = useCallback(() => setShowIntro(false), []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,10 +144,16 @@ export default function MarturiiPage() {
 
   const hasSections = useMemo(() => sections.length > 0, [sections]);
 
-  // Cât timp verificăm dacă intro-ul a fost văzut, nu clipim conținutul.
-  if (!introChecked) return <div className="min-h-screen" aria-hidden="true" />;
-
-  if (showIntro) return <MarturiiIntroQuote onFinish={finishIntro} />;
+  if (showIntro) {
+    return (
+      <MarturiiIntroQuote
+        onFinish={finishIntro}
+        verse={t.introVerse}
+        reference={t.introReference}
+        secondLine={t.introSecond}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen py-12">

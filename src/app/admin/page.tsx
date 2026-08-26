@@ -17,6 +17,7 @@ import StoryContentAdmin from '@/components/admin/StoryContentAdmin';
 import MaintenanceAdmin from '@/components/admin/MaintenanceAdmin';
 import IntroTextAdmin from '@/components/admin/IntroTextAdmin';
 import PageContentAdmin from '@/components/admin/PageContentAdmin';
+import MarturiiAdmin from '@/components/admin/MarturiiAdmin';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRequestsPanel from '@/components/admin/AdminRequestsPanel';
 import { countPendingRequests } from '@/lib/adminRoles';
@@ -1488,6 +1489,8 @@ export default function AdminPage() {
                 // Pasul 2308006-D — etichetele urmeaza limba aleasa de tine sus
                 { id: 'blogs', label: adminT('tabs.blogs'), Icon: IconDocument, group: 'Conținut' },
                 { id: 'reels', label: adminT('tabs.reels'), Icon: IconFilm, group: 'Conținut' },
+                // Pasul 2608004 — Mărturii, alături de Articole și Reels
+                { id: 'marturii', label: 'Mărturii', Icon: IconDocument, group: 'Conținut' },
               ] as const)
             : ([
                 { id: 'working', label: 'Site în lucru', Icon: IconWrench, group: 'Site' },
@@ -1629,6 +1632,19 @@ export default function AdminPage() {
         {mainTab === 'create' && subTab === 'reels' && (
           <section className="animate-fadeIn mb-12">
             <ReelsAdmin />
+          </section>
+        )}
+
+        {/* ---------- CREARE → Mărturii (pasul 2608004) ---------- */}
+        {mainTab === 'create' && subTab === 'marturii' && (
+          <section className="animate-fadeIn mb-12">
+            <div className="glass-effect rounded-2xl p-6">
+              <h2 className="mb-1 text-xl font-bold text-black dark:text-white">Mărturii</h2>
+              <p className="mb-5 text-xs text-black/50 dark:text-white/50">
+                Același formular ca la articole. Se salvează separat, în rubricile mărturiilor.
+              </p>
+              <MarturiiAdmin />
+            </div>
           </section>
         )}
 

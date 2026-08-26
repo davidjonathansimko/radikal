@@ -45,9 +45,21 @@ const secondLines: Record<string, string> = {
 
 interface MarturiiIntroQuoteProps {
   onFinish: () => void;
+  /**
+   * Pasul 2608004 — textele vin din pagina, ca sa poata fi schimbate din
+   * Setari → Pagini → Marturii. Daca lipsesc, se folosesc cele de mai sus.
+   */
+  verse?: string;
+  reference?: string;
+  secondLine?: string;
 }
 
-export default function MarturiiIntroQuote({ onFinish }: MarturiiIntroQuoteProps) {
+export default function MarturiiIntroQuote({
+  onFinish,
+  verse,
+  reference,
+  secondLine,
+}: MarturiiIntroQuoteProps) {
   const { language } = useLanguage();
   const { theme } = useTheme();
   const { reduced: reduceMotion } = useReducedMotion();
@@ -58,6 +70,11 @@ export default function MarturiiIntroQuote({ onFinish }: MarturiiIntroQuoteProps
   const secondWordsRef = useRef<(HTMLSpanElement | null)[]>([]);
 
   const lang = verses[language] ? language : 'de';
+
+  // Textul scris de tine bate textul din cod.
+  const verseText = (verse || '').trim() || verses[lang];
+  const referenceText = (reference || '').trim() || references[lang];
+  const secondText = (secondLine || '').trim() || secondLines[lang];
 
   const bgColor = theme === 'dark' ? '#000000' : '#ffffff';
   const textColor = theme === 'dark' ? '#ffffff' : '#000000';
@@ -140,7 +157,7 @@ export default function MarturiiIntroQuote({ onFinish }: MarturiiIntroQuoteProps
           });
       }
     },
-    { scope: containerRef, dependencies: [lang, reduceMotion] },
+    { scope: containerRef, dependencies: [lang, reduceMotion, verseText, secondText] },
   );
 
   return (
@@ -165,7 +182,7 @@ export default function MarturiiIntroQuote({ onFinish }: MarturiiIntroQuoteProps
             }}
           >
             <span className="inline tracking-wider">&bdquo;</span>
-            {verses[lang].split(' ').map((word, index) => (
+            {verseText.split(' ').map((word, index) => (
               <span
                 key={index}
                 ref={(el) => {
@@ -185,7 +202,7 @@ export default function MarturiiIntroQuote({ onFinish }: MarturiiIntroQuoteProps
             className="block font-cinzel text-xl md:text-2xl lg:text-3xl font-medium mt-6"
             style={{ color: textLight, opacity: 0, transform: 'translateY(20px)' }}
           >
-            — {references[lang]}
+            — {referenceText}
           </cite>
 
           {/* Fraza 2 — apare exact pe locul primei, după ce aceea dispare */}
@@ -193,7 +210,7 @@ export default function MarturiiIntroQuote({ onFinish }: MarturiiIntroQuoteProps
             className="absolute inset-x-0 top-0 font-cinzel text-2xl md:text-3xl lg:text-4xl italic leading-relaxed min-h-[180px] flex items-center justify-center px-4 flex-wrap pointer-events-none"
             style={{ color: textColor }}
           >
-            {secondLines[lang].split(' ').map((word, index) => (
+            {secondText.split(' ').map((word, index) => (
               <span
                 key={index}
                 ref={(el) => {
