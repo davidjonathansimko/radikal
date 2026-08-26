@@ -42,6 +42,15 @@ export interface Reel {
   blog_post_id: string | null;
   likes_count: number;
   blog_slug?: string | null;
+  /**
+   * Pasul 2708001 — culoarea textului, aleasa de tine:
+   *   'auto'  = urmeaza tema (alb pe negru, negru pe alb)
+   *   'light' = mereu alb   (bun peste imagini inchise)
+   *   'dark'  = mereu negru (bun peste imagini deschise)
+   */
+  text_color?: 'auto' | 'light' | 'dark' | null;
+  /** Pasul 2708001 — adresa marturiei legate, daca reel-ul tine de una. */
+  testimony_slug?: string | null;
   /** Tag afisat sub butonul de like: R00, R01 … R99, apoi R100, R101 … */
   tag: string;
 
@@ -248,6 +257,7 @@ export function ReelSlide({
   reduceMotion,
   onToggleLike,
   onOpenBlog,
+  onOpenTestimony,
   onActive,
   chromeless = false,
   forceActive = false,
@@ -263,6 +273,8 @@ export function ReelSlide({
   reduceMotion: boolean;
   onToggleLike: (reel: Reel) => void;
   onOpenBlog: (slug: string) => void;
+  /** Pasul 2708001 — deschide marturia legata de reel. */
+  onOpenTestimony: (slug: string) => void;
   onActive: (reel: Reel) => void;
   /**
    * Pasul A02 — `true` ascunde TOT ce tine de interfata aplicatiei:
@@ -359,11 +371,16 @@ export function ReelSlide({
     setLoopCount((c) => c + 1);
   };
 
-  const textColor = isDark ? '#ffffff' : '#000000';
-  const textLight = isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)';
-  const textVeryLight = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
-  const bgTransparent = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-  const borderColorLight = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)';
+  // Pasul 2708001 — daca ai ales o culoare anume, ea bate tema.
+  // Fara asta, pe tema luminoasa textul negru se pierdea in imaginile inchise.
+  const forced = reel.text_color && reel.text_color !== 'auto' ? reel.text_color : null;
+  const lightText = forced ? forced === 'light' : isDark;
+
+  const textColor = lightText ? '#ffffff' : '#000000';
+  const textLight = lightText ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)';
+  const textVeryLight = lightText ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
+  const bgTransparent = lightText ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const borderColorLight = lightText ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)';
 
   const isLastPage = pageIndex >= pages.length - 1;
   const currentText = pages[pageIndex] || '';
@@ -777,6 +794,39 @@ export function ReelSlide({
           </button>
         )}
 
+        {/* Pasul 2708001 — SAGEATA catre MARTURIE, daca reel-ul tine de una.
+            Se alege ori articol, ori marturie — nu amandoua. */}
+        {!reel.blog_slug && reel.testimony_slug && (
+          <button
+            onClick={() => onOpenTestimony(reel.testimony_slug as string)}
+            aria-label={
+              language === 'de' ? 'Zum Zeugnis' :
+              language === 'en' ? 'Go to testimony' :
+              language === 'ro' ? 'Mergi la mărturie' : 'К свидетельству'
+            }
+            className="flex flex-col items-center gap-1 rounded-full p-3 transition-transform duration-200 active:scale-90 hover:scale-110"
+            style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
+          >
+            <svg
+              className="w-7 h-7"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={textColor}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+            <span className="text-[10px] font-semibold" style={{ color: textVeryLight }}>
+              {language === 'de' ? 'Zeugnis' :
+               language === 'en' ? 'Testimony' :
+               language === 'ro' ? 'Mărturia' : 'Свидетельство'}
+            </span>
+          </button>
+        )}
+
         {/* --- Pasul A12: FREEZE (doar pentru ADMIN) ---
             La apasare dispar TOATE butoanele aplicatiei: ×, inima, share,
             sageata catre articol, tag-ul, bulinele de paginare si sageata
@@ -924,6 +974,10 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
         // fost rulat, coloana nu exista si intreaga lista ar disparea.
         const LIGHT_COLUMN = 'background_opacity_light, ';
 
+        // Pasul 2708001 — culoarea textului si marturia legata. Aceeasi grija:
+        // daca STEP_2708001 nu a fost rulat, coloanele nu exista.
+        const TEXT_MARTURIE_COLUMNS = 'text_color, testimonies(slug), ';
+
         const runQuery = (columns: string) =>
           supabase
             .from('reels')
@@ -934,8 +988,13 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
 
         // Incercam pe rand, de la „tot" spre „minimul sigur".
         let { data, error } = await runQuery(
-          LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
+          TEXT_MARTURIE_COLUMNS + LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
         );
+        if (error?.code === '42703' || error?.code === 'PGRST200') {
+          ({ data, error } = await runQuery(
+            LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
+          ));
+        }
         if (error?.code === '42703') {
           ({ data, error } = await runQuery(MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS));
         }
@@ -977,6 +1036,12 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
               blog_post_id: (row.blog_post_id as string) ?? null,
               likes_count: (row.likes_count as number) ?? 0,
               blog_slug: slug,
+              // Pasul 2708001 — culoarea aleasa de tine si marturia legata
+              text_color: (row.text_color as 'auto' | 'light' | 'dark') ?? 'auto',
+              testimony_slug: (() => {
+                const t = row.testimonies as { slug?: string } | { slug?: string }[] | null;
+                return Array.isArray(t) ? t[0]?.slug ?? null : t?.slug ?? null;
+              })(),
               tag: buildReelTag(row.reel_number as number),
 
               audio_url: (row.audio_url as string) ?? null,
@@ -1197,6 +1262,14 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
     [onClose, router]
   );
 
+  const handleOpenTestimony = useCallback(
+    (slug: string) => {
+      onClose();
+      router.push(`/marturii/m/${slug}`);
+    },
+    [onClose, router]
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -1262,6 +1335,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
                   reduceMotion={reduceMotion}
                   onToggleLike={handleToggleLike}
                   onOpenBlog={handleOpenBlog}
+                  onOpenTestimony={handleOpenTestimony}
                   onActive={handleActive}
                   isAdmin={isAdmin}
                   onFreeze={handleFreeze}

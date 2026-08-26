@@ -64,6 +64,10 @@ export default function ReelsAdmin() {
   // Volumul este mereu 100% — reglajul se face din butoanele telefonului.
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
   const [backgroundOpacity, setBackgroundOpacity] = useState(15);
+  // Pasul 2708001 — culoarea textului si marturia legata
+  const [textColor, setTextColor] = useState<'auto' | 'light' | 'dark'>('auto');
+  const [testimonyId, setTestimonyId] = useState<string>('');
+  const [testimonies, setTestimonies] = useState<{ id: string; title: string }[]>([]);
   // Pasul 2508001 — aceeasi poza, dar pe TEMA LUMINOASA. `null` = ca la intuneric.
   const [backgroundOpacityLight, setBackgroundOpacityLight] = useState<number | null>(null);
   const [effectNoise, setEffectNoise] = useState(false);
@@ -108,6 +112,8 @@ export default function ReelsAdmin() {
     setAudioUrl('');
     setBackgroundImageUrl('');
     setBackgroundOpacity(15);
+    setTextColor('auto');
+    setTestimonyId('');
     setBackgroundOpacityLight(null);
     setEffectNoise(false);
     setEffectGrain(false);
@@ -171,6 +177,15 @@ export default function ReelsAdmin() {
         const rows = (postsRes.data as unknown as { id: string; title: string; is_dynamic?: boolean }[]) || [];
         setPosts(rows.map((r) => ({ id: r.id, title: r.title, isDynamic: !!r.is_dynamic })));
       }
+
+      // Pasul 2708001 — marturiile, pentru legatura din reel.
+      // Daca tabelul nu exista inca, lista ramane goala si nu se strica nimic.
+      const { data: tData } = await supabase
+        .from('testimonies')
+        .select('id, title')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      setTestimonies((tData as unknown as { id: string; title: string }[]) || []);
     } finally {
       setLoading(false);
     }
@@ -218,6 +233,8 @@ export default function ReelsAdmin() {
         audio_volume: 100,
         background_image_url: backgroundImageUrl.trim() || null,
         background_opacity: backgroundOpacity,
+        text_color: textColor,
+        testimony_id: testimonyId || null,
         background_opacity_light: backgroundOpacityLight,
         effect_noise: effectNoise,
         effect_grain: effectGrain,
@@ -247,13 +264,21 @@ export default function ReelsAdmin() {
 
       let { error } = await send(payload);
 
-      // Pasul 2508001: daca `STEP_2508001_REEL_LIGHT.sql` nu a fost rulat,
-      // coloana noua nu exista. Salvam atunci fara ea, ca sa nu pierzi munca.
-      if (error?.code === '42703') {
-        const { background_opacity_light: _omit, ...withoutLight } = payload;
-        ({ error } = await send(withoutLight));
+      // Pasul 2508001 / 2708001: daca fisierele SQL noi nu au fost rulate,
+      // coloanele lipsesc. Salvam atunci fara ele, ca sa nu pierzi munca.
+      if (error?.code === '42703' || error?.code === 'PGRST204') {
+        const {
+          background_opacity_light: _omitLight,
+          text_color: _omitColor,
+          testimony_id: _omitTestimony,
+          ...withoutNew
+        } = payload;
+        ({ error } = await send(withoutNew));
         if (!error) {
-          notify('ok', 'Salvat. Reglajul pentru tema luminoasă are nevoie de STEP_2508001_REEL_LIGHT.sql.');
+          notify(
+            'ok',
+            'Salvat. Culoarea textului, mărturia legată și reglajul pentru tema luminoasă au nevoie de STEP_2708001 și STEP_2508001.',
+          );
         }
       }
 
@@ -298,6 +323,8 @@ export default function ReelsAdmin() {
       setAudioUrl((r.audio_url as string) ?? '');
       setBackgroundImageUrl((r.background_image_url as string) ?? '');
       setBackgroundOpacity((r.background_opacity as number) ?? 15);
+      setTextColor(((r.text_color as string) as 'auto' | 'light' | 'dark') || 'auto');
+      setTestimonyId((r.testimony_id as string) || '');
       setBackgroundOpacityLight(
         typeof r.background_opacity_light === 'number' ? (r.background_opacity_light as number) : null,
       );
@@ -612,6 +639,65 @@ export default function ReelsAdmin() {
               value={blogPostId}
               onChange={setBlogPostId}
             />
+          </div>
+
+          {/* Pasul 2708001 — MĂRTURIE LEGATĂ.
+              Se alege ori articol, ori mărturie. Dacă alegi articol, aici
+              rămâne gol; butonul din reel duce la articol. */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
+              Mărturie legată (opțional)
+            </label>
+            <select
+              value={testimonyId}
+              onChange={(e) => setTestimonyId(e.target.value)}
+              disabled={Boolean(blogPostId)}
+              className={`${inputClass} disabled:opacity-40`}
+            >
+              <option value="">— Fără mărturie —</option>
+              {testimonies.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
+              {blogPostId
+                ? 'Ai ales deja un articol. Golește-l dacă vrei o mărturie.'
+                : 'Reel-ul va avea butonul „Mărturia".'}
+            </p>
+          </div>
+
+          {/* Pasul 2708001 — CULOAREA TEXTULUI.
+              Pe imagini închise, textul negru al temei luminoase se pierde. */}
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
+              Culoarea textului
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {([
+                ['auto', 'Urmează tema'],
+                ['light', 'Mereu alb'],
+                ['dark', 'Mereu negru'],
+              ] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTextColor(id)}
+                  className={`btn-solid rounded-full border px-4 py-1.5 text-sm transition-colors ${
+                    textColor === id
+                      ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+                      : 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
+              „Urmează tema&ldquo; = alb pe fundal negru, negru pe fundal alb. Alege „mereu alb&ldquo;
+              dacă imaginea de fundal este închisă și textul se pierde în ea.
+            </p>
           </div>
         </div>
 
