@@ -12,6 +12,7 @@ import { useParams } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
+import BlogBrowse from '@/components/BlogBrowse';
 import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
@@ -170,6 +171,20 @@ export default function SectionPage() {
             {sectionName}
           </h1>
         </header>
+
+        {/* Pasul 2708002 — rasfoire alfabetica / dupa data, prin toate marturiile */}
+        <div className="mb-6 flex justify-center">
+          <BlogBrowse
+            table="testimonies"
+            basePath="/marturii/m"
+            browseLabel={{
+              ro: 'Răsfoiește Mărturii',
+              de: 'Zeugnisse durchsuchen',
+              en: 'Browse Testimonies',
+              ru: 'Просмотр свидетельств',
+            }}
+          />
+        </div>
 
         {/* Căutare + sortare */}
         <div className="mb-8 grid gap-2 sm:grid-cols-[1fr_auto]">

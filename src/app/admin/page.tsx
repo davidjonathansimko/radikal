@@ -1327,9 +1327,10 @@ export default function AdminPage() {
                 </div>
 
                 {/* Pasul 2208002 (punctul 3) — audio generat O SINGURA DATA.
-                    Apare doar la blogurile dinamice si doar dupa ce articolul
-                    a fost salvat (are un `slug`). */}
-                {isDynamic && editingPost?.slug && (
+                    Pasul 2708002: apare la ORICE articol salvat, nu doar la cele
+                    dinamice. Vrei sa poti descarca fisierul chiar daca articolul
+                    nu are butonul „Play Blog". */}
+                {editingPost?.slug && (
                   <BlogAudioGenerator
                     slug={editingPost.slug}
                     title={formData.title}
@@ -1341,7 +1342,7 @@ export default function AdminPage() {
                   />
                 )}
 
-                {isDynamic && !editingPost?.slug && (
+                {!editingPost?.slug && (
                   <p className="mt-4 rounded-lg border border-white/15 bg-white/5 p-3 text-xs text-white/60">
                     🎧 Salvează întâi articolul. După aceea apare butonul
                     „Generează audio&ldquo;, care creează vocea <strong>o singură dată</strong>,

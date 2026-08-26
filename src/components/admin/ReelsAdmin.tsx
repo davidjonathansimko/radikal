@@ -642,29 +642,23 @@ export default function ReelsAdmin() {
           </div>
 
           {/* Pasul 2708001 — MĂRTURIE LEGATĂ.
-              Se alege ori articol, ori mărturie. Dacă alegi articol, aici
-              rămâne gol; butonul din reel duce la articol. */}
+              Pasul 2708002: aceeași căutare ca la articole — scrii câteva
+              litere și găsești mărturia, oricâte ai avea.
+              Se alege ori articol, ori mărturie, nu amândouă. */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
-              Mărturie legată (opțional)
-            </label>
-            <select
+            <PostSearchSelect
+              posts={testimonies}
               value={testimonyId}
-              onChange={(e) => setTestimonyId(e.target.value)}
+              onChange={setTestimonyId}
+              label="Mărturie legată (opțional)"
+              emptyLabel="— Fără mărturie —"
+              showTypeFilter={false}
               disabled={Boolean(blogPostId)}
-              className={`${inputClass} disabled:opacity-40`}
-            >
-              <option value="">— Fără mărturie —</option>
-              {testimonies.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title}
-                </option>
-              ))}
-            </select>
+            />
             <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
               {blogPostId
                 ? 'Ai ales deja un articol. Golește-l dacă vrei o mărturie.'
-                : 'Reel-ul va avea butonul „Mărturia".'}
+                : 'Reel-ul va avea butonul „Mărturia&ldquo;.'}
             </p>
           </div>
 

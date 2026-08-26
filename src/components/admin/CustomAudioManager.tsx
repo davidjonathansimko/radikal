@@ -160,6 +160,19 @@ export default function CustomAudioManager({
                     {busy ? 'Se încarcă…' : item ? 'Înlocuiește' : 'Încarcă'}
                   </button>
 
+                  {/* Pasul 2708002 — descarci înregistrarea ta pe calculator */}
+                  {item && (
+                    <a
+                      href={item.audio_url}
+                      download={item.file_name ?? `${lang}.mp3`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                    >
+                      Descarcă
+                    </a>
+                  )}
+
                   {item && (
                     <button
                       type="button"

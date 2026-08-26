@@ -77,10 +77,26 @@ const alphabets: Record<string, string[]> = {
   ru: 'А Б В Г Д Е Ж З И К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Э Ю Я'.split(' '),
 };
 
-export default function BlogBrowse() {
+/**
+ * Pasul 2708002 — acelasi panou de rasfoire, folosit si la marturii.
+ * Ce difera: tabelul, adresa articolului si eticheta butonului.
+ */
+export interface BlogBrowseProps {
+  table?: string;
+  basePath?: string;
+  /** Eticheta butonului, pe limbi. Gol = „Rasfoieste Bloguri". */
+  browseLabel?: Record<string, string>;
+}
+
+export default function BlogBrowse({
+  table = 'blog_posts',
+  basePath = '/blogs',
+  browseLabel,
+}: BlogBrowseProps = {}) {
   const { language } = useLanguage();
   const { translateBatch } = useTranslation();
   const t = translations[language as keyof typeof translations] || translations.de;
+  const buttonLabel = browseLabel?.[language] ?? browseLabel?.de ?? t.browseBlogs;
   
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<'alpha' | 'date'>('alpha');
@@ -103,7 +119,7 @@ export default function BlogBrowse() {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('blog_posts')
+          .from(table)
           .select('id, title, slug, created_at, published')
           .eq('published', true)
           .order('title', { ascending: true });
@@ -119,7 +135,7 @@ export default function BlogBrowse() {
     };
     
     loadAllPosts();
-  }, [isOpen, supabase]);
+  }, [isOpen, supabase, table]);
   
   // Translate post titles when language changes (for non-Romanian)
   useEffect(() => {
@@ -269,7 +285,7 @@ export default function BlogBrowse() {
         className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white text-sm font-medium rounded-lg transition-all duration-300 border border-gray-300 dark:border-white/20 hover:border-gray-400 dark:hover:border-white/30"
       >
         <FaSortAlphaDown className="w-4 h-4" />
-        <span>{t.browseBlogs}</span>
+        <span>{buttonLabel}</span>
         {isOpen ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}
       </button>
       
@@ -362,7 +378,7 @@ export default function BlogBrowse() {
                           {filteredByLetter.map(post => (
                             <li key={post.id}>
                               <Link
-                                href={`/blogs/${post.slug || post.id}`}
+                                href={`${basePath}/${post.slug || post.id}`}
                                 className="flex items-start gap-2 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors group"
                               >
                                 <span className="text-gray-900 dark:text-white font-medium text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
@@ -451,7 +467,7 @@ export default function BlogBrowse() {
                           {filteredByDate.map(post => (
                             <li key={post.id}>
                               <Link
-                                href={`/blogs/${post.slug || post.id}`}
+                                href={`${basePath}/${post.slug || post.id}`}
                                 className="flex items-start gap-2 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors group"
                               >
                                 <span className="text-gray-900 dark:text-white font-medium text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">

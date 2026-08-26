@@ -27,6 +27,12 @@ interface PostSearchSelectProps {
   emptyLabel?: string;
   /** Cate rezultate se arata simultan */
   maxVisible?: number;
+  /**
+   * Pasul 2708002 — filtrul „Dinamice / Statice" are sens doar la articole.
+   * La marturii il ascundem, ca sa nu incurce.
+   */
+  showTypeFilter?: boolean;
+  disabled?: boolean;
 }
 
 export default function PostSearchSelect({
@@ -36,6 +42,8 @@ export default function PostSearchSelect({
   label = 'Articol legat (opțional)',
   emptyLabel = '— Fără articol (doar like) —',
   maxVisible = 5,
+  showTypeFilter = true,
+  disabled = false,
 }: PostSearchSelectProps) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -103,7 +111,8 @@ export default function PostSearchSelect({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`${inputClass} text-left flex items-center justify-between gap-2`}
+        disabled={disabled}
+        className={`${inputClass} text-left flex items-center justify-between gap-2 disabled:opacity-40`}
       >
         <span className="truncate">{selected ? selected.title : emptyLabel}</span>
         <span className="opacity-50 flex-shrink-0">▾</span>
@@ -122,6 +131,7 @@ export default function PostSearchSelect({
             />
 
             {/* Pasul 2208002 (punctul 6) — filtru dupa tipul articolului */}
+            {showTypeFilter && (
             <div className="mt-2 flex items-center gap-3 text-[11px]">
               <label className="flex cursor-pointer items-center gap-1.5 text-black/70 dark:text-white/70">
                 <input
@@ -145,6 +155,7 @@ export default function PostSearchSelect({
                 {onlyDynamic === onlyStatic ? 'toate' : onlyDynamic ? 'doar dinamice' : 'doar statice'}
               </span>
             </div>
+            )}
           </div>
 
           <ul className="max-h-64 overflow-y-auto">

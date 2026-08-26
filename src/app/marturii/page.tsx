@@ -17,6 +17,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { usePageText } from '@/lib/pageContent';
 import { registerPageDefaults } from '@/lib/pageDefaults';
 import BackToTopButton from '@/components/BackToTopButton';
+import BlogBrowse from '@/components/BlogBrowse';
 import MarturiiIntroQuote from '@/components/MarturiiIntroQuote';
 import { MARTURII_ACTIVE_KEY } from '@/lib/marturiiSession';
 
@@ -211,6 +212,20 @@ export default function MarturiiPage() {
 
         {/* ---------- Rubricile ---------- */}
         <section className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+          {/* Pasul 2708002 — acelasi panou de rasfoire ca la bloguri */}
+          <div className="mb-8 flex justify-center">
+            <BlogBrowse
+              table="testimonies"
+              basePath="/marturii/m"
+              browseLabel={{
+                ro: 'Răsfoiește Mărturii',
+                de: 'Zeugnisse durchsuchen',
+                en: 'Browse Testimonies',
+                ru: 'Просмотр свидетельств',
+              }}
+            />
+          </div>
+
           <h2 className="text-2xl font-bold text-black dark:text-white text-center mb-8">
             {t.sectionsTitle}
           </h2>

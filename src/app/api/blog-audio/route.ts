@@ -145,18 +145,29 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: rawText, targetLang: language, sourceLang: sourceLanguage }),
       });
-      const trData = await tr.json();
+      const trData = await tr.json().catch(() => ({}));
       if (tr.ok && typeof trData?.translatedText === 'string' && trData.translatedText.trim()) {
         text = trData.translatedText.trim();
       } else {
+        // Pasul 2708002 — spunem CAUZA, nu doar ca a esuat.
+        // Inainte scria doar „Incearca din nou", iar tu nu aveai de unde sti
+        // daca e cota DeepL depasita, cheia lipsa sau textul prea lung.
+        const reason =
+          (typeof trData?.error === 'string' && trData.error) ||
+          (typeof trData?.details === 'string' && trData.details.slice(0, 200)) ||
+          `raspuns ${tr.status}`;
         return NextResponse.json(
-          { error: `Traducerea în „${language}" a eșuat. Încearcă din nou.` },
+          { error: `Traducerea in „${language}" a esuat: ${reason}` },
           { status: 502 },
         );
       }
-    } catch {
+    } catch (e) {
       return NextResponse.json(
-        { error: `Traducerea în „${language}" a eșuat (rețea).` },
+        {
+          error: `Traducerea in „${language}" nu a putut fi ceruta: ${
+            e instanceof Error ? e.message : 'eroare de retea'
+          }`,
+        },
         { status: 502 },
       );
     }
