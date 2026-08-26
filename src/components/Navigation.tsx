@@ -418,6 +418,8 @@ export default function Navigation() {
   // de sus, nici în hamburger. Semnul roșu (!) arată că e ceva important.
   const navigationItems = [
     { href: '/blogs', label: language === 'de' ? 'Blogs' : language === 'en' ? 'Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги' },
+    // Pasul 2608003 — Mărturii
+    { href: '/marturii', label: language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства' },
     { href: '/about', label: language === 'de' ? 'Über' : language === 'en' ? 'About' : language === 'ro' ? 'Despre' : 'О нас' },
     { href: '/contact', label: language === 'de' ? 'Kontakt' : language === 'en' ? 'Contact' : language === 'ro' ? 'Contact' : 'Контакт' },
     ...(newsMenu.visible

@@ -31,6 +31,7 @@ export const PAGE_LANGUAGES: PageLanguage[] = ['ro', 'de', 'en', 'ru'];
 export const EDITABLE_PAGES = [
   { id: 'about', label: 'Despre (About)', path: '/about' },
   { id: 'contact', label: 'Contact', path: '/contact' },
+  { id: 'marturii', label: 'Mărturii', path: '/marturii' },
   { id: 'impressum', label: 'Impressum', path: '/impressum' },
   { id: 'datenschutz', label: 'Confidențialitate (Datenschutz)', path: '/datenschutz' },
   { id: 'news', label: 'News', path: '/news' },
