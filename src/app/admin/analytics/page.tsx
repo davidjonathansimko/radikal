@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
+import { isAdminUser } from '@/lib/isAdmin';
 import AnalyticsDashboard from '@/components/AnalyticsDashboard';
 import { FaArrowLeft, FaChartLine, FaSpinner } from 'react-icons/fa';
 import Link from 'next/link';
@@ -78,8 +79,8 @@ export default function AnalyticsPage() {
       }
 
       // Check if user is admin / Prüfen, ob Benutzer Admin ist
-      const adminEmail = 'davidsimko22@yahoo.com';
-      if (user.email === adminEmail) {
+      // Real protection is enforced by RLS in Supabase - this only hides the UI.
+      if (isAdminUser(user)) {
         setIsAdmin(true);
       } else {
         router.push('/');

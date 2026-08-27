@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { BackToTopIcon, scrollElementToTop } from '@/components/BackToTopShared';
 
 interface ReadingProgressProps {
   // Target element ID to track scroll progress / Ziel-Element-ID zur Verfolgung des Scroll-Fortschritts
@@ -150,7 +151,8 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   showInCorner = true
 }) => {
   const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(true); // Always visible from start
+  // Pasul 2308009: apare doar dupa ce cititorul a derulat in jos.
+  const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [bottomOffset, setBottomOffset] = useState(110); // Pasul 2202000: Higher default for PWA bottom bar + safe-area
 
@@ -163,16 +165,24 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   }, []);
   
   // Adjust size for mobile
-  const actualSize = isMobile ? 40 : size;
+  // Pasul 2208001: pe mobil butonul era 40px — prea mic pentru deget.
+  // +25% -> 50px (desktop ramane la `size`).
+  const actualSize = isMobile ? 50 : size;
 
   // Keep circular progress above footer — never descend below it
   useEffect(() => {
-    // Pasul 2202000: Default bottom accounts for mobile bottom bar (~80px) + safe-area (~34px) or desktop (24px)
-    const defaultBottom = isMobile ? 110 : 24;
+    // Pasul 2308010: pe telefon bara de jos (Limbă / Căutare / Temă / Reels)
+    // sta la ~18px + inaltimea ei. Sageata trebuie sa fie EXACT langa ea,
+    // in dreapta, nu deasupra. 86px o aseaza la aceeasi inaltime cu bara.
+    const defaultBottom = isMobile ? 86 : 24;
     const margin = 16; // space between button and footer top
-    const btnH = isMobile ? 40 : size;
 
     const adjustPosition = () => {
+      // Pasul 2308010 — PE TELEFON NU MAI URCAM DELOC.
+      // Bara de jos acopera oricum footer-ul, deci nu are ce sa incurce.
+      // Ridicarea automata era singurul motiv pentru care sageata fugea in sus.
+      if (isMobile) { setBottomOffset(defaultBottom); return; }
+
       // Find the main site footer (the one in layout)
       const footer = document.querySelector('footer.relative');
       if (!footer) { setBottomOffset(defaultBottom); return; }
@@ -184,8 +194,10 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
       const footerVisibleHeight = windowHeight - footerRect.top;
 
       if (footerVisibleHeight > 0) {
-        // Footer is partially/fully visible — keep button above it
-        setBottomOffset(footerVisibleHeight + margin);
+        // Pe desktop footer-ul e scund, deci ridicarea are sens; o limitam
+        // totusi la o cincime de ecran, ca sa nu ajunga niciodata sus.
+        const maxBottom = Math.max(defaultBottom, windowHeight * 0.2);
+        setBottomOffset(Math.min(footerVisibleHeight + margin, maxBottom));
       } else {
         // Footer not visible yet — stay at default
         setBottomOffset(defaultBottom);
@@ -220,8 +232,8 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
       const total = document.documentElement.scrollHeight - window.innerHeight;
       const percentage = total > 0 ? Math.min(100, (scrolled / total) * 100) : 0;
       setProgress(percentage);
-      // Always visible, no need to hide based on scroll position
-      setIsVisible(true);
+      // Pasul 2308009: sus de tot butonul nu are rost — apare dupa ~300px.
+      setIsVisible(scrolled > 300);
     };
 
     let ticking = false;
@@ -246,8 +258,9 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   const offset = circumference - (progress / 100) * circumference;
 
   // Scroll to top handler / Scroll nach oben Handler
+  // Pasul 2208002 (punctul 16): aceeasi comanda ca la `BackToTopButton`.
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollElementToTop(null);
   };
 
   if (!showInCorner) {
@@ -289,8 +302,15 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   return (
     <button
       onClick={scrollToTop}
-      className="fixed right-4 sm:right-6 z-[250] transition-all duration-150 cursor-pointer group shadow-lg hover:shadow-xl"
-      style={{ opacity: 1, transform: 'scale(1)', bottom: `${bottomOffset}px` }}
+      className="fixed right-4 sm:right-6 z-[250] transition-all duration-300 cursor-pointer group shadow-lg hover:shadow-xl"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'scale(1)' : 'scale(0.8)',
+        pointerEvents: isVisible ? 'auto' : 'none',
+        bottom: `${bottomOffset}px`,
+      }}
+      aria-hidden={!isVisible}
+      tabIndex={isVisible ? 0 : -1}
       aria-label="Scroll to top"
     >
       <div className="relative">
@@ -320,16 +340,14 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
           />
         </svg>
         
-        {/* Arrow up icon - black in light mode, white in dark mode / Pfeil nach oben Icon */}
+        {/* Pasul 2208002 (punctul 16): iconul si comanda de derulare vin acum
+            din `BackToTopShared`, deci sunt EXACT aceleasi ca la butonul
+            „înapoi sus" de pe paginile simple. Un singur loc de modificat. */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <svg 
-            className="w-4 h-4 md:w-5 md:h-5 text-black dark:text-white group-hover:scale-110 transition-transform"
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
+          <BackToTopIcon
+            size={22}
+            className="text-black dark:text-white animate-heartbeat group-hover:scale-110 transition-transform"
+          />
         </div>
       </div>
     </button>

@@ -18,6 +18,8 @@ interface ArticleNavigationProps {
     slug: string;
     title: string;
   } | null;
+  /** Pasul 2708000 — /blogs sau /marturii/m */
+  basePath?: string;
 }
 
 const translations = {
@@ -47,7 +49,7 @@ const translations = {
   },
 };
 
-export default function ArticleNavigation({ prevArticle, nextArticle }: ArticleNavigationProps) {
+export default function ArticleNavigation({ prevArticle, nextArticle, basePath = '/blogs' }: ArticleNavigationProps) {
   const { language } = useLanguage();
   const { translate } = useTranslation();
   const t = translations[language as keyof typeof translations] || translations.de;
@@ -93,7 +95,7 @@ export default function ArticleNavigation({ prevArticle, nextArticle }: ArticleN
         {/* Previous Article */}
         {prevArticle ? (
           <Link
-            href={`/blogs/${prevArticle.slug}`}
+            href={`${basePath}/${prevArticle.slug}`}
             className="
               group flex items-center gap-2
               px-2 py-1.5 rounded
@@ -114,7 +116,7 @@ export default function ArticleNavigation({ prevArticle, nextArticle }: ArticleN
         {/* Next Article */}
         {nextArticle ? (
           <Link
-            href={`/blogs/${nextArticle.slug}`}
+            href={`${basePath}/${nextArticle.slug}`}
             className="
               group flex items-center justify-end gap-2
               px-2 py-1.5 rounded

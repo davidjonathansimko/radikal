@@ -163,8 +163,8 @@ const translations = {
     'language.switch': 'Sprache wechseln',
     
     // Footer / Fußzeile / Subsol
-    'footer.copyright': '© 2025 RADIKAL. Alle Rechte vorbehalten.',
-    'footer.builtWith': 'Entwickelt mit ❤️ und Next.js + Supabase',
+    'footer.copyright': `© ${new Date().getFullYear()} RADIKAL. Alle Rechte vorbehalten.`,
+    'footer.builtWith': 'Erstellt mit Next.js',
   },
   en: {
     // Navigation / Navigation
@@ -311,8 +311,8 @@ const translations = {
     'language.switch': 'Switch Language',
     
     // Footer / Fußzeile
-    'footer.copyright': '© 2025 RADIKAL. All rights reserved.',
-    'footer.builtWith': 'Built with ❤️ and Next.js + Supabase',
+    'footer.copyright': `© ${new Date().getFullYear()} RADIKAL. All rights reserved.`,
+    'footer.builtWith': 'Created with Next.js',
   },
   ro: {
     // Navigation / Navigare
@@ -468,8 +468,8 @@ const translations = {
     'language.switch': 'Schimbă Limba',
     
     // Footer / Subsol
-    'footer.copyright': '© 2025 RADIKAL. Toate drepturile rezervate.',
-    'footer.builtWith': 'Dezvoltat cu ❤️ și Next.js + Supabase',
+    'footer.copyright': `© ${new Date().getFullYear()} RADIKAL. Toate drepturile rezervate.`,
+    'footer.builtWith': 'Creat cu Next.js',
   },
   ru: {
     // Navigation / Навигация
@@ -625,8 +625,8 @@ const translations = {
     'language.switch': 'Сменить Язык',
     
     // Footer / Подвал
-    'footer.copyright': '© 2025 RADIKAL. Все права защищены.',
-    'footer.builtWith': 'Создано с ❤️ и Next.js + Supabase',
+    'footer.copyright': `© ${new Date().getFullYear()} RADIKAL. Все права защищены.`,
+    'footer.builtWith': 'Создано с помощью Next.js',
   },
 };
 

@@ -76,32 +76,75 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     };
   }, []);
 
+  // Pasul 2308010 — textul scris de TINE, pentru limba curenta.
+  // Daca exista, are prioritate absoluta: nici DeepL, nici textul de rezerva
+  // nu il inlocuiesc. DeepL traduce corect gramatical, dar nu stie ce ai vrut
+  // sa spui — „Nu te lăsa... distras" devenea „Gib nicht auf... Abgelenkt".
+  const manualTitle = useCallback(() => {
+    switch (language) {
+      case 'de': return (post.modal_title_de || '').trim();
+      case 'en': return (post.modal_title_en || '').trim();
+      case 'ru': return (post.modal_title_ru || '').trim();
+      case 'ro': return (post.modal_title_ro || '').trim();
+      default: return '';
+    }
+  }, [language, post]);
+
+  const manualQuestion = useCallback(() => {
+    switch (language) {
+      case 'de': return (post.modal_question_de || '').trim();
+      case 'en': return (post.modal_question_en || '').trim();
+      case 'ru': return (post.modal_question_ru || '').trim();
+      case 'ro': return (post.modal_question_ro || '').trim();
+      default: return '';
+    }
+  }, [language, post]);
+
   // Get title and question based on language (original or already translated in database)
   const getModalTitle = useCallback(() => {
+    // Textul tau, scris de mana, bate orice traducere automata.
+    const mine = manualTitle();
+    if (mine) return mine;
+
     // If we have a DeepL translation, use it / Dacă avem traducere DeepL, o folosim
     if (translatedModalTitle) return translatedModalTitle;
-    
-    // Otherwise use existing database translations / Altfel folosește traducerile din bază
+
+    // Pasul 2308001 — GATA CU SCLIPIREA ÎN ROMÂNĂ.
+    // Înainte, dacă DeepL nu răspunsese încă, scriam `post.modal_title`,
+    // adică textul ROMÂNESC. Efectul de mașină de scris îl scria literă cu
+    // literă în română, iar apoi sărea brusc în germană. Foarte urât.
+    // Acum: dacă cititorul nu e pe română și traducerea nu a sosit, nu
+    // scriem nimic. Textul de rezervă (în limba lui) rămâne doar când
+    // articolul nu are deloc un titlu personalizat.
+    const hasCustom = Boolean(post.modal_title);
+    const waiting = language !== 'ro' && hasCustom;
+
     switch (language) {
-      case 'en': return post.modal_title_en || post.modal_title || 'Do you seek the truth?';
+      case 'en': return post.modal_title_en || (waiting ? '' : 'Do you seek the truth?');
       case 'ro': return post.modal_title_ro || post.modal_title || 'Dorești adevărul?';
-      case 'ru': return post.modal_title_ru || post.modal_title || 'Ты ищешь истину?';
-      default: return post.modal_title || 'Suchst du die Wahrheit?';
+      case 'ru': return post.modal_title_ru || (waiting ? '' : 'Ты ищешь истину?');
+      default: return waiting ? '' : (post.modal_title || 'Suchst du die Wahrheit?');
     }
-  }, [language, post, translatedModalTitle]);
+  }, [language, post, translatedModalTitle, manualTitle]);
 
   const getModalQuestion = useCallback(() => {
+    const mine = manualQuestion();
+    if (mine) return mine;
+
     // If we have a DeepL translation, use it / Dacă avem traducere DeepL, o folosim
     if (translatedModalQuestion) return translatedModalQuestion;
-    
-    // Otherwise use existing database translations / Altfel folosește traducerile din bază
+
+    // Pasul 2308001 — vezi explicația de la titlu, e același lucru.
+    const hasCustom = Boolean(post.modal_question);
+    const waiting = language !== 'ro' && hasCustom;
+
     switch (language) {
-      case 'en': return post.modal_question_en || post.modal_question || 'This word is not for everyone, but only for those who are ready to accept the truth and God\'s will. And you?';
+      case 'en': return post.modal_question_en || (waiting ? '' : 'This word is not for everyone, but only for those who are ready to accept the truth and God\'s will. And you?');
       case 'ro': return post.modal_question_ro || post.modal_question || 'Cuvântul acesta nu este pentru toți, ci doar pentru aceia care sunt gata să accepte adevărul și voia lui Dumnezeu. Și tu?';
-      case 'ru': return post.modal_question_ru || post.modal_question || 'Это слово не для всех, а только для тех, кто готов принять истину и волю Божью. А ты?';
-      default: return post.modal_question || 'Dieses Wort ist nicht für alle, sondern nur für diejenigen, die bereit sind, die Wahrheit und Gottes Willen anzunehmen. Und du?';
+      case 'ru': return post.modal_question_ru || (waiting ? '' : 'Это слово не для всех, а только для тех, кто готов принять истину и волю Божью. А ты?');
+      default: return waiting ? '' : (post.modal_question || 'Dieses Wort ist nicht für alle, sondern nur für diejenigen, die bereit sind, die Wahrheit und Gottes Willen anzunehmen. Und du?');
     }
-  }, [language, post, translatedModalQuestion]);
+  }, [language, post, translatedModalQuestion, manualQuestion]);
 
   // 🌐 DeepL: Auto-translate modal title and question when language changes
   // Folosește DeepL pentru traducere automată când limba nu este Română
@@ -109,6 +152,15 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     const translateModalContent = async () => {
       // Skip if Romanian (original language) or no modal content
       if (language === 'ro' || (!post.modal_title && !post.modal_question)) {
+        setTranslatedModalTitle('');
+        setTranslatedModalQuestion('');
+        return;
+      }
+
+      // Pasul 2308010: ai scris tu textul in limba asta -> nu mai chemam DeepL.
+      const mineTitle = manualTitle();
+      const mineQuestion = manualQuestion();
+      if (mineTitle && mineQuestion) {
         setTranslatedModalTitle('');
         setTranslatedModalQuestion('');
         return;
@@ -134,7 +186,7 @@ export default function BlogIntroModal({ post, onComplete }: BlogIntroModalProps
     };
 
     translateModalContent();
-  }, [post.modal_title, post.modal_question, language, translate]);
+  }, [post.modal_title, post.modal_question, language, translate, manualTitle, manualQuestion]);
 
   // Typewriter effect for title
   useEffect(() => {

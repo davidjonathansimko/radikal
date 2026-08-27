@@ -54,6 +54,8 @@ module.exports = {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'shimmer': 'shimmer 2s infinite linear',
         'spin-slow': 'spin 20s linear infinite',
+        // Pasul A3: animație "heartbeat / pump" pentru butoane care trebuie să iasă în evidență
+        'heartbeat': 'heartbeat 1.6s ease-in-out infinite',
       },
       keyframes: {
         float: {
@@ -79,6 +81,13 @@ module.exports = {
         spin: {
           'from': { transform: 'rotate(0deg)' },
           'to': { transform: 'rotate(360deg)' },
+        },
+        // Bătaie de inimă: două pulsații scurte, apoi pauză
+        heartbeat: {
+          '0%, 40%, 100%': { transform: 'scale(1)' },
+          '10%': { transform: 'scale(1.12)' },
+          '20%': { transform: 'scale(1)' },
+          '30%': { transform: 'scale(1.08)' },
         },
       },
       // Improved spacing for better rhythm / Verbesserter Abstand für besseren Rhythmus / Spațiere îmbunătățită

@@ -7,6 +7,9 @@
 
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
+import BackToTopButton from '@/components/BackToTopButton';
+import { usePageText } from '@/lib/pageContent';
+import { registerPageDefaults } from '@/lib/pageDefaults';
 
 // Translations for Impressum page
 const translations = {
@@ -190,12 +193,16 @@ const translations = {
   },
 };
 
+// Pasul 2508000 — anuntam textul original panoului de admin
+registerPageDefaults('impressum', translations);
+
 export default function ImpressumPage() {
   const { language } = useLanguage();
-  const t = translations[language as keyof typeof translations] || translations.de;
-  
+  const t = usePageText('impressum', translations, language);  
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white py-20 transition-colors duration-300">
+      {/* Pasul 2208001: buton „inapoi sus" dupa ce se deruleaza */}
+      <BackToTopButton />
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-12">
@@ -344,7 +351,8 @@ export default function ImpressumPage() {
 
         {/* Footer Links */}
         <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800">
-          <div className="flex flex-wrap gap-4">
+          {/* Centrat si distribuit uniform, nu lipit de stanga */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-center">
             <Link href="/datenschutz" className="text-red-600 dark:text-red-400 hover:underline">
               {t.privacy}
             </Link>

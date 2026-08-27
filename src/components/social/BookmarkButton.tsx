@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { getSupabaseClient } from '@/lib/supabase';
 
 const supabase = getSupabaseClient();
@@ -251,9 +252,14 @@ export function BookmarksList({ userId, collectionId }: BookmarksListProps) {
         >
           {bookmark.image_url && (
             <a href={`/blog/${bookmark.slug}`} className="flex-shrink-0">
-              <img
+              {/* Pasul 2308010: next/image trimite pe telefon o poza de 80px,
+                  nu originalul de cateva sute de KB. */}
+              <Image
                 src={bookmark.image_url}
                 alt={bookmark.title || 'Bookmark'}
+                width={80}
+                height={80}
+                sizes="80px"
                 className="w-20 h-20 object-cover rounded-lg"
               />
             </a>

@@ -17,6 +17,10 @@ interface RelatedPostsProps {
   currentPostId: string;
   currentTags: string | string[];
   limit?: number;
+  /** Pasul 2708000 — de unde citim: bloguri sau marturii. */
+  table?: string;
+  /** Adresa unui articol, fara slug: /blogs sau /marturii/m */
+  basePath?: string;
 }
 
 const translations = {
@@ -42,7 +46,13 @@ const translations = {
   }
 };
 
-export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: RelatedPostsProps) {
+export default function RelatedPosts({
+  currentPostId,
+  currentTags,
+  limit = 3,
+  table = 'blog_posts',
+  basePath = '/blogs',
+}: RelatedPostsProps) {
   const { language } = useLanguage();
   const { translate } = useTranslation();
   const t = translations[language as keyof typeof translations] || translations.de;
@@ -61,7 +71,7 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
 
         // Fetch all published posts except current
         const { data: allPosts, error } = await supabase
-          .from('blog_posts')
+          .from(table)
           .select('*')
           .eq('published', true)
           .neq('id', currentPostId)
@@ -188,7 +198,7 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
         {posts.map((post, index) => (
           <Link
             key={post.id}
-            href={`/blogs/${post.slug || post.id}`}
+            href={`${basePath}/${post.slug || post.id}`}
             className="group flex flex-row sm:flex-col bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-200/50 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
@@ -199,6 +209,7 @@ export default function RelatedPosts({ currentPostId, currentTags, limit = 3 }: 
                   src={post.image_url}
                   alt={getTitle(post)}
                   fill
+                  sizes="(max-width: 640px) 96px, 200px"
                   placeholder="blur"
                   blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"

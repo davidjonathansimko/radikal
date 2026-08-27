@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { fetchCustomAudioForLang } from '@/lib/customAudio';
 
 // TTS Engine type — 'browser' = built-in SpeechSynthesis, 'google' = Google Cloud WaveNet
 type TTSEngine = 'browser' | 'google';
@@ -16,6 +17,18 @@ interface TextToSpeechProps {
   lang?: string;
   className?: string;
   compact?: boolean;
+  /** Pasul 21082026 — optionale: ajuta la identificarea audio-ului in Supabase */
+  blogSlug?: string;
+  blogTitle?: string;
+  /**
+   * Pasul 2608004 — id-ul articolului, ca sa putem cauta INREGISTRAREA TA
+   * pentru limba aleasa. Daca exista una, ea se aude in locul vocii generate.
+   * Pana acum doar modalul „Play Blog" stia de ea, iar butonul obisnuit de
+   * ascultare pornea tot vocea artificiala — exact neconcordanta observata.
+   */
+  blogId?: string;
+  /** 'blog' sau 'marturie' — doar ca sa se vada in Supabase de unde vine */
+  contentType?: 'blog' | 'marturie';
 }
 
 interface VoiceOption {
@@ -161,11 +174,109 @@ const langNames: Record<string, string> = {
 // Maximum characters per chunk to avoid browser TTS limits
 const MAX_CHUNK_SIZE = 3000;
 
+// ===== MP3 chunks -> ONE seekable WAV file =====
+//
+// Google returns one MP3 per text chunk. Simply concatenating them produces a
+// file whose reported duration comes from the first chunk's header only, which
+// breaks seeking (every jump landed back near the beginning).
+//
+// Here the chunks are decoded with the Web Audio API and written into a single
+// 16-bit PCM WAV: real header, real duration, byte-accurate native seeking —
+// identical behaviour to opening a downloaded file in a media player.
+// This is a local transformation only: no extra Google characters are billed.
+
+// MP3 decoders prepend ~1105 samples of encoder-delay silence to every file.
+// Dropping them removes the tiny click/gap between chunks.
+const MP3_ENCODER_DELAY = 1105;
+
+async function mp3PartsToWav(parts: Uint8Array[]): Promise<Blob | null> {
+  if (typeof window === 'undefined' || parts.length === 0) return null;
+  const Ctx: typeof AudioContext | undefined =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return null;
+
+  const ctx = new Ctx();
+  try {
+    const decoded: Float32Array[] = [];
+    let sampleRate = 0;
+    let totalSamples = 0;
+
+    for (const bytes of parts) {
+      // decodeAudioData detaches the buffer, so hand it an isolated copy
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      const buffer = await ctx.decodeAudioData(copy.buffer);
+
+      if (!sampleRate) sampleRate = buffer.sampleRate;
+
+      // Downmix to mono (Google TTS is mono anyway, but be safe)
+      const length = buffer.length;
+      const mono = new Float32Array(length);
+      for (let c = 0; c < buffer.numberOfChannels; c++) {
+        const data = buffer.getChannelData(c);
+        for (let i = 0; i < length; i++) mono[i] += data[i];
+      }
+      if (buffer.numberOfChannels > 1) {
+        for (let i = 0; i < length; i++) mono[i] /= buffer.numberOfChannels;
+      }
+
+      const trim = Math.min(MP3_ENCODER_DELAY, length);
+      const slice = mono.subarray(trim);
+      decoded.push(slice);
+      totalSamples += slice.length;
+    }
+
+    if (!sampleRate || totalSamples === 0) return null;
+
+    // WAV: 44-byte header + 16-bit mono PCM
+    const out = new ArrayBuffer(44 + totalSamples * 2);
+    const view = new DataView(out);
+    const writeStr = (offset: number, s: string) => {
+      for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+    };
+
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + totalSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);        // PCM chunk size
+    view.setUint16(20, 1, true);         // format = PCM
+    view.setUint16(22, 1, true);         // channels = mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true); // byte rate
+    view.setUint16(32, 2, true);         // block align
+    view.setUint16(34, 16, true);        // bits per sample
+    writeStr(36, 'data');
+    view.setUint32(40, totalSamples * 2, true);
+
+    let offset = 44;
+    for (const chunk of decoded) {
+      for (let i = 0; i < chunk.length; i++) {
+        const s = Math.max(-1, Math.min(1, chunk[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([out], { type: 'audio/wav' });
+  } catch (err) {
+    console.warn('[Google TTS] WAV assembly failed, falling back to MP3:', (err as Error)?.message);
+    return null;
+  } finally {
+    ctx.close().catch(() => {});
+  }
+}
+
 export default function TextToSpeech({
   text,
   lang,
   className = '',
   compact = false,
+  blogSlug,
+  blogTitle,
+  blogId,
+  contentType,
 }: TextToSpeechProps) {
   const { language } = useLanguage();
   const t = translations[language as keyof typeof translations] || translations.de;
@@ -179,6 +290,8 @@ export default function TextToSpeech({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+  // Pasul 2208001: viteza implicita revine la 0.9x — 1x suna prea rapid.
+  // Default speed back to 0.9x (1x sounded too fast). Changeable by the user.
   const [rate, setRate] = useState(0.9);
   const [voices, setVoices] = useState<VoiceOption[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
@@ -318,6 +431,8 @@ export default function TextToSpeech({
           googleAudioRef.current.src = '';
           googleAudioRef.current = null;
         }
+        googleAudioKeyRef.current = '';
+        setAudioDuration(0);
         setIsPlaying(false);
         setIsPaused(false);
         setProgress(0);
@@ -715,10 +830,18 @@ export default function TextToSpeech({
   }, [effectiveLang, rate, selectedVoice]);
 
   // ===== Google Cloud TTS: Chunk and play via /api/tts =====
+  //
+  // IMPORTANT: chunking must ALWAYS run on the full cleaned text, never on a
+  // substring starting at the seek position. Chunk boundaries are what the
+  // server cache key is derived from, so re-chunking from an arbitrary offset
+  // would produce text fragments that were never synthesized before => every
+  // seek would be a cache MISS and require a fresh (slow) Google API call.
+  // With stable boundaries, seeking simply jumps to an already-cached chunk.
   const googleSplitChunks = useCallback((fullText: string): string[] => {
-    // Google limit is 5000 bytes for SSML. buildSSML() adds <break> tags + wrapper
-    // which can ~double the size. Use 2000 chars to stay safely under 5000 bytes.
-    const GOOGLE_CHUNK_SIZE = 2000;
+    // Google limit is 5000 bytes for SSML. Smaller chunks cost exactly the same
+    // (billing is per character) but give faster start-up and finer seek
+    // granularity, so we stay well below the limit.
+    const GOOGLE_CHUNK_SIZE = 900;
     if (fullText.length <= GOOGLE_CHUNK_SIZE) return [fullText];
     
     const chunks: string[] = [];
@@ -744,44 +867,39 @@ export default function TextToSpeech({
     return chunks;
   }, []);
 
-  // Helper: convert base64 string to a Blob URL (browsers trust Blob URLs, unlike data: URLs)
-  const base64ToBlobUrl = useCallback((base64: string): string => {
-    const byteChars = atob(base64);
-    const byteNumbers = new Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) {
-      byteNumbers[i] = byteChars.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'audio/mpeg' });
-    return URL.createObjectURL(blob);
+  // Helper: convert base64 string to raw bytes.
+  // Raw bytes (not Blob URLs) because several chunks are concatenated into ONE
+  // MP3 blob — MP3 is a stream of independent frames, so simple concatenation
+  // produces a single valid, fully seekable file.
+  const base64ToBytes = useCallback((base64: string): Uint8Array<ArrayBuffer> => {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(new ArrayBuffer(bin.length));
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
   }, []);
 
-  const googlePlayChunk = useCallback(async (chunkText: string): Promise<void> => {
-    // Client-side cache key: simple hash of text + params
-    const cacheKey = `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`;
-    
-    let blobUrl: string;
-    let fromCache = false;
-    
-    // Check client-side memory cache first (stores base64 strings)
-    const cachedBase64 = clientAudioCacheRef.current.get(cacheKey);
-    if (cachedBase64) {
-      console.log('[TTS Client Cache] ✅ HIT — using cached audio');
-      try {
-        blobUrl = base64ToBlobUrl(cachedBase64);
-        fromCache = true;
-      } catch {
-        // Corrupted cache entry — delete and refetch
-        console.warn('[TTS Client Cache] Corrupted cache entry, refetching...');
-        clientAudioCacheRef.current.delete(cacheKey);
-        fromCache = false;
-        // Fall through to fetch below
-        blobUrl = '';
-      }
-    }
+  // Build the client-side cache key for a chunk (text + voice params)
+  const googleCacheKey = useCallback((chunkText: string) =>
+    `tts_${voiceLanguage}_${googleVoiceGender}_${rate}_${chunkText.substring(0, 50).replace(/\s/g, '_')}`,
+  [voiceLanguage, googleVoiceGender, rate]);
 
-    // Fetch from server if not cached or cache was corrupted
-    if (!fromCache) {
+  // Tracks chunks whose audio is currently being downloaded, so we never
+  // fire two identical requests (prefetch + playback) at the same time.
+  const googleInFlightRef = useRef<Map<string, Promise<string>>>(new Map());
+
+  // Downloads (or reuses) the base64 audio for one chunk. Playback-agnostic:
+  // this is what makes prefetching the NEXT chunk possible while the current
+  // one is still being spoken — that gap was the audible pause.
+  const googleFetchBase64 = useCallback(async (chunkText: string): Promise<string> => {
+    const cacheKey = googleCacheKey(chunkText);
+
+    const cached = clientAudioCacheRef.current.get(cacheKey);
+    if (cached) return cached;
+
+    const inFlight = googleInFlightRef.current.get(cacheKey);
+    if (inFlight) return inFlight;
+
+    const request = (async () => {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -790,73 +908,162 @@ export default function TextToSpeech({
           language: voiceLanguage,
           speakingRate: rate,
           voiceGender: googleVoiceGender,
+          // Pasul 21082026 — identificarea articolului in tabelul tts_cache
+          blogSlug,
+          blogTitle,
+          contentType,
         }),
       });
-      
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         if (err.error === 'quota_exceeded') {
           throw new Error('quota_exceeded');
         }
-        throw new Error(`Google TTS failed: ${res.status}`);
+        // Log the real reason returned by the server so a bare "403" is
+        // actionable instead of mysterious.
+        console.error(
+          `[Google TTS] HTTP ${res.status}`,
+          '\n  Google says :', err.googleMessage || err.error || '(no message)',
+          '\n  Status      :', err.googleStatus || '(none)',
+          '\n  Likely cause:', err.hint || '(none)'
+        );
+        throw new Error(
+          `Google TTS failed: ${res.status}${err.googleMessage ? ` — ${err.googleMessage}` : ''}`
+        );
       }
-      
+
       const data = await res.json();
       if (!data.audioContent) {
         throw new Error('Google TTS returned empty audio content');
       }
-      
-      // Store raw base64 in cache, create Blob URL for playback
+
       clientAudioCacheRef.current.set(cacheKey, data.audioContent);
-      console.log(`[TTS Client Cache] 💾 SAVED — ${clientAudioCacheRef.current.size} chunks cached`);
-      blobUrl = base64ToBlobUrl(data.audioContent);
+      return data.audioContent as string;
+    })();
+
+    googleInFlightRef.current.set(cacheKey, request);
+    try {
+      return await request;
+    } finally {
+      googleInFlightRef.current.delete(cacheKey);
     }
+  }, [googleCacheKey, voiceLanguage, rate, googleVoiceGender]);
 
-    // Play audio using Blob URL — browsers trust these unlike data: URLs
-    return new Promise<void>((resolve, reject) => {
-      const audio = new Audio();
-      googleAudioRef.current = audio;
+  // ===== ONE complete audio file per article =====
+  //
+  // Previously each chunk was played in its own <audio> element, one after the
+  // other. That made real seeking impossible: jumping meant restarting the
+  // whole pipeline at another chunk, positions drifted, and every jump risked a
+  // new Google call.
+  //
+  // Now every chunk is downloaded ONCE, the MP3 bytes are concatenated into a
+  // single Blob and handed to a single <audio> element. From that point the
+  // browser owns playback exactly like a downloaded MP3 in a media player:
+  // seeking anywhere is native, instant and costs nothing.
+  //
+  // Cost note: identical to before. Google bills per character and each chunk
+  // is synthesized at most once ever (afterwards it comes from the Supabase
+  // cache, for every user and every replay).
+  const googleBlobUrlRef = useRef<string | null>(null);
+  const googleAudioKeyRef = useRef<string>('');
+  // Set when the user seeks while the file is still being assembled.
+  const googlePendingRatioRef = useRef<number | null>(null);
+  const [googleBuildPercent, setGoogleBuildPercent] = useState(0);
+  // Real duration of the assembled article audio (seconds). 0 = not ready.
+  const [audioDuration, setAudioDuration] = useState(0);
 
-      audio.onended = () => {
-        URL.revokeObjectURL(blobUrl); // Clean up Blob URL
-        resolve();
-      };
-      audio.onerror = (e) => {
-        URL.revokeObjectURL(blobUrl); // Clean up Blob URL
-        const mediaError = audio.error;
-        const errorMsg = mediaError
-          ? `Audio error code ${mediaError.code}: ${mediaError.message}`
-          : 'Audio playback failed';
-        console.error('[Google TTS] Playback error:', errorMsg, e);
+  // Identity of an assembled audio: same article + same voice params = reuse it.
+  const googleAudioKey = useCallback((cleanedText: string) =>
+    `${voiceLanguage}|${googleVoiceGender}|${rate}|${cleanedText.length}|${cleanedText.substring(0, 80)}`,
+  [voiceLanguage, googleVoiceGender, rate]);
 
-        // Clear cache for this chunk so next attempt fetches fresh
-        clientAudioCacheRef.current.delete(cacheKey);
+  // Downloads every chunk (limited concurrency, order preserved) and returns a
+  // Blob URL for the complete article audio.
+  const googleBuildFullAudio = useCallback(async (cleanedText: string, session: number): Promise<string | null> => {
+    const chunks = googleSplitChunks(cleanedText);
+    googleChunksRef.current = chunks;
 
-        // Do NOT retry here — reject immediately to prevent infinite loop
-        reject(new Error(errorMsg));
-      };
+    const parts: string[] = new Array(chunks.length);
+    let cursor = 0;
+    let done = 0;
+    const CONCURRENCY = 4;
 
-      // Set source and play
-      audio.src = blobUrl;
-      audio.play().catch((playErr) => {
-        URL.revokeObjectURL(blobUrl);
-        console.warn('[Google TTS] play() rejected:', playErr?.message);
-        reject(playErr);
-      });
-    });
-  }, [voiceLanguage, rate, googleVoiceGender, base64ToBlobUrl]);
+    const worker = async () => {
+      for (;;) {
+        const i = cursor++;
+        if (i >= chunks.length) return;
+        if (googleSessionRef.current !== session) return;
+        parts[i] = await googleFetchBase64(chunks[i]);
+        done++;
+        setGoogleBuildPercent(Math.round((done / chunks.length) * 100));
+      }
+    };
 
-  // Ref to track pause state for Google TTS chunk loop
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, worker)
+    );
+
+    if (googleSessionRef.current !== session) return null;
+    if (parts.some((p) => !p)) return null;
+
+    const mp3s = parts.map(base64ToBytes);
+
+    // --- Why we re-encode to WAV instead of just concatenating the MP3s -----
+    // A concatenation of N MP3 files is playable, but NOT reliably seekable:
+    // the browser reads the duration from the FIRST file's Xing/Info header,
+    // so `audio.duration` ends up being the length of chunk 1 only. Every
+    // seek then mapped percent * wrongDuration and jumped back to the start.
+    //
+    // Decoding the chunks and writing ONE 16-bit PCM WAV gives an exact
+    // header, an exact duration and byte-accurate seeking — exactly like the
+    // sample files opened in a normal media player. Costs zero extra
+    // characters: it is a purely local transformation of already-cached audio.
+    const wav = await mp3PartsToWav(mp3s);
+    if (googleSessionRef.current !== session) return null;
+    if (wav) return URL.createObjectURL(wav);
+
+    // Fallback (no Web Audio / decode failure): playable, seek less precise.
+    return URL.createObjectURL(new Blob(mp3s, { type: 'audio/mpeg' }));
+  }, [googleSplitChunks, googleFetchBase64, base64ToBytes]);
+
+  // Ref to track pause state for Google TTS
   const googleIsPausedRef = useRef(false);
+  // True while the user drags the progress thumb — stops the progress interval
+  // from fighting the drag.
+  const isScrubbingRef = useRef(false);
 
   const startGoogleSpeaking = useCallback(async (fromPosition: number = 0) => {
     const cleanedText = cleanText(text);
     if (!cleanedText) return;
 
-    // Increment session to invalidate any previous playback loop
+    // Increment session to invalidate any previous build/playback
     const session = ++googleSessionRef.current;
+    const wantKey = googleAudioKey(cleanedText);
+    const ratio = cleanedText.length > 0
+      ? Math.min(0.999, Math.max(0, fromPosition / cleanedText.length))
+      : 0;
 
-    // Stop any currently playing audio element first
+    googleIsPausedRef.current = false;
+
+    // --- Fast path: the complete audio is already assembled -----------------
+    // Replaying or resuming after Stop costs nothing and starts instantly.
+    const existing = googleAudioRef.current;
+    if (existing && googleAudioKeyRef.current === wantKey) {
+      googleIsPlayingRef.current = true;
+      if (Number.isFinite(existing.duration) && existing.duration > 0) {
+        existing.currentTime = ratio * existing.duration;
+      }
+      setIsPlaying(true);
+      setIsPaused(false);
+      setGoogleLoading(false);
+      requestWakeLock();
+      updateMediaSession(true, false);
+      existing.play().catch(() => {});
+      return;
+    }
+
+    // --- Slow path: build the complete audio once ---------------------------
     if (googleAudioRef.current) {
       googleAudioRef.current.onended = null;
       googleAudioRef.current.onerror = null;
@@ -864,98 +1071,141 @@ export default function TextToSpeech({
       googleAudioRef.current.src = '';
       googleAudioRef.current = null;
     }
+    if (googleBlobUrlRef.current) {
+      // Pasul 2608004: cand se aude inregistrarea ta, adresa nu este un `blob:`
+      // creat de noi, ci un link normal. Pe acela nu avem ce elibera.
+      if (googleBlobUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(googleBlobUrlRef.current);
+      }
+      googleBlobUrlRef.current = null;
+    }
+    googleAudioKeyRef.current = '';
+    googlePendingRatioRef.current = null;
+    setAudioDuration(0);
 
-    const textToSpeak = cleanedText.substring(fromPosition);
-    const chunks = googleSplitChunks(textToSpeak);
-    googleChunksRef.current = chunks;
-    googleCurrentChunkRef.current = 0;
-    googleStartOffsetRef.current = fromPosition;
     googleIsPlayingRef.current = true;
-    googleIsPausedRef.current = false;
-
     setIsPlaying(true);
     setIsPaused(false);
-    setGoogleLoading(false);
+    setGoogleLoading(true);
+    setGoogleBuildPercent(0);
     requestWakeLock();
     updateMediaSession(true, false);
 
-    let offsetBefore = fromPosition;
-    
-    for (let i = 0; i < chunks.length; i++) {
-      // Check if this session is still the current one
+    let blobUrl: string | null = null;
+    try {
+      // Pasul 2608004 — INREGISTRAREA TA are intaietate.
+      // Daca ai incarcat o inregistrare proprie pentru limba aleasa, o folosim
+      // direct: nu mai generam nimic si nu mai platim nimic. Daca stergi
+      // inregistrarea, se revine singur la vocea generata.
+      const mine = blogId ? await fetchCustomAudioForLang(blogId, voiceLanguage) : null;
       if (googleSessionRef.current !== session) return;
-      if (!googleIsPlayingRef.current) break;
-      
-      // Wait while paused — check every 200ms
-      while (googleIsPausedRef.current && googleIsPlayingRef.current && googleSessionRef.current === session) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
+      blobUrl = mine?.audio_url ?? (await googleBuildFullAudio(cleanedText, session));
+    } catch (err) {
+      const error = err as Error;
       if (googleSessionRef.current !== session) return;
-      if (!googleIsPlayingRef.current) break;
-      
-      googleCurrentChunkRef.current = i;
-      
-      try {
-        // Update progress at chunk start
-        const chunkProgress = (offsetBefore / cleanedText.length) * 100;
-        setProgress(chunkProgress);
-        setCurrentPosition(offsetBefore);
-        
-        await googlePlayChunk(chunks[i]);
-        offsetBefore += chunks[i].length;
-      } catch (err: unknown) {
-        const error = err as Error;
-        if (error.message === 'quota_exceeded') {
-          console.warn('[TTS] Google quota exceeded');
-          googleIsPlayingRef.current = false;
-          setIsPlaying(false);
-          setIsPaused(false);
-          setGoogleLoading(false);
-          releaseWakeLock();
-          updateMediaSession(false, false);
-          return;
-        }
-        // If session changed or playback stopped externally, just exit silently
-        if (googleSessionRef.current !== session || !googleIsPlayingRef.current) {
-          return;
-        }
-        console.warn('[Google TTS] Chunk playback failed:', error.message);
-        googleIsPlayingRef.current = false;
-        setIsPlaying(false);
-        setIsPaused(false);
-        setProgress(0);
-        setCurrentPosition(0);
-        setGoogleLoading(false);
-        releaseWakeLock();
-        updateMediaSession(false, false);
-        return;
+      if (error.message === 'quota_exceeded') {
+        console.warn('[TTS] Google quota exceeded');
+      } else {
+        console.warn('[Google TTS] Audio build failed:', error.message);
       }
+      googleIsPlayingRef.current = false;
+      setIsPlaying(false);
+      setIsPaused(false);
+      setGoogleLoading(false);
+      releaseWakeLock();
+      updateMediaSession(false, false);
+      return;
     }
 
-    // Finished naturally — only if this session is still current
-    if (googleSessionRef.current === session && googleIsPlayingRef.current) {
+    // A newer session started while we were building — discard this result
+    if (googleSessionRef.current !== session) {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      return;
+    }
+    if (!blobUrl) {
+      googleIsPlayingRef.current = false;
+      setIsPlaying(false);
+      setGoogleLoading(false);
+      releaseWakeLock();
+      updateMediaSession(false, false);
+      return;
+    }
+
+    setGoogleLoading(false);
+    googleBlobUrlRef.current = blobUrl;
+    googleAudioKeyRef.current = wantKey;
+    const audio = new Audio();
+    googleAudioRef.current = audio;
+    audio.preload = 'auto';
+
+    audio.onloadedmetadata = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setAudioDuration(audio.duration);
+        // A seek made during assembly wins over the position we started with.
+        const pending = googlePendingRatioRef.current;
+        const startRatio = pending !== null ? pending : ratio;
+        googlePendingRatioRef.current = null;
+        if (startRatio > 0) audio.currentTime = startRatio * audio.duration;
+      }
+    };
+    audio.ondurationchange = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setAudioDuration(audio.duration);
+      }
+    };
+    audio.onended = () => {
+      // Compare by element, not by session: the element survives Stop/Replay
+      if (googleAudioRef.current !== audio) return;
       googleIsPlayingRef.current = false;
       setIsPlaying(false);
       setIsPaused(false);
       setProgress(0);
       setCurrentPosition(0);
+      releaseWakeLock();
+      updateMediaSession(false, false);
+    };
+    audio.onerror = () => {
+      if (googleAudioRef.current !== audio) return;
+      const mediaError = audio.error;
+      console.error(
+        '[Google TTS] Playback error:',
+        mediaError ? `code ${mediaError.code}: ${mediaError.message}` : 'unknown'
+      );
+      googleAudioKeyRef.current = '';
+      googleIsPlayingRef.current = false;
+      setIsPlaying(false);
+      setIsPaused(false);
       setGoogleLoading(false);
       releaseWakeLock();
       updateMediaSession(false, false);
+    };
+
+    audio.src = blobUrl;
+
+    // If the user pressed Pause while the audio was still being built, respect
+    // it: load the file but do not start it. Resume will play it.
+    if (googleIsPausedRef.current) {
+      audio.load();
+      setIsPaused(true);
+      updateMediaSession(true, true);
+      return;
     }
-  }, [text, cleanText, googleSplitChunks, googlePlayChunk, requestWakeLock, releaseWakeLock, updateMediaSession]);
+
+    audio.play().catch((playErr) => {
+      console.warn('[Google TTS] play() rejected:', playErr?.message);
+    });
+  }, [text, cleanText, googleAudioKey, googleBuildFullAudio, requestWakeLock, releaseWakeLock, updateMediaSession, blogId, voiceLanguage]);
 
   const stopGoogleSpeaking = useCallback(() => {
-    // Increment session to kill any running playback loop
+    // Invalidate any build in progress
     googleSessionRef.current++;
     googleIsPlayingRef.current = false;
     googleIsPausedRef.current = false;
+    // Keep the assembled audio element alive: pressing Play again then costs
+    // nothing and starts instantly.
     if (googleAudioRef.current) {
-      googleAudioRef.current.onended = null;
-      googleAudioRef.current.onerror = null;
       googleAudioRef.current.pause();
-      googleAudioRef.current.src = '';
-      googleAudioRef.current = null;
+      try { googleAudioRef.current.currentTime = 0; } catch { /* not seekable yet */ }
     }
     setIsPlaying(false);
     setIsPaused(false);
@@ -978,40 +1228,33 @@ export default function TextToSpeech({
   const resumeGoogleSpeaking = useCallback(() => {
     googleIsPausedRef.current = false;
     if (googleAudioRef.current) {
-      googleAudioRef.current.play();
+      // .play() returns a Promise that can reject (e.g. browser autoplay policy).
+      // Without .catch() this produces an unhandled rejection and, on some
+      // browsers, leaves the UI stuck in "playing" state.
+      const p = googleAudioRef.current.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
     }
     setIsPaused(false);
     updateMediaSession(true, false);
   }, [updateMediaSession]);
 
-  // Update progress during Google audio playback
+  // Update progress during Google audio playback.
+  // Now purely time-based: one audio element holds the whole article, so
+  // currentTime/duration is the exact position — no chunk arithmetic, no drift.
   useEffect(() => {
     if (ttsEngine !== 'google' || !isPlaying || isPaused) return;
-    
+
     const interval = setInterval(() => {
-      if (googleAudioRef.current && !googleAudioRef.current.paused) {
-        const audio = googleAudioRef.current;
-        const cleanedText = cleanText(text);
-        const chunks = googleChunksRef.current;
-        const chunkIdx = googleCurrentChunkRef.current;
-        const startOffset = googleStartOffsetRef.current;
-        
-        // Calculate overall progress from seek offset + chunk position + audio position
-        let offsetBefore = startOffset;
-        for (let i = 0; i < chunkIdx; i++) {
-          offsetBefore += chunks[i]?.length || 0;
-        }
-        
-        const chunkLen = chunks[chunkIdx]?.length || 0;
-        const audioProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-        const posInChunk = Math.floor(chunkLen * audioProgress);
-        const totalPos = offsetBefore + posInChunk;
-        
-        setCurrentPosition(totalPos);
-        setProgress((totalPos / cleanedText.length) * 100);
-      }
+      if (isScrubbingRef.current) return;
+      const audio = googleAudioRef.current;
+      if (!audio || audio.paused) return;
+      if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+
+      const pct = Math.min(100, (audio.currentTime / audio.duration) * 100);
+      setProgress(pct);
+      setCurrentPosition(Math.floor((pct / 100) * cleanText(text).length));
     }, 200);
-    
+
     return () => clearInterval(interval);
   }, [ttsEngine, isPlaying, isPaused, text, cleanText]);
 
@@ -1156,24 +1399,42 @@ export default function TextToSpeech({
     }
   };
 
-  // Seek functionality — restarts from new position, preserving play state
+  // Seek functionality
   const seekTo = (percent: number) => {
     const cleanedText = cleanText(text);
     const newPosition = Math.floor((percent / 100) * cleanedText.length);
-    
-    if (isPlaying) {
-      if (ttsEngine === 'google') {
-        // Update visual position immediately  
+
+    if (ttsEngine === 'google') {
+      const audio = googleAudioRef.current;
+      // Native seek inside the single assembled file: instant, no network,
+      // no extra characters billed. Works forwards and backwards alike.
+      if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
+        audio.currentTime = (percent / 100) * audio.duration;
         setProgress(percent);
         setCurrentPosition(newPosition);
-        // startGoogleSpeaking handles stopping previous playback via session counter
-        startGoogleSpeaking(newPosition);
-      } else {
-        speechSynthesis.cancel();
-        setTimeout(() => {
-          startSpeaking(newPosition);
-        }, 100);
+        if (isPlaying && !isPaused) {
+          audio.play().catch(() => {});
+        }
+        return;
       }
+      // Audio not assembled yet (still building, or never started).
+      setProgress(percent);
+      setCurrentPosition(newPosition);
+      // While the file is being assembled we must NOT restart the build —
+      // that would throw away finished work. Just remember where to start.
+      if (googleLoading) {
+        googlePendingRatioRef.current = percent / 100;
+        return;
+      }
+      if (isPlaying) startGoogleSpeaking(newPosition);
+      return;
+    }
+
+    if (isPlaying) {
+      speechSynthesis.cancel();
+      setTimeout(() => {
+        startSpeaking(newPosition);
+      }, 100);
     } else {
       setCurrentPosition(newPosition);
       setProgress(percent);
@@ -1187,19 +1448,24 @@ export default function TextToSpeech({
     seekTo(Math.max(0, Math.min(100, percent)));
   };
 
-  const seekBackward = () => {
+  // Jump ±10 seconds. With the Google engine we have a real timeline, so we
+  // use exact seconds instead of the old character-count estimate.
+  const seekRelative = (deltaSeconds: number) => {
+    const audio = googleAudioRef.current;
+    if (ttsEngine === 'google' && audio && Number.isFinite(audio.duration) && audio.duration > 0) {
+      const target = Math.max(0, Math.min(audio.duration - 0.25, audio.currentTime + deltaSeconds));
+      seekTo((target / audio.duration) * 100);
+      return;
+    }
     const cleanedText = cleanText(text);
-    // Seek back approximately 10 seconds worth of text (~150 chars)
-    const newPosition = Math.max(0, currentPosition - 150);
+    const chars = Math.round(deltaSeconds * 15);
+    const newPosition = Math.max(0, Math.min(cleanedText.length, currentPosition + chars));
     seekTo((newPosition / cleanedText.length) * 100);
   };
 
-  const seekForward = () => {
-    const cleanedText = cleanText(text);
-    // Seek forward approximately 10 seconds worth of text
-    const newPosition = Math.min(cleanedText.length, currentPosition + 150);
-    seekTo((newPosition / cleanedText.length) * 100);
-  };
+  const seekBackward = () => seekRelative(-10);
+
+  const seekForward = () => seekRelative(10);
 
   if (!isSupported) {
     return null; // Don't show if TTS not supported
@@ -1210,7 +1476,10 @@ export default function TextToSpeech({
   // Beautiful progress bar appears below when playing
   if (compact) {
     // Estimate reading time based on text length and speed rate
-    const estimatedTotalSeconds = Math.round((cleanText(text).length / (15 * rate)));
+    // Real duration once the article audio is assembled; estimate before that.
+    const estimatedTotalSeconds = audioDuration > 0
+      ? Math.round(audioDuration)
+      : Math.round((cleanText(text).length / (15 * rate)));
     const currentSeconds = Math.round((progress / 100) * estimatedTotalSeconds);
     const formatTime = (s: number) => {
       const m = Math.floor(s / 60);
@@ -1228,7 +1497,11 @@ export default function TextToSpeech({
               className="flex-shrink-0 w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors touch-manipulation"
               title={isPaused ? t.resume : isPlaying ? t.pause : t.play}
             >
-              {isPlaying && !isPaused ? (
+              {googleLoading ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 sm:w-6 sm:h-6 animate-spin">
+                  <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
+                </svg>
+              ) : isPlaying && !isPaused ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
                   <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clipRule="evenodd" />
                 </svg>
@@ -1253,12 +1526,11 @@ export default function TextToSpeech({
                 const rect = bar.getBoundingClientRect();
                 const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
                 setProgress(pct);
-                if (isPlaying && !isPaused) {
-                  if (ttsEngine === 'google') {
-                    pauseGoogleSpeaking();
-                  } else {
-                    speechSynthesis.pause();
-                  }
+                isScrubbingRef.current = true;
+                // Google engine seeks natively inside one audio file — no need
+                // to interrupt playback while dragging.
+                if (isPlaying && !isPaused && ttsEngine !== 'google') {
+                  speechSynthesis.pause();
                 }
                 const onMove = (ev: MouseEvent) => {
                   ev.preventDefault();
@@ -1273,6 +1545,7 @@ export default function TextToSpeech({
                   setProgress(p);
                   document.removeEventListener('mousemove', onMove);
                   document.removeEventListener('mouseup', onUp);
+                  isScrubbingRef.current = false;
                   seekTo(p);
                 };
                 document.addEventListener('mousemove', onMove);
@@ -1287,12 +1560,9 @@ export default function TextToSpeech({
                 const touch = e.touches[0];
                 const pct = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
                 setProgress(pct);
-                if (isPlaying && !isPaused) {
-                  if (ttsEngine === 'google') {
-                    pauseGoogleSpeaking();
-                  } else {
-                    speechSynthesis.pause();
-                  }
+                isScrubbingRef.current = true;
+                if (isPlaying && !isPaused && ttsEngine !== 'google') {
+                  speechSynthesis.pause();
                 }
                 const onMove = (ev: TouchEvent) => {
                   ev.preventDefault();
@@ -1309,6 +1579,7 @@ export default function TextToSpeech({
                   const p = Math.max(0, Math.min(100, ((t.clientX - r.left) / r.width) * 100));
                   document.removeEventListener('touchmove', onMove);
                   document.removeEventListener('touchend', onEnd);
+                  isScrubbingRef.current = false;
                   seekTo(p);
                 };
                 document.addEventListener('touchmove', onMove, { passive: false });
@@ -1329,9 +1600,9 @@ export default function TextToSpeech({
               />
             </div>
 
-            {/* Total time */}
+            {/* Total time — or one-time assembly progress */}
             <span className="flex-shrink-0 text-[9px] xs:text-[10px] sm:text-xs text-gray-500 dark:text-white/50 font-mono tabular-nums min-w-[28px] xs:min-w-[32px] sm:min-w-[38px]">
-              {formatTime(estimatedTotalSeconds)}
+              {googleLoading ? `${googleBuildPercent}%` : formatTime(estimatedTotalSeconds)}
             </span>
 
             {/* Speed button */}

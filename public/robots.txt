@@ -6,7 +6,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://radikal.vercel.app/sitemap.xml
+Sitemap: https://www.radikal.blog/sitemap.xml
 
 # Disallow admin pages from indexing
 Disallow: /admin

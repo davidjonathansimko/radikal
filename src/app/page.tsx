@@ -12,6 +12,8 @@ import Image from 'next/image';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { createClient } from '@/lib/supabase';
+// Pasul 2208001 — vizitatorul ramane vizitator pana apasa butonul din hamburger
+import { isGuestMode } from '@/hooks/useGuestMode';
 
 // Dynamic import for WelcomeModal (includes GSAP, loaded only when needed)
 const WelcomeModal = dynamic(() => import('@/components/WelcomeModal'), { ssr: false });
@@ -97,6 +99,21 @@ export default function HomePage() {
             setShowSplash(true);
             sessionStorage.setItem('radikalSplashShown', 'true');
           }
+        } else if (isGuestMode()) {
+          // Pasul 2208001 — VIZITATOR ACTIV.
+          // Pana acum, orice „Zurück zur Startseite" din aplicatie il arunca
+          // inapoi la ecranul de alegere (logo + Anmelden + Continue as guest),
+          // pentru ca aici se afisa MEREU WelcomeModal cand nu exista sesiune.
+          // Acum vizitatorul vede pagina principala normala, ca un utilizator
+          // logat. SINGURUL loc care il scoate din modul vizitator ramane
+          // butonul din meniul hamburger (acela apeleaza `clearGuestMode()`).
+          const savedLanguage =
+            localStorage.getItem('radikalSelectedLanguage') ||
+            sessionStorage.getItem('radikalGuestLanguage');
+          if (savedLanguage) {
+            setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
+          }
+          setShowModal(false);
         } else {
           // User is NOT logged in — ALWAYS show WelcomeModal (registration required)
           // Benutzer ist NICHT eingeloggt — IMMER WelcomeModal anzeigen (Registrierung erforderlich)
@@ -122,12 +139,16 @@ export default function HomePage() {
               setLanguage('de');
             }
             setShowModal(false);
+          } else if (isGuestMode()) {
+            // Pasul 2208001 — si aici vizitatorul ramane vizitator
+            setShowModal(false);
           } else {
             setShowModal(true);
           }
         } catch {
           // Both getSession and getUser failed — show modal
-          setShowModal(true);
+          // Pasul 2208001: dar NU aruncam afara un vizitator activ
+          setShowModal(!isGuestMode());
         }
       } finally {
         if (!cancelled) {
@@ -136,12 +157,14 @@ export default function HomePage() {
       }
     };
 
-    // Safety timeout: if session check takes longer than 3 seconds, stop waiting
-    // Sicherheits-Timeout: wenn die Sitzungsprüfung länger als 3 Sek. dauert, aufhören zu warten
-    // Timeout de siguranță: dacă verificarea sesiunii durează mai mult de 3 secunde, nu mai aștepta
+    // Safety timeout: if session check takes longer than 8 seconds, stop waiting
+    // Sicherheits-Timeout: wenn die Sitzungsprüfung länger als 8 Sek. dauert, aufhören zu warten
+    // Timeout de siguranță: dacă verificarea sesiunii durează mai mult de 8 secunde, nu mai aștepta
     const timeout = setTimeout(() => {
       if (!cancelled) {
-        console.warn('[RADIKAL] Session check timeout - proceeding without auth');
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[RADIKAL] Session check timeout - proceeding without auth');
+        }
         // On timeout, check if we have evidence of prior login (localStorage)
         // Bei Timeout, prüfen ob wir Hinweise auf vorherige Anmeldung haben (localStorage)
         // La timeout, verifică dacă avem dovada unui login anterior (localStorage)
@@ -150,6 +173,9 @@ export default function HomePage() {
           // User was previously logged in — let them through (session will refresh)
           setLanguage(savedLanguage as 'de' | 'en' | 'ro' | 'ru');
           setShowModal(false);
+        } else if (isGuestMode()) {
+          // Pasul 2208001 — vizitatorul activ nu trebuie trimis la ecranul de start
+          setShowModal(false);
         } else {
           // No evidence of prior login — show modal
           setShowModal(true);
@@ -157,7 +183,7 @@ export default function HomePage() {
         setIsCheckingSession(false);
         cancelled = true;
       }
-    }, 3000);
+    }, 8000);
 
     checkSession();
 
@@ -335,15 +361,17 @@ export default function HomePage() {
           </h2>
           
           {/* Description */}
+          <br></br>
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' 
-              ? <>Ich blickte oft mit Bewunderung, aber mit noch tieferem Schmerz in meiner Seele um mich her und fragte mich: &quot;Warum wagt es fast niemand mehr, die Wahrheit auszusprechen? Und natürlich meine ich damit uns Christen und unsere Gemeinden.&quot;<br/>Aus diesem Schmerz wurde RADIKAL geboren. Selbst meine eigene Meinung ist mir absolut bedeutungslos, wenn sie nicht zu hundert Prozent mit dem Wort Gottes übereinstimmt.</>
+              ? <>Was ist die Wahrheit?</>
               : language === 'en'
-              ? <>I often looked around with admiration, but with even deeper pain in my soul, asking myself: &quot;Why does almost no one dare to speak the truth anymore? And of course, I mean us Christians and our churches.&quot;<br/><br/>Out of this pain, RADIKAL was born. Even my own opinion is absolutely meaningless to me if it does not align one hundred percent with the Word of God.</>
+              ? <>What is the truth?</>
               : language === 'ro'
-              ? <>Mă uitam adesea în jur cu admirație, dar cu o durere și mai profundă în suflet, întrebându-mă: &quot;De ce aproape nimeni nu îndrăznește să spună adevărul? Și, bineînțeles, mă refer la noi, creștinii și bisericile noastre.&quot;<br/><br/>Din această durere s-a născut RADIKAL. Chiar și propria mea opinie este absolut lipsită de sens pentru mine dacă nu se aliniază sută la sută cu Cuvântul lui Dumnezeu.</>
-              : <>Я часто оглядывался вокруг с восхищением, но с ещё более глубокой болью в душе, спрашивая себя: &quot;Почему почти никто больше не осмеливается говорить правду? И, конечно, я имею в виду нас, христиан, и наши церкви.&quot;<br/><br/>Из этой боли родился РАДИКАЛ. Даже моё собственное мнение для меня абсолютно ничего не значит, если оно не совпадает на сто процентов со Словом Божьим.</>}
+              ? <>Ce este adevărul?</>
+              : <>Что такое истина?</>}
           </p>
+          <br></br>
 
           {/* Question mark icon for Mehr erfahren */}
           {/* Thinner stroke (light weight) */}
@@ -369,15 +397,17 @@ export default function HomePage() {
           </h2>
           
           {/* Description */}
+          <br></br>
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' 
-              ? 'Wir haben verlernt, selbst zu prüfen, und folgen zu oft nur menschlichen Meinungen. Bevor du liest: Schlag deine Bibel auf.'
+              ? 'Wir haben verlernt, selbst zu prüfen, und folgen zu oft nur menschlichen Meinungen.'
               : language === 'en'
-              ? 'We have unlearned how to examine for ourselves and too often just follow human opinions. Before you read: Open your Bible.'
+              ? 'We have unlearned how to examine for ourselves and too often just follow human opinions.'
               : language === 'ro'
-              ? 'Am uitat să examinăm singuri și prea des urmăm doar opinii umane. Înainte să citești: Deschide-ți Biblia.'
-              : 'Мы забыли, как проверять сами, и слишком часто просто следуем человеческим мнениям. Прежде чем читать: Открой свою Библию.'}
+              ? 'Am uitat să examinăm singuri și prea des urmăm doar opinii umane.'
+              : 'Мы забыли, как проверять сами, и слишком часто просто следуем человеческим мнениям.'}
           </p>
+          <br></br>
 
           {/* Edit/write icon for Alle Blogs ansehen */}
           {/* Thinner stroke (light weight) */}
@@ -407,15 +437,17 @@ export default function HomePage() {
           </h2>
           
           {/* Description */}
+          <br></br>
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
             {language === 'de' 
-              ? 'Hast du Fragen? Schreib uns eine Nachricht.'
+              ? 'Fragen?'
               : language === 'en'
-              ? 'Do you have questions? Send us a message.'
+              ? 'Questions?'
               : language === 'ro'
-              ? 'Ai întrebări? Trimite-ne un mesaj.'
-              : 'У вас есть вопросы? Отправьте нам сообщение.'}
+              ? 'Întrebări?'
+              : 'Вопросы?'}
           </p>
+          <br></br>
 
           {/* Mail/contact icon for Kontaktiere uns */}
           {/* Pasul 12006: Custom SVG email icon */}
@@ -451,6 +483,7 @@ export default function HomePage() {
           </h2>
           
           {/* Blessing Message */}
+          <br></br>
           <p className="text-2xl sm:text-3xl text-black/80 dark:text-white/80 mb-8 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             {language === 'de' 
               ? 'Der Herr segne dich!'
@@ -465,6 +498,7 @@ export default function HomePage() {
           <div className="text-6xl sm:text-8xl mb-16 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
             ⏱
           </div>
+          <br></br>
 
           {/* Back to Top Button - positioned closer to footer with more spacing from clock */}
           <div className="mt-8 mb-4">

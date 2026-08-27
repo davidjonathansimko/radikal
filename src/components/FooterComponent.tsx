@@ -56,15 +56,17 @@ export default function FooterComponent() {
         
         <div className="text-center">
           <p className="text-black/70 dark:text-white/60 text-sm">
-            {language === 'de' ? '© 2025 RADIKAL. Alle Rechte vorbehalten.' : 
-             language === 'en' ? '© 2025 RADIKAL. All rights reserved.' : 
-             language === 'ro' ? '© 2025 RADIKAL. Toate drepturile rezervate.' : 
-             '© 2025 RADIKAL. Все права защищены.'}
+            {/* Pasul 2308006-A: anul se ia singur din calendar, ca sa nu ramana
+                in urma (era fix „2025" desi suntem in 2026). */}
+            {language === 'de' ? `© ${new Date().getFullYear()} RADIKAL. Alle Rechte vorbehalten.` :
+             language === 'en' ? `© ${new Date().getFullYear()} RADIKAL. All rights reserved.` :
+             language === 'ro' ? `© ${new Date().getFullYear()} RADIKAL. Toate drepturile rezervate.` :
+             `© ${new Date().getFullYear()} RADIKAL. Все права защищены.`}
           </p>
           <p className="text-black/50 dark:text-white/40 text-xs mt-2">
-            {language === 'de' ? 'Entwickelt mit Next.js' : 
-             language === 'en' ? 'Built with Next.js' : 
-             language === 'ro' ? 'Construit cu Next.js' : 
+            {language === 'de' ? 'Erstellt mit Next.js' :
+             language === 'en' ? 'Created with Next.js' :
+             language === 'ro' ? 'Creat cu Next.js' :
              'Создано с помощью Next.js'}
           </p>
         </div>

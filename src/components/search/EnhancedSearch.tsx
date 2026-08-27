@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getSupabaseClient } from '@/lib/supabase';
 
@@ -411,9 +412,12 @@ export default function EnhancedSearch({
                   aria-selected={selectedIndex === index}
                 >
                   {result.image_url && (
-                    <img
+                    <Image
                       src={result.image_url}
                       alt={result.title || 'Search result'}
+                      width={64}
+                      height={64}
+                      sizes="64px"
                       className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                     />
                   )}

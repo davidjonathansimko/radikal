@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { useIntroText } from '@/lib/introText';
 
 // Bible verses in all 4 languages from BibleQuotes.tsx
 const bibleVerses = {
@@ -23,10 +24,10 @@ const bibleVerses = {
 };
 
 const bibleReferences = {
-  de: '...',
-  en: "...",
-  ro: '...',
-  ru: '...'
+  de: '',
+  en: '',
+  ro: '',
+  ru: ''
 };
 
 const translations = {
@@ -72,6 +73,9 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
   // Modal steps: 'intro' -> 'language' -> 'verse' -> 'options'
   const [step, setStep] = useState<'intro' | 'language' | 'verse' | 'options'>('intro');
   const [selectedLanguage, setSelectedLanguage] = useState<'de' | 'en' | 'ro' | 'ru' | null>(null);
+  // Pasul 2308004 (B) — textul optional de sub logo.
+  // Inainte de a fi aleasa o limba folosim germana, limba implicita a siteului.
+  const { introText } = useIntroText(selectedLanguage || 'de');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   // Refs for GSAP animation
@@ -277,6 +281,37 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
     }
   };
 
+  // Pasul C1: Continua ca VIZITATOR / Continue as GUEST / Als GAST fortfahren
+  // Vizitatorul NU vede si NU scrie comentarii, NU are notificari de blog.
+  // Poate DOAR sa dea like si sa foloseasca emoji.
+  const handleGuest = () => {
+    if (!selectedLanguage) return;
+
+    // Marcam modul vizitator DOAR pentru sesiunea curenta (nu localStorage,
+    // ca sa nu ocoleasca permanent inregistrarea)
+    sessionStorage.setItem('radikalGuestMode', '1');
+    sessionStorage.setItem('radikalGuestLanguage', selectedLanguage);
+    sessionStorage.removeItem('radikalPendingLanguage');
+
+    // Curatam complet blocarea scroll-ului si ascunderea nav/footer
+    document.body.classList.remove('modal-open', 'modal-active');
+    document.documentElement.classList.remove('modal-open', 'modal-active');
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.height = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.documentElement.style.overflow = '';
+
+    // Pasul 2108002 — BUG CRITIC: fara acest eveniment, componenta Navigation
+    // (deja montata) nu afla niciodata ca s-a intrat in modul vizitator, deci
+    // raman ascunse logo-ul, meniul hamburger si bara de jos in modul mobil.
+    window.dispatchEvent(new Event('radikal-guest-mode-change'));
+
+    onComplete(selectedLanguage, true);
+  };
+
 
 
   return (
@@ -312,6 +347,19 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                 className="mx-auto rounded-sm"
                 priority
               />
+
+              {/* Pasul 2308004 (B) — text ales din admin, APARE DUPA logo.
+                  Intarzierea de 1.1s face ca ordinea sa fie clara:
+                  intai logo-ul, apoi textul. Daca optiunea e oprita in
+                  admin, `introText` este gol si nu se randeaza nimic. */}
+              {introText && (
+                <p
+                  className="maintenance-message mx-auto mt-6 max-w-md font-cinzel text-base italic leading-relaxed tracking-wide sm:text-xl"
+                  style={{ animationDelay: '1.1s' }}
+                >
+                  {introText}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -473,7 +521,7 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
           <div className="flex-1 flex items-center justify-center" ref={verseContainerRef}>
             <div className="text-center max-w-4xl mx-auto px-6 relative">
               {/* Exclamation mark - appears first */}
-              <div className="text-6xl mb-12 welcome-fade-in" style={{ color: textColor }}>!</div>
+              <div className="text-6xl mb-12 welcome-fade-in" style={{ color: textColor }}></div>
               
               {/* Bible verse with GSAP word-by-word animation - like someone speaking */}
               <blockquote 
@@ -561,6 +609,29 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                   </div>
                 </button>
 
+                {/* Pasul C1: Continue as Guest / Als Gast fortfahren / Continuă ca vizitator */}
+                <button
+                  onClick={handleGuest}
+                  className="group w-full max-w-md rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl backdrop-blur-sm"
+                  style={{ backgroundColor: bgTransparent, borderWidth: '1px', borderStyle: 'solid', borderColor: borderColor }}
+                >
+                  <div className="text-center">
+                    <div className="text-3xl mb-2" style={{ color: textColor }}>◎</div>
+                    <div className="text-base md:text-lg font-semibold transition-colors" style={{ color: textColor }}>
+                      {selectedLanguage === 'de' ? 'Als Gast fortfahren' :
+                       selectedLanguage === 'en' ? 'Continue as guest' :
+                       selectedLanguage === 'ro' ? 'Continuă ca vizitator' :
+                       'Продолжить как гость'}
+                    </div>
+                    <div className="text-xs mt-2 leading-relaxed" style={{ color: textVeryLight }}>
+                      {selectedLanguage === 'de' ? 'Ohne Kommentare und ohne Blog-Benachrichtigungen' :
+                       selectedLanguage === 'en' ? 'Without comments and without blog notifications' :
+                       selectedLanguage === 'ro' ? 'Fără comentarii și fără notificări de blog' :
+                       'Без комментариев и без уведомлений блога'}
+                    </div>
+                  </div>
+                </button>
+
                 {/* Change Language Button */}
                 <button
                   onClick={() => {
@@ -584,16 +655,17 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
             <div className="w-full pb-6 px-4">
               <div className="max-w-md mx-auto pt-6 backdrop-blur-sm" style={{ borderTopWidth: '1px', borderTopStyle: 'solid', borderTopColor: borderColorLight }}>
                 <p className="text-center text-xs" style={{ color: textVeryLight }}>
-                  {selectedLanguage === 'de' ? '© 2025 RADIKAL. Alle Rechte vorbehalten.' : 
-                   selectedLanguage === 'en' ? '© 2025 RADIKAL. All rights reserved.' : 
-                   selectedLanguage === 'ro' ? '© 2025 RADIKAL. Toate drepturile rezervate.' : 
-                   '© 2025 RADIKAL. Все права защищены.'}
+                  {/* Pasul 2308006-A: anul curent, luat automat */}
+                  {selectedLanguage === 'de' ? `© ${new Date().getFullYear()} RADIKAL. Alle Rechte vorbehalten.` :
+                   selectedLanguage === 'en' ? `© ${new Date().getFullYear()} RADIKAL. All rights reserved.` :
+                   selectedLanguage === 'ro' ? `© ${new Date().getFullYear()} RADIKAL. Toate drepturile rezervate.` :
+                   `© ${new Date().getFullYear()} RADIKAL. Все права защищены.`}
                 </p>
                 <p className="text-center text-xs mt-1" style={{ color: textExtraLight }}>
-                  {selectedLanguage === 'de' ? 'Entwickelt mit ♥ und Next.js' : 
-                   selectedLanguage === 'en' ? 'Built with ♥ and Next.js' : 
-                   selectedLanguage === 'ro' ? 'Construit cu ♥ și Next.js' : 
-                   'Создано с ♥ и Next.js'}
+                  {selectedLanguage === 'de' ? 'Erstellt mit Next.js' :
+                   selectedLanguage === 'en' ? 'Created with Next.js' :
+                   selectedLanguage === 'ro' ? 'Creat cu Next.js' :
+                   'Создано с помощью Next.js'}
                 </p>
               </div>
             </div>

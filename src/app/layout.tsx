@@ -14,6 +14,7 @@ import Navigation from '@/components/Navigation';
 import FooterComponent from '@/components/FooterComponent';
 import { ReadingModeProvider, ReadingModeOverlay } from '@/components/ReadingMode';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import MaintenanceGate from '@/components/MaintenanceGate';
 // Organization Schema for SEO / Organisations-Schema für SEO / Schema Organizație pentru SEO
 import { OrganizationSchema } from '@/components/schema';
 
@@ -23,6 +24,7 @@ const ServiceWorkerRegistration = dynamic(() => import('@/components/ServiceWork
 const OfflineIndicator = dynamic(() => import('@/components/ServiceWorkerRegistration').then(m => ({ default: m.OfflineIndicator })));
 const CookieConsent = dynamic(() => import('@/components/CookieConsent'));
 const ToastProvider = dynamic(() => import('@/components/ToastNotifications'));
+const InstallAppPrompt = dynamic(() => import('@/components/InstallAppPrompt'));
 
 // BackgroundAnimation commented out for restoration later / BackgroundAnimation auskommentiert für spätere Wiederherstellung / BackgroundAnimation comentat pentru restaurare ulterioară
 // import BackgroundAnimation from '@/components/BackgroundAnimation';
@@ -49,12 +51,26 @@ export const metadata: Metadata = {
   authors: [{ name: 'D.S.' }],
   creator: 'D.S.',
   publisher: 'Radikal.',
-  metadataBase: new URL('https://radikal-blog.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radikal.blog'),
   manifest: '/manifest.json',
+  alternates: {
+    canonical: '/',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: 'RADIKAL. - Radikale Bibellehre Blog',
     description: 'Entdecke radikale Bibellehren und tiefgreifende geistliche Einsichten.',
-    url: 'https://radikal-blog.vercel.app',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radikal.blog',
     siteName: 'RADIKAL.',
     locale: 'de_DE',
     type: 'website',
@@ -151,7 +167,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="RADIKAL" />
-        <link rel="apple-touch-icon" href="/radikal.logo.schwarz.hintergrund.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
         
         {/* Android: Fullscreen immersive mode hint / Android: Fullscreen-Immersiv-Modus-Hinweis */}
         <meta name="mobile-web-app-capable" content="yes" />
@@ -199,12 +215,24 @@ export default function RootLayout({
               <ToastProvider>
                 {/* Reading mode for font size adjustments / Lesemodus für Schriftgrößenanpassungen / Mod citire pentru ajustări dimensiune font */}
                 <ReadingModeProvider>
+                  {/* Pasul 2308004 (A) — poarta „mod în lucru".
+                      Cat timp modul e pornit, vizitatorii vad DOAR ecranul cu
+                      lucrari: fara navigatie, fara intro, fara login/guest.
+                      Adminul trece prin poarta si lucreaza normal. */}
+                  <MaintenanceGate>
                   {/* Noise/Grain texture overlay for aesthetic effect / Rausch/Körnung-Textur-Overlay für ästhetischen Effekt / Suprapunere textură zgomot/granulație pentru efect estetic */}
                   <div className="noise-overlay" aria-hidden="true" />
                   
                   {/* Background animation component commented out for restoration later / Hintergrundanimations-Komponente für spätere Wiederherstellung auskommentiert / Componenta animație fundal comentată pentru restaurare ulterioară */}
                   {/* <BackgroundAnimation /> */}
                     
+                  {/* Pasul 2308010 — „Sari la conținut": invizibil cu mausul,
+                      apare la prima apăsare de Tab. Ajută cititorul de ecran și
+                      pe cine navighează doar de la tastatură. */}
+                  <a href="#main-content" className="skip-link">
+                    Zum Inhalt springen
+                  </a>
+
                   {/* Main navigation / Hauptnavigation / Navigare principală */}
                   <Navigation />
                   
@@ -212,7 +240,7 @@ export default function RootLayout({
                   <ReadingModeOverlay />
 
                   {/* Pasul 2102003: Mobile — pt-12 for ultra-thin header, pb-24 for bottom bar; Desktop — pt-16 for top nav */}
-                  <main className="relative z-10 pt-12 pb-24 lg:pb-0 lg:pt-16">
+                  <main id="main-content" tabIndex={-1} className="relative z-10 pt-12 pb-24 lg:pb-0 lg:pt-16">
                     <ErrorBoundary>
                       {children}
                     </ErrorBoundary>
@@ -230,8 +258,12 @@ export default function RootLayout({
                   {/* GDPR Cookie Consent Banner / DSGVO Cookie-Einwilligungs-Banner / Banner Consimțământ Cookie GDPR */}
                   <CookieConsent />
                   
+                  {/* Pasul 2308008: banner „instaleaza aplicatia" (PWA) */}
+                  <InstallAppPrompt />
+                  
                   {/* Organization Schema for SEO / Organisations-Schema für SEO / Schema Organizație pentru SEO */}
                   <OrganizationSchema />
+                  </MaintenanceGate>
                 </ReadingModeProvider>
               </ToastProvider>
             </AnalyticsProvider>

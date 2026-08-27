@@ -6,17 +6,21 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { FaSearch, FaTimes, FaSpinner, FaClock, FaFire, FaArrowRight } from 'react-icons/fa';
 import Image from 'next/image';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase';
+import CategoryPicker from '@/components/CategoryPicker';
+import { fetchCategories, type Category } from '@/lib/categories';
 
-// Initialize Supabase client for client-side search fallback
+// Pasul A1: folosim clientul Supabase SINGLETON (evită "Multiple GoTrueClient instances detected")
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+const supabase = supabaseUrl && supabaseKey ? createClient() : null;
 
 // Translations / Übersetzungen
 const translations = {
@@ -99,7 +103,37 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const { language } = useLanguage();
   const { translateBatch } = useTranslation();
   const router = useRouter();
+  const pathname = usePathname();
   const t = translations[language as keyof typeof translations] || translations.de;
+
+  // ------------------------------------------------------------------
+  // Pasul 2608006 — UNDE cautam: in bloguri sau in marturii.
+  // Daca esti deja in zona Marturii, cautarea porneste acolo. Din orice alt
+  // loc porneste in bloguri, dar poti comuta oricand din cele doua butoane.
+  // ------------------------------------------------------------------
+  const inMarturii = Boolean(pathname?.startsWith('/marturii'));
+  const [scope, setScope] = useState<'blogs' | 'marturii'>(inMarturii ? 'marturii' : 'blogs');
+
+  useEffect(() => {
+    if (isOpen) setScope(inMarturii ? 'marturii' : 'blogs');
+  }, [isOpen, inMarturii]);
+
+  const scopeLabels = {
+    blogs: language === 'de' ? 'Blogs' : language === 'en' ? 'Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги',
+    marturii:
+      language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства',
+  };
+
+  const placeholder =
+    scope === 'marturii'
+      ? language === 'de'
+        ? 'Zeugnisse durchsuchen...'
+        : language === 'en'
+          ? 'Search testimonies...'
+          : language === 'ro'
+            ? 'Caută mărturii...'
+            : 'Поиск свидетельств...'
+      : t.placeholder;
   
   // State / Zustand
   const [query, setQuery] = useState('');
@@ -109,51 +143,33 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // ------------------------------------------------------------------
+  // Pasul A17 — CATEGORII in cautare.
+  //
+  // Cum a fost cerut: intai vezi categoriile (familie, casnicie, parinti…),
+  // bifezi una sau MAI MULTE, si atunci vezi doar blogurile din ele.
+  // Cand nu ai scris nimic, se arata doar primele 4 categorii; cum incepi
+  // sa scrii in casuta lor, se filtreaza toate.
+  // ------------------------------------------------------------------
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  /** Blogurile gasite DOAR dupa categorie (fara text de cautat) */
+  const [catResults, setCatResults] = useState<SearchResult[]>([]);
   
   // Refs / Referenzen
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const scrollPositionRef = useRef<number>(0);
+  // Pasul 21082026 — accesibilitate: focus trap + revenirea focusului
+  const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Block body scroll when modal is open / Body-Scroll blockieren wenn Modal offen / Blochează scroll când modal e deschis
-  useEffect(() => {
-    if (isOpen) {
-      // Save current scroll position in ref
-      scrollPositionRef.current = window.scrollY;
-      // Block scroll on both html and body
-      document.documentElement.style.overflow = 'hidden';
-      document.documentElement.style.position = 'fixed';
-      document.documentElement.style.width = '100%';
-      document.documentElement.style.top = `-${scrollPositionRef.current}px`;
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${scrollPositionRef.current}px`;
-    } else {
-      // Restore styles
-      document.documentElement.style.overflow = '';
-      document.documentElement.style.position = '';
-      document.documentElement.style.width = '';
-      document.documentElement.style.top = '';
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      // Restore scroll position from ref
-      window.scrollTo(0, scrollPositionRef.current);
-    }
-    return () => {
-      document.documentElement.style.overflow = '';
-      document.documentElement.style.position = '';
-      document.documentElement.style.width = '';
-      document.documentElement.style.top = '';
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-    };
-  }, [isOpen]);
+  // Blocam scroll-ul paginii cand modalul e deschis.
+  // Folosim hook-ul CENTRAL (acelasi in toata aplicatia) — evita duplicarea
+  // pe html + body care se bateau cap in cap si lasau pagina sa "curga".
+  useBodyScrollLock(isOpen);
+  useFocusTrap(dialogRef, isOpen);
 
   // Translate results when language changes or results change
   // Ergebnisse übersetzen wenn Sprache oder Ergebnisse sich ändern
@@ -214,15 +230,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('search-modal-open');
-      // Disable scrolling on body
-      document.body.style.overflow = 'hidden';
     } else {
       document.body.classList.remove('search-modal-open');
-      document.body.style.overflow = '';
     }
     return () => {
       document.body.classList.remove('search-modal-open');
-      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -264,6 +276,38 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
     setLoading(true);
     try {
+      // ---------------------------------------------------------------
+      // Pasul 2608006 — MĂRTURII. Căutăm direct în tabelul lor, în textul
+      // original ȘI în traducerile scrise de tine, ca „viu" să fie găsit
+      // indiferent de limba în care ai scris mărturia.
+      // ---------------------------------------------------------------
+      if (scope === 'marturii') {
+        if (!supabase) {
+          setResults([]);
+          setLoading(false);
+          return;
+        }
+        const term = searchQuery.trim().toLowerCase().replace(/[%_]/g, '\\$&');
+        const fields = ['title', 'excerpt', 'content'];
+        const langs = ['', '_ro', '_de', '_en', '_ru'];
+        const conditions = fields
+          .flatMap((f) => langs.map((l) => `${f}${l}.ilike.%${term}%`))
+          .join(',');
+
+        const { data: found, error: findErr } = await supabase
+          .from('testimonies')
+          .select('id, title, excerpt, image_url, created_at, slug')
+          .eq('published', true)
+          .or(conditions)
+          .order('created_at', { ascending: false })
+          .limit(8);
+
+        setResults(!findErr && found ? (found as SearchResult[]) : []);
+        setSelectedIndex(0);
+        setLoading(false);
+        return;
+      }
+
       // Try API first
       const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&lang=${language}&limit=8`);
       const data = await response.json();
@@ -394,7 +438,48 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     } finally {
       setLoading(false);
     }
-  }, [language]);
+  }, [language, scope]);
+
+  // ------------------------------------------------------------------
+  // Pasul A17 — incarcam categoriile o data, la deschiderea modalului.
+  // Daca tabelul nu exista inca, lista ramane goala si sectiunea de
+  // categorii pur si simplu nu apare — nimic nu se strica.
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    if (!isOpen) return;
+    void fetchCategories().then(setCategories);
+  }, [isOpen]);
+
+  // Blogurile din categoriile bifate (cand nu ai scris niciun cuvant).
+  // `overlaps` = „are macar una dintre aceste categorii", exact ce trebuie
+  // ca sa vezi laolalta si familie, si casnicie.
+  useEffect(() => {
+    if (!isOpen || selectedCats.length === 0 || !supabase) {
+      setCatResults([]);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('id, title, title_en, excerpt, excerpt_en, image_url, created_at, slug')
+        .eq('published', true)
+        .overlaps('category_ids', selectedCats)
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      if (!alive) return;
+      setCatResults(error ? [] : ((data ?? []) as SearchResult[]));
+    })();
+    return () => { alive = false; };
+  }, [isOpen, selectedCats]);
+
+  /**
+   * Ce se arata in lista, dupa regula simpla:
+   *  - ai scris ceva  → rezultatele cautarii;
+   *  - n-ai scris dar ai bifat categorii → blogurile acelor categorii.
+   */
+  const shownResults = query.length >= 2 ? results : catResults;
 
   // Handle input change with debounce / Input-Änderung mit Debounce handhaben
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -420,7 +505,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     
     // Navigate to post / Zum Post navigieren
     const slug = result.slug || result.id;
-    router.push(`/blogs/${slug}`);
+    router.push(scope === 'marturii' ? `/marturii/m/${slug}` : `/blogs/${slug}`);
     onClose();
   };
 
@@ -475,27 +560,35 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       />
       
       {/* Modal container with margins like hamburger menu */}
+      {/* Pasul 2108002: renuntam la clasa arbitrara cu env()+calc, care nu era
+          generata corect de Tailwind si strica asezarea. Safe-area se aplica
+          acum prin `style`, unde functioneaza garantat. */}
       <div 
-        className="fixed inset-0 z-[9999] p-4 sm:p-6 flex items-end sm:items-start justify-center pb-20 sm:pb-0 sm:pt-20"
+        className="fixed inset-0 z-[9999] p-4 sm:p-6 pt-4 sm:pt-20 flex flex-col items-center justify-start"
         onClick={onClose}
         onTouchEnd={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
       >
         <div 
-          className="w-full max-w-2xl mx-4 transform rounded-2xl bg-white/95 dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 shadow-2xl transition-all animate-slideUp"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Suche / Search"
+          className="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white/95 dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 shadow-2xl animate-slideUp"
+          style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
           onClick={e => e.stopPropagation()}
           onTouchEnd={e => e.stopPropagation()}
         >
           {/* Search input area / Sucheingabebereich */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <FaSearch className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 text-lg sm:text-xl" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={handleInputChange}
-              placeholder={t.placeholder}
+              placeholder={placeholder}
               className="w-full bg-transparent px-12 sm:px-14 py-4 sm:py-5 text-base sm:text-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none border-b border-gray-200 dark:border-white/10"
             />
             {query && (
@@ -509,7 +602,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Results area / Ergebnisbereich */}
-          <div ref={resultsRef} className="max-h-[60vh] overflow-y-auto p-4">
+          <div ref={resultsRef} className="min-h-0 max-h-[60vh] overflow-y-auto p-4">
             {/* Loading state / Ladezustand */}
             {loading && (
               <div className="flex items-center justify-center py-8">
@@ -518,13 +611,57 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
               </div>
             )}
 
+            {/* Pasul 2608006 — UNDE cauți: în bloguri sau în mărturii. */}
+            <div className="mb-5 flex flex-wrap gap-2">
+              {(['blogs', 'marturii'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setScope(s)}
+                  className={`btn-solid rounded-full border px-4 py-1.5 text-sm transition-colors ${
+                    scope === s
+                      ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+                      : 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
+                  }`}
+                >
+                  {scopeLabels[s]}
+                </button>
+              ))}
+            </div>
+
+            {/* Pasul A17 — CATEGORII.
+                Alegi întâi tema (familie, căsnicie, credință…), poți bifa
+                mai multe deodată, apoi cauți în interiorul lor.
+                Pasul 2608006: categoriile sunt ale blogurilor, deci apar
+                doar când cauți în bloguri. */}
+            {scope === 'blogs' && categories.length > 0 && (
+              <div className="mb-5 rounded-xl border border-gray-200 dark:border-white/10 p-4 text-gray-800 dark:text-white">
+                <p className="mb-3 text-sm text-gray-500 dark:text-white/40">
+                  {language === 'de' ? 'Kategorien' :
+                   language === 'en' ? 'Categories' :
+                   language === 'ru' ? 'Категории' : 'Categorii'}
+                </p>
+                <CategoryPicker
+                  categories={categories}
+                  value={selectedCats}
+                  onChange={setSelectedCats}
+                  lang={language}
+                />
+                {/* Pasul 2308006-C: textele („+ încă N", „Caută o categorie…",
+                    „Șterge selecția") vin acum din `categoryUiText`, deci sunt
+                    traduse automat. Inainte erau scrise fix in romana. */}
+              </div>
+            )}
+
             {/* Search results / Suchergebnisse */}
-            {!loading && results.length > 0 && (
+            {!loading && shownResults.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm text-gray-500 dark:text-white/40 px-2 mb-3">
-                  {t.resultsFor} &quot;{query}&quot;
+                  {query.length >= 2
+                    ? `${t.resultsFor} "${query}"`
+                    : `${shownResults.length}`}
                 </p>
-                {results.map((result, index) => (
+                {shownResults.map((result, index) => (
                   <button
                     key={result.id}
                     onClick={() => handleResultClick(result)}
@@ -637,7 +774,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Footer / Fußbereich - different on mobile vs desktop */}
-          <div className="border-t border-gray-200 dark:border-white/10 px-5 py-3">
+          <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/10 px-5 py-3">
             {/* Mobile: Simple tap to close message */}
             <div className="sm:hidden text-center">
               <span className="text-sm text-gray-500 dark:text-white/50">{t.tapToClose}</span>

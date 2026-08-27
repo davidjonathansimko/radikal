@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ServiceWorkerStatus {
   isSupported: boolean;
@@ -21,6 +21,57 @@ export default function ServiceWorkerRegistration() {
     isOnline: true,
     updateAvailable: false,
   });
+
+  // Guards against an endless reload loop if something goes wrong.
+  const reloadedRef = useRef(false);
+
+  // ===== Self-healing safety net =====
+  // If a stale cache ever serves a build chunk that no longer exists, React
+  // throws "ChunkLoadError" and the whole UI (logo, progress bar, menu,
+  // language/theme/search buttons) vanishes. Instead of leaving the user with
+  // a dead page — which previously forced them to clear the browser cache by
+  // hand — wipe the caches and reload once, silently.
+  useEffect(() => {
+    const RECOVERY_FLAG = 'radikalChunkRecovery';
+
+    const looksLikeStaleBuild = (message?: string) =>
+      !!message && /ChunkLoadError|Loading chunk [\w-]+ failed|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message);
+
+    const recover = async () => {
+      // Only ever do this once per session, otherwise we could loop forever.
+      if (sessionStorage.getItem(RECOVERY_FLAG)) return;
+      sessionStorage.setItem(RECOVERY_FLAG, '1');
+      console.warn('[PWA] Stale build detected — clearing caches and reloading');
+      try {
+        if ('caches' in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map((n) => caches.delete(n)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } catch {
+        /* best effort */
+      }
+      window.location.reload();
+    };
+
+    const onError = (e: ErrorEvent) => {
+      if (looksLikeStaleBuild(e.message)) recover();
+    };
+    const onRejection = (e: PromiseRejectionEvent) => {
+      const reason = e.reason as { message?: string; name?: string } | undefined;
+      if (looksLikeStaleBuild(reason?.message) || reason?.name === 'ChunkLoadError') recover();
+    };
+
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+    };
+  }, []);
 
   useEffect(() => {
     // Check if service workers are supported
@@ -68,10 +119,25 @@ export default function ServiceWorkerRegistration() {
           }
         });
 
-        // Handle controller change (when new SW takes over)
+        // Handle controller change (when new SW takes over).
+        // Reload ONCE so the page runs against the new deploy's assets instead
+        // of a half-old/half-new mix, which used to blank out the header.
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           console.log('[PWA] New service worker activated');
+          if (reloadedRef.current) return;
+          reloadedRef.current = true;
+          window.location.reload();
         });
+
+        // Ask the browser to look for a new SW whenever the tab becomes
+        // visible again. Users keep the PWA open for days; without this they
+        // stay on an outdated worker until a hard refresh.
+        const checkForUpdate = () => {
+          if (document.visibilityState === 'visible') {
+            registration.update().catch(() => {});
+          }
+        };
+        document.addEventListener('visibilitychange', checkForUpdate);
 
       } catch (error) {
         console.error('[PWA] Service Worker registration failed:', error);

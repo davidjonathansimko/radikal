@@ -7,6 +7,9 @@
 
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
+import BackToTopButton from '@/components/BackToTopButton';
+import { usePageText } from '@/lib/pageContent';
+import { registerPageDefaults } from '@/lib/pageDefaults';
 
 // Translations for Datenschutz page
 const translations = {
@@ -15,7 +18,7 @@ const translations = {
     title: 'Datenschutzerklärung',
     titleLine1: 'DATENSCHUTZ-',
     titleLine2: 'ERKLÄRUNG',
-    subtitle: 'Zuletzt aktualisiert: Januar 2026',
+    subtitle: 'Zuletzt aktualisiert: August 2026',
     
     // 1. Introduction
     introTitle: '1. Einleitung',
@@ -89,6 +92,17 @@ const translations = {
     newsletterTitle: '11. Newsletter',
     newsletterText: 'Wenn Sie unseren Newsletter abonnieren, speichern wir Ihre E-Mail-Adresse. Sie können den Newsletter jederzeit über den Abmeldelink in jeder E-Mail oder direkt in der Anwendung auf der Blogseite unter „Newsletter-Einstellungen" abbestellen.',
     
+    // 12. Reichweitenmessung (Pasul 2308007)
+    analyticsTitle: '12. Reichweitenmessung',
+    analyticsText: 'Um zu verstehen, welche Beiträge gelesen werden, erfassen wir anonyme Nutzungsdaten: aufgerufene Seiten, Verweildauer, ungefähre Bildschirmgröße, Browsertyp und gewählte Sprache. Diese Daten werden in unserer eigenen Supabase-Datenbank in der EU gespeichert und nicht an Werbenetzwerke weitergegeben. Wir legen kein Profil an und speichern keine vollständigen IP-Adressen. Jede Sitzung erhält eine zufällige Kennung, die nach Ablauf der Sitzung nicht mehr mit Ihnen verknüpft werden kann. Rechtsgrundlage ist unser berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO).',
+    
+    // 13. Übersetzung und Vorlesefunktion (Pasul 2308007)
+    aiTitle: '13. Übersetzung und Vorlesefunktion',
+    aiText: 'Beiträge können automatisch in andere Sprachen übersetzt werden. Dafür nutzen wir DeepL (DeepL SE, Köln, Deutschland). Übertragen wird ausschließlich der Text des jeweiligen Beitrags — keine personenbezogenen Daten. Für die Vorlesefunktion wird der Beitragstext an einen Sprachdienst übermittelt und die erzeugte Audiodatei bei uns zwischengespeichert, damit derselbe Text nicht erneut gesendet werden muss. Ihre Stimme wird zu keinem Zeitpunkt aufgezeichnet.',
+    
+    pwaTitle: '14. Installierte App (PWA)',
+    pwaText: 'Sie können RADIKAL über Ihren Browser als App auf dem Startbildschirm installieren. Dabei findet keine Installation über einen App-Store statt und es werden keine zusätzlichen Daten an uns übertragen. Die App ist dieselbe Webseite: Ein sogenannter Service Worker legt Seiten, Bilder und Schriften lokal auf Ihrem Gerät ab, damit die App schneller startet und auch ohne Internetverbindung nutzbar bleibt. Angemeldete Bereiche und Formulardaten werden dabei bewusst nicht zwischengespeichert. Einstellungen wie Sprache, Design und Lesemodus liegen ausschließlich lokal in Ihrem Browser (localStorage). Sie können all das jederzeit entfernen, indem Sie die App deinstallieren oder die Browserdaten für diese Seite löschen.',
+    
     // Footer links
     impressum: 'Impressum',
     contact: 'Kontakt',
@@ -99,7 +113,7 @@ const translations = {
     title: 'Privacy Policy',
     titleLine1: 'PRIVACY',
     titleLine2: 'POLICY',
-    subtitle: 'Last updated: January 2026',
+    subtitle: 'Last updated: August 2026',
     
     introTitle: '1. Introduction',
     introText: 'With the following privacy policy, we would like to inform you about the types of your personal data (hereinafter also referred to as "data") that we process, for what purposes and to what extent. The privacy policy applies to all processing of personal data carried out by us, both in the context of providing our services and in particular on our website.',
@@ -162,6 +176,15 @@ const translations = {
     newsletterTitle: '11. Newsletter',
     newsletterText: 'When you subscribe to our newsletter, we store your email address. You can unsubscribe from the newsletter at any time via the unsubscribe link in each email or directly in the application on the blogs page under "Newsletter Settings".',
     
+    analyticsTitle: '12. Usage Statistics',
+    analyticsText: 'To understand which articles are being read, we collect anonymous usage data: pages viewed, time spent, approximate screen size, browser type and selected language. This data is stored in our own Supabase database in the EU and is never shared with advertising networks. We do not build profiles and we do not store full IP addresses. Each session receives a random identifier that can no longer be linked to you once the session ends. The legal basis is our legitimate interest (Art. 6(1)(f) GDPR).',
+    
+    aiTitle: '13. Translation and Read-Aloud',
+    aiText: 'Articles can be translated automatically into other languages. For this we use DeepL (DeepL SE, Cologne, Germany). Only the text of the article is transmitted — no personal data. For the read-aloud feature, the article text is sent to a speech service and the resulting audio file is cached on our side, so the same text does not have to be sent again. Your voice is never recorded.',
+    
+    pwaTitle: '14. Installed App (PWA)',
+    pwaText: 'You can install RADIKAL as an app on your home screen directly from your browser. There is no app-store installation involved and no additional data is sent to us. The app is the same website: a service worker stores pages, images and fonts locally on your device so the app starts faster and keeps working without an internet connection. Signed-in areas and form data are deliberately not cached. Settings such as language, theme and reading mode are kept only locally in your browser (localStorage). You can remove all of this at any time by uninstalling the app or clearing the browser data for this site.',
+    
     impressum: 'Legal Notice',
     contact: 'Contact',
     home: 'Home',
@@ -171,7 +194,7 @@ const translations = {
     title: 'Politica de Confidențialitate',
     titleLine1: 'POLITICA DE',
     titleLine2: 'CONFIDENȚIALITATE',
-    subtitle: 'Ultima actualizare: Ianuarie 2026',
+    subtitle: 'Ultima actualizare: August 2026',
     
     introTitle: '1. Introducere',
     introText: 'Cu următoarea politică de confidențialitate, dorim să vă informăm despre tipurile de date personale (denumite în continuare și "date") pe care le procesăm, în ce scopuri și în ce măsură. Politica de confidențialitate se aplică tuturor procesărilor de date personale efectuate de noi, atât în contextul furnizării serviciilor noastre, cât și în special pe site-ul nostru.',
@@ -234,6 +257,15 @@ const translations = {
     newsletterTitle: '11. Newsletter',
     newsletterText: 'Când vă abonați la newsletter-ul nostru, stocăm adresa dvs. de email. Vă puteți dezabona de la newsletter în orice moment prin link-ul de dezabonare din fiecare email sau direct din aplicație pe pagina de bloguri sub „Setări Newsletter".',
     
+    analyticsTitle: '12. Statistici de utilizare',
+    analyticsText: 'Ca să înțelegem ce articole sunt citite, colectăm date anonime de utilizare: paginile vizitate, timpul petrecut, mărimea aproximativă a ecranului, tipul browserului și limba aleasă. Aceste date sunt păstrate în propria noastră bază de date Supabase, în UE, și nu sunt date niciodată rețelelor de publicitate. Nu construim profiluri și nu stocăm adrese IP complete. Fiecare sesiune primește un identificator aleatoriu care, după încheierea sesiunii, nu mai poate fi legat de dvs. Temeiul legal este interesul nostru legitim (art. 6 alin. 1 lit. f GDPR).',
+    
+    aiTitle: '13. Traducere și citire cu voce',
+    aiText: 'Articolele pot fi traduse automat în alte limbi. Pentru aceasta folosim DeepL (DeepL SE, Köln, Germania). Se transmite doar textul articolului — niciun fel de date personale. Pentru funcția de citire cu voce, textul articolului este trimis unui serviciu de sinteză vocală, iar fișierul audio rezultat este păstrat la noi, ca să nu fie nevoie să trimitem același text din nou. Vocea dumneavoastră nu este înregistrată niciodată.',
+    
+    pwaTitle: '14. Aplicația instalată (PWA)',
+    pwaText: 'Puteți instala RADIKAL ca aplicație pe ecranul telefonului, direct din browser. Nu există nicio instalare printr-un magazin de aplicații și nu ne sunt trimise date suplimentare. Aplicația este același site: un așa-numit service worker păstrează local, pe dispozitivul dumneavoastră, pagini, imagini și fonturi, ca aplicația să pornească mai repede și să funcționeze și fără internet. Zonele cu autentificare și datele din formulare nu sunt păstrate intenționat. Setările precum limba, tema și modul de citire rămân doar local, în browserul dumneavoastră (localStorage). Puteți șterge oricând tot ce am descris, dezinstalând aplicația sau ștergând datele browserului pentru acest site.',
+    
     impressum: 'Imprimat Legal',
     contact: 'Contact',
     home: 'Acasă',
@@ -243,7 +275,7 @@ const translations = {
     title: 'Политика конфиденциальности',
     titleLine1: 'ПОЛИТИКА',
     titleLine2: 'КОНФИДЕНЦИАЛЬНОСТИ',
-    subtitle: 'Последнее обновление: Январь 2026',
+    subtitle: 'Последнее обновление: Август 2026',
     
     introTitle: '1. Введение',
     introText: 'В следующей политике конфиденциальности мы хотели бы проинформировать вас о типах ваших персональных данных (далее также называемых "данными"), которые мы обрабатываем, в каких целях и в каком объёме. Политика конфиденциальности применяется ко всей обработке персональных данных, осуществляемой нами, как в контексте предоставления наших услуг, так и особенно на нашем веб-сайте.',
@@ -306,18 +338,32 @@ const translations = {
     newsletterTitle: '11. Рассылка',
     newsletterText: 'Когда вы подписываетесь на нашу рассылку, мы сохраняем ваш адрес электронной почты. Вы можете отписаться от рассылки в любое время через ссылку отписки в каждом письме или непосредственно в приложении на странице блогов в разделе «Настройки рассылки».',
     
+    analyticsTitle: '12. Статистика использования',
+    analyticsText: 'Чтобы понимать, какие статьи читают, мы собираем анонимные данные об использовании: посещённые страницы, время пребывания, приблизительный размер экрана, тип браузера и выбранный язык. Эти данные хранятся в нашей собственной базе Supabase в ЕС и никогда не передаются рекламным сетям. Мы не создаём профили и не храним полные IP-адреса. Каждая сессия получает случайный идентификатор, который после её завершения нельзя связать с вами. Правовое основание — наш законный интерес (ст. 6 п. 1 подп. f GDPR).',
+    
+    aiTitle: '13. Перевод и озвучивание',
+    aiText: 'Статьи могут автоматически переводиться на другие языки. Для этого мы используем DeepL (DeepL SE, Кёльн, Германия). Передаётся только текст статьи — никаких персональных данных. Для функции озвучивания текст статьи отправляется в службу синтеза речи, а полученный аудиофайл сохраняется у нас, чтобы не отправлять тот же текст повторно. Ваш голос никогда не записывается.',
+    
+    pwaTitle: '14. Установленное приложение (PWA)',
+    pwaText: 'Вы можете установить RADIKAL как приложение на главный экран прямо из браузера. Установка через магазин приложений не происходит, дополнительные данные нам не передаются. Приложение — это тот же сайт: так называемый service worker сохраняет страницы, изображения и шрифты локально на вашем устройстве, чтобы приложение запускалось быстрее и работало без интернета. Разделы с авторизацией и данные форм намеренно не кэшируются. Настройки — язык, тема и режим чтения — хранятся только локально в вашем браузере (localStorage). Вы можете в любой момент всё это удалить, удалив приложение или очистив данные браузера для этого сайта.',
+    
     impressum: 'Юридическая информация',
     contact: 'Контакт',
     home: 'Главная',
   },
 };
 
+// Pasul 2508000 — anuntam textul original panoului de admin
+registerPageDefaults('datenschutz', translations);
+
 export default function DatenschutzPage() {
   const { language } = useLanguage();
-  const t = translations[language as keyof typeof translations] || translations.de;
+  const t = usePageText('datenschutz', translations, language);
   
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white py-20 transition-colors duration-300">
+      {/* Pasul 2208001: buton „inapoi sus" dupa ce se deruleaza */}
+      <BackToTopButton />
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-12">
@@ -486,11 +532,36 @@ export default function DatenschutzPage() {
             </p>
           </section>
 
+          {/* 12. Statistici de utilizare (Pasul 2308007) */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">{t.analyticsTitle}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              {t.analyticsText}
+            </p>
+          </section>
+
+          {/* 13. Traducere si citire cu voce (Pasul 2308007) */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">{t.aiTitle}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              {t.aiText}
+            </p>
+          </section>
+
+          {/* 14. Aplicatia instalata / PWA (Pasul 2308008) */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">{t.pwaTitle}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              {t.pwaText}
+            </p>
+          </section>
+
         </div>
 
         {/* Footer Links */}
         <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800">
-          <div className="flex flex-wrap gap-4">
+          {/* Centrat si distribuit uniform, nu lipit de stanga */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-center">
             <Link href="/impressum" className="text-red-600 dark:text-red-400 hover:underline">
               {t.impressum}
             </Link>

@@ -228,6 +228,7 @@ export default function ImageZoomModal({ src, alt, children }: ImageZoomModalPro
             src={src}
             alt={alt}
             fill
+            sizes="100vw"
             className="object-contain"
             quality={90}
             priority

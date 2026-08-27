@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useGuestMode } from '@/hooks/useGuestMode';
 import { FaBell, FaBellSlash, FaEnvelope, FaCheck, FaTimes } from 'react-icons/fa';
 
 // Translations / Übersetzungen / Traduceri
@@ -94,6 +95,10 @@ interface NewsletterSubscribeProps {
 export default function NewsletterSubscribe({ className = '', variant = 'card' }: NewsletterSubscribeProps) {
   const { language } = useLanguage();
   const supabase = createClient();
+
+  // Pasul C5: vizitatorii NU au acces la notificarile de blog
+  // Guests have NO access to blog notifications
+  const { isGuest } = useGuestMode();
   
   // State / Zustand / Stare
   const [email, setEmail] = useState('');
@@ -226,6 +231,12 @@ export default function NewsletterSubscribe({ className = '', variant = 'card' }
       setIsLoading(false);
     }
   };
+
+  // Pasul C5: vizitatorii nu vad deloc abonarea la notificari
+  // Guests don't see the notification subscription at all
+  if (isGuest) {
+    return null;
+  }
 
   // Loading state / Ladezustand / Stare de încărcare
   if (isCheckingStatus) {

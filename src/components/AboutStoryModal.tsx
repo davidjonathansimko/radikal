@@ -1,6 +1,7 @@
 // AboutStoryModal - Interactive cinematic storytelling about "radikal"
 // Features: full background image with blur/sepia, GSAP clipPath text animations
 // dust particles, film grain, tutorial, countdown
+// test comment
 
 'use client';
 
@@ -10,7 +11,9 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
-import { getStoryPhrases } from '@/data/storyPhrases';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useStoryPhrases } from '@/hooks/useStoryContent';
 
 interface AboutStoryModalProps {
   onComplete: () => void;
@@ -94,7 +97,9 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
-  const phrases = getStoryPhrases(lang);
+  // Pasul 2108002: textul din cod se afiseaza instant; daca adminul a editat
+  // textul, versiunea din baza de date il inlocuieste imediat ce soseste.
+  const phrases = useStoryPhrases(lang);
 
   // 🎵 Smart text splitting: split long phrases that would overflow the viewport
   // Intelligente Textaufteilung: lange Phrasen aufteilen, die den Viewport überlaufen würden
@@ -233,24 +238,21 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
     if (nav) (nav as HTMLElement).style.display = 'none';
     mobileNavs.forEach(el => (el as HTMLElement).style.display = 'none');
     
-    // Completely lock the body scroll
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
-    document.documentElement.style.overflow = 'hidden';
-    
+    // Blocarea scroll-ului se face acum prin useBodyScrollLock (vezi mai jos),
+    // care salveaza si restaureaza pozitia exacta si evita scroll chaining.
+
     return () => {
       if (footer) (footer as HTMLElement).style.display = '';
       if (nav) (nav as HTMLElement).style.display = '';
       mobileNavs.forEach(el => (el as HTMLElement).style.display = '');
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.height = '';
-      document.documentElement.style.overflow = '';
     };
   }, []);
+
+  // Modalul e deschis cat timp componenta e montata -> blocam pagina complet.
+  // Utilizatorul poate face scroll DOAR in interiorul modalului.
+  useBodyScrollLock(true);
+  // Pasul 21082026 — accesibilitate: focus trap + revenirea focusului
+  useFocusTrap(container, true);
 
   // Detect mobile
   useEffect(() => {
@@ -642,6 +644,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
             src="/tree_beside_water.jpg" 
             alt="Background" 
             fill 
+            sizes="100vw"
             className="object-cover"
             style={{ filter: 'blur(8px) sepia(0.4) brightness(0.5)' }}
             priority
@@ -667,6 +670,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
               src="/tree_beside_water.jpg" 
               alt="Root" 
               fill 
+              sizes="(max-width: 768px) 60vw, 320px"
               className="object-cover"
               style={{ filter: 'sepia(0.2) brightness(0.9)' }}
               priority
@@ -816,6 +820,9 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
   return (
     <div 
       ref={container} 
+      role="dialog"
+      aria-modal="true"
+      aria-label="RADIKAL Story"
       className={`font-cinzel fixed inset-0 w-full h-full overflow-hidden flex items-center justify-center touch-none z-[9999]`}
       style={{ 
         background: isDark 
@@ -832,6 +839,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
             src="/tree_beside_water.jpg" 
             alt="Background" 
             fill 
+            sizes="100vw"
             className="object-cover"
             style={{ 
               filter: 'blur(12px) sepia(0.5) brightness(0.15)'

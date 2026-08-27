@@ -14,11 +14,23 @@ import { useTheme } from '@/hooks/useTheme';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useStickyHeader } from '@/hooks/useStickyHeader';
 import { createClient } from '@/lib/supabase';
+import { isAdminUser } from '@/lib/isAdmin';
 import { User } from '@supabase/supabase-js';
 import { FaSun, FaMoon, FaSearch } from 'react-icons/fa';
 // FaHeart + FaBookmark commented out - replaced by custom SVG / FaHeart + FaBookmark auskommentiert - ersetzt durch benutzerdefiniertes SVG
 // import { FaHeart, FaBookmark } from 'react-icons/fa';
 import SearchModal from '@/components/SearchModal';
+import ReelsIcon from '@/components/ReelsIcon';
+import { useGuestMode, clearGuestMode } from '@/hooks/useGuestMode';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+// Pasul 2308006-F — rubrica News apare doar cand e pornita si are continut
+import { useNewsMenu, newsMenuLabel } from '@/hooks/useNewsMenu';
+import dynamic from 'next/dynamic';
+
+// PERFORMANTA: ReelsModal aduce cu el GSAP. Il incarcam DOAR cand
+// utilizatorul apasa pe butonul Reels, ca sa nu ingreunam prima incarcare.
+const ReelsModal = dynamic(() => import('@/components/ReelsModal'), { ssr: false });
 
 // Custom like/thumbs-up SVG icon for Liked Posts / Benutzerdefiniertes Like-SVG für Gelikte Beiträge / Pictogramă SVG like personalizată pentru Postări Apreciate
 const HeartIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -113,12 +125,24 @@ export default function Navigation() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Pasul 2308006-F — se arata rubrica News in meniu?
+  const newsMenu = useNewsMenu();
   
   // Mobile menu state / Mobile Menü-Status / Stare meniu mobil
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Search modal state / Such-Modal-Status / Stare modal căutare
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Reels — modal tip YouTube Shorts / Reels modal
+  const [isReelsOpen, setIsReelsOpen] = useState(false);
+  // Modul vizitator / Guest mode / Gast-Modus
+  const { isGuest } = useGuestMode();
+  // Pasul 21082026 — preferinta pentru animatii reduse (implicit: nimic nu se schimba)
+  const { preference: motionPref, setPreference: setMotionPref } = useReducedMotion();
+  // Bara de sus si cea de jos apar si pentru vizitatori, nu doar pentru cei logati.
+  // Altfel vizitatorul ramane blocat fara logo, meniu si butoane.
+  const canSeeNav = !!user || isGuest;
   
   // Language dropdown state / Sprach-Dropdown-Status / Stare dropdown limbă
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
@@ -144,10 +168,7 @@ export default function Navigation() {
       setUser(session?.user ?? null);
       
       // Check if user is admin / Prüfen, ob Benutzer Admin ist / Verifică dacă utilizatorul este admin
-      if (session?.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || 
-          session?.user?.email === 'davidsimko22@yahoo.com') {
-        setIsAdmin(true);
-      }
+      setIsAdmin(isAdminUser(session?.user));
       setLoading(false);
     };
 
@@ -159,12 +180,7 @@ export default function Navigation() {
         setUser(session?.user ?? null);
         
         // Update admin status / Admin-Status aktualisieren / Actualizează starea de admin
-        if (session?.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || 
-            session?.user?.email === 'davidsimko22@yahoo.com') {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
+        setIsAdmin(isAdminUser(session?.user));
         setLoading(false);
       }
     );
@@ -311,15 +327,10 @@ export default function Navigation() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // STEP 700: Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isMobileMenuOpen]);
+  // STEP 700 / actualizat: blocam scroll-ul paginii cand meniul mobil e deschis.
+  // `overflow: hidden` singur NU functioneaza pe iOS Safari — de aceea folosim
+  // hook-ul central care pune body pe `position: fixed` si restaureaza pozitia.
+  useBodyScrollLock(isMobileMenuOpen);
 
   // Pasul 2202000: Track reading progress on blog detail pages for header pill
   useEffect(() => {
@@ -400,10 +411,20 @@ export default function Navigation() {
   };
 
   // Navigation menu items / Navigationsmenü-Elemente / Elemente meniu navigare
+  //
+  // Pasul 2308006-F — rubrica NEWS.
+  // Apare DOAR daca ai pornit-o din admin ȘI exista macar o știre publicată.
+  // Dacă toate știrile sunt ciorne, rubrica nu se vede deloc — nici în meniul
+  // de sus, nici în hamburger. Semnul roșu (!) arată că e ceva important.
   const navigationItems = [
     { href: '/blogs', label: language === 'de' ? 'Blogs' : language === 'en' ? 'Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги' },
+    // Pasul 2608003 — Mărturii
+    { href: '/marturii', label: language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства' },
     { href: '/about', label: language === 'de' ? 'Über' : language === 'en' ? 'About' : language === 'ro' ? 'Despre' : 'О нас' },
     { href: '/contact', label: language === 'de' ? 'Kontakt' : language === 'en' ? 'Contact' : language === 'ro' ? 'Contact' : 'Контакт' },
+    ...(newsMenu.visible
+      ? [{ href: '/news', label: newsMenuLabel(language), important: true }]
+      : []),
   ];
 
   return (
@@ -412,8 +433,9 @@ export default function Navigation() {
     {/* Desktop — unchanged top nav bar */}
     
     {/* ═══ MOBILE TOP: Logo (left) + Hamburger/X (right) — with blurred dark bar behind ═══ */}
-    {/* Only visible for logged-in users / Nur sichtbar für eingeloggte Benutzer / Vizibil doar pentru utilizatorii logați */}
-    {user && (
+    {/* Visible for logged-in users AND for guests / Sichtbar für eingeloggte Benutzer UND Gäste */}
+    {/* Vizibil pentru utilizatorii logați ȘI pentru vizitatori */}
+    {canSeeNav && (
     <div className="fixed top-0 left-0 right-0 z-[210] lg:hidden" data-mobile-nav="top">
       {/* Pasul 2102001: Blurred dark background bar — extends edge-to-edge, thin compact bar */}
       <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-black/10 dark:border-white/10" />
@@ -427,7 +449,9 @@ export default function Navigation() {
           width={120}
           height={120}
           className="rounded-sm h-auto drop-shadow-lg"
-          style={{ width: 'clamp(65px, 22vw, 95px)' }}
+          /* Pasul 2308007 — dam si inaltimea, altfel browserul nu stie cat loc sa lase
+             si pagina „sare" cand se incarca logo-ul */
+          style={{ width: 'clamp(65px, 22vw, 95px)', height: 'auto' }}
         />
       </Link>
 
@@ -504,9 +528,9 @@ export default function Navigation() {
     )}
 
     {/* ═══ MOBILE BOTTOM BAR: Rounded floating bar with Language / Search / Theme — Telegram-style ═══ */}
-    {/* Only visible for logged-in users / Nur sichtbar für eingeloggte Benutzer / Vizibil doar pentru utilizatorii logați */}
+    {/* Visible for logged-in users AND guests / Sichtbar für eingeloggte Benutzer UND Gäste */}
     {/* Pasul 21022026: Bottom bar — higher padding so native phone nav buttons (home/back/recent) stay visible */}
-    {user && !isMobileMenuOpen && (
+    {canSeeNav && !isMobileMenuOpen && (
       <div className="fixed bottom-0 left-0 right-0 z-[210] lg:hidden flex justify-center pb-[calc(env(safe-area-inset-bottom,0px)+18px)] px-4 pointer-events-none" data-mobile-nav="bottom">
         <div className="pointer-events-auto flex items-end justify-evenly gap-1 bg-white/80 dark:bg-black/70 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 shadow-lg px-3 py-0.5" style={{ minWidth: '200px', maxWidth: '260px' }}>
           {/* Language selector */}
@@ -600,6 +624,17 @@ export default function Navigation() {
               {language === 'de' ? 'Thema' : language === 'en' ? 'Theme' : language === 'ro' ? 'Temă' : 'Тема'}
             </span>
           </button>
+
+          {/* Reels — la DREAPTA butonului de tema */}
+          {/* Culoarea vine din `text-black/70 dark:text-white/70` -> iconul urmeaza tema automat */}
+          <button
+            onClick={() => { tapLight(); setIsReelsOpen(true); }}
+            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-200 group"
+            title="Reels"
+          >
+            <ReelsIcon className="w-[22px] h-[22px] animate-heartbeat transition-transform duration-300 group-hover:scale-110" />
+            <span className="text-[10px] font-semibold opacity-70">Reels</span>
+          </button>
         </div>
       </div>
     )}
@@ -617,7 +652,8 @@ export default function Navigation() {
                 width={120}
                 height={120}
                 className="rounded-sm h-auto"
-                style={{ width: 'clamp(80px, 28vw, 120px)' }}
+                /* Pasul 2308007 — vezi comentariul de la logo-ul mobil */
+                style={{ width: 'clamp(80px, 28vw, 120px)', height: 'auto' }}
               />
               <span className="font-cinzel text-2xl font-bold text-black dark:text-white tracking-wider">
                 
@@ -719,7 +755,9 @@ export default function Navigation() {
               )}
             </div>
 
-            {/* Other navigation items / Andere Navigationselemente / Alte elemente navigare */}
+            {/* Other navigation items / Andere Navigationselemente / Alte elemente navigare
+                Pasul 2308006-F: „Noutăți" vine ultima în listă, deci apare
+                singură în dreapta lui Kontakt. */}
             {navigationItems.filter(item => item.href !== '/blogs').map((item) => (
               <Link
                 key={item.href}
@@ -731,6 +769,18 @@ export default function Navigation() {
                 }`}
               >
                 {item.label}
+                {'important' in item && item.important && (
+                  <span
+                    className="ml-1.5 font-semibold text-red-500"
+                    aria-label={
+                      language === 'de' ? 'Neu' :
+                      language === 'en' ? 'New' :
+                      language === 'ro' ? 'Nou' : 'Новое'
+                    }
+                  >
+                    (!)
+                  </span>
+                )}
               </Link>
             ))}
 
@@ -1002,6 +1052,20 @@ export default function Navigation() {
                     }`}
                   >
                     {item.label}
+                    {/* Pasul 2308006-F — semnul roșu (!) lângă „Noutăți",
+                        ca să se vadă dintr-o privire că e ceva important. */}
+                    {'important' in item && item.important && (
+                      <span
+                        className="ml-2 align-middle text-[22px] sm:text-[26px] font-semibold text-red-500"
+                        aria-label={
+                          language === 'de' ? 'Neu' :
+                          language === 'en' ? 'New' :
+                          language === 'ro' ? 'Nou' : 'Новое'
+                        }
+                      >
+                        (!)
+                      </span>
+                    )}
                   </Link>
                 )
               ))}
@@ -1103,6 +1167,32 @@ export default function Navigation() {
                   </span>
                 </Link>
               )}
+
+              {/* Pasul 21082026 — Accesibilitate: reducerea animatiilor (optional, implicit "sistem") */}
+              <button
+                type="button"
+                onClick={() => setMotionPref(motionPref === 'reduced' ? 'system' : 'reduced')}
+                aria-pressed={motionPref === 'reduced'}
+                className="flex items-center gap-3 py-2 text-left text-base font-light text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors duration-200"
+              >
+                <span
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-200 ${
+                    motionPref === 'reduced' ? 'bg-black dark:bg-white' : 'bg-black/20 dark:bg-white/20'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-black transition-transform duration-200 ${
+                      motionPref === 'reduced' ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </span>
+                <span>
+                  {language === 'de' ? 'Animationen reduzieren' :
+                   language === 'en' ? 'Reduce animations' :
+                   language === 'ro' ? 'Reduce animațiile' :
+                   'Уменьшить анимацию'}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -1117,6 +1207,37 @@ export default function Navigation() {
                   {language === 'de' ? 'Abmelden' : language === 'en' ? 'Logout' : language === 'ro' ? 'Deconectare' : 'Выйти'}
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 </button>
+              ) : isGuest ? (
+                // VIZITATOR: nu are ce sa deconecteze -> ii oferim „Anmelden"
+                // (Pasul 2208001, la fel ca pe desktop) + intoarcerea la start.
+                // GUEST: offer Login (same as desktop) plus back-to-start.
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-base font-medium hover:bg-black/85 dark:hover:bg-white/90 transition-colors duration-200"
+                  >
+                    {language === 'de' ? 'Anmelden' : language === 'en' ? 'Login' : language === 'ro' ? 'Conectare' : 'Войти'}
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 10L10 1M10 1H3M10 1V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      clearGuestMode();
+                      // sessionStorage curat, ca sa reapara alegerea limbii + Anmelden/Registrieren
+                      sessionStorage.removeItem('radikalGuestLanguage');
+                      sessionStorage.removeItem('radikalSplashShown');
+                      window.location.href = '/';
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-black/25 dark:border-white/25 text-black dark:text-white text-base font-medium hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-200"
+                  >
+                    {language === 'de' ? 'Zurück zur Startseite' :
+                     language === 'en' ? 'Back to Start Page' :
+                     language === 'ro' ? 'Înapoi la pagina de start' :
+                     'Назад на стартовую страницу'}
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M10 1L1 10M1 10H8M1 10V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
               ) : (
                 <Link
                   href="/auth/login"
@@ -1135,6 +1256,7 @@ export default function Navigation() {
     )}
 
     <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    <ReelsModal isOpen={isReelsOpen} onClose={() => setIsReelsOpen(false)} />
     </>
   );
 }
