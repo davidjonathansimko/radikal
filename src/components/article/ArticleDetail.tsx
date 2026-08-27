@@ -62,6 +62,7 @@ const SocialShare = dynamic(() => import('@/components/social/SocialShare'), { s
 const ArticleNavigation = dynamic(() => import('@/components/ArticleNavigation'), { ssr: false });
 
 import { BLOG_SOURCE, type ArticleSource } from '@/components/article/articleSource';
+import ArticleAudioDownload from '@/components/article/ArticleAudioDownload';
 
 export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: ArticleSource }) {
   // Protect this route - redirect to home if modal not completed / Diese Route schützen - zur Startseite weiterleiten wenn Modal nicht abgeschlossen / Protejează această rută - redirecționează la pagină principală dacă modalul nu este finalizat
@@ -1197,6 +1198,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           text={displayContent || post.content || ''}
           imageUrl={post.image_url || null}
           slug={`${source.audioPrefix}${originalSlugRef.current || post.slug}`}
+          contentType={source.contentType}
           // Pasul A18 — ca sa poata gasi inregistrarea proprie pe limbi
           blogId={post.id}
           language={language}
@@ -1415,6 +1417,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                 text={displayContent || post.content || ''} 
                 compact
                 blogSlug={`${source.audioPrefix}${post.slug}`}
+                contentType={source.contentType}
                 blogTitle={displayTitle || post.title}
                 blogId={post.id}
               />
@@ -1481,6 +1484,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         {/* Post actions with share buttons / Post-Aktionen mit Teilen-Buttons / Acțiuni postare cu butoane distribuire */}
         <div className="post-actions flex flex-wrap items-center justify-between gap-4 py-6 border-t border-b border-gray-300 dark:border-white/20 mb-12 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
           {/* Like button with theme-aware colors / Like-Button mit themenabhängigen Farben / Buton like cu culori adaptate la temă */}
+          <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleLike}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -1497,6 +1501,18 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                'Нравится'}
             </span>
           </button>
+
+          {/* Pasul 2708006 — descărcare MP3 pe loc, vizibilă doar pentru admin */}
+          <ArticleAudioDownload
+            audioSlug={`${source.audioPrefix}${post.slug}`}
+            postId={post.id}
+            title={displayTitle || post.title}
+            text={displayContent || post.content || ''}
+            language={language}
+            createdAt={post.created_at ?? null}
+            contentType={source.contentType}
+          />
+          </div>
 
           {/* Share buttons with complete sentence / Teilen-Buttons mit vollständigem Satz / Butoane distribuire cu propoziție completă */}
           <div className="flex flex-col gap-2 w-full">

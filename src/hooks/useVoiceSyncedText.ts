@@ -134,6 +134,7 @@ export interface UseVoiceSyncedTextOptions {
   speakingRate?: number;
   blogSlug?: string | null;
   blogTitle?: string | null;
+  contentType?: 'blog' | 'marturie' | null;
   /**
    * Pasul 2208002 — fisier MP3 PREGENERAT pentru intreg articolul.
    * Daca exista, NU se mai cere nimic de la Google: se reda un singur
@@ -157,6 +158,7 @@ export function useVoiceSyncedText({
   speakingRate = 0.9,
   blogSlug = null,
   blogTitle = null,
+  contentType = null,
   prebuiltUrl = null,
   enabled,
   playbackRate = 1,
@@ -199,6 +201,7 @@ export function useVoiceSyncedText({
           speakingRate,
           blogSlug,
           blogTitle,
+          contentType,
         }),
       });
 
@@ -233,7 +236,7 @@ export function useVoiceSyncedText({
 
       setTotal(chunksRef.current.reduce((s, c) => s + (c.duration || c.text.length / 14), 0));
     },
-    [language, speakingRate, blogSlug, blogTitle],
+    [language, speakingRate, blogSlug, blogTitle, contentType],
   );
 
   // ------------------------------------------------------------------

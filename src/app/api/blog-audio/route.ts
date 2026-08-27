@@ -146,6 +146,8 @@ export async function POST(request: NextRequest) {
   const title: string = body?.title || '';
   const language: string = body?.language || 'de';
   const sourceLanguage: string = body?.sourceLanguage || 'ro';
+  // 'blog' sau 'marturie' — ca sa se vada in Supabase de unde vine fiecare rand.
+  const contentType: string = body?.contentType === 'marturie' ? 'marturie' : 'blog';
   const rawText: string = (body?.text || '').trim();
   const speakingRate: number = typeof body?.speakingRate === 'number' ? body.speakingRate : 0.9;
 
@@ -237,6 +239,7 @@ export async function POST(request: NextRequest) {
         speakingRate,
         blogSlug: slug,
         blogTitle: title,
+        contentType,
         // Pasul 2608002 — fisierul asta se descarca si se asculta in casti,
         // deci il cerem la cea mai buna calitate pe care o da Google.
         hifi: true,
@@ -289,17 +292,26 @@ export async function POST(request: NextRequest) {
 
   // ---- 6) Salvam in tabel -------------------------------------------
   const charCount = text.length;
-  const { error: dbError } = await db.from('blog_audio').upsert(
-    {
-      slug,
-      language,
-      audio_url: audioUrl,
-      char_count: charCount,
-      text_hash: textHash,
-      generated_at: new Date().toISOString(),
-    },
-    { onConflict: 'slug,language' },
-  );
+  const audioRow = {
+    slug,
+    language,
+    audio_url: audioUrl,
+    char_count: charCount,
+    text_hash: textHash,
+    content_type: contentType,
+    generated_at: new Date().toISOString(),
+  };
+  let { error: dbError } = await db
+    .from('blog_audio')
+    .upsert(audioRow, { onConflict: 'slug,language' });
+
+  // Coloana noua poate lipsi daca SQL-ul nu a fost inca rulat.
+  if (dbError && (dbError.code === '42703' || dbError.code === 'PGRST204')) {
+    const { content_type: _omit, ...withoutType } = audioRow;
+    ({ error: dbError } = await db
+      .from('blog_audio')
+      .upsert(withoutType, { onConflict: 'slug,language' }));
+  }
 
   if (dbError) {
     return NextResponse.json(

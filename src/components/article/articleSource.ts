@@ -36,6 +36,8 @@ export interface ArticleSource {
    * ajunge să împartă același fișier.
    */
   audioPrefix: string;
+  /** Cum se numeste in Supabase: 'blog' sau 'marturie' */
+  contentType: 'blog' | 'marturie';
 }
 
 export const BLOG_SOURCE: ArticleSource = {
@@ -58,6 +60,7 @@ export const BLOG_SOURCE: ArticleSource = {
   },
   breadcrumbLabel: 'Blogs',
   audioPrefix: '',
+  contentType: 'blog',
 };
 
 export const TESTIMONY_SOURCE: ArticleSource = {
@@ -80,4 +83,5 @@ export const TESTIMONY_SOURCE: ArticleSource = {
   },
   breadcrumbLabel: 'Zeugnisse',
   audioPrefix: 'm-',
+  contentType: 'marturie',
 };

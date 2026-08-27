@@ -27,6 +27,8 @@ interface TextToSpeechProps {
    * ascultare pornea tot vocea artificiala — exact neconcordanta observata.
    */
   blogId?: string;
+  /** 'blog' sau 'marturie' — doar ca sa se vada in Supabase de unde vine */
+  contentType?: 'blog' | 'marturie';
 }
 
 interface VoiceOption {
@@ -274,6 +276,7 @@ export default function TextToSpeech({
   blogSlug,
   blogTitle,
   blogId,
+  contentType,
 }: TextToSpeechProps) {
   const { language } = useLanguage();
   const t = translations[language as keyof typeof translations] || translations.de;
@@ -908,6 +911,7 @@ export default function TextToSpeech({
           // Pasul 21082026 — identificarea articolului in tabelul tts_cache
           blogSlug,
           blogTitle,
+          contentType,
         }),
       });
 

@@ -660,11 +660,13 @@ export default function AdminPage() {
     setNewsletterResult(null);
 
     try {
+      // Sesiunea ta de admin — nu o parolă fixă vizibilă în codul paginii.
+      const { data: sess } = await supabase.auth.getSession();
       const response = await fetch('/api/newsletter/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_NEWSLETTER_API_KEY || 'radikal-newsletter-2024-secret'}`
+          'Authorization': `Bearer ${sess.session?.access_token ?? ''}`
         },
         body: JSON.stringify({
           postTitle: post.title,

@@ -176,12 +176,30 @@ const translations = {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verifică autorizarea (API key simplu pentru securitate)
-    const authHeader = request.headers.get('authorization');
-    const expectedKey = process.env.NEWSLETTER_API_KEY || 'radikal-newsletter-secret';
-    
-    if (authHeader !== `Bearer ${expectedKey}`) {
+    // ---- Cine cere? ------------------------------------------------
+    // Pasul 2708006 — SECURITATE.
+    // Inainte, aceasta adresa se deschidea cu o parola fixa, scrisa in codul
+    // trimis in browser. Oricine deschidea codul paginii o putea citi si putea
+    // trimite newsletter tuturor abonatilor. Acum cerem sesiunea ta reala de
+    // admin, exact ca la generarea audio: nu se poate copia si nu se poate
+    // folosi de altcineva.
+    const authHeader = request.headers.get('authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) {
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+    const auth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: userData, error: userError } = await auth.auth.getUser(token);
+    const role = (userData?.user?.app_metadata as { role?: string } | undefined)?.role;
+    if (userError || !userData?.user || role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { postTitle, postTitleEn, postSlug, postExcerpt, postExcerptEn } = await request.json();

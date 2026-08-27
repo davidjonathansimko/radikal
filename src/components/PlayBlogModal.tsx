@@ -40,6 +40,7 @@ export interface PlayBlogModalProps {
   text: string;
   imageUrl: string | null;
   slug: string;
+  contentType?: 'blog' | 'marturie';
   /**
    * Pasul A18 — id-ul articolului, ca sa putem cauta inregistrarea TA
    * pentru limba curenta. Optional: daca lipseste, totul merge pe TTS.
@@ -72,6 +73,7 @@ export default function PlayBlogModal({
   text,
   imageUrl,
   slug,
+  contentType,
   blogId,
   language,
   effects,
@@ -165,6 +167,7 @@ export default function PlayBlogModal({
     enabled: isOpen && prebuiltChecked,
     blogSlug: slug,
     blogTitle: title,
+    contentType,
     prebuiltUrl,
     // Pasul 2308005: 0.9 (0.8 era prea încet și suna forțat).
     // Nu este alta voce — este EXACT vocea Chirp3-HD aleasa de noi.

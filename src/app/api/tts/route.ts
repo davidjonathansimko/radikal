@@ -73,20 +73,27 @@ async function saveToSupabaseCache(
   // Pasul 21082026 — ca sa se vada in Supabase carui articol ii apartine audio-ul
   blogSlug?: string | null,
   blogTitle?: string | null,
+  // Pasul 2708006 — 'blog' sau 'marturie', ca sa le poti deosebi in tabel
+  contentType?: string | null,
 ): Promise<void> {
   if (!supabase) return;
   try {
-    await supabase
-      .from('tts_cache')
-      .upsert({
-        cache_key: cacheKey,
-        audio_content: audioContent,
-        language,
-        voice_gender: voiceGender,
-        blog_slug: blogSlug || null,
-        blog_title: blogTitle || null,
-        created_at: new Date().toISOString(),
-      }, { onConflict: 'cache_key' });
+    const row = {
+      cache_key: cacheKey,
+      audio_content: audioContent,
+      language,
+      voice_gender: voiceGender,
+      blog_slug: blogSlug || null,
+      blog_title: blogTitle || null,
+      content_type: contentType || null,
+      created_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('tts_cache').upsert(row, { onConflict: 'cache_key' });
+    // Coloana noua poate lipsi daca SQL-ul nu a fost inca rulat — salvam si asa.
+    if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+      const { content_type: _omit, ...withoutType } = row;
+      await supabase.from('tts_cache').upsert(withoutType, { onConflict: 'cache_key' });
+    }
   } catch {
     console.warn('[TTS Cache] Supabase write error — audio still returned, just not cached');
   }
@@ -241,7 +248,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { text, language = 'de', speakingRate = 0.9, blogSlug = null, blogTitle = null, hifi = false } = body;
+    const { text, language = 'de', speakingRate = 0.9, blogSlug = null, blogTitle = null, hifi = false, contentType = null } = body;
     const voiceGender = 'male'; // Always use male voice
 
     if (!text || typeof text !== 'string') {
@@ -406,7 +413,7 @@ export async function POST(request: NextRequest) {
     // Layer 1: Memory cache
     setMemoryCache(cacheKey, audioContent);
     // Layer 2: Supabase DB (async — don't wait for it to return response faster)
-    saveToSupabaseCache(cacheKey, audioContent, language, voiceGender, blogSlug, blogTitle).catch(() => {});
+    saveToSupabaseCache(cacheKey, audioContent, language, voiceGender, blogSlug, blogTitle, contentType).catch(() => {});
 
     console.log('[TTS Cache] 💾 SAVED to cache — next request will be instant');
 
