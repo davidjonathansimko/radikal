@@ -1142,6 +1142,28 @@ export default function Navigation() {
                          'Юридическая информація'}
                       </span>
                     </Link>
+                    <Link
+                      href="/datenloeschung"
+                      onClick={() => { setIsMobileMenuOpen(false); setShowMobileRechtlichesDropdown(false); }}
+                      className={`flex items-center gap-2 text-[20px] sm:text-[24px] font-light py-1.5 transition-colors duration-200 ${
+                        pathname === '/datenloeschung'
+                          ? 'text-black dark:text-white'
+                          : 'text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
+                      }`}
+                    >
+                      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 7H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        <path d="M10 11V17M14 11V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        <path d="M6 7L7 20H17L18 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M9 7V4H15V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>
+                        {language === 'de' ? 'Daten löschen' : 
+                         language === 'en' ? 'Delete data' : 
+                         language === 'ro' ? 'Ștergerea datelor' : 
+                         'Удаление данных'}
+                      </span>
+                    </Link>
                   </div>
                 )}
               </div>

@@ -566,6 +566,13 @@ export default function DatenschutzPage() {
               {t.impressum}
             </Link>
             <span className="text-gray-400 dark:text-gray-600">|</span>
+            <Link href="/datenloeschung" className="text-red-600 dark:text-red-400 hover:underline">
+              {language === 'de' ? 'Daten löschen' :
+               language === 'en' ? 'Delete data' :
+               language === 'ro' ? 'Ștergerea datelor' :
+               'Удаление данных'}
+            </Link>
+            <span className="text-gray-400 dark:text-gray-600">|</span>
             <Link href="/contact" className="text-red-600 dark:text-red-400 hover:underline">
               {t.contact}
             </Link>
