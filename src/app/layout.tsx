@@ -67,6 +67,12 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // Pasul 2708009 — dovada pentru Google Search Console.
+  // Codul NU este un secret: Google cere tocmai sa fie vizibil in pagina.
+  // De aceea variabila trebuie sa fie de tip „Config" in Vercel, nu „Secret".
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  },
   openGraph: {
     title: 'RADIKAL. - Radikale Bibellehre Blog',
     description: 'Entdecke radikale Bibellehren und tiefgreifende geistliche Einsichten.',
