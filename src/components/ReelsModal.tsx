@@ -86,6 +86,8 @@ export interface Reel {
    * reel-ului. Daca lipsesc, textul se imparte automat, ca pana acum.
    */
   manual_pages?: string[] | null;
+  /** Pasul 2708007 — bifa „Scrie textul doar cu MAJUSCULE" din admin. */
+  uppercase_text?: boolean | null;
 }
 
 /** R00 … R99, apoi automat R100, R101 … (padStart nu taie cifrele in plus) */
@@ -352,9 +354,11 @@ export function ReelSlide({
     const manual = (reel.manual_pages || [])
       .map((p) => (p || '').trim())
       .filter(Boolean);
-    if (manual.length > 0) return manual;
-    return paginateText(reel.content);
-  }, [reel.content, reel.manual_pages]);
+    const raw = manual.length > 0 ? manual : paginateText(reel.content);
+    // Bifa din admin schimba literele in text, nu doar in aspect: asa ajung
+    // majusculele si in citirea cu voce, si in videoclipul descarcat.
+    return reel.uppercase_text ? raw.map((p) => p.toLocaleUpperCase()) : raw;
+  }, [reel.content, reel.manual_pages, reel.uppercase_text]);
   const [pageIndex, setPageIndex] = useState(0);
   // Contor de bucla: creste de fiecare data cand textul o ia de la capat.
   // Este nevoie de el pentru ca, la reel-urile cu o singura pagina,
@@ -968,7 +972,8 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
 
         // Pasul 2308006-A — randurile alese manual. Aceeasi grija: daca
         // STEP_2308000_CATEGORII.sql nu a fost rulat, coloana nu exista.
-        const MANUAL_PAGES_COLUMN = 'manual_pages, ';
+        // `uppercase_text` vine din acelasi fisier, deci merg impreuna.
+        const MANUAL_PAGES_COLUMN = 'manual_pages, uppercase_text, ';
 
         // Pasul 2508001 — aceeasi grija: daca STEP_2508001_REEL_LIGHT.sql nu a
         // fost rulat, coloana nu exista si intreaga lista ar disparea.
@@ -1079,6 +1084,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
                 const parts = splitPages(translated);
                 return parts.length === manualRo.length ? parts : null;
               })(),
+              uppercase_text: Boolean(row.uppercase_text),
             };
           });
 

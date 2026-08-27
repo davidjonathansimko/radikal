@@ -181,8 +181,11 @@ export default function MarturiiIntroQuote({
               outline: 'none',
             }}
           >
-            <span className="inline tracking-wider">&bdquo;</span>
-            {verseText.split(' ').map((word, index) => (
+            {/* Pasul 2708007 — ghilimelele fac parte din frază, nu stau deasupra ei.
+                Înainte erau două semne fixe, care nu se stingeau niciodată: rămâneau
+                pe ecran și peste fraza următoare, tăind cuvintele. Acum intră o dată
+                cu primul cuvânt, se închid după ultimul și dispar împreună cu el. */}
+            {['\u201E', ...verseText.split(' '), '\u201C'].map((word, index) => (
               <span
                 key={index}
                 ref={(el) => {
@@ -194,7 +197,6 @@ export default function MarturiiIntroQuote({
                 {word}
               </span>
             ))}
-            <span className="inline tracking-wider">&ldquo;</span>
           </blockquote>
 
           <cite

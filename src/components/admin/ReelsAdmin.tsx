@@ -557,8 +557,8 @@ export default function ReelsAdmin() {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={3}
-            className={inputClass}
+            rows={6}
+            className={`${inputClass} min-h-[10rem] leading-relaxed`}
             placeholder="Frica de oameni este o capcană"
           />
         </div>
@@ -595,27 +595,29 @@ export default function ReelsAdmin() {
                 Fiecare rând de mai jos apare ca o pagină separată în reel.
               </p>
               {manualPages.map((page, i) => (
-                <div key={i} className="flex gap-2">
-                  <span className="mt-2 w-16 shrink-0 text-[11px] font-semibold text-black/50 dark:text-white/50">
-                    Rândul {i + 1}
-                  </span>
+                <div key={i} className="grid gap-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-black/50 dark:text-white/50">
+                      Rândul {i + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setManualPages(manualPages.filter((_, j) => j !== i))}
+                      className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                    >
+                      Șterge
+                    </button>
+                  </div>
                   <textarea
                     value={page}
-                    rows={2}
+                    rows={4}
                     onChange={(e) => {
                       const next = [...manualPages];
                       next[i] = e.target.value;
                       setManualPages(next);
                     }}
-                    className={inputClass}
+                    className={`${inputClass} min-h-[7rem] leading-relaxed`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setManualPages(manualPages.filter((_, j) => j !== i))}
-                    className="mt-1 h-8 shrink-0 rounded-full px-3 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                  >
-                    Șterge
-                  </button>
                 </div>
               ))}
               <button

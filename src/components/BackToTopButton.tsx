@@ -82,10 +82,15 @@ export default function BackToTopButton({
       aria-label={label}
       title={label}
       className={[
-        'fixed rounded-full',
+        'fixed rounded-full overflow-hidden isolate',
         'flex items-center justify-center',
-        'bg-white/80 dark:bg-black/70 backdrop-blur-xl',
-        'border border-black/10 dark:border-white/15 shadow-lg',
+        // Pasul 2708007 — pe tema luminoasă fundalul este PLIN, fără blur.
+        // Un fundal semi-transparent cu `backdrop-blur` desenează, în Chrome,
+        // un pătrat estompat în spatele cercului: exact „marginile" care se
+        // vedeau pe alb. Peste fundal întunecat blurul se pierde, deci rămâne.
+        'bg-white dark:bg-black/70 dark:backdrop-blur-xl',
+        'border border-black/[0.06] dark:border-white/15',
+        'shadow-[0_4px_16px_rgba(0,0,0,0.10)] dark:shadow-lg',
         'text-black/70 dark:text-white/70',
         'hover:text-black dark:hover:text-white',
         'transition-all duration-300 ease-out',
