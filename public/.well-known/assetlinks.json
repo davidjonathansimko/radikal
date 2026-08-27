@@ -1,17 +1,16 @@
 [
   {
-    "_comment_1": "TEMPLATE - Digital Asset Links for Trusted Web Activity (Play Store).",
-    "_comment_2": "Replace REPLACE_WITH_YOUR_SHA256_FINGERPRINT below, then commit + push.",
-    "_comment_3": "Get it with: keytool -list -v -keystore android.keystore -alias android",
-    "_comment_4": "Keep the colons, e.g. AB:CD:EF:01:23:...  (95 characters total)",
-    "_comment_5": "IMPORTANT: if you enable Play App Signing, Google re-signs your app with ITS OWN key. Add that fingerprint too (see the second entry of sha256_cert_fingerprints below). Find it in Play Console > Setup > App integrity > App signing key certificate.",
-    "_comment_6": "Verify after deploy: https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.radikal.blog&relation=delegate_permission/common.handle_all_urls",
+    "_comment_1": "Digital Asset Links — leaga aplicatia Android de site.",
+    "_comment_2": "Prima amprenta = cheia ta locala, C:\\DAVS\\radikal-android\\android.keystore. NU O PIERDE.",
+    "_comment_3": "A DOUA amprenta se adauga dupa prima incarcare in Play Console: Google resemneaza aplicatia cu cheia LUI, iar fara ea aplicatia publicata nu va fi verificata.",
+    "_comment_4": "O gasesti la: Play Console > Test and release > Setup > App integrity > App signing key certificate (SHA-256).",
+    "_comment_5": "Verificare dupa publicare: https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.radikal.blog&relation=delegate_permission/common.handle_all_urls",
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
       "package_name": "blog.radikal.app",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
+        "A9:D2:28:2B:02:18:20:38:77:67:EF:E3:F1:08:00:A3:F9:F3:80:17:64:04:29:02:0D:04:85:B4:21:D7:8D:9C"
       ]
     }
   }
