@@ -645,7 +645,12 @@ export function ReelSlide({
           Pasul 2308006-A: padding lateral mai mare, simetric, ca textul sa nu
           mai intre peste coloana de butoane (like / share / articol / freeze).
           Simetric = textul ramane centrat, doar ca are „culoar" mai ingust. */}
-      <div className="relative z-10 w-full max-w-2xl mx-auto text-center px-14 sm:px-20">
+      {/* Pasul 2708009 — `pointer-events-none`: blocul de text ocupa toata
+          latimea si, avand z-10, statea PESTE partea din stanga a butoanelor.
+          De aceea apasarea fix pe mijlocul lor nu raspundea, dar mai spre
+          dreapta mergea. Textul nu se apasa oricum, deci lasa atingerea sa
+          treaca mai departe. */}
+      <div className="pointer-events-none relative z-10 w-full max-w-2xl mx-auto text-center px-14 sm:px-20">
         <blockquote
           className="font-cinzel text-2xl md:text-3xl lg:text-4xl italic leading-relaxed flex items-center justify-center flex-wrap"
           style={{ color: textColor, borderLeft: 'none', paddingLeft: 0 }}
@@ -703,7 +708,7 @@ export function ReelSlide({
           ca sa nu fure ochiul de la text. La atingere / hover revin la
           opacitate deplina, deci raman la fel de usor de folosit. */}
       {!chromeless && (
-      <div className="reel-actions absolute right-4 sm:right-6 bottom-24 flex flex-col items-center gap-8">
+      <div className="reel-actions absolute right-4 sm:right-6 bottom-24 z-20 flex flex-col items-center gap-8">
         {/* LIKE — mereu prezent, si pentru reels fara blog */}
         <button
           onClick={() => onToggleLike(reel)}
@@ -1175,6 +1180,29 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   // Blocam scroll-ul paginii cat timp modalul e deschis (fara scroll chaining)
   useBodyScrollLock(isOpen);
 
+  // Pasul 2708009 — butonul „inapoi" al telefonului.
+  // Inainte, reels-ul nu exista pentru browser: apasarea pe „inapoi" schimba
+  // pagina din spate, iar reel-ul ramanea deschis peste ea. Acum, la
+  // deschidere, punem un semn in istoric; „inapoi" il consuma pe acela si
+  // inchide reel-ul, exact ca butonul X.
+  useEffect(() => {
+    if (!isOpen) return;
+    window.history.pushState({ radikalReels: true }, '');
+    const onPop = () => onClose();
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [isOpen, onClose]);
+
+  // Inchiderea trece tot prin istoric, ca semnul pus la deschidere sa nu
+  // ramana in urma si sa ceara o a doua apasare pe „inapoi".
+  const requestClose = useCallback(() => {
+    if (typeof window !== 'undefined' && (window.history.state as { radikalReels?: boolean } | null)?.radikalReels) {
+      window.history.back();
+    } else {
+      onClose();
+    }
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -1189,7 +1217,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
     const onKey = (e: KeyboardEvent) => {
       switch (e.key) {
         case 'Escape':
-          onClose();
+          requestClose();
           break;
         case 'ArrowDown':
         case 'PageDown':
@@ -1216,7 +1244,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
     return () => {
       window.removeEventListener('keydown', onKey);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, requestClose]);
 
   // Like / Unlike — optimist, cu revenire in caz de eroare
   const handleToggleLike = useCallback(
@@ -1277,10 +1305,13 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
     [likedIds, userId, tapLight]
   );
 
+  // `replace`, nu `push`: articolul ia locul semnului pus la deschiderea
+  // reel-ului. Asa, „inapoi" din articol duce direct la pagina de unde ai
+  // pornit, nu la o oprire goala intre ele.
   const handleOpenBlog = useCallback(
     (slug: string) => {
       onClose();
-      router.push(`/blogs/${slug}`);
+      router.replace(`/blogs/${slug}`);
     },
     [onClose, router]
   );
@@ -1288,7 +1319,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   const handleOpenTestimony = useCallback(
     (slug: string) => {
       onClose();
-      router.push(`/marturii/m/${slug}`);
+      router.replace(`/marturii/m/${slug}`);
     },
     [onClose, router]
   );
@@ -1309,7 +1340,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
           in captura video. Revine cand derulezi la alt reel. */}
       {!isFrozen && (
       <button
-        onClick={onClose}
+        onClick={requestClose}
         aria-label={
           language === 'de' ? 'Schließen' :
           language === 'en' ? 'Close' :
