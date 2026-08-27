@@ -875,6 +875,16 @@ export default function Navigation() {
               <FaSearch className="w-4 h-4" />
             </button>
 
+            {/* Reels — pasul 2708008: exista doar pe telefon, desi merge la fel
+                si pe calculator. Acum e in ambele locuri. */}
+            <button
+              onClick={() => { tapLight(); setIsReelsOpen(true); }}
+              className="px-3 py-2 rounded-md text-sm font-medium text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-1 group"
+              title="Reels"
+            >
+              <ReelsIcon className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
+            </button>
+
             {/* Bookmarks link commented out - replaced by Liked Posts / Lesezeichen-Link auskommentiert - ersetzt durch Liked Posts */}
             {/* {user && (
               <Link
