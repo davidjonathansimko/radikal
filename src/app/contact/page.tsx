@@ -12,6 +12,7 @@ import { useRouteProtection } from '@/hooks/useRouteProtection';
 import { createClient } from '@/lib/supabase';
 import { usePageText } from '@/lib/pageContent';
 import { registerPageDefaults } from '@/lib/pageDefaults';
+import BackToTopButton from '@/components/BackToTopButton';
 import { 
   FaEnvelope, 
   FaPaperPlane,
@@ -560,6 +561,8 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
+
+      <BackToTopButton />
     </div>
   );
 }

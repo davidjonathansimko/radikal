@@ -24,6 +24,28 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
 const BUCKET = 'blog-audio';
+
+/**
+ * Pasul 2708005 — cand site-ul isi cheama singur propriile adrese.
+ *
+ * Pe adresele de proba (`...vercel.app`) Vercel pune un paznic in fata
+ * intregului site: cine nu e logat primeste pagina lui de intrare. Paznicul
+ * nu face diferenta intre un vizitator si site-ul care se cheama pe sine, asa
+ * ca si cererile noastre interne erau oprite — de aici erorile la traducere si
+ * la generarea vocii, chiar si in romana.
+ *
+ * Ducem mai departe dovada ca cererea porneste de la tine, care esti deja
+ * intrat in cont. Pe adresa adevarata (radikal.blog) paznicul nu exista si
+ * nimic nu se schimba.
+ */
+function internalHeaders(request: NextRequest): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const cookie = request.headers.get('cookie');
+  if (cookie) headers.cookie = cookie;
+  const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  if (bypass) headers['x-vercel-protection-bypass'] = bypass;
+  return headers;
+}
 const MAX_CHUNK_CHARS = 1500; // sub limita de 2000 a rutei /api/tts
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -142,7 +164,7 @@ export async function POST(request: NextRequest) {
     try {
       const tr = await fetch(`${origin}/api/translate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: internalHeaders(request),
         body: JSON.stringify({ text: rawText, targetLang: language, sourceLang: sourceLanguage }),
       });
       const trData = await tr.json().catch(() => ({}));
@@ -208,7 +230,7 @@ export async function POST(request: NextRequest) {
   for (const chunk of chunks) {
     const res = await fetch(`${origin}/api/tts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalHeaders(request),
       body: JSON.stringify({
         text: chunk,
         language,
@@ -223,10 +245,14 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
+      const blockedByVercel = detail.includes('vercel_auth_enabled') || detail.includes('sso-api');
       return NextResponse.json(
         {
-          error: `Generarea vocii a eșuat la bucata ${parts.length + 1} din ${chunks.length}.`,
-          detail: detail.slice(0, 300),
+          error: blockedByVercel
+            ? 'Adresa de probă este protejată de Vercel, iar site-ul nu se poate chema pe sine. ' +
+              'Încearcă pe adresa adevărată (radikal.blog) sau oprește „Deployment Protection" în Vercel.'
+            : `Generarea vocii a eșuat la bucata ${parts.length + 1} din ${chunks.length}.`,
+          detail: blockedByVercel ? undefined : detail.slice(0, 300),
         },
         { status: 502 },
       );

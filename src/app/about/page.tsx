@@ -12,6 +12,7 @@ import { useRouteProtection } from '@/hooks/useRouteProtection';
 import AboutStoryModal from '@/components/AboutStoryModal';
 import AboutIntroQuote from '@/components/AboutIntroQuote';
 import { usePageText } from '@/lib/pageContent';
+import BackToTopButton from '@/components/BackToTopButton';
 import { registerPageDefaults } from '@/lib/pageDefaults';
 
 // =====================================================================
@@ -361,6 +362,8 @@ export default function AboutPage() {
         </div>
       </div>
     </div>
+
+    <BackToTopButton />
     </>
   );
 }
