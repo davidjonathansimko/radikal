@@ -16,7 +16,8 @@ export default function FooterComponent() {
   // Check if we're on a legal page to hide the corresponding link
   const isOnDatenschutz = pathname === '/datenschutz';
   const isOnImpressum = pathname === '/impressum';
-  const isOnLegalPage = isOnDatenschutz || isOnImpressum;
+  const isOnLoeschung = pathname === '/datenloeschung';
+  const isOnLegalPage = isOnDatenschutz || isOnImpressum || isOnLoeschung;
 
   return (
     <footer 
@@ -50,6 +51,17 @@ export default function FooterComponent() {
                language === 'en' ? 'Legal Notice' : 
                language === 'ro' ? 'Mențiuni Legale' : 
                'Юридическая информація'}
+            </Link>
+            <span className="text-black/30 dark:text-white/30 leading-none" style={{ fontSize: 'clamp(11px, 4vw, 18px)' }}>|</span>
+            <Link 
+              href="/datenloeschung" 
+              className="text-black/60 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors leading-none whitespace-nowrap"
+              style={{ fontSize: 'clamp(11px, 4vw, 18px)' }}
+            >
+              {language === 'de' ? 'Daten löschen' : 
+               language === 'en' ? 'Delete data' : 
+               language === 'ro' ? 'Ștergerea datelor' : 
+               'Удаление данных'}
             </Link>
           </div>
         )}
