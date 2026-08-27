@@ -294,11 +294,14 @@ export async function POST(request: NextRequest) {
     // NOTE: Chirp3-HD requests occasionally hang indefinitely. Without an abort
     // signal the serverless function would block until the platform timeout and
     // the player would freeze mid-article. Always bound the request.
-    const synthesize = (voice: VoiceProfile) => {
+    const synthesize = (voice: VoiceProfile, useHifi: boolean) => {
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), 20000);
+      // `MP3_64_KBPS` exista DOAR pe adresa v1beta1 a Google. Ceruta pe v1,
+      // este respinsa si cererea cade cu totul.
+      const api = useHifi ? 'v1beta1' : 'v1';
       return fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+        `https://texttospeech.googleapis.com/${api}/text:synthesize?key=${apiKey}`,
         {
           method: 'POST',
           signal: ac.signal,
@@ -317,31 +320,38 @@ export async function POST(request: NextRequest) {
               // se incarca repede si e destul pentru difuzorul telefonului.
               // Pentru DESCARCARE trecem pe `MP3_64_KBPS` la 44,1 kHz — cea mai
               // buna calitate MP3 pe care o ofera Google, dublul celei de pana acum.
-              audioEncoding: hifi ? 'MP3_64_KBPS' : 'MP3',
+              audioEncoding: useHifi ? 'MP3_64_KBPS' : 'MP3',
               speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
               // `pitch` is not supported by Chirp3-HD -> only send it for SSML-capable voices.
               // 0.0 = natural. Lowering it artificially made the voice sound "processed"/robotic.
               ...(voice.ssml && { pitch: 0.0 }),
               volumeGainDb: 0.0, // No gain — avoids clipping the peaks
-              sampleRateHertz: hifi ? 44100 : 24000,
+              sampleRateHertz: useHifi ? 44100 : 24000,
               // La descarcare NU mai aplicam corectia pentru difuzor de telefon:
               // ea taie din inalte si din josuri, adica exact ce vrei sa pastrezi
               // cand asculti in casti sau in masina.
-              effectsProfileId: hifi ? ['headphone-class-device'] : ['handset-class-device'],
+              effectsProfileId: useHifi ? ['headphone-class-device'] : ['handset-class-device'],
             },
           }),
         }
       ).finally(() => clearTimeout(timer));
     };
 
-    let response = await synthesize(voiceConfig);
+    let response = await synthesize(voiceConfig, hifi);
 
     // If the preferred voice is unavailable/rejected, retry once with the fallback voice.
     if (!response.ok && (response.status === 400 || response.status === 404) && voiceConfig.fallback) {
       console.warn(
         `[Google TTS] Voice "${voiceConfig.name}" rejected (${response.status}) — falling back to "${voiceConfig.fallback.name}"`
       );
-      response = await synthesize(voiceConfig.fallback);
+      response = await synthesize(voiceConfig.fallback, hifi);
+    }
+
+    // Calitatea inalta e un bonus, nu o conditie: daca e refuzata, luam MP3-ul
+    // obisnuit, ca sa nu ramai fara audio deloc.
+    if (!response.ok && hifi) {
+      console.warn(`[Google TTS] hi-fi rejected (${response.status}) — retrying as plain MP3`);
+      response = await synthesize(voiceConfig, false);
     }
 
     if (!response.ok) {

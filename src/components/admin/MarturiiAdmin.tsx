@@ -15,6 +15,7 @@
 // =====================================================================
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
 import ImageEffectsEditor from '@/components/admin/ImageEffectsEditor';
 import ImageUpload from '@/components/ImageUpload';
@@ -327,6 +328,14 @@ export default function MarturiiAdmin() {
     useCallback((it: Testimony) => `${it.title} ${it.excerpt ?? ''} ${it.content}`, []),
   );
 
+  // Pasul 2708004 — la editare, formularul se mută sub mărturia apăsată.
+  const [editorSlot, setEditorSlot] = useState<HTMLElement | null>(null);
+  const editingInList = Boolean(editingId && filter.visible.some((it) => it.id === editingId));
+  const renderInSlot = (node: React.ReactNode) => {
+    if (!editingInList) return node;
+    return editorSlot ? createPortal(node, editorSlot) : null;
+  };
+
   const sectionName = useMemo(
     () => (id: string) => sections.find((s) => s.id === id)?.name ?? '',
     [sections],
@@ -368,11 +377,13 @@ export default function MarturiiAdmin() {
         </p>
       )}
 
-      {editingId && (
-        <div className="mb-4 rounded-lg bg-black/5 px-4 py-2 text-sm text-black/70 dark:bg-white/10 dark:text-white/70">
-          Editezi o mărturie existentă. Apasă „Renunță&ldquo; ca să revii la creare.
-        </div>
-      )}
+      {renderInSlot(
+        <>
+          {editingId && (
+            <div className="mb-4 rounded-lg bg-black/5 px-4 py-2 text-sm text-black/70 dark:bg-white/10 dark:text-white/70">
+              Editezi o mărturie existentă. Apasă „Renunță&ldquo; ca să revii la creare.
+            </div>
+          )}
 
       {/* ============================ FORMULAR ============================ */}
       <form onSubmit={save} className="grid gap-4 mb-10">
@@ -609,6 +620,8 @@ export default function MarturiiAdmin() {
           )}
         </div>
       </form>
+        </>,
+      )}
 
       {/* ============================ LISTA ============================ */}
       <h3 className="mb-3 text-lg font-bold text-black dark:text-white">
@@ -690,6 +703,9 @@ export default function MarturiiAdmin() {
                   </button>
                 </div>
               </div>
+
+              {/* Aici se deschide sertarul de editare pentru această mărturie */}
+              {editingId === it.id && <div ref={setEditorSlot} className="mt-4" />}
             </li>
           ))}
         </ul>

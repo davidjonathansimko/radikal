@@ -12,6 +12,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
 import MediaUpload from './MediaUpload';
 import ReelPreview from './ReelPreview';
@@ -137,6 +138,14 @@ export default function ReelsAdmin() {
     reels,
     useCallback((r: ReelRow) => `${r.title ?? ''} ${r.content} ${r.reference ?? ''} #R${r.reel_number ?? ''}`, []),
   );
+
+  // Pasul 2708004 — la editare, formularul se mută sub reel-ul apăsat.
+  const [editorSlot, setEditorSlot] = useState<HTMLElement | null>(null);
+  const editingInList = Boolean(editingId && filter.visible.some((r) => r.id === editingId));
+  const renderInSlot = (node: React.ReactNode) => {
+    if (!editingInList) return node;
+    return editorSlot ? createPortal(node, editorSlot) : null;
+  };
 
   const notify = (type: 'ok' | 'err', text: string) => {
     setMessage({ type, text });
@@ -515,11 +524,13 @@ export default function ReelsAdmin() {
       )}
 
       {/* ---------------- Formular de creare / editare ---------------- */}
-      {editingId && (
-        <div className="mb-4 rounded-lg bg-blue-500/10 px-4 py-2 text-sm text-blue-600 dark:text-blue-400">
-          Editezi un reel existent. Apasă „Renunță&ldquo; ca să revii la creare.
-        </div>
-      )}
+      {renderInSlot(
+        <>
+          {editingId && (
+            <div className="mb-4 rounded-lg bg-blue-500/10 px-4 py-2 text-sm text-blue-600 dark:text-blue-400">
+              Editezi un reel existent. Apasă „Renunță&ldquo; ca să revii la creare.
+            </div>
+          )}
       <form onSubmit={handleCreate} className="grid gap-4 mb-8">
         {/* Pasul 2308000 — titlu intern, doar pentru tine */}
         <div>
@@ -921,6 +932,8 @@ export default function ReelsAdmin() {
           )}
         </div>
       </form>
+        </>,
+      )}
 
       {/* ---------------- Lista existenta ---------------- */}
       {/* Pasul 2108002: doar ultimele 5 + căutare + filtru an/lună, ca lista
@@ -977,8 +990,9 @@ export default function ReelsAdmin() {
               {filter.visible.map((reel) => (
                 <li
               key={reel.id}
-              className="flex flex-wrap items-center gap-3 rounded-xl border border-black/10 dark:border-white/10 px-4 py-3 w-full min-w-0 overflow-hidden"
+              className="rounded-xl border border-black/10 dark:border-white/10 px-4 py-3 w-full min-w-0 overflow-hidden"
             >
+              <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 w-full sm:w-auto sm:flex-1">
                 {/* Pasul 2308000 — titlul intern, ca sa te descurci mai usor prin listă */}
                 {reel.title && (
@@ -1031,6 +1045,10 @@ export default function ReelsAdmin() {
               >
                 Șterge
               </button>
+              </div>
+
+              {/* Aici se deschide sertarul de editare pentru acest reel */}
+              {editingId === reel.id && <div ref={setEditorSlot} className="mt-4" />}
             </li>
               ))}
             </ul>

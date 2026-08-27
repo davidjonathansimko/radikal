@@ -222,7 +222,7 @@ export default function BlogAudioGenerator({
           });
           const data = await res.json();
           if (res.ok) done.push(data.reused ? `${name} (neschimbat)` : name);
-          else failed.push(`${name}: ${data?.error ?? 'eroare'}`);
+          else failed.push(`${name}: ${[data?.error, data?.detail].filter(Boolean).join(' — ') || 'eroare'}`);
         } catch {
           failed.push(`${name}: rețea`);
         }
