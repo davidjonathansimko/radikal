@@ -394,8 +394,14 @@ export function ReelSlide({
     const el = slideRef.current;
     if (!el) return;
 
+    // O pagina cu mai putine cuvinte decat cea dinainte lasa in urma legaturi
+    // catre cuvinte care nu mai sunt pe ecran. Animate degeaba, ele produceau
+    // sclipiri. `isConnected` le lasa deoparte.
+    const liveWords = () =>
+      wordsRef.current.filter((w): w is HTMLSpanElement => Boolean(w?.isConnected));
+
     const play = () => {
-      const words = wordsRef.current.filter(Boolean);
+      const words = liveWords();
       if (words.length === 0) return;
 
       tlRef.current?.kill();
@@ -440,19 +446,27 @@ export function ReelSlide({
       // reel-ul ruleaza in bucla cat timp userul ramane pe el.
       {
         const pauza = isLastPage ? 4.2 : 2.6;
+        // Pasul 2708008 — iesirea era de doua ori mai scurta decat intrarea
+        // (0,4s fata de 0,8s) si arunca cuvintele lateral. Ochiul prindea
+        // saltul si parea o sclipire. Acum pleaca la fel de linistit cum vin:
+        // se sting pe loc, cu o urma foarte mica de miscare in sus.
         tl.to({}, { duration: pauza })
-          .to([...wordsRef.current.filter(Boolean)].reverse(), {
+          .to([...liveWords()].reverse(), {
             opacity: 0,
-            filter: 'blur(12px)',
-            x: 30,
-            duration: 0.4,
-            stagger: { each: 0.05, ease: 'power1.in' },
-            ease: 'power2.in',
+            filter: 'blur(8px)',
+            y: -6,
+            duration: 0.75,
+            stagger: { each: 0.045, ease: 'power1.inOut' },
+            ease: 'power2.inOut',
           });
 
         if (citeRef.current && isLastPage) {
-          tl.to(citeRef.current, { opacity: 0, y: 15, duration: 0.5, ease: 'power2.in' }, '<');
+          tl.to(citeRef.current, { opacity: 0, y: 10, duration: 0.7, ease: 'power2.inOut' }, '<');
         }
+
+        // O respiratie scurta pe ecranul gol, ca sa nu se ciocneasca sfarsitul
+        // unei pagini cu inceputul urmatoarei.
+        tl.to({}, { duration: 0.2 });
 
         tl.call(() => {
           if (!isActiveRef.current) return;
@@ -467,7 +481,7 @@ export function ReelSlide({
     const reset = () => {
       tlRef.current?.kill();
       tlRef.current = null;
-      const words = wordsRef.current.filter(Boolean);
+      const words = liveWords();
       // Pasul 2308009: fara cuvinte pe ecran (text inca netradus), GSAP
       // scria „target not found" in consola la fiecare derulare.
       if (words.length > 0) gsap.set(words, { opacity: 0 });
@@ -643,7 +657,10 @@ export function ReelSlide({
                 wordsRef.current[index] = el;
               }}
               className="inline-block mx-1 tracking-wider"
-              style={{ opacity: 0 }}
+              // `willChange` tine fiecare cuvant pe placa video tot timpul.
+              // Fara el, browserul crea si arunca stratul la fiecare estompare,
+              // iar aruncarea aceea se vedea ca o sclipire.
+              style={{ opacity: 0, willChange: 'opacity, filter, transform' }}
             >
               {word}
             </span>
