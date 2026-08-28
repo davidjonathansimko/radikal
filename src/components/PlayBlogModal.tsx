@@ -40,7 +40,7 @@ export interface PlayBlogModalProps {
   text: string;
   imageUrl: string | null;
   slug: string;
-  contentType?: 'blog' | 'marturie';
+  contentType?: 'blog' | 'marturie' | 'andacht' | 'copii';
   /**
    * Pasul A18 — id-ul articolului, ca sa putem cauta inregistrarea TA
    * pentru limba curenta. Optional: daca lipseste, totul merge pe TTS.

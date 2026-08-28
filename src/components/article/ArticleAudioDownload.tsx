@@ -31,7 +31,7 @@ interface ArticleAudioDownloadProps {
   text: string;
   language: string;
   createdAt?: string | null;
-  contentType: 'blog' | 'marturie';
+  contentType: 'blog' | 'marturie' | 'andacht' | 'copii';
 }
 
 const LABELS: Record<string, { download: string; making: string; ask: string; fail: string }> = {

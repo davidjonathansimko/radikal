@@ -19,6 +19,7 @@ import MaintenanceAdmin from '@/components/admin/MaintenanceAdmin';
 import IntroTextAdmin from '@/components/admin/IntroTextAdmin';
 import PageContentAdmin from '@/components/admin/PageContentAdmin';
 import MarturiiAdmin from '@/components/admin/MarturiiAdmin';
+import ContentAdmin from '@/components/admin/ContentAdmin';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRequestsPanel from '@/components/admin/AdminRequestsPanel';
 import { countPendingRequests } from '@/lib/adminRoles';
@@ -1515,6 +1516,9 @@ export default function AdminPage() {
                 { id: 'reels', label: adminT('tabs.reels'), Icon: IconFilm, group: 'Conținut' },
                 // Pasul 2608004 — Mărturii, alături de Articole și Reels
                 { id: 'marturii', label: 'Mărturii', Icon: IconDocument, group: 'Conținut' },
+                // Pasul 2708018 — două rubrici noi, cu același formular
+                { id: 'andacht', label: 'Tägliche Andacht', Icon: IconDocument, group: 'Conținut' },
+                { id: 'copii', label: 'Pentru copii', Icon: IconDocument, group: 'Conținut' },
               ] as const)
             : ([
                 { id: 'working', label: 'Site în lucru', Icon: IconWrench, group: 'Site' },
@@ -1668,6 +1672,22 @@ export default function AdminPage() {
                 Același formular ca la articole. Se salvează separat, în rubricile mărturiilor.
               </p>
               <MarturiiAdmin />
+            </div>
+          </section>
+        )}
+
+        {/* ---------- CREARE → Tägliche Andacht / Pentru copii (pasul 2708018) ---------- */}
+        {mainTab === 'create' && (subTab === 'andacht' || subTab === 'copii') && (
+          <section className="animate-fadeIn mb-12">
+            <div className="glass-effect rounded-2xl p-6">
+              <h2 className="mb-1 text-xl font-bold text-black dark:text-white">
+                {subTab === 'andacht' ? 'Tägliche Andacht' : 'Pentru copii'}
+              </h2>
+              <p className="mb-5 text-xs text-black/50 dark:text-white/50">
+                Același formular ca la mărturii. Pagina rămâne ascunsă de vizitatori până o
+                pornești din Setări → Pagini.
+              </p>
+              <ContentAdmin kind={subTab === 'andacht' ? 'andacht' : 'copii'} />
             </div>
           </section>
         )}

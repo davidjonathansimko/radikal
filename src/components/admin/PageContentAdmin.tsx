@@ -23,6 +23,7 @@ import {
   type PageLanguage,
 } from '@/lib/pageContent';
 import { originalTextsFor, isPageEditable, ensurePageDefaultsLoaded } from '@/lib/pageDefaults';
+import { fetchEnabledPages, setPageEnabled, type TogglablePage } from '@/lib/pageSettings';
 
 const LANG_NAMES: Record<PageLanguage, string> = {
   ro: 'Română',
@@ -51,6 +52,10 @@ export default function PageContentAdmin() {
   const [error, setError] = useState('');
   // Textele originale se incarca la cerere (vezi `pageDefaults.ts`).
   const [defaultsReady, setDefaultsReady] = useState(false);
+
+  // Pasul 2708018 — paginile care se pot ascunde de vizitatori.
+  const [enabledPages, setEnabledPages] = useState<Set<string>>(new Set());
+  const [togglingPage, setTogglingPage] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -200,6 +205,44 @@ export default function PageContentAdmin() {
 
   const hasOverride = Boolean(overrides[pageId]?.[lang]);
 
+  // Paginile care se pot porni și opri. Restul sunt mereu vizibile.
+  const TOGGLABLE: TogglablePage[] = ['andacht', 'copii'];
+  const isTogglable = (TOGGLABLE as string[]).includes(pageId);
+  const pageOn = enabledPages.has(pageId);
+
+  useEffect(() => {
+    let alive = true;
+    fetchEnabledPages().then((s) => {
+      if (alive) setEnabledPages(s);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const togglePage = useCallback(async () => {
+    if (!isTogglable) return;
+    setTogglingPage(true);
+    setError('');
+    setNote('');
+    const next = !pageOn;
+    const res = await setPageEnabled(pageId as TogglablePage, next);
+    if (!res.ok) {
+      setError(
+        `Nu am putut schimba: ${res.error}. Ai rulat STEP_2708018_ANDACHT_COPII.sql în Supabase?`,
+      );
+    } else {
+      setEnabledPages((prev) => {
+        const s = new Set(prev);
+        if (next) s.add(pageId);
+        else s.delete(pageId);
+        return s;
+      });
+      setNote(next ? 'Pagina este acum vizibilă pentru toată lumea.' : 'Pagina este ascunsă.');
+    }
+    setTogglingPage(false);
+  }, [isTogglable, pageOn, pageId]);
+
   const inputClass =
     'w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-black outline-none transition-colors focus:border-black/40 dark:border-white/15 dark:bg-black dark:text-white dark:focus:border-white/40';
 
@@ -227,6 +270,36 @@ export default function PageContentAdmin() {
           ))}
         </div>
       </div>
+
+      {/* --- Pagina pornită sau oprită (pasul 2708018) --- */}
+      {isTogglable && (
+        <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-black dark:text-white">
+                {pageOn ? 'Pagina este vizibilă' : 'Pagina este ascunsă'}
+              </p>
+              <p className="mt-1 text-xs text-black/55 dark:text-white/55">
+                {pageOn
+                  ? 'Apare în meniu și oricine îi poate deschide adresa.'
+                  : 'Nu apare în meniu, iar cine îi scrie adresa este trimis la pagina principală. Tu o vezi în continuare din administrare.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void togglePage()}
+              disabled={togglingPage}
+              className={`btn-solid shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 ${
+                pageOn
+                  ? 'border border-black/15 text-black dark:border-white/15 dark:text-white'
+                  : 'bg-black text-white dark:bg-white dark:text-black'
+              }`}
+            >
+              {togglingPage ? 'Se schimbă…' : pageOn ? 'Dezactivează pagina' : 'Activează pagina'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* --- Ce limbă --- */}
       <div>

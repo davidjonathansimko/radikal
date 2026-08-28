@@ -10,7 +10,13 @@
 
 export interface ArticleSource {
   /** Tabelul din care se citește */
-  table: 'blog_posts' | 'testimonies';
+  table: 'blog_posts' | 'testimonies' | 'content_items';
+  /**
+   * Rubricile noi stau toate în același tabel, deosebite prin coloana `kind`.
+   * Când e pus aici, fiecare căutare adaugă și condiția asta.
+   */
+  filterColumn?: string;
+  filterValue?: string;
   /** Adresa unui articol: /blogs/slug sau /marturii/m/slug */
   basePath: string;
   /** Adresa listei: /blogs sau /marturii */
@@ -37,7 +43,7 @@ export interface ArticleSource {
    */
   audioPrefix: string;
   /** Cum se numeste in Supabase: 'blog' sau 'marturie' */
-  contentType: 'blog' | 'marturie';
+  contentType: 'blog' | 'marturie' | 'andacht' | 'copii';
 }
 
 export const BLOG_SOURCE: ArticleSource = {
@@ -85,3 +91,57 @@ export const TESTIMONY_SOURCE: ArticleSource = {
   audioPrefix: 'm-',
   contentType: 'marturie',
 };
+
+/** Pasul 2708018 — rubricile noi, toate din acelasi tabel. */
+function contentSource(
+  kind: 'andacht' | 'copii',
+  basePath: string,
+  labels: { back: Record<string, string>; notFound: Record<string, string>; crumb: string },
+): ArticleSource {
+  return {
+    table: 'content_items',
+    filterColumn: 'kind',
+    filterValue: kind,
+    basePath: `${basePath}/a`,
+    listPath: basePath,
+    interactionPrefix: `${kind}:`,
+    viewsRpc: null,
+    backLabel: labels.back,
+    notFoundLabel: labels.notFound,
+    breadcrumbLabel: labels.crumb,
+    audioPrefix: `${kind}-`,
+    contentType: kind,
+  };
+}
+
+export const ANDACHT_SOURCE: ArticleSource = contentSource('andacht', '/andacht', {
+  back: {
+    de: 'Zurück zur Andacht',
+    en: 'Back to the devotions',
+    ro: 'Înapoi la meditații',
+    ru: 'Назад к размышлениям',
+  },
+  notFound: {
+    de: 'Beitrag nicht gefunden',
+    en: 'Post not found',
+    ro: 'Articolul nu a fost găsit',
+    ru: 'Запись не найдена',
+  },
+  crumb: 'Tägliche Andacht',
+});
+
+export const COPII_SOURCE: ArticleSource = contentSource('copii', '/copii', {
+  back: {
+    de: 'Zurück zu „Für Kinder"',
+    en: 'Back to "For Children"',
+    ro: 'Înapoi la „Pentru copii"',
+    ru: 'Назад к «Для детей»',
+  },
+  notFound: {
+    de: 'Beitrag nicht gefunden',
+    en: 'Post not found',
+    ro: 'Articolul nu a fost găsit',
+    ru: 'Запись не найдена',
+  },
+  crumb: 'Für Kinder',
+});
