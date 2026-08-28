@@ -119,15 +119,29 @@ export default function MarturiiAdmin() {
 
       const { data: secData } = await sb
         .from('testimony_sections')
-        .select('id, name_ro, name_de, name_en, name_ru')
-        .order('sort_order', { ascending: true });
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
 
-      setSections(
-        ((secData || []) as unknown as Record<string, unknown>[]).map((r) => ({
-          id: r.id as string,
-          name: (r.name_ro as string) || '(fără nume)',
-        })),
-      );
+      // Pasul 2708015 — rubricile se arată în arbore, cu numele mamei în față,
+      // ca să știi exact unde pui mărturia când două rubrici se numesc la fel.
+      const raw = ((secData || []) as unknown as Record<string, unknown>[]).map((r) => ({
+        id: r.id as string,
+        parent: (r.parent_id as string) ?? null,
+        name: (r.name_ro as string) || '(fără nume)',
+      }));
+      const byParent = new Map<string | null, typeof raw>();
+      raw.forEach((r) => byParent.set(r.parent, [...(byParent.get(r.parent) ?? []), r]));
+      const flat: Section[] = [];
+      const walk = (parent: string | null, prefix: string, depth: number) => {
+        if (depth > 12) return;
+        (byParent.get(parent) ?? []).forEach((r) => {
+          flat.push({ id: r.id, name: prefix ? `${prefix} › ${r.name}` : r.name });
+          walk(r.id, prefix ? `${prefix} › ${r.name}` : r.name, depth + 1);
+        });
+      };
+      walk(null, '', 0);
+      setSections(flat.length ? flat : raw.map((r) => ({ id: r.id, name: r.name })));
 
       const { data, error } = await sb
         .from('testimonies')

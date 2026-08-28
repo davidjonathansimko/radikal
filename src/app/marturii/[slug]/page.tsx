@@ -79,6 +79,8 @@ export default function SectionPage() {
 
   const [sectionName, setSectionName] = useState('');
   const [sectionMissing, setSectionMissing] = useState(false);
+  const [children, setChildren] = useState<{ id: string; slug: string; name: string; description: string | null }[]>([]);
+  const [trail, setTrail] = useState<{ slug: string; name: string }[]>([]);
   const [rows, setRows] = useState<TestimonyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,25 +91,66 @@ export default function SectionPage() {
     try {
       const sb = getSupabaseClient();
 
-      const { data: sec } = await sb
+      // O rubrică din interiorul alteia poate purta acelaşi nume ca una din
+      // altă parte. Când se întâmplă, alegem întâi rubrica principală.
+      const { data: found } = await sb
         .from('testimony_sections')
-        .select('id, name_ro, name_de, name_en, name_ru')
+        .select('*')
         .eq('slug', slug)
-        .maybeSingle();
+        .limit(5);
+
+      const list = (found || []) as unknown as Record<string, unknown>[];
+      const sec = list.find((r) => !r.parent_id) ?? list[0];
 
       if (!sec) {
         setSectionMissing(true);
         return;
       }
 
-      const s = sec as unknown as Record<string, unknown>;
-      setSectionName(((s[`name_${lang}`] as string) || (s.name_ro as string) || '').trim());
+      const pickName = (r: Record<string, unknown>) =>
+        ((r[`name_${lang}`] as string) || (r.name_ro as string) || '').trim();
+
+      setSectionName(pickName(sec));
+
+      // Pasul 2708015 — rubricile aflate ÎN această rubrică.
+      const { data: kids } = await sb
+        .from('testimony_sections')
+        .select('id, slug, name_ro, name_de, name_en, name_ru, description_ro, description_de, description_en, description_ru')
+        .eq('parent_id', sec.id as string)
+        .eq('published', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      setChildren(
+        ((kids || []) as unknown as Record<string, unknown>[]).map((r) => ({
+          id: r.id as string,
+          slug: r.slug as string,
+          name: pickName(r),
+          description: ((r[`description_${lang}`] as string) || (r.description_ro as string) || null),
+        })),
+      );
+
+      // Drumul până aici, ca cititorul să ştie unde se află.
+      const path: { slug: string; name: string }[] = [];
+      let parent = sec.parent_id as string | null | undefined;
+      for (let i = 0; parent && i < 12; i += 1) {
+        const { data: p } = await sb
+          .from('testimony_sections')
+          .select('slug, parent_id, name_ro, name_de, name_en, name_ru')
+          .eq('id', parent)
+          .maybeSingle();
+        if (!p) break;
+        const pr = p as unknown as Record<string, unknown>;
+        path.unshift({ slug: pr.slug as string, name: pickName(pr) });
+        parent = pr.parent_id as string | null;
+      }
+      setTrail(path);
 
       const { data } = await sb
         .from('testimonies')
         .select('*')
         .eq('published', true)
-        .contains('section_ids', [s.id as string])
+        .contains('section_ids', [sec.id as string])
         .order('created_at', { ascending: false });
 
       setRows((data || []) as unknown as TestimonyRow[]);
@@ -166,11 +209,49 @@ export default function SectionPage() {
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        {/* Drumul până aici — pasul 2708015 */}
+        <nav className="mb-4 flex flex-wrap items-center gap-1 text-xs text-black/50 dark:text-white/50">
+          <Link href="/marturii" className="transition-colors hover:text-black dark:hover:text-white">
+            {t.back.replace(/^.*?\s/, '') || 'Mărturii'}
+          </Link>
+          {trail.map((p) => (
+            <span key={p.slug} className="flex items-center gap-1">
+              <span className="opacity-50">›</span>
+              <Link
+                href={`/marturii/${p.slug}`}
+                className="transition-colors hover:text-black dark:hover:text-white"
+              >
+                {p.name}
+              </Link>
+            </span>
+          ))}
+        </nav>
+
         <header className="mb-10 text-center">
           <h1 className="font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">
             {sectionName}
           </h1>
         </header>
+
+        {/* Rubricile aflate în această rubrică */}
+        {children.length > 0 && (
+          <div className="mb-10 grid gap-4 sm:grid-cols-2">
+            {children.map((c) => (
+              <Link
+                key={c.id}
+                href={`/marturii/${c.slug}`}
+                className="glass-effect rounded-2xl p-5 transition-transform hover:scale-[1.02]"
+              >
+                <p className="font-cinzel text-lg font-bold text-black dark:text-white">{c.name}</p>
+                {c.description && (
+                  <p className="mt-1 line-clamp-2 text-sm text-black/60 dark:text-white/60">
+                    {c.description}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Pasul 2708002 — rasfoire alfabetica / dupa data, prin toate marturiile */}
         <div className="mb-6 flex justify-center">
