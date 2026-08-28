@@ -438,6 +438,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         .select('*')
         .eq('slug', querySlug)
         .eq('published', true)
+        .eq(source.filterColumn ?? 'published', source.filterColumn ? source.filterValue : true)
         .single();
 
       if (data && !error) {
@@ -492,6 +493,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         .from(source.table)
         .select('*')
         .eq('published', true)
+        .eq(source.filterColumn ?? 'published', source.filterColumn ? source.filterValue : true)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -553,6 +555,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         .from(source.table)
         .select('slug, title')
         .eq('published', true)
+        .eq(source.filterColumn ?? 'published', source.filterColumn ? source.filterValue : true)
         .lt('created_at', currentCreatedAt)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -570,6 +573,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         .from(source.table)
         .select('slug, title')
         .eq('published', true)
+        .eq(source.filterColumn ?? 'published', source.filterColumn ? source.filterValue : true)
         .gt('created_at', currentCreatedAt)
         .order('created_at', { ascending: true })
         .limit(1)

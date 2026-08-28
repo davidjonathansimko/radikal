@@ -134,7 +134,7 @@ export interface UseVoiceSyncedTextOptions {
   speakingRate?: number;
   blogSlug?: string | null;
   blogTitle?: string | null;
-  contentType?: 'blog' | 'marturie' | null;
+  contentType?: 'blog' | 'marturie' | 'andacht' | 'copii' | null;
   /**
    * Pasul 2208002 — fisier MP3 PREGENERAT pentru intreg articolul.
    * Daca exista, NU se mai cere nimic de la Google: se reda un singur

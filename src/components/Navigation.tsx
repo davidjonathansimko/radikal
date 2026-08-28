@@ -16,6 +16,8 @@ import { useStickyHeader } from '@/hooks/useStickyHeader';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { fetchArchiveYears, type ArchiveYear } from '@/lib/archiveMonths';
+import { fetchEnabledPages } from '@/lib/pageSettings';
+import { CONTENT_KINDS } from '@/lib/contentKinds';
 import { User } from '@supabase/supabase-js';
 import { FaSun, FaMoon, FaSearch } from 'react-icons/fa';
 // FaHeart + FaBookmark commented out - replaced by custom SVG / FaHeart + FaBookmark auskommentiert - ersetzt durch benutzerdefiniertes SVG
@@ -164,6 +166,7 @@ export default function Navigation() {
   const [testimonyYears, setTestimonyYears] = useState<ArchiveYear[]>([]);
   const [expandedTestimonyYears, setExpandedTestimonyYears] = useState<Set<number>>(new Set());
   const [expandedMobileTestimonyYears, setExpandedMobileTestimonyYears] = useState<Set<number>>(new Set());
+  const [enabledPages, setEnabledPages] = useState<Set<string>>(new Set());
 
   const toggleTestimonyYear = (year: number, mobile: boolean) => {
     const setter = mobile ? setExpandedMobileTestimonyYears : setExpandedTestimonyYears;
@@ -282,6 +285,17 @@ export default function Navigation() {
       alive = false;
     };
   }, [language, isMobileMenuOpen]);
+
+  // Ce pagini sunt pornite — pasul 2708018
+  useEffect(() => {
+    let alive = true;
+    fetchEnabledPages().then((s) => {
+      if (alive) setEnabledPages(s);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isMobileMenuOpen]);
 
   // Group blog months by year for hierarchical display / Blog-Monate nach Jahr gruppieren / Grupează lunile cu bloguri pe ani
   const blogYears = React.useMemo(() => {
@@ -449,6 +463,13 @@ export default function Navigation() {
     { href: '/blogs', label: language === 'de' ? 'Blogs' : language === 'en' ? 'Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги' },
     // Pasul 2608003 — Mărturii
     { href: '/marturii', label: language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства' },
+    // Pasul 2708018 — apar doar dacă le-ai pornit din Setări → Pagini.
+    ...(enabledPages.has('andacht')
+      ? [{ href: '/andacht', label: CONTENT_KINDS.andacht.title[language] || CONTENT_KINDS.andacht.title.de }]
+      : []),
+    ...(enabledPages.has('copii')
+      ? [{ href: '/copii', label: CONTENT_KINDS.copii.title[language] || CONTENT_KINDS.copii.title.de }]
+      : []),
     { href: '/about', label: language === 'de' ? 'Über' : language === 'en' ? 'About' : language === 'ro' ? 'Despre' : 'О нас' },
     { href: '/contact', label: language === 'de' ? 'Kontakt' : language === 'en' ? 'Contact' : language === 'ro' ? 'Contact' : 'Контакт' },
     ...(newsMenu.visible

@@ -28,7 +28,7 @@ interface TextToSpeechProps {
    */
   blogId?: string;
   /** 'blog' sau 'marturie' — doar ca sa se vada in Supabase de unde vine */
-  contentType?: 'blog' | 'marturie';
+  contentType?: 'blog' | 'marturie' | 'andacht' | 'copii';
 }
 
 interface VoiceOption {
