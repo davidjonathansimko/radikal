@@ -28,6 +28,7 @@ const T: Record<Lang, Record<string, string>> = {
     read: 'Weiterlesen',
     back: 'Zurück zu den Zeugnissen',
     notFound: 'Diese Rubrik gibt es nicht.',
+    home: 'Startseite',
     results: 'Gefunden',
   },
   en: {
@@ -40,6 +41,7 @@ const T: Record<Lang, Record<string, string>> = {
     read: 'Read more',
     back: 'Back to testimonies',
     notFound: 'This section does not exist.',
+    home: 'Home',
     results: 'Found',
   },
   ro: {
@@ -52,6 +54,7 @@ const T: Record<Lang, Record<string, string>> = {
     read: 'Citește mai departe',
     back: 'Înapoi la mărturii',
     notFound: 'Această rubrică nu există.',
+    home: 'Pagina principală',
     results: 'Găsite',
   },
   ru: {
@@ -64,6 +67,7 @@ const T: Record<Lang, Record<string, string>> = {
     read: 'Читать дальше',
     back: 'Назад к свидетельствам',
     notFound: 'Такой рубрики нет.',
+    home: 'Главная',
     results: 'Найдено',
   },
 };
@@ -209,23 +213,23 @@ export default function SectionPage() {
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Drumul până aici — pasul 2708015 */}
-        <nav className="mb-4 flex flex-wrap items-center gap-1 text-xs text-black/50 dark:text-white/50">
-          <Link href="/marturii" className="transition-colors hover:text-black dark:hover:text-white">
-            {t.back.replace(/^.*?\s/, '') || 'Mărturii'}
+        {/* Pasul 2708022 — un singur buton, care spune unde te duce. */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <Link
+            href={trail.length > 0 ? `/marturii/${trail[trail.length - 1].slug}` : '/marturii'}
+            className="inline-flex items-center gap-2 rounded-lg border border-black/15 px-4 py-2 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+          >
+            <span aria-hidden="true">←</span>
+            {trail.length > 0 ? trail[trail.length - 1].name : t.back}
           </Link>
-          {trail.map((p) => (
-            <span key={p.slug} className="flex items-center gap-1">
-              <span className="opacity-50">›</span>
-              <Link
-                href={`/marturii/${p.slug}`}
-                className="transition-colors hover:text-black dark:hover:text-white"
-              >
-                {p.name}
-              </Link>
-            </span>
-          ))}
-        </nav>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-lg border border-black/15 px-4 py-2 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+          >
+            <span aria-hidden="true">←</span>
+            {t.home}
+          </Link>
+        </div>
 
         <header className="mb-10 text-center">
           <h1 className="font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">
