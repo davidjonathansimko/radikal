@@ -26,6 +26,7 @@ import gsap from 'gsap';
 import { paginateText } from '@/lib/paginateText';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
+import { useAppFullscreen } from '@/lib/appFullscreen';
 import { useTheme } from '@/hooks/useTheme';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -719,7 +720,7 @@ export function ReelSlide({
             language === 'ro' ? 'Îmi place' : 'Нравится'
           }
           className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
-          style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
+          style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.55))' }}
         >
           <svg
             className="w-5 h-5 transition-colors duration-200"
@@ -754,7 +755,7 @@ export function ReelSlide({
             language === 'ro' ? 'Distribuie' : 'Поделиться'
           }
           className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
-          style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
+          style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.55))' }}
         >
           <svg
             className="w-5 h-5"
@@ -798,7 +799,7 @@ export function ReelSlide({
               language === 'ro' ? 'Mergi la articol' : 'К статье'
             }
             className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
-            style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
+            style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.55))' }}
           >
             <svg
               className="w-5 h-5"
@@ -831,7 +832,7 @@ export function ReelSlide({
               language === 'ro' ? 'Mergi la mărturie' : 'К свидетельству'
             }
             className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
-            style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
+            style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.55))' }}
           >
             <svg
               className="w-5 h-5"
@@ -868,7 +869,7 @@ export function ReelSlide({
             aria-label="Freeze — ascunde butoanele pentru captură"
             title="Ascunde butoanele (revin la următorul reel)"
             className="flex flex-col items-center gap-1 rounded-full p-2.5 transition-transform duration-200 active:scale-90 hover:scale-110"
-            style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
+            style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.55))' }}
           >
             {/* Lacat — acelasi desen pe care mi l-ai trimis, redesenat cu
                 linii, ca sa se potriveasca cu restul pictogramelor. */}
@@ -1204,27 +1205,9 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   }, [onClose]);
 
   // Pasul 2708014 — ECRAN COMPLET cat esti in reels.
-  // In aplicatia de Android, ecranul complet ascunde si ceasul de sus, si
-  // butoanele de navigare de jos: reel-ul ramane singur pe tot ecranul, ca la
-  // Shorts. La iesire, totul revine cum era. Unde browserul refuza, nu se
-  // intampla nimic — este un adaos, nu o conditie.
-  useEffect(() => {
-    if (!isOpen) return;
-    const el = document.documentElement;
-    let entered = false;
-
-    if (!document.fullscreenElement && el.requestFullscreen) {
-      el.requestFullscreen({ navigationUI: 'hide' })
-        .then(() => { entered = true; })
-        .catch(() => {});
-    }
-
-    return () => {
-      if (entered && document.fullscreenElement) {
-        document.exitFullscreen?.().catch(() => {});
-      }
-    };
-  }, [isOpen]);
+  // Doar in aplicatia instalata: intr-o fila de browser, Chrome ar arata
+  // mesajul lui „Zum Beenden des Vollbildmodus…", pe care nu il putem opri.
+  useAppFullscreen(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
