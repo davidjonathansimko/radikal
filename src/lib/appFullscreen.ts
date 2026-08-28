@@ -49,3 +49,16 @@ export function useAppFullscreen(active: boolean): void {
     };
   }, [active]);
 }
+
+/**
+ * Pasul 2708022 — ECRAN CURAT.
+ * Cât timp e pornit, barele de meniu de sus și de jos se ascund. Se folosește
+ * la versetele de intro, unde orice buton strică liniștea textului.
+ */
+export function useCleanScreen(active: boolean): void {
+  useEffect(() => {
+    if (!active) return;
+    document.body.classList.add('intro-active');
+    return () => document.body.classList.remove('intro-active');
+  }, [active]);
+}

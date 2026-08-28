@@ -145,7 +145,21 @@ export default function Navigation() {
   const { preference: motionPref, setPreference: setMotionPref } = useReducedMotion();
   // Bara de sus si cea de jos apar si pentru vizitatori, nu doar pentru cei logati.
   // Altfel vizitatorul ramane blocat fara logo, meniu si butoane.
-  const canSeeNav = !!user || isGuest;
+  // Pasul 2708022 — ecranele care trebuie să rămână curate.
+  // Versetul zilei arată ca un reel: doar X și trimitere mai departe.
+  // Cât timp rulează un verset de intro (Despre, Mărturii), la fel — pagina
+  // pune singură clasa pe <body>, iar bara dispare până se termină.
+  const [introActive, setIntroActive] = useState(false);
+  useEffect(() => {
+    const check = () => setIntroActive(document.body.classList.contains('intro-active'));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const cleanScreen = pathname === '/verset' || introActive;
+  const canSeeNav = (!!user || isGuest) && !cleanScreen;
   
   // Language dropdown state / Sprach-Dropdown-Status / Stare dropdown limbă
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
@@ -699,6 +713,7 @@ export default function Navigation() {
     )}
 
     {/* ═══ DESKTOP NAV BAR — unchanged, only visible on lg+ ═══ */}
+    {!cleanScreen && (
     <nav className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white/20 dark:bg-black/20 backdrop-blur-md border-b border-black/10 dark:border-white/10">
       <div className="max-w-7xl mx-auto" style={{ padding: '0 clamp(8px, 3vw, 32px)' }}>
         <div className="flex items-center justify-between h-16 min-w-0" style={{ gap: 'clamp(8px, 3vw, 24px)' }}>
@@ -1090,16 +1105,19 @@ export default function Navigation() {
         </div>
       </div>
     </nav>
+    )}
     
     {/* ═══ MOBILE FULLSCREEN MENU ═══ */}
     {isMobileMenuOpen && (
       <div className="mobile-menu-container fixed inset-0 z-[200] lg:hidden" style={{ animation: 'mobileMenuSlideIn 0.25s ease-out forwards' }}>
         {/* Background - adapts to theme */}
         <div className="absolute inset-0 bg-white dark:bg-black" />
-        <div className="relative z-10 flex flex-col h-full text-black dark:text-white overflow-hidden">
+        <div className="relative z-10 flex flex-col h-full text-black dark:text-white overflow-y-auto overscroll-contain">
 
-          {/* Pasul 1125: Navigation links - smaller text, no scroll, fits on one screen */}
-          <div className="flex-1 flex flex-col justify-center" style={{ padding: '64px clamp(28px, 8vw, 56px) 0' }}>
+          {/* Pasul 2708022 — lista a crescut, deci meniul se poate derula.
+              Înainte era `overflow-hidden` și ultimele rânduri („Abmelden")
+              rămâneau sub marginea ecranului, fără nicio cale de a ajunge la ele. */}
+          <div className="flex flex-col justify-center" style={{ padding: '64px clamp(28px, 8vw, 56px) 0' }}>
             <div className="flex flex-col space-y-1">
               {navigationItems.map((item) => (
                 item.href === '/blogs' ? (

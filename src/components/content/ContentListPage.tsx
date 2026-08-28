@@ -40,6 +40,8 @@ const T: Record<string, Record<string, string>> = {
     results: 'Gefunden',
     browse: 'Beiträge durchsuchen',
     notFound: 'Diese Rubrik gibt es nicht.',
+    backTo: 'Zurück zu',
+    home: 'Startseite',
   },
   en: {
     loading: 'Loading …',
@@ -54,6 +56,8 @@ const T: Record<string, Record<string, string>> = {
     results: 'Found',
     browse: 'Browse posts',
     notFound: 'This section does not exist.',
+    backTo: 'Back to',
+    home: 'Home',
   },
   ro: {
     loading: 'Se încarcă …',
@@ -68,6 +72,8 @@ const T: Record<string, Record<string, string>> = {
     results: 'Găsite',
     browse: 'Răsfoiește articolele',
     notFound: 'Această rubrică nu există.',
+    backTo: 'Înapoi la',
+    home: 'Pagina principală',
   },
   ru: {
     loading: 'Загрузка …',
@@ -82,6 +88,8 @@ const T: Record<string, Record<string, string>> = {
     results: 'Найдено',
     browse: 'Просмотр записей',
     notFound: 'Такой рубрики нет.',
+    backTo: 'Назад к',
+    home: 'Главная',
   },
 };
 
@@ -192,24 +200,30 @@ export default function ContentListPage({
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {sectionSlug && (
-          <nav className="mb-4 flex flex-wrap items-center gap-1 text-xs text-black/50 dark:text-white/50">
-            <Link href={def.basePath} className="transition-colors hover:text-black dark:hover:text-white">
-              {def.title[lang] || def.title.de}
+        {/* Pasul 2708022 — un singur buton de întoarcere, care spune limpede
+            unde te duce. Înainte apăreau toate treptele drumului deodată. */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          {sectionSlug && (
+            <Link
+              href={
+                trail.length > 0 ? `${def.basePath}/${trail[trail.length - 1].slug}` : def.basePath
+              }
+              className="inline-flex items-center gap-2 rounded-lg border border-black/15 px-4 py-2 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+            >
+              <span aria-hidden="true">←</span>
+              {t.backTo}{' '}
+              {trail.length > 0 ? trail[trail.length - 1].name : def.title[lang] || def.title.de}
             </Link>
-            {trail.map((p) => (
-              <span key={p.slug} className="flex items-center gap-1">
-                <span className="opacity-50">›</span>
-                <Link
-                  href={`${def.basePath}/${p.slug}`}
-                  className="transition-colors hover:text-black dark:hover:text-white"
-                >
-                  {p.name}
-                </Link>
-              </span>
-            ))}
-          </nav>
-        )}
+          )}
+
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-lg border border-black/15 px-4 py-2 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+          >
+            <span aria-hidden="true">←</span>
+            {t.home}
+          </Link>
+        </div>
 
         <header className="mb-10 text-center">
           <h1 className="font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">
