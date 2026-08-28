@@ -8,7 +8,7 @@
 // lași goale, iar atunci se afișează numele românesc.
 // =====================================================================
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 
 const LANGS = [
@@ -25,6 +25,8 @@ interface Section {
   slug: string;
   sort_order: number;
   published: boolean;
+  /** Rubrica in care sta aceasta rubrica. Gol = rubrica principala. */
+  parent_id: string | null;
   names: Record<LangCode, string>;
   descriptions: Record<LangCode, string>;
 }
@@ -56,6 +58,7 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
   const [descriptions, setDescriptions] = useState<Record<LangCode, string>>(emptyLangs());
   const [sortOrder, setSortOrder] = useState(0);
   const [published, setPublished] = useState(true);
+  const [parentId, setParentId] = useState<string>('');
   const [openLang, setOpenLang] = useState<LangCode>('ro');
 
   const say = useCallback((kind: 'ok' | 'err', text: string) => {
@@ -84,6 +87,7 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
           slug: r.slug as string,
           sort_order: (r.sort_order as number) ?? 0,
           published: Boolean(r.published),
+          parent_id: (r.parent_id as string) ?? null,
           names: {
             ro: (r.name_ro as string) || '',
             de: (r.name_de as string) || '',
@@ -113,6 +117,7 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
     setDescriptions(emptyLangs());
     setSortOrder(0);
     setPublished(true);
+    setParentId('');
     setOpenLang('ro');
   }, []);
 
@@ -131,6 +136,7 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
           slug: slugify(names.ro),
           sort_order: sortOrder,
           published,
+          parent_id: parentId || null,
           updated_at: new Date().toISOString(),
         };
         LANGS.forEach(({ code }) => {
@@ -138,9 +144,22 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
           payload[`description_${code}`] = descriptions[code].trim() || null;
         });
 
-        const { error } = editingId
-          ? await sb.from('testimony_sections').update(payload).eq('id', editingId)
-          : await sb.from('testimony_sections').insert(payload);
+        const run = (body: Record<string, unknown>) =>
+          editingId
+            ? sb.from('testimony_sections').update(body).eq('id', editingId)
+            : sb.from('testimony_sections').insert(body);
+
+        let { error } = await run(payload);
+
+        // Daca STEP_2708015_SUBRUBRICI.sql nu a fost inca rulat, coloana lipseste.
+        // Salvam fara ea, ca sa nu pierzi munca; rubrica ajunge principala.
+        if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+          const { parent_id: _omit, ...fara } = payload;
+          ({ error } = await run(fara));
+          if (!error && parentId) {
+            say('err', 'Rubrica a fost salvată, dar ca rubrică principală. Rulează STEP_2708015_SUBRUBRICI.sql în Supabase ca să poți pune rubrici în rubrici.');
+          }
+        }
 
         if (error) {
           say(
@@ -160,7 +179,7 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
         setSaving(false);
       }
     },
-    [names, descriptions, sortOrder, published, editingId, load, resetForm, say, onChanged],
+    [names, descriptions, sortOrder, published, parentId, editingId, load, resetForm, say, onChanged],
   );
 
   const startEdit = useCallback((s: Section) => {
@@ -169,6 +188,7 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
     setDescriptions(s.descriptions);
     setSortOrder(s.sort_order);
     setPublished(s.published);
+    setParentId(s.parent_id ?? '');
     setOpenLang('ro');
   }, []);
 
@@ -199,6 +219,42 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
     'w-full rounded-lg border border-black/15 dark:border-white/15 bg-white dark:bg-black text-black dark:text-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors';
   const labelClass =
     'block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1';
+
+  // Rubricile aşezate ca un arbore, mama înaintea copiilor, cu adâncimea lor.
+  const ordered = useMemo(() => {
+    const byParent = new Map<string | null, Section[]>();
+    items.forEach((s) => {
+      const key = s.parent_id ?? null;
+      byParent.set(key, [...(byParent.get(key) ?? []), s]);
+    });
+    const out: { section: Section; depth: number }[] = [];
+    const walk = (parent: string | null, depth: number) => {
+      // Oprim la 12 niveluri: fără asta, o rubrică pusă din greşeală în ea
+      // însăşi ar bloca pagina la nesfârşit.
+      if (depth > 12) return;
+      (byParent.get(parent) ?? []).forEach((s) => {
+        out.push({ section: s, depth });
+        walk(s.id, depth + 1);
+      });
+    };
+    walk(null, 0);
+    return out;
+  }, [items]);
+
+  // O rubrică nu poate fi mutată în propriul ei copil.
+  const descendantIds = useMemo(() => {
+    const found = new Set<string>();
+    if (!editingId) return found;
+    const add = (parent: string) => {
+      items.filter((s) => s.parent_id === parent).forEach((s) => {
+        if (found.has(s.id)) return;
+        found.add(s.id);
+        add(s.id);
+      });
+    };
+    add(editingId);
+    return found;
+  }, [items, editingId]);
 
   return (
     <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
@@ -254,6 +310,27 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
               Adresa: <code>/marturii/{slugify(names.ro)}</code>
             </p>
           )}
+        </div>
+
+        <div>
+          <label className={labelClass}>În ce rubrică stă</label>
+          <select
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">— Rubrică principală (apare pe pagina Mărturii) —</option>
+            {ordered
+              .filter((o) => o.section.id !== editingId && !descendantIds.has(o.section.id))
+              .map((o) => (
+                <option key={o.section.id} value={o.section.id}>
+                  {'\u00A0\u00A0'.repeat(o.depth) + (o.depth > 0 ? '└ ' : '') + (o.section.names.ro || o.section.slug)}
+                </option>
+              ))}
+          </select>
+          <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
+            Poți pune rubrici în rubrici oricât de adânc. Cititorul intră din una în alta.
+          </p>
         </div>
 
         <div>
@@ -316,12 +393,14 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
         </p>
       ) : (
         <ul className="grid gap-2">
-          {items.map((s) => (
+          {ordered.map(({ section: s, depth }) => (
             <li
               key={s.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/10 px-3 py-2 dark:border-white/10"
+              style={{ marginLeft: `${depth * 20}px` }}
             >
               <span className="min-w-0">
+                {depth > 0 && <span className="mr-1 text-black/30 dark:text-white/30">└</span>}
                 <span className="font-medium text-black dark:text-white">{s.names.ro}</span>
                 {!s.published && (
                   <span className="ml-2 rounded-full bg-black/10 px-2 py-0.5 text-[11px] text-black/60 dark:bg-white/10 dark:text-white/60">

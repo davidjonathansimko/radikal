@@ -132,12 +132,28 @@ export default function MarturiiPage() {
     setLoading(true);
     try {
       const sb = getSupabaseClient();
-      const { data, error } = await sb
+      const COLS =
+        'id, slug, name_ro, name_de, name_en, name_ru, description_ro, description_de, description_en, description_ru';
+
+      // Pasul 2708015 — aici apar DOAR rubricile principale. Cele dinăuntrul
+      // lor se văd după ce intri în rubrica-mamă.
+      let { data, error } = await sb
         .from('testimony_sections')
-        .select('id, slug, name_ro, name_de, name_en, name_ru, description_ro, description_de, description_en, description_ru')
+        .select(COLS)
+        .is('parent_id', null)
         .eq('published', true)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true });
+
+      // Coloana lipsește dacă STEP_2708015_SUBRUBRICI.sql nu a fost rulat.
+      if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+        ({ data, error } = await sb
+          .from('testimony_sections')
+          .select(COLS)
+          .eq('published', true)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true }));
+      }
 
       if (error) {
         // Tabelul lipsește = fișierul SQL nu a fost rulat încă.
