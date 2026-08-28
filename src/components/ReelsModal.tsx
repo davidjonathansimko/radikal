@@ -13,7 +13,7 @@
 // - Efecte optionale: noise/sand grain, sepia usor, vignette in colturi
 // - Imagine de fundal optionala, cu opacitate libera 0..100
 // - TRADUCERE automata DeepL in limba selectata, cu cache in baza de date
-// - TEMA: useTheme() — se schimba odata cu butonul soare/luna
+// - TEMA: reels-ul ramane MEREU pe fundal intunecat (pasul 2708019)
 //
 // Performanta: animam DOAR reel-ul vizibil (IntersectionObserver) si
 // distrugem timeline-ul cand iese din ecran.
@@ -27,7 +27,6 @@ import { paginateText } from '@/lib/paginateText';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { useAppFullscreen } from '@/lib/appFullscreen';
-import { useTheme } from '@/hooks/useTheme';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -899,12 +898,14 @@ export function ReelSlide({
 // ---------------------------------------------------------------------------
 export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   const router = useRouter();
-  const { theme } = useTheme();
   const { language } = useLanguage();
   const { tapLight } = useHaptic();
   const { reduced: reduceMotion } = useReducedMotion();
   const { play: playAudio, stop: stopAudio } = useReelAudio();
-  const isDark = theme === 'dark';
+  // Pasul 2708019 — reels-ul este MEREU pe fundal întunecat, oricare ar fi
+  // tema aleasă de cititor. Imaginile din spate sunt gândite pentru negru;
+  // pe alb se pierdea tot rostul lor.
+  const isDark = true;
 
   const [reels, setReels] = useState<Reel[]>([]);
   const [isLoading, setIsLoading] = useState(true);

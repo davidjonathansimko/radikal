@@ -206,7 +206,7 @@ export default function PageContentAdmin() {
   const hasOverride = Boolean(overrides[pageId]?.[lang]);
 
   // Paginile care se pot porni și opri. Restul sunt mereu vizibile.
-  const TOGGLABLE: TogglablePage[] = ['andacht', 'copii'];
+  const TOGGLABLE: TogglablePage[] = ['andacht', 'copii', 'verset'];
   const isTogglable = (TOGGLABLE as string[]).includes(pageId);
   const pageOn = enabledPages.has(pageId);
 

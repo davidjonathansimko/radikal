@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { createClient } from '@/lib/supabase';
 import { usePageText } from '@/lib/pageContent';
 import { registerPageDefaults } from '@/lib/pageDefaults';
+import { fetchEnabledPages } from '@/lib/pageSettings';
 // Pasul 2208001 — vizitatorul ramane vizitator pana apasa butonul din hamburger
 import { isGuestMode } from '@/hooks/useGuestMode';
 
@@ -44,6 +45,15 @@ const translations = {
     marturiiTitle: 'Zeugnisse',
     marturiiText: '„Darum auch wir, weil wir eine solche Wolke von Zeugen um uns haben, lasst uns ablegen alles, was uns beschwert, und die Sünde, die uns ständig umstrickt, und lasst uns laufen mit Geduld in dem Kampf, der uns bestimmt ist." Hebräer 12,1',
     marturiiButton: 'Alle Zeugnisse ansehen',
+    andachtTitle: 'Tägliche Andacht',
+    andachtText: 'Every day is different.',
+    andachtButton: 'Mehr entdecken',
+    copiiTitle: 'Für Kinder',
+    copiiText: 'Heiligkeit von Kindheit an',
+    copiiButton: 'Mehr erfahren',
+    versetTitle: 'Vers des Tages',
+    versetText: 'Ein Vers für heute.',
+    versetButton: 'Lesen',
     contactTitle: 'Kontakt',
     contactText: 'Fragen?',
     contactButton: 'Kontaktiere uns',
@@ -63,6 +73,15 @@ const translations = {
     marturiiTitle: 'Testimonies',
     marturiiText: '"Therefore, since we are surrounded by so great a cloud of witnesses, let us also lay aside every weight, and sin which clings so closely, and let us run with endurance the race that is set before us." Hebrews 12:1',
     marturiiButton: 'View All Testimonies',
+    andachtTitle: 'Daily Devotion',
+    andachtText: 'Every day is different.',
+    andachtButton: 'Discover more',
+    copiiTitle: 'For Children',
+    copiiText: 'Holiness from childhood',
+    copiiButton: 'Learn more',
+    versetTitle: 'Verse of the Day',
+    versetText: 'One verse for today.',
+    versetButton: 'Read',
     contactTitle: 'Contact',
     contactText: 'Questions?',
     contactButton: 'Contact Us',
@@ -82,6 +101,15 @@ const translations = {
     marturiiTitle: 'Mărturii',
     marturiiText: '„Și noi dar, fiindcă suntem înconjurați cu un nor așa de mare de martori, să dăm la o parte orice piedică și păcatul care ne înfășoară așa de lesne și să alergăm cu stăruință în alergarea care ne stă înainte." Evrei 12:1',
     marturiiButton: 'Vezi toate mărturiile',
+    andachtTitle: 'Meditația zilnică',
+    andachtText: 'Fiecare zi este altfel.',
+    andachtButton: 'Descoperă mai mult',
+    copiiTitle: 'Pentru copii',
+    copiiText: 'Sfințenie din pruncie',
+    copiiButton: 'Află mai mult',
+    versetTitle: 'Versetul zilei',
+    versetText: 'Un verset pentru azi.',
+    versetButton: 'Citește',
     contactTitle: 'Contact',
     contactText: 'Întrebări?',
     contactButton: 'Contactează-ne',
@@ -101,6 +129,15 @@ const translations = {
     marturiiTitle: 'Свидетельства',
     marturiiText: '«Посему и мы, имея вокруг себя такое облако свидетелей, свергнем с себя всякое бремя и запинающий нас грех и с терпением будем проходить предлежащее нам поприще». Евреям 12:1',
     marturiiButton: 'Посмотреть все свидетельства',
+    andachtTitle: 'Ежедневное размышление',
+    andachtText: 'Каждый день не похож на другой.',
+    andachtButton: 'Узнать больше',
+    copiiTitle: 'Для детей',
+    copiiText: 'Святость с детства',
+    copiiButton: 'Узнать больше',
+    versetTitle: 'Стих дня',
+    versetText: 'Один стих на сегодня.',
+    versetButton: 'Читать',
     contactTitle: 'Контакт',
     contactText: 'Вопросы?',
     contactButton: 'Свяжитесь с нами',
@@ -115,6 +152,18 @@ export default function HomePage() {
   // Get language context / Sprachkontext abrufen / Obține contextul limbii
   const { language, setLanguage } = useLanguage();
   const t = usePageText('main', translations, language);
+
+  // Secțiunile rubricilor noi apar doar dacă le-ai pornit din Setări → Pagini.
+  const [enabledPages, setEnabledPages] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let alive = true;
+    fetchEnabledPages().then((s) => {
+      if (alive) setEnabledPages(s);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
   
   // Get theme context for scroll button styling
   const { theme } = useTheme();
@@ -533,6 +582,119 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* ========================================================================== */}
+      {/* SECTION 3c/d/e — Andacht, Pentru copii, Versetul zilei (pasul 2708021) */}
+      {/* Apar doar dacă le-ai pornit din Setări → Pagini. */}
+      {/* ========================================================================== */}
+      {enabledPages.has('andacht') && (
+        <section id="andacht" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20">
+          <div className="max-w-4xl mx-auto w-full text-center">
+            <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
+              {t.andachtTitle}
+            </h2>
+            <br />
+            <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+              {t.andachtText}
+            </p>
+            <br />
+            <div className="mb-8 animate-fadeIn flex justify-center" style={{ animationDelay: '0.4s' }}>
+              <svg viewBox="0 0 48 48" className="w-20 h-20 text-black dark:text-white" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12.6,13.09h7.29" />
+                <path d="M12.55,16.21h7.3" />
+                <path d="M12.55,19.28h7.3" />
+                <path d="M12.55,22.43h7.3" />
+                <path d="M8.67,9V34.08H19.79c1.79,0,4.29,1.75,4.29,1.75L24,10.35a5.51,5.51,0,0,0-3.85-1.58Z" />
+                <path d="M30.82,34.08H28.37c-1.79,0-4.29,1.75-4.29,1.75l.09-25.48A5.51,5.51,0,0,1,28,8.77l2.8,0" />
+                <path d="M33.89,8.86l5.6.09V34.08h-5.6" />
+                <path d="M33.89,36.62h7.7V10.28H40" />
+                <path d="M8.49,10.37H6.29V36.6H21.45a10.39,10.39,0,0,0,2.53.58,9.37,9.37,0,0,0,2.38-.56h4.46" />
+                <path d="M30.82,7.19v32.4l1.49-1.05,1.58,1V7.28Z" />
+              </svg>
+            </div>
+            <Link
+              href="/andacht"
+              className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
+              style={{ animationDelay: '0.6s' }}
+            >
+              {t.andachtButton}
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {enabledPages.has('copii') && (
+        <section id="copii" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20 bg-black/5 dark:bg-white/5">
+          <div className="max-w-4xl mx-auto w-full text-center">
+            <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
+              {t.copiiTitle}
+            </h2>
+            <br />
+            <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+              {t.copiiText}
+            </p>
+            <br />
+            <div className="mb-8 animate-fadeIn flex justify-center" style={{ animationDelay: '0.4s' }}>
+              <svg viewBox="0 0 1024 1024" className="w-20 h-20 text-black dark:text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M296.022 64.46a7.994 7.994 0 0 1-3.428-15.224C361.302 16.712 435.07 0.224 511.86 0.224c76.524 0 150.064 16.378 218.594 48.7a7.98 7.98 0 0 1 3.826 10.632c-1.876 4.014-6.714 5.684-10.634 3.826C657.256 32.076 586.01 16.212 511.86 16.212c-74.4 0-145.874 15.972-212.426 47.482a8.066 8.066 0 0 1-3.412 0.766zM967.846 735.372a7.944 7.944 0 0 1-3.404-0.766 7.984 7.984 0 0 1-3.824-10.632c31.304-66.358 47.17-137.604 47.17-211.786 0-74.4-15.974-145.88-47.482-212.426a7.992 7.992 0 0 1 3.81-10.648c3.964-1.842 8.742-0.204 10.648 3.81 32.524 68.702 49.012 142.476 49.012 219.266 0 76.554-16.378 150.096-48.7 218.594a7.966 7.966 0 0 1-7.23 4.588zM56.472 735.372a7.99 7.99 0 0 1-7.236-4.574C16.712 662.096 0.224 588.32 0.224 511.532c0-76.554 16.386-150.096 48.7-218.594 1.88-4.012 6.636-5.684 10.64-3.826a7.994 7.994 0 0 1 3.818 10.632c-31.298 66.36-47.17 137.606-47.17 211.788 0 74.4 15.972 145.88 47.482 212.426a7.996 7.996 0 0 1-7.222 11.414zM511.188 1023.776c-76.554 0-150.104-16.378-218.602-48.7a7.994 7.994 0 0 1-3.818-10.634 7.986 7.986 0 0 1 10.642-3.824c66.35 31.304 137.604 47.17 211.778 47.17 74.4 0 145.88-15.974 212.426-47.482 3.952-1.874 8.728-0.204 10.65 3.81a7.992 7.992 0 0 1-3.81 10.648c-68.702 32.524-142.478 49.012-219.266 49.012zM391.92 672.932a7.86 7.86 0 0 1-3.856-0.998c-81.426-44.954-132.008-130.798-132.008-224.03 0-141.054 114.762-255.816 255.818-255.816a7.99 7.99 0 0 1 7.994 7.994 7.99 7.99 0 0 1-7.994 7.994c-132.242 0-239.83 107.58-239.83 239.828 0 87.408 47.418 167.896 123.748 210.038a7.976 7.976 0 0 1 3.13 10.854 7.95 7.95 0 0 1-7.002 4.136z" />
+                <path d="M631.804 672.932a7.952 7.952 0 0 1-6.994-4.136 7.976 7.976 0 0 1 3.136-10.854c76.32-42.14 123.74-122.628 123.74-210.038 0-132.248-107.58-239.828-239.812-239.828a7.988 7.988 0 0 1-7.994-7.994 7.988 7.988 0 0 1 7.994-7.994c141.054 0 255.8 114.762 255.8 255.816 0 93.23-50.588 179.076-132.014 224.03a7.812 7.812 0 0 1-3.856 0.998zM391.96 799.654a7.99 7.99 0 0 1-7.994-7.994v-126.722c0-4.418 3.576-7.994 7.994-7.994s7.996 3.576 7.996 7.994v126.722a7.992 7.992 0 0 1-7.996 7.994z" />
+                <path d="M631.774 799.654a7.988 7.988 0 0 1-7.994-7.994v-126.536a7.988 7.988 0 0 1 7.994-7.994 7.99 7.99 0 0 1 7.994 7.994v126.536a7.99 7.99 0 0 1-7.994 7.994z" />
+                <path d="M631.774 703.722H391.96a7.99 7.99 0 0 1-7.994-7.994 7.988 7.988 0 0 1 7.994-7.994h239.814a7.988 7.988 0 0 1 7.994 7.994 7.99 7.99 0 0 1-7.994 7.994zM599.794 831.63h-175.858a7.98 7.98 0 0 1-5.652-2.342l-31.976-31.976a7.988 7.988 0 0 1 0-11.304 7.988 7.988 0 0 1 11.304 0l29.636 29.634h169.238l29.634-29.634c3.124-3.124 8.182-3.124 11.304 0s3.124 8.182 0 11.304l-31.978 31.976a7.966 7.966 0 0 1-5.652 2.342zM375.964 751.688a7.994 7.994 0 0 1-0.462-15.974l271.79-15.988c4.28-0.344 8.182 3.108 8.448 7.51a7.988 7.988 0 0 1-7.51 8.448l-271.792 15.988c-0.154 0.016-0.318 0.016-0.474 0.016zM375.964 783.666a7.996 7.996 0 0 1-0.462-15.976l271.79-15.988c4.28-0.516 8.182 3.108 8.448 7.512a7.986 7.986 0 0 1-7.51 8.446l-271.792 15.99c-0.154 0.016-0.318 0.016-0.474 0.016z" />
+                <path d="M511.876 863.61c-44.398 0-62.37-34.914-63.112-36.396-1.976-3.952-0.376-8.744 3.576-10.726s8.736-0.376 10.71 3.542c0.624 1.218 14.59 27.59 48.826 27.59 34.272 0 48.23-26.464 48.808-27.59a8.046 8.046 0 0 1 10.742-3.512 7.99 7.99 0 0 1 3.544 10.696c-0.75 1.482-18.706 36.396-63.094 36.396zM471.902 671.746a7.99 7.99 0 0 1-7.994-7.996v-63.954a7.99 7.99 0 0 1 7.994-7.994 7.99 7.99 0 0 1 7.996 7.994v63.954a7.99 7.99 0 0 1-7.996 7.996zM551.83 671.746a7.99 7.99 0 0 1-7.994-7.996v-63.954c0-4.418 3.576-7.994 7.994-7.994s7.994 3.576 7.994 7.994v63.954a7.99 7.99 0 0 1-7.994 7.996z" />
+                <path d="M471.91 607.792a8.01 8.01 0 0 1-6.252-2.998 8.008 8.008 0 0 1 1.248-11.242l39.972-31.976a8.034 8.034 0 0 1 11.242 1.248 8.004 8.004 0 0 1-1.248 11.242l-39.972 31.978a8.032 8.032 0 0 1-4.99 1.748z" />
+                <path d="M551.83 607.792a8.024 8.024 0 0 1-4.996-1.748l-39.956-31.978a8.002 8.002 0 0 1-1.242-11.242 8.024 8.024 0 0 1 11.234-1.248l39.956 31.976a8.006 8.006 0 0 1 1.25 11.242 8 8 0 0 1-6.246 2.998zM471.902 575.812a7.988 7.988 0 0 1-7.994-7.992v-111.92a7.992 7.992 0 0 1 7.994-7.996 7.99 7.99 0 0 1 7.996 7.996v111.92a7.988 7.988 0 0 1-7.996 7.992z" />
+                <path d="M471.902 463.894a7.99 7.99 0 0 1-7.994-7.994c0-13.226-10.758-23.984-23.982-23.984s-23.982 10.758-23.982 23.984a7.99 7.99 0 0 1-7.994 7.994 7.988 7.988 0 0 1-7.994-7.994c0-22.046 17.932-39.972 39.97-39.972s39.972 17.924 39.972 39.972a7.99 7.99 0 0 1-7.996 7.994z" />
+                <path d="M439.926 495.872c-22.04 0-39.97-17.924-39.97-39.972a7.99 7.99 0 0 1 7.994-7.996 7.99 7.99 0 0 1 7.994 7.996c0 13.224 10.758 23.984 23.982 23.984a7.99 7.99 0 0 1 7.994 7.994 7.992 7.992 0 0 1-7.994 7.994zM551.83 575.812a7.988 7.988 0 0 1-7.994-7.992v-111.92c0-4.418 3.576-7.996 7.994-7.996s7.994 3.576 7.994 7.996v111.92a7.988 7.988 0 0 1-7.994 7.992z" />
+                <path d="M615.786 463.894a7.988 7.988 0 0 1-7.994-7.994c0-13.226-10.758-23.984-23.984-23.984-13.224 0-23.982 10.758-23.982 23.984 0 4.418-3.576 7.994-7.994 7.994s-7.994-3.576-7.994-7.994c0-22.046 17.924-39.972 39.97-39.972s39.972 17.924 39.972 39.972a7.99 7.99 0 0 1-7.994 7.994z" />
+                <path d="M583.806 495.872a7.99 7.99 0 0 1-7.994-7.994 7.99 7.99 0 0 1 7.994-7.994c13.226 0 23.984-10.758 23.984-23.984a7.99 7.99 0 0 1 7.994-7.996 7.99 7.99 0 0 1 7.994 7.996c0.002 22.046-17.924 39.972-39.972 39.972zM328.006 455.9a7.99 7.99 0 0 1-7.994-7.996c0-105.798 86.072-191.862 191.864-191.862 4.418 0 7.994 3.576 7.994 7.994s-3.576 7.996-7.994 7.996c-96.978 0-175.876 78.896-175.876 175.874a7.99 7.99 0 0 1-7.994 7.994zM519.87 495.872h-15.988a7.99 7.99 0 0 1-7.996-7.994 7.99 7.99 0 0 1 7.996-7.994h15.988a7.99 7.99 0 0 1 7.994 7.994 7.992 7.992 0 0 1-7.994 7.994z" />
+                <path d="M879.596 288.02c-79.35 0-143.896-64.548-143.896-143.898S800.246 0.224 879.596 0.224s143.898 64.548 143.898 143.898-64.548 143.898-143.898 143.898z m0-271.808c-70.528 0-127.908 57.38-127.908 127.91 0 70.528 57.38 127.91 127.908 127.91s127.91-57.382 127.91-127.91c0-70.528-57.382-127.91-127.91-127.91z" />
+                <path d="M879.596 1023.494c-79.35 0-143.896-64.548-143.896-143.896 0-79.352 64.546-143.898 143.896-143.898s143.898 64.546 143.898 143.898c0 79.348-64.548 143.896-143.898 143.896z m0-271.806c-70.528 0-127.908 57.382-127.908 127.91s57.38 127.908 127.908 127.908 127.91-57.38 127.91-127.908-57.382-127.91-127.91-127.91z" />
+                <path d="M144.122 288.02C64.78 288.02 0.226 223.472 0.226 144.122S64.78 0.224 144.122 0.224s143.898 64.548 143.898 143.898-64.558 143.898-143.898 143.898z m0-271.808c-70.528 0-127.908 57.38-127.908 127.91 0 70.528 57.38 127.91 127.908 127.91s127.91-57.382 127.91-127.91c-0.002-70.528-57.384-127.91-127.91-127.91z" />
+                <path d="M144.122 1023.494c-79.342 0-143.896-64.548-143.896-143.896 0-79.352 64.554-143.898 143.896-143.898s143.898 64.546 143.898 143.898c-0.002 79.348-64.558 143.896-143.898 143.896z m0-271.806c-70.528 0-127.908 57.382-127.908 127.91s57.38 127.908 127.908 127.908 127.91-57.38 127.91-127.908-57.384-127.91-127.91-127.91z" />
+                <path d="M879.596 224.064a8.09 8.09 0 0 1-3.246-0.686c-3.138-1.39-76.696-34.788-76.696-95.246 0-26.45 21.516-47.964 47.964-47.964a47.248 47.248 0 0 1 31.976 12.35 47.256 47.256 0 0 1 31.978-12.35c26.45 0 47.964 21.516 47.964 47.964 0 60.458-73.556 93.856-76.696 95.246a8.06 8.06 0 0 1-3.244 0.686zM847.62 96.156c-17.628 0-31.976 14.35-31.976 31.976 0 43.718 50.494 72.23 63.954 79.052 13.43-6.838 63.956-35.444 63.956-79.052 0-17.626-14.35-31.976-31.976-31.976-10.104 0-19.424 4.73-25.56 12.99-3.03 4.06-9.804 4.06-12.834 0-6.142-8.26-15.464-12.99-25.564-12.99z" />
+                <path d="M144.122 192.088c-35.264 0-63.954-28.684-63.954-63.956s28.69-63.954 63.954-63.954 63.956 28.682 63.956 63.954-28.694 63.956-63.956 63.956z m0-111.92c-26.45 0-47.964 21.516-47.964 47.964 0 26.45 21.516 47.966 47.964 47.966 26.45 0 47.966-21.516 47.966-47.966-0.002-26.448-21.516-47.964-47.966-47.964z" />
+                <path d="M144.122 224.064c-35.264 0-63.954-28.682-63.954-63.954 0-4.418 3.576-7.994 7.994-7.994s7.996 3.576 7.996 7.994c0 26.45 21.516 47.966 47.964 47.966 26.45 0 47.966-21.516 47.966-47.966a7.99 7.99 0 0 1 7.996-7.994 7.99 7.99 0 0 1 7.994 7.994c-0.002 35.272-28.694 63.954-63.956 63.954z" />
+                <path d="M144.122 160.11a7.99 7.99 0 0 1-7.994-7.994V104.15a7.99 7.99 0 0 1 7.994-7.994 7.99 7.99 0 0 1 7.994 7.994v47.966a7.988 7.988 0 0 1-7.994 7.994z" />
+                <path d="M168.104 136.126l-47.966-0.016a7.996 7.996 0 0 1 0-15.988l47.966 0.016a7.992 7.992 0 1 1 0 15.988z" />
+              </svg>
+            </div>
+            <Link
+              href="/copii"
+              className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
+              style={{ animationDelay: '0.6s' }}
+            >
+              {t.copiiButton}
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {enabledPages.has('verset') && (
+        <section id="verset" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20">
+          <div className="max-w-4xl mx-auto w-full text-center">
+            <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
+              {t.versetTitle}
+            </h2>
+            <br />
+            <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+              {t.versetText}
+            </p>
+            <br />
+            <div className="mb-8 animate-fadeIn flex justify-center" style={{ animationDelay: '0.4s' }}>
+              <svg viewBox="0 0 57.88 57.88" className="w-20 h-20 text-black dark:text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M57.469,15.017L47.384,5.94H26v-4c0-0.553-0.448-1-1-1s-1,0.447-1,1v4H0v20h24v30c0,0.553,0.448,1,1,1s1-0.447,1-1v-30 h21.384l10.083-9.075c0.263-0.235,0.413-0.572,0.413-0.925S57.73,15.251,57.469,15.017z M46.616,23.94H2v-16h44.616l8.889,8 L46.616,23.94z" />
+              </svg>
+            </div>
+            <Link
+              href="/verset"
+              className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
+              style={{ animationDelay: '0.6s' }}
+            >
+              {t.versetButton}
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ========================================================================== */}
       {/* SECTION 4 - CONTACT */}

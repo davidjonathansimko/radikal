@@ -20,6 +20,7 @@ import IntroTextAdmin from '@/components/admin/IntroTextAdmin';
 import PageContentAdmin from '@/components/admin/PageContentAdmin';
 import MarturiiAdmin from '@/components/admin/MarturiiAdmin';
 import ContentAdmin from '@/components/admin/ContentAdmin';
+import DailyVerseAdmin from '@/components/admin/DailyVerseAdmin';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRequestsPanel from '@/components/admin/AdminRequestsPanel';
 import { countPendingRequests } from '@/lib/adminRoles';
@@ -1519,6 +1520,8 @@ export default function AdminPage() {
                 // Pasul 2708018 — două rubrici noi, cu același formular
                 { id: 'andacht', label: 'Tägliche Andacht', Icon: IconDocument, group: 'Conținut' },
                 { id: 'copii', label: 'Pentru copii', Icon: IconDocument, group: 'Conținut' },
+                // Pasul 2708020 — versetul zilei
+                { id: 'verset', label: 'Un verset zilnic', Icon: IconDocument, group: 'Conținut' },
               ] as const)
             : ([
                 { id: 'working', label: 'Site în lucru', Icon: IconWrench, group: 'Site' },
@@ -1688,6 +1691,21 @@ export default function AdminPage() {
                 pornești din Setări → Pagini.
               </p>
               <ContentAdmin kind={subTab === 'andacht' ? 'andacht' : 'copii'} />
+            </div>
+          </section>
+        )}
+
+        {/* ---------- CREARE → Un verset zilnic (pasul 2708020) ---------- */}
+        {mainTab === 'create' && subTab === 'verset' && (
+          <section className="animate-fadeIn mb-12">
+            <div className="glass-effect rounded-2xl p-6">
+              <h2 className="mb-1 text-xl font-bold text-black dark:text-white">Un verset zilnic</h2>
+              <p className="mb-5 text-xs text-black/50 dark:text-white/50">
+                Un singur ecran, ca un reel, dar fără derulare. Dacă pentru ziua de azi nu ai
+                scris niciun verset, cititorul vede „Se actualizează&ldquo;. Pagina rămâne ascunsă
+                până o pornești din Setări → Pagini.
+              </p>
+              <DailyVerseAdmin />
             </div>
           </section>
         )}
