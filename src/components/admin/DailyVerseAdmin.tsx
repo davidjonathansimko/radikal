@@ -46,6 +46,9 @@ export default function DailyVerseAdmin() {
   const [openLang, setOpenLang] = useState<LangCode>('ro');
   const [imageUrl, setImageUrl] = useState('');
   const [opacity, setOpacity] = useState(15);
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [blur, setBlur] = useState(0);
   const [textColor, setTextColor] = useState<'auto' | 'light' | 'dark'>('auto');
   const [published, setPublished] = useState(true);
   const [effects, setEffects] = useState<ImageEffectSettings>(DEFAULT_IMAGE_EFFECTS);
@@ -91,6 +94,9 @@ export default function DailyVerseAdmin() {
       setReferences(emptyLangs());
       setImageUrl('');
       setOpacity(15);
+      setBrightness(100);
+      setContrast(100);
+      setBlur(0);
       setTextColor('auto');
       setPublished(true);
       setEffects(DEFAULT_IMAGE_EFFECTS);
@@ -108,6 +114,9 @@ export default function DailyVerseAdmin() {
     setReferences(ref);
     setImageUrl((r.background_image_url as string) || '');
     setOpacity((r.background_opacity as number) ?? 15);
+    setBrightness((r.image_brightness as number) ?? 100);
+    setContrast((r.image_contrast as number) ?? 100);
+    setBlur((r.image_blur as number) ?? 0);
     setTextColor(((r.text_color as string) || 'auto') as 'auto' | 'light' | 'dark');
     setPublished(Boolean(r.published));
     setEffects({
@@ -144,6 +153,9 @@ export default function DailyVerseAdmin() {
           for_day: forDay,
           background_image_url: imageUrl.trim() || null,
           background_opacity: opacity,
+          image_brightness: brightness,
+          image_contrast: contrast,
+          image_blur: blur,
           text_color: textColor,
           published,
           updated_at: new Date().toISOString(),
@@ -169,6 +181,18 @@ export default function DailyVerseAdmin() {
           .upsert(payload, { onConflict: 'for_day' });
 
         if (error) {
+          // Coloanele de reglaj lipsesc daca STEP_2708023 nu a fost rulat.
+          if (error.code === '42703' || error.code === 'PGRST204') {
+            const { image_brightness: _b, image_contrast: _c, image_blur: _bl, ...fara } = payload;
+            const retry = await createClient()
+              .from('daily_verses')
+              .upsert(fara, { onConflict: 'for_day' });
+            if (!retry.error) {
+              say('err', 'Salvat, dar reglajele de imagine nu au fost păstrate. Rulează STEP_2708023_VERSET_IMAGINE.sql în Supabase.');
+              await load();
+              return;
+            }
+          }
           say('err', `Nu am putut salva: ${error.message}`);
           return;
         }
@@ -178,7 +202,7 @@ export default function DailyVerseAdmin() {
         setSaving(false);
       }
     },
-    [forDay, contents, references, imageUrl, opacity, textColor, published, effects, load, say],
+    [forDay, contents, references, imageUrl, opacity, brightness, contrast, blur, textColor, published, effects, load, say],
   );
 
   const remove = useCallback(
@@ -298,6 +322,68 @@ export default function DailyVerseAdmin() {
                   onChange={(e) => setOpacity(Number(e.target.value))}
                   className="w-full"
                 />
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className={labelClass}>Lumina: {brightness}%</label>
+                  <input
+                    type="range"
+                    min={20}
+                    max={180}
+                    value={brightness}
+                    onChange={(e) => setBrightness(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
+                    Sub 100 = mai întunecată. Peste 100 = mai deschisă.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelClass}>Contrast: {contrast}%</label>
+                  <input
+                    type="range"
+                    min={20}
+                    max={200}
+                    value={contrast}
+                    onChange={(e) => setContrast(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
+                    Mai puțin = blândă. Mai mult = dură.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelClass}>Cât de moale: {blur}px</label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    value={blur}
+                    onChange={(e) => setBlur(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
+                    Peste 0, imaginea se estompează și nu mai fură ochiul.
+                  </p>
+                </div>
+              </div>
+
+              {/* Cum va arăta */}
+              <div className="mt-4">
+                <p className={labelClass}>Cum va arăta</p>
+                <div className="relative aspect-[9/16] w-40 overflow-hidden rounded-xl bg-black">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageUrl}
+                    alt="Previzualizare"
+                    className="absolute inset-0 h-full w-full object-cover"
+                    style={{
+                      opacity: opacity / 100,
+                      filter: `brightness(${brightness}%) contrast(${contrast}%) blur(${blur}px)`,
+                    }}
+                  />
+                </div>
               </div>
               <div className="mt-4">
                 <ImageEffectsEditor

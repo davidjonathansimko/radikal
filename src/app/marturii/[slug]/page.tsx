@@ -239,22 +239,43 @@ export default function SectionPage() {
 
         {/* Rubricile aflate în această rubrică */}
         {children.length > 0 && (
-          <div className="mb-10 grid gap-4 sm:grid-cols-2">
-            {children.map((c) => (
+          <>
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
+              {children.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/marturii/${c.slug}`}
+                  className="glass-effect flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                >
+                  <span aria-hidden="true" className="shrink-0 text-black/35 dark:text-white/35">
+                    ▸
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-cinzel text-base font-semibold text-black dark:text-white">
+                      {c.name}
+                    </span>
+                    {c.description && (
+                      <span className="mt-0.5 line-clamp-1 block text-xs text-black/55 dark:text-white/55">
+                        {c.description}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pasul 2708023 — întoarcerea stă și aici, sub rubrici, ca să nu fie
+                nevoie să urci pe toată pagina ca s-o cauți. */}
+            <div className="mb-10">
               <Link
-                key={c.id}
-                href={`/marturii/${c.slug}`}
-                className="glass-effect rounded-2xl p-5 transition-transform hover:scale-[1.02]"
+                href={trail.length > 0 ? `/marturii/${trail[trail.length - 1].slug}` : '/marturii'}
+                className="inline-flex items-center gap-2 text-sm text-black/55 transition-colors hover:text-black dark:text-white/55 dark:hover:text-white"
               >
-                <p className="font-cinzel text-lg font-bold text-black dark:text-white">{c.name}</p>
-                {c.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-black/60 dark:text-white/60">
-                    {c.description}
-                  </p>
-                )}
+                <span aria-hidden="true">←</span>
+                {trail.length > 0 ? trail[trail.length - 1].name : t.back}
               </Link>
-            ))}
-          </div>
+            </div>
+          </>
         )}
 
         {/* Pasul 2708002 — rasfoire alfabetica / dupa data, prin toate marturiile */}
@@ -290,9 +311,13 @@ export default function SectionPage() {
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>
         ) : visible.length === 0 ? (
-          <p className="glass-effect rounded-2xl p-8 text-center text-black/70 dark:text-white/70">
-            {t.empty}
-          </p>
+          /* Pasul 2708023 — dacă rubrica are doar rubrici în ea, e firesc să nu
+             aibă și mărturii. Mesajul „nu există nimic" ar fi doar zgomot. */
+          children.length === 0 ? (
+            <p className="glass-effect rounded-2xl p-8 text-center text-black/70 dark:text-white/70">
+              {t.empty}
+            </p>
+          ) : null
         ) : (
           <>
             {search.trim() && (
@@ -342,15 +367,6 @@ export default function SectionPage() {
             </div>
           </>
         )}
-
-        <div className="mt-14 text-center">
-          <Link
-            href="/marturii"
-            className="text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
-          >
-            ← {t.back}
-          </Link>
-        </div>
       </div>
 
       <BackToTopButton />

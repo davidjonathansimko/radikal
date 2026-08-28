@@ -203,7 +203,14 @@ export default function DailyVersePage() {
             style={{
               backgroundImage: `url(${verse.background_image_url})`,
               opacity: Math.min(100, Math.max(0, verse.background_opacity ?? 15)) / 100,
-              filter: effectsFilter(effects),
+              filter: [
+                `brightness(${(verse.image_brightness as number) ?? 100}%)`,
+                `contrast(${(verse.image_contrast as number) ?? 100}%)`,
+                `blur(${(verse.image_blur as number) ?? 0}px)`,
+                effectsFilter(effects),
+              ]
+                .filter(Boolean)
+                .join(' '),
             }}
           />
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">

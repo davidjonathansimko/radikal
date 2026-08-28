@@ -116,6 +116,12 @@ export default function Navigation() {
     { id: 'hero', title: { de: 'RADIKAL.', en: 'RADIKAL.', ro: 'RADIKAL.', ru: 'РАДИКАЛ.' } },
     { id: 'about', title: { de: 'Über', en: 'About', ro: 'Despre', ru: 'О нас' } },
     { id: 'blogs', title: { de: 'Blogs', en: 'Blogs', ro: 'Bloguri', ru: 'Блоги' } },
+    // Pasul 2708023 — pastila de sus rămânea la „Blogs" pe secțiunile noi,
+    // pentru că nu le cunoștea deloc.
+    { id: 'marturii', title: { de: 'Zeugnisse', en: 'Testimonies', ro: 'Mărturii', ru: 'Свидетельства' } },
+    { id: 'andacht', title: { de: 'Tägliche Andacht', en: 'Daily Devotion', ro: 'Meditația zilnică', ru: 'Размышление' } },
+    { id: 'copii', title: { de: 'Für Kinder', en: 'For Children', ro: 'Pentru copii', ru: 'Для детей' } },
+    { id: 'verset', title: { de: 'Vers des Tages', en: 'Verse of the Day', ro: 'Versetul zilei', ru: 'Стих дня' } },
     { id: 'contact', title: { de: 'Kontakt', en: 'Contact', ro: 'Contact', ru: 'Контакт' } },
     { id: 'thankyou', title: { de: 'Segen', en: 'Blessing', ro: 'Binecuvântare', ru: 'Благословение' } },
   ], []);
@@ -1112,7 +1118,7 @@ export default function Navigation() {
       <div className="mobile-menu-container fixed inset-0 z-[200] lg:hidden" style={{ animation: 'mobileMenuSlideIn 0.25s ease-out forwards' }}>
         {/* Background - adapts to theme */}
         <div className="absolute inset-0 bg-white dark:bg-black" />
-        <div className="relative z-10 flex flex-col h-full text-black dark:text-white overflow-y-auto overscroll-contain">
+        <div className="scrollbar-hide relative z-10 flex flex-col h-full text-black dark:text-white overflow-y-auto overscroll-contain">
 
           {/* Pasul 2708022 — lista a crescut, deci meniul se poate derula.
               Înainte era `overflow-hidden` și ultimele rânduri („Abmelden")
