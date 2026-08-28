@@ -16,6 +16,7 @@ import AdminListFilterBar from '@/components/admin/AdminListFilterBar';
 import BlogAudioGenerator from '@/components/admin/BlogAudioGenerator';
 import CustomAudioManager from '@/components/admin/CustomAudioManager';
 import ContentSectionsAdmin from '@/components/admin/ContentSectionsAdmin';
+import SectionTreePicker from '@/components/admin/SectionTreePicker';
 import { useAdminListFilter } from '@/components/admin/useAdminListFilter';
 import { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import { CONTENT_ITEMS_TABLE, CONTENT_SECTIONS_TABLE, CONTENT_KINDS, type ContentKind } from '@/lib/contentKinds';
@@ -31,6 +32,7 @@ type LangCode = (typeof LANGS)[number]['code'];
 
 interface SectionOption {
   id: string;
+  parent_id: string | null;
   name: string;
 }
 
@@ -107,25 +109,14 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true });
 
-      // Rubricile se arată cu tot drumul lor, ca să știi unde pui articolul.
-      const raw = ((secData || []) as unknown as Record<string, unknown>[]).map((r) => ({
-        id: r.id as string,
-        parent: (r.parent_id as string) ?? null,
-        name: (r.name_ro as string) || '(fără nume)',
-      }));
-      const byParent = new Map<string | null, typeof raw>();
-      raw.forEach((r) => byParent.set(r.parent, [...(byParent.get(r.parent) ?? []), r]));
-      const flat: SectionOption[] = [];
-      const walk = (parent: string | null, prefix: string, depth: number) => {
-        if (depth > 12) return;
-        (byParent.get(parent) ?? []).forEach((r) => {
-          const path = prefix ? `${prefix} › ${r.name}` : r.name;
-          flat.push({ id: r.id, name: path });
-          walk(r.id, path, depth + 1);
-        });
-      };
-      walk(null, '', 0);
-      setSections(flat);
+      // Pasul 2708023 — rubricile se aleg pas cu pas, nu dintr-o listă lungă.
+      setSections(
+        ((secData || []) as unknown as Record<string, unknown>[]).map((r) => ({
+          id: r.id as string,
+          parent_id: (r.parent_id as string) ?? null,
+          name: (r.name_ro as string) || '(fără nume)',
+        })),
+      );
 
       const { data, error } = await sb
         .from(CONTENT_ITEMS_TABLE)
@@ -388,38 +379,12 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
               />
             </div>
 
-            <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">
-              <p className={labelClass}>În ce rubrici intră</p>
-              {sections.length === 0 ? (
-                <p className="text-sm text-black/50 dark:text-white/50">
-                  Nu există încă nicio rubrică. Creează prima mai sus.
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {sections.map((s) => {
-                    const on = sectionIds.includes(s.id);
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() =>
-                          setSectionIds((prev) =>
-                            on ? prev.filter((x) => x !== s.id) : [...prev, s.id],
-                          )
-                        }
-                        className={`btn-solid rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                          on
-                            ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
-                            : 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
-                        }`}
-                      >
-                        {s.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <SectionTreePicker
+              sections={sections}
+              value={sectionIds}
+              onChange={setSectionIds}
+              emptyHint="Nu există încă nicio rubrică. Creează prima mai sus."
+            />
 
             <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">
               <p className={labelClass}>Imaginea</p>
