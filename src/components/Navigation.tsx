@@ -470,6 +470,15 @@ export default function Navigation() {
     ...(enabledPages.has('copii')
       ? [{ href: '/copii', label: CONTENT_KINDS.copii.title[language] || CONTENT_KINDS.copii.title.de }]
       : []),
+    ...(enabledPages.has('verset')
+      ? [{
+          href: '/verset',
+          label:
+            language === 'de' ? 'Vers des Tages' :
+            language === 'en' ? 'Verse of the Day' :
+            language === 'ro' ? 'Versetul zilei' : 'Стих дня',
+        }]
+      : []),
     { href: '/about', label: language === 'de' ? 'Über' : language === 'en' ? 'About' : language === 'ro' ? 'Despre' : 'О нас' },
     { href: '/contact', label: language === 'de' ? 'Kontakt' : language === 'en' ? 'Contact' : language === 'ro' ? 'Contact' : 'Контакт' },
     ...(newsMenu.visible

@@ -11,7 +11,7 @@
 
 import { getSupabaseClient } from '@/lib/supabase';
 
-export type TogglablePage = 'andacht' | 'copii';
+export type TogglablePage = 'andacht' | 'copii' | 'verset';
 
 /** Ce pagini sunt pornite acum. */
 export async function fetchEnabledPages(): Promise<Set<string>> {
