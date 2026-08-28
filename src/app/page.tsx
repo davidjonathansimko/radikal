@@ -427,6 +427,53 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================== */}
+      {/* SECTION 3b - MĂRTURII — pasul 2708014 */}
+      {/* ========================================================================== */}
+      <section id="marturii" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20 bg-black/5 dark:bg-white/5">
+        <div className="max-w-4xl mx-auto w-full text-center">
+          <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
+            {language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства'}
+          </h2>
+
+          <br />
+          <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn italic" style={{ animationDelay: '0.2s' }}>
+            {language === 'de'
+              ? '„Darum auch wir, weil wir eine solche Wolke von Zeugen um uns haben, lasst uns ablegen alles, was uns beschwert, und die Sünde, die uns ständig umstrickt, und lasst uns laufen mit Geduld in dem Kampf, der uns bestimmt ist." Hebräer 12,1'
+              : language === 'en'
+              ? '"Therefore, since we are surrounded by so great a cloud of witnesses, let us also lay aside every weight, and sin which clings so closely, and let us run with endurance the race that is set before us." Hebrews 12:1'
+              : language === 'ro'
+              ? '„Și noi dar, fiindcă suntem înconjurați cu un nor așa de mare de martori, să dăm la o parte orice piedică și păcatul care ne înfășoară așa de lesne și să alergăm cu stăruință în alergarea care ne stă înainte." Evrei 12:1'
+              : '«Посему и мы, имея вокруг себя такое облако свидетелей, свергнем с себя всякое бремя и запинающий нас грех и с терпением будем проходить предлежащее нам поприще». Евреям 12:1'}
+          </p>
+          <br />
+
+          <div className="mb-8 animate-fadeIn flex justify-center" style={{ animationDelay: '0.4s' }}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 32 32"
+              className="w-20 h-20 text-black dark:text-white"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M19.5,11h7c0.276,0,0.5-0.224,0.5-0.5S26.776,10,26.5,10h-7c-0.276,0-0.5,0.224-0.5,0.5S19.224,11,19.5,11z" />
+              <path d="M19.5,14h7c0.276,0,0.5-0.224,0.5-0.5S26.776,13,26.5,13h-7c-0.276,0-0.5,0.224-0.5,0.5S19.224,14,19.5,14z" />
+              <path d="M19.5,17h7c0.276,0,0.5-0.224,0.5-0.5S26.776,16,26.5,16h-7c-0.276,0-0.5,0.224-0.5,0.5S19.224,17,19.5,17z" />
+              <path d="M19.5,20h7c0.276,0,0.5-0.224,0.5-0.5S26.776,19,26.5,19h-7c-0.276,0-0.5,0.224-0.5,0.5S19.224,20,19.5,20z" />
+              <path d="M28.5,5h-10C18.224,5,18,5.224,18,5.5S18.224,6,18.5,6h10C28.776,6,29,6.225,29,6.5v19c0,0.275-0.224,0.5-0.5,0.5h-25C3.224,26,3,25.775,3,25.5v-19C3,6.225,3.224,6,3.5,6H15v17.5c0,0.276,0.224,0.5,0.5,0.5s0.5-0.224,0.5-0.5v-18C16,5.224,15.776,5,15.5,5h-12C2.673,5,2,5.673,2,6.5v19C2,26.327,2.673,27,3.5,27h25c0.827,0,1.5-0.673,1.5-1.5v-19C30,5.673,29.327,5,28.5,5z" />
+            </svg>
+          </div>
+
+          <Link
+            href="/marturii"
+            className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
+            style={{ animationDelay: '0.6s' }}
+          >
+            {language === 'de' ? 'Alle Zeugnisse ansehen' : language === 'en' ? 'View All Testimonies' : language === 'ro' ? 'Vezi toate mărturiile' : 'Посмотреть все свидетельства'}
+          </Link>
+        </div>
+      </section>
+
+      {/* ========================================================================== */}
       {/* SECTION 4 - CONTACT */}
       {/* ========================================================================== */}
       <section id="contact" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20 bg-black/5 dark:bg-white/5">

@@ -708,7 +708,7 @@ export function ReelSlide({
           ca sa nu fure ochiul de la text. La atingere / hover revin la
           opacitate deplina, deci raman la fel de usor de folosit. */}
       {!chromeless && (
-      <div className="reel-actions absolute right-4 sm:right-6 bottom-24 z-20 flex flex-col items-center gap-8">
+      <div className="reel-actions absolute right-3 sm:right-5 bottom-24 z-20 flex flex-col items-center gap-5">
         {/* LIKE — mereu prezent, si pentru reels fara blog */}
         <button
           onClick={() => onToggleLike(reel)}
@@ -718,11 +718,11 @@ export function ReelSlide({
             language === 'en' ? 'Like' :
             language === 'ro' ? 'Îmi place' : 'Нравится'
           }
-          className="flex flex-col items-center gap-1 rounded-full p-3 transition-transform duration-200 active:scale-90 hover:scale-110"
+          className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
           style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
         >
           <svg
-            className="w-7 h-7 transition-colors duration-200"
+            className="w-5 h-5 transition-colors duration-200"
             viewBox="0 0 24 24"
             fill={isLiked ? '#ef4444' : 'none'}
             stroke={isLiked ? '#ef4444' : textColor}
@@ -753,11 +753,11 @@ export function ReelSlide({
             language === 'en' ? 'Share' :
             language === 'ro' ? 'Distribuie' : 'Поделиться'
           }
-          className="flex flex-col items-center gap-1 rounded-full p-3 transition-transform duration-200 active:scale-90 hover:scale-110"
+          className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
           style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
         >
           <svg
-            className="w-7 h-7"
+            className="w-5 h-5"
             viewBox="0 0 24 24"
             fill="none"
             stroke={textColor}
@@ -797,11 +797,11 @@ export function ReelSlide({
               language === 'en' ? 'Go to article' :
               language === 'ro' ? 'Mergi la articol' : 'К статье'
             }
-            className="flex flex-col items-center gap-1 rounded-full p-3 transition-transform duration-200 active:scale-90 hover:scale-110"
+            className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
             style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
           >
             <svg
-              className="w-7 h-7"
+              className="w-5 h-5"
               viewBox="0 0 24 24"
               fill="none"
               stroke={textColor}
@@ -830,11 +830,11 @@ export function ReelSlide({
               language === 'en' ? 'Go to testimony' :
               language === 'ro' ? 'Mergi la mărturie' : 'К свидетельству'
             }
-            className="flex flex-col items-center gap-1 rounded-full p-3 transition-transform duration-200 active:scale-90 hover:scale-110"
+            className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
             style={{ backgroundColor: bgTransparent, border: `1px solid ${borderColorLight}` }}
           >
             <svg
-              className="w-7 h-7"
+              className="w-5 h-5"
               viewBox="0 0 24 24"
               fill="none"
               stroke={textColor}
@@ -1202,6 +1202,29 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
       onClose();
     }
   }, [onClose]);
+
+  // Pasul 2708014 — ECRAN COMPLET cat esti in reels.
+  // In aplicatia de Android, ecranul complet ascunde si ceasul de sus, si
+  // butoanele de navigare de jos: reel-ul ramane singur pe tot ecranul, ca la
+  // Shorts. La iesire, totul revine cum era. Unde browserul refuza, nu se
+  // intampla nimic — este un adaos, nu o conditie.
+  useEffect(() => {
+    if (!isOpen) return;
+    const el = document.documentElement;
+    let entered = false;
+
+    if (!document.fullscreenElement && el.requestFullscreen) {
+      el.requestFullscreen({ navigationUI: 'hide' })
+        .then(() => { entered = true; })
+        .catch(() => {});
+    }
+
+    return () => {
+      if (entered && document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;

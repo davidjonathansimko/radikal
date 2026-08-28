@@ -21,7 +21,11 @@ export default function FooterComponent() {
 
   return (
     <footer 
-      className="hidden lg:block relative z-10 bg-white/90 dark:bg-black/40 backdrop-blur-md border-t border-black/10 dark:border-white/10 mt-8"
+      // Pasul 2708014 — `z-0`, nu `z-10`. <main> are `relative z-10`, deci un
+      // ecran fix pornit dintr-o pagină (ex. versetul de la mărturii) rămâne
+      // prins în stratul acela. Footerul, frate cu el și tot pe z-10, ajungea
+      // deasupra ecranului și se vedea prin el.
+      className="hidden lg:block relative z-0 bg-white/90 dark:bg-black/40 backdrop-blur-md border-t border-black/10 dark:border-white/10 mt-8"
       style={{ 
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' 
       }}
