@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/exampleblog002.jpg',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'RADIKAL Blog',
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'RADIKAL. - Radikale Bibellehre Blog',
     description: 'Entdecke radikale Bibellehren und tiefgreifende geistliche Einsichten.',
-    images: ['/exampleblog002.jpg'],
+    images: ['/og-image.png'],
   },
 };
 

@@ -1169,7 +1169,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         authorName="D.S."
         datePublished={post.created_at}
         dateModified={post.updated_at || post.created_at}
-        image={post.image_url || '/exampleblog002.jpg'}
+        image={post.image_url || '/og-image.png'}
         url={`https://radikal-blog.vercel.app${source.basePath}/${originalSlugRef.current}`}
       />
       <BreadcrumbSchema 
