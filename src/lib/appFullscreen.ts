@@ -1,13 +1,12 @@
 /**
- * Pasul 2708016 — ECRAN COMPLET, dar doar în aplicație.
+ * Pasul 2708016 — ECRAN COMPLET.
  *
- * De ce condiția: într-o filă obișnuită de browser, Chrome afișează el singur
- * mesajul „Zum Beenden des Vollbildmodus…". Este mesajul lui, pus ca măsură de
- * siguranță, și nu poate fi oprit din cod. În aplicația instalată mesajul nu
- * apare, pentru că acolo nu are rost.
+ * În aplicația instalată, ecranul complet ascunde ceasul de sus și butoanele
+ * de navigare de jos: rămâne doar ce ai scris tu.
  *
- * Așa că cerem ecran complet NUMAI când site-ul rulează ca aplicație. În
- * browser rămâne totul ca înainte — fără mesaj, fără surprize.
+ * Într-o filă obișnuită de browser, Chrome adaugă el singur mesajul
+ * „Zum Beenden des Vollbildmodus…". Este mesajul lui, pus ca măsură de
+ * siguranță, și nu poate fi oprit din cod — dar dispare singur după o clipă.
  */
 
 import { useEffect } from 'react';
@@ -28,7 +27,7 @@ export function isStandaloneApp(): boolean {
 /** Ține ecranul complet cât timp `active` este adevărat. */
 export function useAppFullscreen(active: boolean): void {
   useEffect(() => {
-    if (!active || !isStandaloneApp()) return;
+    if (!active) return;
 
     const el = document.documentElement;
     let entered = false;

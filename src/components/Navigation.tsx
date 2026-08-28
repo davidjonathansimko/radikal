@@ -15,6 +15,7 @@ import { useHaptic } from '@/hooks/useHaptic';
 import { useStickyHeader } from '@/hooks/useStickyHeader';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
+import { fetchArchiveYears, type ArchiveYear } from '@/lib/archiveMonths';
 import { User } from '@supabase/supabase-js';
 import { FaSun, FaMoon, FaSearch } from 'react-icons/fa';
 // FaHeart + FaBookmark commented out - replaced by custom SVG / FaHeart + FaBookmark auskommentiert - ersetzt durch benutzerdefiniertes SVG
@@ -157,6 +158,23 @@ export default function Navigation() {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [expandedMobileYears, setExpandedMobileYears] = useState<Set<number>>(new Set());
 
+  // Pasul 2708017 — aceleaşi rafturi, dar pentru mărturii.
+  const [showZeugnisseDropdown, setShowZeugnisseDropdown] = useState(false);
+  const [showMobileZeugnisseDropdown, setShowMobileZeugnisseDropdown] = useState(false);
+  const [testimonyYears, setTestimonyYears] = useState<ArchiveYear[]>([]);
+  const [expandedTestimonyYears, setExpandedTestimonyYears] = useState<Set<number>>(new Set());
+  const [expandedMobileTestimonyYears, setExpandedMobileTestimonyYears] = useState<Set<number>>(new Set());
+
+  const toggleTestimonyYear = (year: number, mobile: boolean) => {
+    const setter = mobile ? setExpandedMobileTestimonyYears : setExpandedTestimonyYears;
+    setter((prev) => {
+      const next = new Set(prev);
+      if (next.has(year)) next.delete(year);
+      else next.add(year);
+      return next;
+    });
+  };
+
   // Initialize Supabase client / Supabase-Client initialisieren / Inițializează clientul Supabase
   const supabase = createClient();
 
@@ -253,6 +271,17 @@ export default function Navigation() {
       fetchBlogMonths();
     }
   }, [isMobileMenuOpen, fetchBlogMonths]);
+
+  // Anii şi lunile cu mărturii — pasul 2708017
+  useEffect(() => {
+    let alive = true;
+    fetchArchiveYears('testimonies', language).then((y) => {
+      if (alive) setTestimonyYears(y);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [language, isMobileMenuOpen]);
 
   // Group blog months by year for hierarchical display / Blog-Monate nach Jahr gruppieren / Grupează lunile cu bloguri pe ani
   const blogYears = React.useMemo(() => {
@@ -758,7 +787,7 @@ export default function Navigation() {
             {/* Other navigation items / Andere Navigationselemente / Alte elemente navigare
                 Pasul 2308006-F: „Noutăți" vine ultima în listă, deci apare
                 singură în dreapta lui Kontakt. */}
-            {navigationItems.filter(item => item.href !== '/blogs').map((item) => (
+            {navigationItems.filter(item => item.href !== '/blogs' && item.href !== '/marturii').map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -783,6 +812,82 @@ export default function Navigation() {
                 )}
               </Link>
             ))}
+
+            {/* Zeugnisse cu rafturi — pasul 2708017 */}
+            <div
+              className="relative"
+              onMouseEnter={() => setShowZeugnisseDropdown(true)}
+              onMouseLeave={() => setShowZeugnisseDropdown(false)}
+            >
+              <Link
+                href="/marturii"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${
+                  pathname.startsWith('/marturii')
+                    ? 'text-black dark:text-white bg-black/20 dark:bg-white/20'
+                    : 'text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10'
+                }`}
+              >
+                <span>
+                  {language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства'}
+                </span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </Link>
+
+              {showZeugnisseDropdown && (
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-black rounded-lg shadow-xl py-2 z-50 border border-black/20 dark:border-white/20 max-h-80 overflow-y-auto">
+                  <Link
+                    href="/marturii"
+                    className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 font-medium"
+                    onClick={() => setShowZeugnisseDropdown(false)}
+                  >
+                    {language === 'de' ? 'Rubriken' : language === 'en' ? 'Sections' : language === 'ro' ? 'Rubrici' : 'Рубрики'}
+                  </Link>
+                  <Link
+                    href="/marturii/toate"
+                    className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 font-medium border-b border-black/10 dark:border-white/10"
+                    onClick={() => setShowZeugnisseDropdown(false)}
+                  >
+                    {language === 'de' ? 'Alle Zeugnisse' : language === 'en' ? 'All Testimonies' : language === 'ro' ? 'Toate Mărturiile' : 'Все свидетельства'}
+                  </Link>
+
+                  {testimonyYears.map((yearGroup) => (
+                    <div key={yearGroup.year}>
+                      <button
+                        onClick={() => toggleTestimonyYear(yearGroup.year, false)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 font-medium"
+                      >
+                        <span>{yearGroup.year}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full">{yearGroup.totalCount}</span>
+                          <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedTestimonyYears.has(yearGroup.year) ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </span>
+                      </button>
+                      {expandedTestimonyYears.has(yearGroup.year) && (
+                        <div className="border-l-2 border-black/10 dark:border-white/10 ml-5 mb-1">
+                          {yearGroup.months.map((m) => (
+                            <Link
+                              key={`${m.year}-${m.month}`}
+                              href={`/marturii/toate?year=${m.year}&month=${m.month + 1}`}
+                              className="block px-4 py-1.5 text-sm text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200"
+                              onClick={() => setShowZeugnisseDropdown(false)}
+                            >
+                              <span className="flex items-center justify-between">
+                                <span>{m.label.replace(` ${m.year}`, '')}</span>
+                                <span className="text-xs opacity-60">{m.count}</span>
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Admin link for authorized users / Admin-Link für autorisierte Benutzer / Link admin pentru utilizatori autorizați */}
             {user && isAdmin && (
@@ -1041,6 +1146,70 @@ export default function Navigation() {
                                     </svg>
                                     <span className="flex-1">{monthItem.label.replace(` ${monthItem.year}`, '')}</span>
                                     <span className="text-xs text-black/30 dark:text-white/30">{monthItem.count}</span>
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : item.href === '/marturii' ? (
+                  /* Pasul 2708017 — mărturiile au acum aceleaşi rafturi ca blogurile */
+                  <div key={item.href}>
+                    <button
+                      onClick={() => setShowMobileZeugnisseDropdown(!showMobileZeugnisseDropdown)}
+                      className={`w-full text-left text-[28px] sm:text-[34px] font-light py-2 transition-colors duration-200 flex items-center justify-between ${
+                        pathname.startsWith('/marturii')
+                          ? 'text-black dark:text-white'
+                          : 'text-black/90 dark:text-white/90 hover:text-black dark:hover:text-white'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      <svg className={`w-5 h-5 transition-transform duration-300 ${showMobileZeugnisseDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {showMobileZeugnisseDropdown && (
+                      <div className="ml-4 mt-0.5 space-y-0 border-l border-black/15 dark:border-white/15 pl-4 mb-1 max-h-[30vh] overflow-y-auto">
+                        <Link
+                          href="/marturii"
+                          onClick={() => { setIsMobileMenuOpen(false); setShowMobileZeugnisseDropdown(false); }}
+                          className="block py-1.5 text-[18px] sm:text-[22px] text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+                        >
+                          {language === 'de' ? 'Rubriken' : language === 'en' ? 'Sections' : language === 'ro' ? 'Rubrici' : 'Рубрики'}
+                        </Link>
+                        <Link
+                          href="/marturii/toate"
+                          onClick={() => { setIsMobileMenuOpen(false); setShowMobileZeugnisseDropdown(false); }}
+                          className="block py-1.5 text-[18px] sm:text-[22px] text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+                        >
+                          {language === 'de' ? 'Alle Zeugnisse' : language === 'en' ? 'All Testimonies' : language === 'ro' ? 'Toate Mărturiile' : 'Все свидетельства'}
+                        </Link>
+                        {testimonyYears.map((yearGroup) => (
+                          <div key={yearGroup.year}>
+                            <button
+                              onClick={() => toggleTestimonyYear(yearGroup.year, true)}
+                              className="flex w-full items-center gap-2 py-1.5 text-[18px] sm:text-[22px] text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+                            >
+                              <span className="flex-1 text-left font-medium">{yearGroup.year}</span>
+                              <span className="text-xs text-black/30 dark:text-white/30 mr-1">{yearGroup.totalCount}</span>
+                              <svg className={`w-3 h-3 transition-transform duration-200 ${expandedMobileTestimonyYears.has(yearGroup.year) ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {expandedMobileTestimonyYears.has(yearGroup.year) && (
+                              <div className="ml-3 border-l border-black/10 dark:border-white/10 pl-3">
+                                {yearGroup.months.map((m) => (
+                                  <Link
+                                    key={`${m.year}-${m.month}`}
+                                    href={`/marturii/toate?year=${m.year}&month=${m.month + 1}`}
+                                    onClick={() => { setIsMobileMenuOpen(false); setShowMobileZeugnisseDropdown(false); }}
+                                    className="flex items-center gap-2 py-1 text-[16px] sm:text-[19px] text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
+                                  >
+                                    <span className="flex-1">{m.label.replace(` ${m.year}`, '')}</span>
+                                    <span className="text-xs text-black/30 dark:text-white/30">{m.count}</span>
                                   </Link>
                                 ))}
                               </div>
