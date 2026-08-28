@@ -29,6 +29,7 @@ export const PAGE_LANGUAGES: PageLanguage[] = ['ro', 'de', 'en', 'ru'];
 
 /** Ce pagini se pot edita. `id` este si cheia din baza de date. */
 export const EDITABLE_PAGES = [
+  { id: 'main', label: 'Pagina principală', path: '/' },
   { id: 'about', label: 'Despre (About)', path: '/about' },
   { id: 'contact', label: 'Contact', path: '/contact' },
   { id: 'marturii', label: 'Mărturii', path: '/marturii' },

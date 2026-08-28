@@ -12,6 +12,8 @@ import Image from 'next/image';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { createClient } from '@/lib/supabase';
+import { usePageText } from '@/lib/pageContent';
+import { registerPageDefaults } from '@/lib/pageDefaults';
 // Pasul 2208001 — vizitatorul ramane vizitator pana apasa butonul din hamburger
 import { isGuestMode } from '@/hooks/useGuestMode';
 
@@ -21,9 +23,98 @@ const WelcomeModal = dynamic(() => import('@/components/WelcomeModal'), { ssr: f
 // Lazy load BibleQuotes for better performance / Verzögertes Laden von BibleQuotes für bessere Leistung / Încărcare leneșă BibleQuotes pentru performanță mai bună
 const BibleQuotes = lazy(() => import('@/components/BibleQuotes'));
 
+// =====================================================================
+// Pasul 2708016 — TEXTELE PAGINII PRINCIPALE
+// Erau scrise direct în aranjament, cu „dacă limba e de, scrie asta".
+// Acum stau aici și se pot schimba din Setări → Pagini → Pagina principală,
+// în orice limbă. Ce vezi mai jos rămâne copia de siguranță: butonul
+// „Înapoi la original" o aduce oricând înapoi.
+// =====================================================================
+const translations = {
+  de: {
+    heroVerse: 'Weil du aber lauwarm bist und weder kalt noch heiß, will ich dich ausspucken aus meinem Mund.',
+    heroReference: 'Offenbarung 3:16',
+    scrollDown: 'Mehr entdecken',
+    aboutTitle: 'Über ',
+    aboutText: 'Was ist die Wahrheit?',
+    aboutButton: 'Mehr erfahren',
+    blogsTitle: ' Blogs',
+    blogsText: 'Wir haben verlernt, selbst zu prüfen, und folgen zu oft nur menschlichen Meinungen.',
+    blogsButton: 'Alle Blogs ansehen',
+    marturiiTitle: 'Zeugnisse',
+    marturiiText: '„Darum auch wir, weil wir eine solche Wolke von Zeugen um uns haben, lasst uns ablegen alles, was uns beschwert, und die Sünde, die uns ständig umstrickt, und lasst uns laufen mit Geduld in dem Kampf, der uns bestimmt ist." Hebräer 12,1',
+    marturiiButton: 'Alle Zeugnisse ansehen',
+    contactTitle: 'Kontakt',
+    contactText: 'Fragen?',
+    contactButton: 'Kontaktiere uns',
+    thanksTitle: 'Kaufe die Zeit aus.',
+    thanksText: 'Der Herr segne dich!',
+  },
+  en: {
+    heroVerse: 'So then because thou art lukewarm, and neither cold nor hot, I will spue thee out of my mouth.',
+    heroReference: 'Revelation 3:16',
+    scrollDown: 'Discover more',
+    aboutTitle: 'About ',
+    aboutText: 'What is the truth?',
+    aboutButton: 'Learn More',
+    blogsTitle: ' Blogs',
+    blogsText: 'We have unlearned how to examine for ourselves and too often just follow human opinions.',
+    blogsButton: 'View All Blogs',
+    marturiiTitle: 'Testimonies',
+    marturiiText: '"Therefore, since we are surrounded by so great a cloud of witnesses, let us also lay aside every weight, and sin which clings so closely, and let us run with endurance the race that is set before us." Hebrews 12:1',
+    marturiiButton: 'View All Testimonies',
+    contactTitle: 'Contact',
+    contactText: 'Questions?',
+    contactButton: 'Contact Us',
+    thanksTitle: 'Redeem the time.',
+    thanksText: 'May the Lord bless you!',
+  },
+  ro: {
+    heroVerse: 'Astfel, pentru că ești căldicel, nici rece, nici fierbinte, am să te vărs din gura Mea.',
+    heroReference: 'Apocalipsa 3:16',
+    scrollDown: 'Descoperă mai mult',
+    aboutTitle: 'Despre ',
+    aboutText: 'Ce este adevărul?',
+    aboutButton: 'Află mai mult',
+    blogsTitle: 'Bloguri',
+    blogsText: 'Am uitat să examinăm singuri și prea des urmăm doar opinii umane.',
+    blogsButton: 'Vezi toate blogurile',
+    marturiiTitle: 'Mărturii',
+    marturiiText: '„Și noi dar, fiindcă suntem înconjurați cu un nor așa de mare de martori, să dăm la o parte orice piedică și păcatul care ne înfășoară așa de lesne și să alergăm cu stăruință în alergarea care ne stă înainte." Evrei 12:1',
+    marturiiButton: 'Vezi toate mărturiile',
+    contactTitle: 'Contact',
+    contactText: 'Întrebări?',
+    contactButton: 'Contactează-ne',
+    thanksTitle: 'Răscumpără vremea.',
+    thanksText: 'Domnul să te binecuvânteze!',
+  },
+  ru: {
+    heroVerse: 'Но, как ты тепл, а не горяч и не холоден, то извергну тебя из уст Моих.',
+    heroReference: 'Откровение 3:16',
+    scrollDown: 'Узнать больше',
+    aboutTitle: 'О ',
+    aboutText: 'Что такое истина?',
+    aboutButton: 'Узнать больше',
+    blogsTitle: 'Блоги',
+    blogsText: 'Мы забыли, как проверять сами, и слишком часто просто следуем человеческим мнениям.',
+    blogsButton: 'Посмотреть все блоги',
+    marturiiTitle: 'Свидетельства',
+    marturiiText: '«Посему и мы, имея вокруг себя такое облако свидетелей, свергнем с себя всякое бремя и запинающий нас грех и с терпением будем проходить предлежащее нам поприще». Евреям 12:1',
+    marturiiButton: 'Посмотреть все свидетельства',
+    contactTitle: 'Контакт',
+    contactText: 'Вопросы?',
+    contactButton: 'Свяжитесь с нами',
+    thanksTitle: 'Искупи время.',
+    thanksText: 'Да благословит тебя Господь!',
+  },
+};
+
+registerPageDefaults('main', translations);
+
 export default function HomePage() {
   // Get language context / Sprachkontext abrufen / Obține contextul limbii
   const { language, setLanguage } = useLanguage();
+  const t = usePageText('main', translations, language);
   
   // Get theme context for scroll button styling
   const { theme } = useTheme();
@@ -299,24 +390,12 @@ export default function HomePage() {
             <div className="font-cinzel text-black dark:text-white animate-fadeIn">
               {/* Verse text - Cinzel uppercase on all devices */}
               <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-medium leading-relaxed mb-8 ">
-                {language === 'de' 
-                  ? 'Weil du aber lauwarm bist und weder kalt noch heiß, will ich dich ausspucken aus meinem Mund.'
-                  : language === 'en'
-                  ? 'So then because thou art lukewarm, and neither cold nor hot, I will spue thee out of my mouth.'
-                  : language === 'ro'
-                  ? 'Astfel, pentru că ești căldicel, nici rece, nici fierbinte, am să te vărs din gura Mea.'
-                  : 'Но, как ты тепл, а не горяч и не холоден, то извергну тебя из уст Моих.'}
+                {t.heroVerse}
               </p>
               
               {/* Bible reference */}
               <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-black/80 dark:text-white/80 font-bold">
-                {language === 'de' 
-                  ? 'Offenbarung 3:16'
-                  : language === 'en'
-                  ? 'Revelation 3:16'
-                  : language === 'ro'
-                  ? 'Apocalipsa 3:16'
-                  : 'Откровение 3:16'}
+                {t.heroReference}
               </p>
             </div>
           </div>
@@ -332,7 +411,7 @@ export default function HomePage() {
               aria-label="Scroll down"
             >
               <span className="text-base font-semibold">
-                {language === 'de' ? 'Mehr entdecken' : language === 'en' ? 'Discover more' : language === 'ro' ? 'Descoperă mai mult' : 'Узнать больше'}
+                {t.scrollDown}
               </span>
               <svg 
                 className="w-8 h-8" 
@@ -357,19 +436,13 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Section Title */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
-            {language === 'de' ? 'Über ' : language === 'en' ? 'About ' : language === 'ro' ? 'Despre ' : 'О '}
+            {t.aboutTitle}
           </h2>
           
           {/* Description */}
           <br></br>
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {language === 'de' 
-              ? <>Was ist die Wahrheit?</>
-              : language === 'en'
-              ? <>What is the truth?</>
-              : language === 'ro'
-              ? <>Ce este adevărul?</>
-              : <>Что такое истина?</>}
+            {t.aboutText}
           </p>
           <br></br>
 
@@ -385,7 +458,7 @@ export default function HomePage() {
             className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn mb-6 lg:mb-0"
             style={{ animationDelay: '0.6s' }}
           >
-            {language === 'de' ? 'Mehr erfahren' : language === 'en' ? 'Learn More' : language === 'ro' ? 'Află mai mult' : 'Узнать больше'}
+            {t.aboutButton}
           </Link>
         </div>
       </section>
@@ -393,19 +466,13 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Section Title */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
-            {language === 'de' ? ' Blogs' : language === 'en' ? ' Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги'}
+            {t.blogsTitle}
           </h2>
           
           {/* Description */}
           <br></br>
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {language === 'de' 
-              ? 'Wir haben verlernt, selbst zu prüfen, und folgen zu oft nur menschlichen Meinungen.'
-              : language === 'en'
-              ? 'We have unlearned how to examine for ourselves and too often just follow human opinions.'
-              : language === 'ro'
-              ? 'Am uitat să examinăm singuri și prea des urmăm doar opinii umane.'
-              : 'Мы забыли, как проверять сами, и слишком часто просто следуем человеческим мнениям.'}
+            {t.blogsText}
           </p>
           <br></br>
 
@@ -421,7 +488,7 @@ export default function HomePage() {
             className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
             style={{ animationDelay: '0.6s' }}
           >
-            {language === 'de' ? 'Alle Blogs ansehen' : language === 'en' ? 'View All Blogs' : language === 'ro' ? 'Vezi toate blogurile' : 'Посмотреть все блоги'}
+            {t.blogsButton}
           </Link>
         </div>
       </section>
@@ -432,18 +499,12 @@ export default function HomePage() {
       <section id="marturii" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20 bg-black/5 dark:bg-white/5">
         <div className="max-w-4xl mx-auto w-full text-center">
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
-            {language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства'}
+            {t.marturiiTitle}
           </h2>
 
           <br />
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn italic" style={{ animationDelay: '0.2s' }}>
-            {language === 'de'
-              ? '„Darum auch wir, weil wir eine solche Wolke von Zeugen um uns haben, lasst uns ablegen alles, was uns beschwert, und die Sünde, die uns ständig umstrickt, und lasst uns laufen mit Geduld in dem Kampf, der uns bestimmt ist." Hebräer 12,1'
-              : language === 'en'
-              ? '"Therefore, since we are surrounded by so great a cloud of witnesses, let us also lay aside every weight, and sin which clings so closely, and let us run with endurance the race that is set before us." Hebrews 12:1'
-              : language === 'ro'
-              ? '„Și noi dar, fiindcă suntem înconjurați cu un nor așa de mare de martori, să dăm la o parte orice piedică și păcatul care ne înfășoară așa de lesne și să alergăm cu stăruință în alergarea care ne stă înainte." Evrei 12:1'
-              : '«Посему и мы, имея вокруг себя такое облако свидетелей, свергнем с себя всякое бремя и запинающий нас грех и с терпением будем проходить предлежащее нам поприще». Евреям 12:1'}
+            {t.marturiiText}
           </p>
           <br />
 
@@ -468,7 +529,7 @@ export default function HomePage() {
             className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
             style={{ animationDelay: '0.6s' }}
           >
-            {language === 'de' ? 'Alle Zeugnisse ansehen' : language === 'en' ? 'View All Testimonies' : language === 'ro' ? 'Vezi toate mărturiile' : 'Посмотреть все свидетельства'}
+            {t.marturiiButton}
           </Link>
         </div>
       </section>
@@ -480,19 +541,13 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Section Title */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">
-            {language === 'de' ? 'Kontakt' : language === 'en' ? 'Contact' : language === 'ro' ? 'Contact' : 'Контакт'}
+            {t.contactTitle}
           </h2>
           
           {/* Description */}
           <br></br>
           <p className="text-xl sm:text-2xl text-black/80 dark:text-white/80 leading-relaxed mb-12 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {language === 'de' 
-              ? 'Fragen?'
-              : language === 'en'
-              ? 'Questions?'
-              : language === 'ro'
-              ? 'Întrebări?'
-              : 'Вопросы?'}
+            {t.contactText}
           </p>
           <br></br>
 
@@ -508,7 +563,7 @@ export default function HomePage() {
             className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
             style={{ animationDelay: '0.6s' }}
           >
-            {language === 'de' ? 'Kontaktiere uns' : language === 'en' ? 'Contact Us' : language === 'ro' ? 'Contactează-ne' : 'Свяжитесь с нами'}
+            {t.contactButton}
           </Link>
         </div>
       </section>
@@ -520,25 +575,13 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Thank You Message */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-8 animate-fadeIn leading-tight">
-            {language === 'de' 
-              ? 'Kaufe die Zeit aus.'
-              : language === 'en'
-              ? 'Redeem the time.'
-              : language === 'ro'
-              ? 'Răscumpără vremea.'
-              : 'Искупи время.'}
+            {t.thanksTitle}
           </h2>
           
           {/* Blessing Message */}
           <br></br>
           <p className="text-2xl sm:text-3xl text-black/80 dark:text-white/80 mb-8 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
-            {language === 'de' 
-              ? 'Der Herr segne dich!'
-              : language === 'en'
-              ? 'May the Lord bless you!'
-              : language === 'ro'
-              ? 'Domnul să te binecuvânteze!'
-              : 'Да благословит тебя Господь!'}
+            {t.thanksText}
           </p>
 
           {/* Heart and Cross */}
