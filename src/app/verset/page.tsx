@@ -190,7 +190,7 @@ export default function DailyVersePage() {
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-[9998] flex items-center justify-center overflow-hidden"
+      className="force-white-text fixed inset-0 z-[9998] flex items-center justify-center overflow-hidden"
       style={{ backgroundColor: '#000000', color: textColor }}
       role="dialog"
       aria-modal="true"
@@ -277,7 +277,7 @@ export default function DailyVersePage() {
                   ref={(el) => {
                     wordsRef.current[index] = el;
                   }}
-                  className="mx-1 inline-block tracking-wider"
+                  className={`mx-1 inline-block tracking-wider${lightText ? '' : ' text-black'}`}
                   style={{ opacity: 0, willChange: 'opacity, filter, transform' }}
                 >
                   {word}
