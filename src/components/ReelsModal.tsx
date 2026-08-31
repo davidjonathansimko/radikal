@@ -661,7 +661,7 @@ export function ReelSlide({
               ref={(el) => {
                 wordsRef.current[index] = el;
               }}
-              className="inline-block mx-1 tracking-wider"
+              className={`inline-block mx-1 tracking-wider${lightText ? '' : ' text-black'}`}
               // `willChange` tine fiecare cuvant pe placa video tot timpul.
               // Fara el, browserul crea si arunca stratul la fiecare estompare,
               // iar aruncarea aceea se vedea ca o sclipire.
@@ -1336,7 +1336,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[9998] flex flex-col"
+      className="force-white-text fixed inset-0 z-[9998] flex flex-col"
       style={{ backgroundColor: bgColor, color: textColor }}
       role="dialog"
       aria-modal="true"
