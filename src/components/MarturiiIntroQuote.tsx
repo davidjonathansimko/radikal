@@ -10,7 +10,7 @@ import React, { useRef } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
+import { useCleanScreen } from '@/lib/appFullscreen';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
@@ -73,7 +73,6 @@ export default function MarturiiIntroQuote({
   const lang = verses[language] ? language : 'de';
 
   // Pasul 2708016 — in aplicatie, versetul ocupa tot ecranul.
-  useAppFullscreen(true);
   useCleanScreen(true);
 
   // Textul scris de tine bate textul din cod.
