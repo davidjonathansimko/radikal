@@ -12,7 +12,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getSupabaseClient } from '@/lib/supabase';
-import { useCleanScreen } from '@/lib/appFullscreen';
+import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
 import { fetchEnabledPages } from '@/lib/pageSettings';
 import ImageEffectLayers, { effectsFilter, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import gsap from 'gsap';
@@ -59,6 +59,7 @@ export default function DailyVersePage() {
   const [loading, setLoading] = useState(true);
   const [shareMsg, setShareMsg] = useState('');
 
+  useAppFullscreen(true);
   useCleanScreen(true);
 
   useEffect(() => {

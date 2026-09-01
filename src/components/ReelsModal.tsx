@@ -26,7 +26,7 @@ import gsap from 'gsap';
 import { paginateText } from '@/lib/paginateText';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
-import { useCleanScreen } from '@/lib/appFullscreen';
+import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -1205,12 +1205,10 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
     }
   }, [onClose]);
 
-  // Pasul 2708014 — ECRAN COMPLET cat esti in reels.
-  // Doar in aplicatia instalata: intr-o fila de browser, Chrome ar arata
-  // mesajul lui „Zum Beenden des Vollbildmodus…", pe care nu il putem opri.
-  // Pasul 2708026 — barele de meniu se ascund, dar NU mai cerem ecran complet.
-  // Cererea aceea era singurul motiv pentru care Chrome afisa mesajul
-  // „zum Beenden des Vollbildmodus…" de fiecare data.
+  // Pasul 2708027 — reels rămâne cinematic: ecran complet, fără ceas și fără
+  // butoanele Android. Mesajul Android „glisează în jos ca să ieși" nu poate
+  // fi oprit, dar apare o singură dată și pleacă singur.
+  useAppFullscreen(isOpen);
   useCleanScreen(isOpen);
 
   // Pasul 2708026 — la ieșire, cititorul rămâne unde era în pagină.
