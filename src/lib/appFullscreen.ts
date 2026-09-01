@@ -28,6 +28,9 @@ export function isStandaloneApp(): boolean {
 export function useAppFullscreen(active: boolean): void {
   useEffect(() => {
     if (!active) return;
+    // Doar în aplicația instalată. Într-o filă de browser, ecranul complet
+    // aduce mesajul lui Chrome fără să aducă și liniștea pe care o căutăm.
+    if (!isStandaloneApp()) return;
 
     const el = document.documentElement;
     let entered = false;
