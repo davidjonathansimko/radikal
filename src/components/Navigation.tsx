@@ -24,6 +24,7 @@ import { FaSun, FaMoon, FaSearch } from 'react-icons/fa';
 // import { FaHeart, FaBookmark } from 'react-icons/fa';
 import SearchModal from '@/components/SearchModal';
 import ReelsIcon from '@/components/ReelsIcon';
+import WayTitle from '@/components/WayTitle';
 import { useGuestMode, clearGuestMode } from '@/hooks/useGuestMode';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -535,6 +536,12 @@ export default function Navigation() {
       </Link>
 
       {/* Pasul 1202025: Section progress pill — between logo and hamburger (homepage only) */}
+      {/* Pasul 2708026 — „Der Weg", cât timp cititorul e sus pe pagina principală. */}
+      {/* Când coboară, se stinge și lasă locul pilulei de progres. */}
+      {isHomePage && !isMobileMenuOpen && (
+        <WayTitle visible={!isSectionScrolled || !currentTitle} />
+      )}
+
       {/* Abschnitts-Fortschritts-Pill — zwischen Logo und Hamburger (nur Startseite) */}
       {/* Pilulă progres secțiune — între logo și hamburger (doar pagina principală) */}
       {isHomePage && isSectionScrolled && currentTitle && !isMobileMenuOpen && (

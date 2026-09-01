@@ -26,7 +26,7 @@ import gsap from 'gsap';
 import { paginateText } from '@/lib/paginateText';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
-import { useAppFullscreen } from '@/lib/appFullscreen';
+import { useCleanScreen } from '@/lib/appFullscreen';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -724,8 +724,8 @@ export function ReelSlide({
           <svg
             className="w-5 h-5 transition-colors duration-200"
             viewBox="0 0 24 24"
-            fill={isLiked ? '#ef4444' : 'none'}
-            stroke={isLiked ? '#ef4444' : textColor}
+            fill={isLiked ? textColor : 'none'}
+            stroke={textColor}
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -1208,7 +1208,29 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   // Pasul 2708014 — ECRAN COMPLET cat esti in reels.
   // Doar in aplicatia instalata: intr-o fila de browser, Chrome ar arata
   // mesajul lui „Zum Beenden des Vollbildmodus…", pe care nu il putem opri.
-  useAppFullscreen(isOpen);
+  // Pasul 2708026 — barele de meniu se ascund, dar NU mai cerem ecran complet.
+  // Cererea aceea era singurul motiv pentru care Chrome afisa mesajul
+  // „zum Beenden des Vollbildmodus…" de fiecare data.
+  useCleanScreen(isOpen);
+
+  // Pasul 2708026 — la ieșire, cititorul rămâne unde era în pagină.
+  // Închiderea trece prin istoric, iar Next.js duce pagina în vârf după
+  // „înapoi". Ținem minte locul și îl aducem la loc.
+  const returnScrollRef = useRef(0);
+  useEffect(() => {
+    if (isOpen) {
+      // Cât modalul e deschis, pagina e înghețată cu `top: -Ypx`.
+      const frozen = parseInt(document.body.style.top || '0', 10);
+      returnScrollRef.current = frozen ? -frozen : window.scrollY;
+      return;
+    }
+    const y = returnScrollRef.current;
+    if (y <= 0) return;
+    const t = setTimeout(() => {
+      window.scrollTo({ top: y, left: 0, behavior: 'instant' as ScrollBehavior });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;

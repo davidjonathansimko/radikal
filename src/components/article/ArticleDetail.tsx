@@ -1492,9 +1492,9 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           <button
             onClick={handleLike}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-              isLiked 
-                ? 'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30' 
-                : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-red-600 dark:hover:text-red-400'
+              isLiked
+                ? 'bg-gray-300 dark:bg-white/20 text-gray-900 dark:text-white'
+                : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <CiHeart className={isLiked ? 'fill-current' : ''} />

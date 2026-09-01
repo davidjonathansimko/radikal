@@ -8,10 +8,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getSupabaseClient } from '@/lib/supabase';
-import { useAppFullscreen } from '@/lib/appFullscreen';
+import { useCleanScreen } from '@/lib/appFullscreen';
 import { fetchEnabledPages } from '@/lib/pageSettings';
 import ImageEffectLayers, { effectsFilter, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import gsap from 'gsap';
@@ -47,6 +48,7 @@ function today(): string {
 export default function DailyVersePage() {
   const router = useRouter();
   const { language } = useLanguage();
+  const { translateBatch } = useTranslation();
   const { tapLight } = useHaptic();
   const { reduced: reduceMotion } = useReducedMotion();
   const lang = ['ro', 'de', 'en', 'ru'].includes(language) ? language : 'de';
@@ -57,7 +59,7 @@ export default function DailyVersePage() {
   const [loading, setLoading] = useState(true);
   const [shareMsg, setShareMsg] = useState('');
 
-  useAppFullscreen(true);
+  useCleanScreen(true);
 
   useEffect(() => {
     let alive = true;
@@ -94,19 +96,56 @@ export default function DailyVersePage() {
   }, [allowed]);
 
   // Textul în limba cititorului: al tău dacă l-ai scris, altfel originalul.
-  const text = useMemo(() => {
+  const original = useMemo(() => {
     if (!verse) return '';
     const mine = verse[`content_${lang}`];
     if (typeof mine === 'string' && mine.trim()) return mine.trim();
     return verse.content_ro || '';
   }, [verse, lang]);
 
-  const reference = useMemo(() => {
+  const originalReference = useMemo(() => {
     if (!verse) return '';
     const mine = verse[`reference_${lang}`];
     if (typeof mine === 'string' && mine.trim()) return mine.trim();
     return verse.reference_ro || '';
   }, [verse, lang]);
+
+  /** Ai scris tu textul pentru limba asta? Atunci DeepL nu mai are ce face. */
+  const written = useMemo(() => {
+    if (!verse) return false;
+    const mine = verse[`content_${lang}`];
+    return typeof mine === 'string' && Boolean(mine.trim());
+  }, [verse, lang]);
+
+  // Pasul 2708026 — dacă n-ai scris tu traducerea, o cere DeepL, ca peste tot.
+  const [text, setText] = useState('');
+  const [reference, setReference] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    if (!original) {
+      setText('');
+      setReference('');
+      return;
+    }
+    if (written || lang === 'ro') {
+      setText(original);
+      setReference(originalReference);
+      return;
+    }
+    setText(original);
+    setReference(originalReference);
+    translateBatch([original, originalReference].filter(Boolean), lang, 'ro')
+      .then((out) => {
+        if (!alive) return;
+        setText(out[0] || original);
+        if (originalReference) setReference(out[1] || originalReference);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [original, originalReference, written, lang, translateBatch]);
 
   const words = useMemo(() => text.split(' ').filter(Boolean), [text]);
 

@@ -13,7 +13,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
+import { useCleanScreen } from '@/lib/appFullscreen';
 
 // ===========================================================================
 // ⏱️  DURATA PAUZEI DE CITIRE (identica cu WelcomeModal.tsx)
@@ -49,7 +49,6 @@ export default function AboutIntroQuote({ onFinish }: AboutIntroQuoteProps) {
   const { theme } = useTheme();
 
   // Pasul 2708016 — in aplicatie, versetul ocupa tot ecranul.
-  useAppFullscreen(true);
   useCleanScreen(true);
 
   // Refs identice cu WelcomeModal / Same refs as WelcomeModal
