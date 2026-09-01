@@ -8,7 +8,7 @@
  * liniștit și lasă locul pilulei de progres. Când urcă înapoi sus, revin.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -30,12 +30,6 @@ export default function WayTitle({ visible }: { visible: boolean }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const wordsRef = useRef<(HTMLSpanElement | null)[]>([]);
 
-  // Rămâne montat cât timp se stinge, ca animația de ieșire să se poată vedea.
-  const [mounted, setMounted] = useState(visible);
-  useEffect(() => {
-    if (visible) setMounted(true);
-  }, [visible]);
-
   useGSAP(
     () => {
       const live = wordsRef.current.filter((w): w is HTMLSpanElement => Boolean(w?.isConnected));
@@ -43,23 +37,19 @@ export default function WayTitle({ visible }: { visible: boolean }) {
 
       if (reduceMotion) {
         gsap.set(live, { opacity: visible ? 1 : 0, filter: 'blur(0px)', y: 0 });
-        if (!visible) setMounted(false);
         return;
       }
 
       if (visible) {
-        gsap.fromTo(
-          live,
-          { opacity: 0, filter: 'blur(8px)', y: 6 },
-          {
-            opacity: 1,
-            filter: 'blur(0px)',
-            y: 0,
-            duration: 0.7,
-            stagger: { each: 0.12, ease: 'power1.inOut' },
-            ease: 'power2.out',
-          },
-        );
+        gsap.to(live, {
+          opacity: 1,
+          filter: 'blur(0px)',
+          y: 0,
+          duration: 0.7,
+          stagger: { each: 0.12, ease: 'power1.inOut' },
+          ease: 'power2.out',
+          overwrite: 'auto',
+        });
       } else {
         gsap.to([...live].reverse(), {
           opacity: 0,
@@ -68,26 +58,29 @@ export default function WayTitle({ visible }: { visible: boolean }) {
           duration: 0.5,
           stagger: { each: 0.06, ease: 'power1.inOut' },
           ease: 'power2.inOut',
-          onComplete: () => setMounted(false),
+          overwrite: 'auto',
         });
       }
     },
     { scope: rootRef, dependencies: [visible, text, reduceMotion] },
   );
 
-  if (!mounted) return null;
-
   return (
-    <div ref={rootRef} className="flex-1 flex justify-center px-2">
+    <div ref={rootRef} className="pointer-events-none select-none">
       <span className="flex items-baseline gap-1.5 font-cinzel text-[13px] font-semibold uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
         {words.map((word, i) => (
           <span
-            key={i}
+            key={`${text}-${i}`}
             ref={(el) => {
               wordsRef.current[i] = el;
             }}
             className="inline-block"
-            style={{ opacity: 0, willChange: 'opacity, filter, transform' }}
+            style={{
+              opacity: 0,
+              filter: 'blur(8px)',
+              transform: 'translateY(6px)',
+              willChange: 'opacity, filter, transform',
+            }}
           >
             {word}
           </span>

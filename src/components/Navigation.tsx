@@ -536,37 +536,40 @@ export default function Navigation() {
       </Link>
 
       {/* Pasul 1202025: Section progress pill — between logo and hamburger (homepage only) */}
-      {/* Pasul 2708026 — „Der Weg", cât timp cititorul e sus pe pagina principală. */}
-      {/* Când coboară, se stinge și lasă locul pilulei de progres. */}
+      {/* Pasul 2708028 — un singur loc pentru mijlocul barei. „Der Weg" și pilula
+          stau suprapuse aici, nu una lângă alta, ca logo-ul să nu mai fie împins. */}
       {isHomePage && !isMobileMenuOpen && (
-        <WayTitle visible={!isSectionScrolled || !currentTitle} />
-      )}
-
-      {/* Abschnitts-Fortschritts-Pill — zwischen Logo und Hamburger (nur Startseite) */}
-      {/* Pilulă progres secțiune — între logo și hamburger (doar pagina principală) */}
-      {isHomePage && isSectionScrolled && currentTitle && !isMobileMenuOpen && (
-        <div className="flex-1 flex justify-center px-2 animate-fadeIn">
-          <div className="flex items-center gap-1.5 bg-black/10 dark:bg-white/10 backdrop-blur-sm rounded-full border border-black/10 dark:border-white/10 px-3 py-0.5 max-w-[140px]">
-            {/* Tiny progress dot / Kleiner Fortschrittspunkt / Punct mic de progres */}
-            <div className="relative w-1.5 h-1.5 flex-shrink-0">
-              <div className="absolute inset-0 rounded-full bg-black/15 dark:bg-white/15" />
-              <div 
-                className="absolute inset-0 rounded-full bg-black/70 dark:bg-white/70 transition-transform duration-300 origin-center"
-                style={{ transform: `scale(${0.3 + sectionProgress * 0.7})` }}
-              />
-            </div>
-            {/* Section title / Abschnittstitel / Titlul secțiunii */}
-            <span className="font-cinzel text-[10px] font-semibold text-black/60 dark:text-white/60 truncate uppercase tracking-wider">
-              {currentTitle}
-            </span>
-            {/* Mini progress bar / Mini-Fortschrittsleiste / Bară de progres mini */}
-            <div className="w-5 h-[2px] bg-black/10 dark:bg-white/10 rounded-full overflow-hidden flex-shrink-0">
-              <div 
-                className="h-full bg-black/40 dark:bg-white/40 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${sectionProgress * 100}%` }}
-              />
-            </div>
+        <div className="relative flex-1 h-7 mx-2">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <WayTitle visible={!isSectionScrolled} />
           </div>
+
+          {/* Abschnitts-Fortschritts-Pill / Pilulă progres secțiune */}
+          {isSectionScrolled && currentTitle && (
+            <div className="absolute inset-0 flex items-center justify-center animate-fadeIn">
+              <div className="flex items-center gap-1.5 bg-black/10 dark:bg-white/10 backdrop-blur-sm rounded-full border border-black/10 dark:border-white/10 px-3 py-0.5 max-w-[140px]">
+                {/* Tiny progress dot / Kleiner Fortschrittspunkt / Punct mic de progres */}
+                <div className="relative w-1.5 h-1.5 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-black/15 dark:bg-white/15" />
+                  <div
+                    className="absolute inset-0 rounded-full bg-black/70 dark:bg-white/70 transition-transform duration-300 origin-center"
+                    style={{ transform: `scale(${0.3 + sectionProgress * 0.7})` }}
+                  />
+                </div>
+                {/* Section title / Abschnittstitel / Titlul secțiunii */}
+                <span className="font-cinzel text-[10px] font-semibold text-black/60 dark:text-white/60 truncate uppercase tracking-wider">
+                  {currentTitle}
+                </span>
+                {/* Mini progress bar / Mini-Fortschrittsleiste / Bară de progres mini */}
+                <div className="w-5 h-[2px] bg-black/10 dark:bg-white/10 rounded-full overflow-hidden flex-shrink-0">
+                  <div
+                    className="h-full bg-black/40 dark:bg-white/40 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${sectionProgress * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

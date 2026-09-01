@@ -225,6 +225,11 @@ export default function DailyVersePage() {
     effectBloom: Boolean(verse?.effect_bloom),
     effectLetterbox: Boolean(verse?.effect_letterbox),
     effectLightLeak: Boolean(verse?.effect_light_leak),
+    noiseIntensity: (verse?.noise_intensity as number) ?? 35,
+    bwIntensity: (verse?.bw_intensity as number) ?? 50,
+    bloomIntensity: (verse?.bloom_intensity as number) ?? 50,
+    letterboxSize: (verse?.letterbox_size as number) ?? 8,
+    lightLeakIntensity: (verse?.light_leak_intensity as number) ?? 50,
   };
 
   return (
