@@ -132,6 +132,11 @@ export default function DailyVerseAdmin() {
       effectBloom: Boolean(r.effect_bloom),
       effectLetterbox: Boolean(r.effect_letterbox),
       effectLightLeak: Boolean(r.effect_light_leak),
+      noiseIntensity: (r.noise_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.noiseIntensity,
+      bwIntensity: (r.bw_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.bwIntensity,
+      bloomIntensity: (r.bloom_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.bloomIntensity,
+      letterboxSize: (r.letterbox_size as number) ?? DEFAULT_IMAGE_EFFECTS.letterboxSize,
+      lightLeakIntensity: (r.light_leak_intensity as number) ?? DEFAULT_IMAGE_EFFECTS.lightLeakIntensity,
     });
   }, []);
 
@@ -170,6 +175,11 @@ export default function DailyVerseAdmin() {
           effect_bloom: Boolean(effects.effectBloom),
           effect_letterbox: Boolean(effects.effectLetterbox),
           effect_light_leak: Boolean(effects.effectLightLeak),
+          noise_intensity: effects.noiseIntensity ?? 35,
+          bw_intensity: effects.bwIntensity ?? 50,
+          bloom_intensity: effects.bloomIntensity ?? 50,
+          letterbox_size: effects.letterboxSize ?? 8,
+          light_leak_intensity: effects.lightLeakIntensity ?? 50,
         };
         LANGS.forEach(({ code }) => {
           payload[`content_${code}`] = contents[code].trim() || (code === 'ro' ? contents.ro.trim() : null);
@@ -183,12 +193,22 @@ export default function DailyVerseAdmin() {
         if (error) {
           // Coloanele de reglaj lipsesc daca STEP_2708023 nu a fost rulat.
           if (error.code === '42703' || error.code === 'PGRST204') {
-            const { image_brightness: _b, image_contrast: _c, image_blur: _bl, ...fara } = payload;
+            const {
+              image_brightness: _b,
+              image_contrast: _c,
+              image_blur: _bl,
+              noise_intensity: _ni,
+              bw_intensity: _bwi,
+              bloom_intensity: _bli,
+              letterbox_size: _ls,
+              light_leak_intensity: _lli,
+              ...fara
+            } = payload;
             const retry = await createClient()
               .from('daily_verses')
               .upsert(fara, { onConflict: 'for_day' });
             if (!retry.error) {
-              say('err', 'Salvat, dar reglajele de imagine nu au fost păstrate. Rulează STEP_2708023_VERSET_IMAGINE.sql în Supabase.');
+              say('err', 'Salvat, dar reglajele de imagine nu au fost păstrate. Rulează STEP_2708023_VERSET_IMAGINE.sql și STEP_2708028_VERSET_NIVELE.sql în Supabase.');
               await load();
               return;
             }
