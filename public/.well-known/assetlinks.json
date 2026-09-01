@@ -1,15 +1,16 @@
 [
   {
     "_comment_1": "Digital Asset Links — leaga aplicatia Android de site.",
-    "_comment_2": "Prima amprenta = cheia ta locala, C:\\DAVS\\radikal-android\\android.keystore (fisierul .apk construit de tine). NU O PIERDE.",
-    "_comment_3": "A doua = cheia cu care Google resemneaza aplicatia (Play App Signing). Este cea care conteaza pentru utilizatorii care instaleaza din magazin.",
-    "_comment_4": "Amandoua trebuie sa ramana. Nu se inlocuiesc una pe alta.",
-    "_comment_5": "Verificare dupa publicare: https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.radikal.blog&relation=delegate_permission/common.handle_all_urls",
+    "_comment_2": "A treia amprenta este cea care CONTEAZA: e cheia cu care Google semneaza aplicatia livrata din magazin. O gasesti la Play Console > App integrity > App signing > Digital Asset Links JSON.",
+    "_comment_3": "Prima = cheia ta locala (fisierul .apk construit de tine). A doua = cheia de incarcare. Amandoua raman, nu strica nimic.",
+    "_comment_4": "Daca vreodata apare bara Chrome peste aplicatie, compara amprenta de aici cu cea din Play Console. Aceea are intotdeauna dreptate.",
+    "_comment_5": "Verificare: https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.radikal.blog&relation=delegate_permission/common.handle_all_urls",
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
       "package_name": "blog.radikal.app",
       "sha256_cert_fingerprints": [
+        "C6:A4:5F:69:61:34:E3:E6:1A:1A:7E:36:09:4E:A0:4F:4A:BE:07:25:C2:AC:86:B7:7D:A7:00:7C:BF:94:55:ED",
         "A9:D2:28:2B:02:18:20:38:77:67:EF:E3:F1:08:00:A3:F9:F3:80:17:64:04:29:02:0D:04:85:B4:21:D7:8D:9C",
         "0A:70:DA:AE:59:A3:1E:A8:34:0B:7D:F6:84:EF:C6:6B:4E:05:32:54:CB:E9:2A:A6:A5:1D:83:4E:BA:5E:BF:13"
       ]
