@@ -10,6 +10,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import SectionTree from './SectionTree';
 
 const LANGS = [
   { code: 'ro', name: 'Română', required: true },
@@ -387,46 +388,26 @@ export default function MarturiiSectionsAdmin({ onChanged }: { onChanged?: () =>
 
       {loading ? (
         <p className="text-sm text-black/50 dark:text-white/50">Se încarcă…</p>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-black/50 dark:text-white/50">
-          Nicio rubrică încă. Creează prima mai sus.
-        </p>
       ) : (
-        <ul className="grid gap-2">
-          {ordered.map(({ section: s, depth }) => (
-            <li
-              key={s.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/10 px-3 py-2 dark:border-white/10"
-              style={{ marginLeft: `${depth * 20}px` }}
-            >
-              <span className="min-w-0">
-                {depth > 0 && <span className="mr-1 text-black/30 dark:text-white/30">└</span>}
-                <span className="font-medium text-black dark:text-white">{s.names.ro}</span>
-                {!s.published && (
-                  <span className="ml-2 rounded-full bg-black/10 px-2 py-0.5 text-[11px] text-black/60 dark:bg-white/10 dark:text-white/60">
-                    ascunsă
-                  </span>
-                )}
-              </span>
-              <span className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={() => startEdit(s)}
-                  className="rounded-lg border border-black/15 px-3 py-1 text-xs text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
-                >
-                  Editează
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void remove(s)}
-                  className="rounded-lg px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
-                >
-                  Șterge
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <SectionTree
+          items={items.map((s) => ({
+            id: s.id,
+            parentId: s.parent_id,
+            name: s.names.ro || s.slug,
+            published: s.published,
+            sortOrder: s.sort_order,
+          }))}
+          activeId={editingId}
+          onEdit={(id) => {
+            const s = items.find((x) => x.id === id);
+            if (s) startEdit(s);
+          }}
+          onDelete={(id) => {
+            const s = items.find((x) => x.id === id);
+            if (s) void remove(s);
+          }}
+          emptyText="Nicio rubrică încă. Creează prima mai sus."
+        />
       )}
     </div>
   );

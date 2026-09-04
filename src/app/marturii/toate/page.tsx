@@ -89,8 +89,6 @@ function MarturiiToateInner() {
 
   const [rows, setRows] = useState<TestimonyRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortKey>('newest');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,8 +109,6 @@ function MarturiiToateInner() {
   }, [load]);
 
   const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
     let base = rows;
     if (year && month) {
       base = rows.filter((r) => {
@@ -125,28 +121,14 @@ function MarturiiToateInner() {
       row: r,
       title: pickTestimonyText(r, 'title', lang),
       excerpt: pickTestimonyText(r, 'excerpt', lang),
-      content: pickTestimonyText(r, 'content', lang),
     }));
 
-    const filtered = q
-      ? withText.filter((x) => `${x.title} ${x.excerpt} ${x.content}`.toLowerCase().includes(q))
-      : withText;
-
-    const sorted = [...filtered];
-    if (sort === 'az') {
-      sorted.sort((a, b) => a.title.localeCompare(b.title, lang));
-    } else {
-      sorted.sort((a, b) => {
-        const da = new Date(a.row.created_at ?? 0).getTime();
-        const db = new Date(b.row.created_at ?? 0).getTime();
-        return sort === 'newest' ? db - da : da - db;
-      });
-    }
-    return sorted;
-  }, [rows, search, sort, lang, year, month]);
-
-  const field =
-    'rounded-lg border border-black/15 dark:border-white/15 bg-white dark:bg-black text-black dark:text-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors';
+    return withText.sort((a, b) => {
+      const da = new Date(a.row.created_at ?? 0).getTime();
+      const db = new Date(b.row.created_at ?? 0).getTime();
+      return db - da;
+    });
+  }, [rows, lang, year, month]);
 
   return (
     <div className="min-h-screen py-12">
@@ -172,32 +154,20 @@ function MarturiiToateInner() {
           )}
         </header>
 
-        <div className="mb-6 flex justify-center">
-          <BlogBrowse
-            table="testimonies"
-            basePath="/marturii/m"
-            browseLabel={{
-              ro: 'Răsfoiește Mărturii',
-              de: 'Zeugnisse durchsuchen',
-              en: 'Browse Testimonies',
-              ru: 'Просмотр свидетельств',
-            }}
-          />
-        </div>
-
-        <div className="mb-8 grid gap-2 sm:grid-cols-[1fr_auto]">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.search}
-            className={field}
-          />
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={field}>
-            <option value="newest">{t.newest}</option>
-            <option value="oldest">{t.oldest}</option>
-            <option value="az">{t.az}</option>
-          </select>
+        {/* Pasul 0409b — o singură căutare, ținută la vedere cât cobori. */}
+        <div className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
+          <div className="flex justify-center">
+            <BlogBrowse
+              table="testimonies"
+              basePath="/marturii/m"
+              browseLabel={{
+                ro: 'Răsfoiește Mărturii',
+                de: 'Zeugnisse durchsuchen',
+                en: 'Browse Testimonies',
+                ru: 'Просмотр свидетельств',
+              }}
+            />
+          </div>
         </div>
 
         {loading ? (
@@ -207,42 +177,35 @@ function MarturiiToateInner() {
             {year && month ? t.emptyMonth : t.empty}
           </p>
         ) : (
-          <>
-            {search.trim() && (
-              <p className="mb-4 text-xs text-black/50 dark:text-white/50">
-                {t.results}: {visible.length}
-              </p>
-            )}
-            <ul className="grid gap-4">
-              {visible.map(({ row, title, excerpt }) => (
-                <li key={row.id}>
-                  <Link
-                    href={`/marturii/m/${row.slug}`}
-                    className="glass-effect flex gap-4 rounded-2xl p-4 transition-transform hover:scale-[1.01]"
-                  >
-                    {row.image_url && (
-                      <span className="relative hidden h-20 w-28 shrink-0 overflow-hidden rounded-xl sm:block">
-                        <Image src={row.image_url} alt="" fill className="object-cover" sizes="112px" />
+          <ul className="divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">
+            {visible.map(({ row, title, excerpt }) => (
+              <li key={row.id}>
+                <Link
+                  href={`/marturii/m/${row.slug}`}
+                  className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                >
+                  {row.image_url && (
+                    <span className="relative hidden h-12 w-16 shrink-0 overflow-hidden rounded-lg sm:block">
+                      <Image src={row.image_url} alt="" fill className="object-cover" sizes="64px" />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-cinzel text-base font-semibold text-black dark:text-white">
+                      {title}
+                    </span>
+                    {excerpt && (
+                      <span className="mt-0.5 line-clamp-1 block text-xs text-black/55 dark:text-white/55">
+                        {excerpt}
                       </span>
                     )}
-                    <span className="min-w-0">
-                      <span className="block font-cinzel text-lg font-bold text-black dark:text-white">
-                        {title}
-                      </span>
-                      {excerpt && (
-                        <span className="mt-1 line-clamp-2 block text-sm text-black/60 dark:text-white/60">
-                          {excerpt}
-                        </span>
-                      )}
-                      <span className="mt-2 block text-xs text-black/45 dark:text-white/45">
-                        {t.read} →
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
+                  </span>
+                  <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
+                    ›
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
