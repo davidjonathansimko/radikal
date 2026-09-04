@@ -114,8 +114,6 @@ export default function ContentListPage({
   const [missing, setMissing] = useState(false);
   const [rows, setRows] = useState<ContentItemRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortKey>('newest');
 
   // Pagina oprită = vizitatorul e trimis acasă.
   useEffect(() => {
@@ -158,31 +156,17 @@ export default function ContentListPage({
   }, [allowed, load]);
 
   const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
     const withText = rows.map((r) => ({
       row: r,
       title: pickContentText(r, 'title', lang),
       excerpt: pickContentText(r, 'excerpt', lang),
-      content: pickContentText(r, 'content', lang),
     }));
-    const filtered = q
-      ? withText.filter((x) => `${x.title} ${x.excerpt} ${x.content}`.toLowerCase().includes(q))
-      : withText;
-    const sorted = [...filtered];
-    if (sort === 'az') {
-      sorted.sort((a, b) => a.title.localeCompare(b.title, lang));
-    } else {
-      sorted.sort((a, b) => {
-        const da = new Date(a.row.created_at ?? 0).getTime();
-        const db = new Date(b.row.created_at ?? 0).getTime();
-        return sort === 'newest' ? db - da : da - db;
-      });
-    }
-    return sorted;
-  }, [rows, search, sort, lang]);
-
-  const field =
-    'rounded-lg border border-black/15 dark:border-white/15 bg-white dark:bg-black text-black dark:text-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors';
+    return withText.sort((a, b) => {
+      const da = new Date(a.row.created_at ?? 0).getTime();
+      const db = new Date(b.row.created_at ?? 0).getTime();
+      return db - da;
+    });
+  }, [rows, lang]);
 
   if (allowed === null || allowed === false) return null;
 
@@ -200,32 +184,46 @@ export default function ContentListPage({
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Pasul 2708022 — un singur buton de întoarcere, care spune limpede
-            unde te duce. Înainte apăreau toate treptele drumului deodată. */}
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          {sectionSlug && (
-            <Link
-              href={
-                trail.length > 0 ? `${def.basePath}/${trail[trail.length - 1].slug}` : def.basePath
-              }
-              className="inline-flex items-center gap-2 rounded-lg border border-black/15 px-4 py-2 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
-            >
-              <span aria-hidden="true">←</span>
-              {t.backTo}{' '}
-              {trail.length > 0 ? trail[trail.length - 1].name : def.title[lang] || def.title.de}
-            </Link>
-          )}
-
+        {/* Pasul 0409b — DRUMUL, scris pe un singur rând. Înainte erau două
+            butoane late care mâncau jumătate de ecran. */}
+        <nav aria-label="Drum" className="mb-5 flex flex-wrap items-center gap-1.5 text-sm">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-black/15 px-4 py-2 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+            className="text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
           >
-            <span aria-hidden="true">←</span>
             {t.home}
           </Link>
-        </div>
+          <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
+          <Link
+            href={def.basePath}
+            className={
+              section
+                ? 'text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white'
+                : 'font-medium text-black dark:text-white'
+            }
+          >
+            {def.title[lang] || def.title.de}
+          </Link>
+          {trail.map((s) => (
+            <React.Fragment key={s.id}>
+              <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
+              <Link
+                href={`${def.basePath}/${s.slug}`}
+                className="text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
+              >
+                {s.name}
+              </Link>
+            </React.Fragment>
+          ))}
+          {section && (
+            <>
+              <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
+              <span className="font-medium text-black dark:text-white">{section.name}</span>
+            </>
+          )}
+        </nav>
 
-        <header className="mb-10 text-center">
+        <header className="mb-6 text-center">
           <h1 className="font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">
             {section ? section.name : def.title[lang] || def.title.de}
           </h1>
@@ -236,78 +234,47 @@ export default function ContentListPage({
           )}
         </header>
 
-        <div className="mb-6 flex justify-center">
-          <BlogBrowse
-            table={CONTENT_ITEMS_TABLE}
-            basePath={def.itemPath}
-            browseLabel={{
-              ro: T.ro.browse,
-              de: T.de.browse,
-              en: T.en.browse,
-              ru: T.ru.browse,
-            }}
-          />
+        {/* Căutarea rămâne la vedere cât timp cobori prin listă. */}
+        <div className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
+          <div className="flex justify-center">
+            <BlogBrowse
+              table={CONTENT_ITEMS_TABLE}
+              basePath={def.itemPath}
+              browseLabel={{
+                ro: T.ro.browse,
+                de: T.de.browse,
+                en: T.en.browse,
+                ru: T.ru.browse,
+              }}
+            />
+          </div>
         </div>
 
+        {/* Rubricile, ca file, pe un singur rând care se trage cu degetul. */}
         {sections.length > 0 && (
-          <div className="mb-10">
-            <h2 className="mb-4 text-center text-lg font-bold text-black dark:text-white">
-              {t.sections}
-            </h2>
-            <div className="mb-4 grid gap-3 sm:grid-cols-2">
-              {sections.map((s) => (
-                <Link
-                  key={s.id}
-                  href={`${def.basePath}/${s.slug}`}
-                  className="glass-effect flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                  <span aria-hidden="true" className="shrink-0 text-black/35 dark:text-white/35">
-                    ▸
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block font-cinzel text-base font-semibold text-black dark:text-white">
-                      {s.name}
-                    </span>
-                    {s.description && (
-                      <span className="mt-0.5 line-clamp-1 block text-xs text-black/55 dark:text-white/55">
-                        {s.description}
-                      </span>
-                    )}
-                  </span>
-                </Link>
-              ))}
-            </div>
-
-            {/* Pasul 2708023 — întoarcerea stă și sub rubrici. */}
-            {sectionSlug && (
+          <div className="scrollbar-hide mb-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6">
+            <Link
+              href={def.basePath}
+              className={`flex-shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm transition-colors ${
+                section
+                  ? 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
+                  : 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+              }`}
+            >
+              {t.all}
+            </Link>
+            {sections.map((s) => (
               <Link
-                href={
-                  trail.length > 0 ? `${def.basePath}/${trail[trail.length - 1].slug}` : def.basePath
-                }
-                className="inline-flex items-center gap-2 text-sm text-black/55 transition-colors hover:text-black dark:text-white/55 dark:hover:text-white"
+                key={s.id}
+                href={`${def.basePath}/${s.slug}`}
+                title={s.description || undefined}
+                className="flex-shrink-0 whitespace-nowrap rounded-full border border-black/15 px-4 py-1.5 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
               >
-                <span aria-hidden="true">←</span>
-                {t.backTo}{' '}
-                {trail.length > 0 ? trail[trail.length - 1].name : def.title[lang] || def.title.de}
+                {s.name}
               </Link>
-            )}
+            ))}
           </div>
         )}
-
-        <div className="mb-8 grid gap-2 sm:grid-cols-[1fr_auto]">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.search}
-            className={field}
-          />
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={field}>
-            <option value="newest">{t.newest}</option>
-            <option value="oldest">{t.oldest}</option>
-            <option value="az">{t.az}</option>
-          </select>
-        </div>
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>
@@ -319,42 +286,35 @@ export default function ContentListPage({
             </p>
           ) : null
         ) : (
-          <>
-            {search.trim() && (
-              <p className="mb-4 text-xs text-black/50 dark:text-white/50">
-                {t.results}: {visible.length}
-              </p>
-            )}
-            <ul className="grid gap-4">
-              {visible.map(({ row, title, excerpt }) => (
-                <li key={row.id}>
-                  <Link
-                    href={`${def.itemPath}/${row.slug}`}
-                    className="glass-effect flex gap-4 rounded-2xl p-4 transition-transform hover:scale-[1.01]"
-                  >
-                    {row.image_url && (
-                      <span className="relative hidden h-20 w-28 shrink-0 overflow-hidden rounded-xl sm:block">
-                        <Image src={row.image_url} alt="" fill className="object-cover" sizes="112px" />
+          <ul className="divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">
+            {visible.map(({ row, title, excerpt }) => (
+              <li key={row.id}>
+                <Link
+                  href={`${def.itemPath}/${row.slug}`}
+                  className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                >
+                  {row.image_url && (
+                    <span className="relative hidden h-12 w-16 shrink-0 overflow-hidden rounded-lg sm:block">
+                      <Image src={row.image_url} alt="" fill className="object-cover" sizes="64px" />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-cinzel text-base font-semibold text-black dark:text-white">
+                      {title}
+                    </span>
+                    {excerpt && (
+                      <span className="mt-0.5 line-clamp-1 block text-xs text-black/55 dark:text-white/55">
+                        {excerpt}
                       </span>
                     )}
-                    <span className="min-w-0">
-                      <span className="block font-cinzel text-lg font-bold text-black dark:text-white">
-                        {title}
-                      </span>
-                      {excerpt && (
-                        <span className="mt-1 line-clamp-2 block text-sm text-black/60 dark:text-white/60">
-                          {excerpt}
-                        </span>
-                      )}
-                      <span className="mt-2 block text-xs text-black/45 dark:text-white/45">
-                        {t.read} →
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
+                  </span>
+                  <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
+                    ›
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
