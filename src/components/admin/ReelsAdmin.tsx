@@ -11,9 +11,10 @@
 
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import MediaUpload from './MediaUpload';
 import ReelPreview from './ReelPreview';
 import AdminListFilterBar from './AdminListFilterBar';
@@ -138,6 +139,44 @@ export default function ReelsAdmin() {
     reels,
     useCallback((r: ReelRow) => `${r.title ?? ''} ${r.content} ${r.reference ?? ''} #R${r.reel_number ?? ''}`, []),
   );
+
+  // Pasul 0409a — ciorna, ca sa nu pierzi ce ai scris daca telefonul inchide
+  // pagina cat esti in galerie. Se tine minte doar cand CREEZI, nu cand modifici.
+  const draftValues = useMemo(
+    () => ({
+      content, reference, blogPostId, published, sortOrder, audioUrl,
+      backgroundImageUrl, backgroundOpacity, textColor, testimonyId,
+      backgroundOpacityLight, effectNoise, effectGrain, grainOpacity,
+      effectSepia, effectVignette, sepiaIntensity, vignetteIntensity,
+      effectBw, effectBloom, effectLetterbox, effectLightLeak,
+      title, uppercaseText, useManualPages, manualPages,
+    }),
+    [
+      content, reference, blogPostId, published, sortOrder, audioUrl,
+      backgroundImageUrl, backgroundOpacity, textColor, testimonyId,
+      backgroundOpacityLight, effectNoise, effectGrain, grainOpacity,
+      effectSepia, effectVignette, sepiaIntensity, vignetteIntensity,
+      effectBw, effectBloom, effectLetterbox, effectLightLeak,
+      title, uppercaseText, useManualPages, manualPages,
+    ],
+  );
+
+  const applyDraft = useCallback((d: typeof draftValues) => {
+    setContent(d.content); setReference(d.reference); setBlogPostId(d.blogPostId);
+    setPublished(d.published); setSortOrder(d.sortOrder); setAudioUrl(d.audioUrl);
+    setBackgroundImageUrl(d.backgroundImageUrl); setBackgroundOpacity(d.backgroundOpacity);
+    setTextColor(d.textColor); setTestimonyId(d.testimonyId);
+    setBackgroundOpacityLight(d.backgroundOpacityLight);
+    setEffectNoise(d.effectNoise); setEffectGrain(d.effectGrain); setGrainOpacity(d.grainOpacity);
+    setEffectSepia(d.effectSepia); setEffectVignette(d.effectVignette);
+    setSepiaIntensity(d.sepiaIntensity); setVignetteIntensity(d.vignetteIntensity);
+    setEffectBw(d.effectBw); setEffectBloom(d.effectBloom);
+    setEffectLetterbox(d.effectLetterbox); setEffectLightLeak(d.effectLightLeak);
+    setTitle(d.title); setUppercaseText(d.uppercaseText);
+    setUseManualPages(d.useManualPages); setManualPages(d.manualPages);
+  }, []);
+
+  const draft = useFormDraft('radikalReelDraft', draftValues, applyDraft, editingId === null);
 
   // Pasul 2708004 — la editare, formularul se mută sub reel-ul apăsat.
   const [editorSlot, setEditorSlot] = useState<HTMLElement | null>(null);
@@ -295,6 +334,7 @@ export default function ReelsAdmin() {
         notify('err', `Eroare la salvare: ${error.message}`);
       } else {
         notify('ok', editingId ? 'Reel actualizat.' : 'Reel creat cu succes.');
+        draft.clear();
         resetForm();
         await load();
       }
@@ -529,6 +569,30 @@ export default function ReelsAdmin() {
           {editingId && (
             <div className="mb-4 rounded-lg bg-blue-500/10 px-4 py-2 text-sm text-blue-600 dark:text-blue-400">
               Editezi un reel existent. Apasă „Renunță&ldquo; ca să revii la creare.
+            </div>
+          )}
+
+          {/* Pasul 0409a — telefonul a inchis pagina cat erai plecat. Nu punem
+              nimic inapoi fara sa stii: te intrebam intai. */}
+          {!editingId && draft.saved && (draft.saved.content || draft.saved.title) && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+              <span className="flex-1 min-w-[12rem]">
+                Ai un reel început și nesalvat. Îl aducem înapoi?
+              </span>
+              <button
+                type="button"
+                onClick={draft.restore}
+                className="rounded-lg bg-amber-500/20 px-3 py-1.5 font-medium transition-colors hover:bg-amber-500/30"
+              >
+                Continuă
+              </button>
+              <button
+                type="button"
+                onClick={draft.dismiss}
+                className="rounded-lg px-3 py-1.5 opacity-70 transition-opacity hover:opacity-100"
+              >
+                Șterge ciorna
+              </button>
             </div>
           )}
       <form onSubmit={handleCreate} className="grid gap-4 mb-8">

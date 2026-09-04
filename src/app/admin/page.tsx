@@ -89,6 +89,29 @@ export default function AdminPage() {
   // Pasul 2308004 (C) — rubricile din admin
   const [mainTab, setMainTab] = useState<'create' | 'settings'>('create');
   const [subTab, setSubTab] = useState<string>('blogs');
+
+  // Pasul 0409a — telefonul poate inchide pagina cat esti in galerie. La
+  // intoarcere te asteptam in aceeasi rubrica, nu la inceput.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('radikalAdminTab');
+      if (!saved) return;
+      const { main, sub } = JSON.parse(saved) as { main?: string; sub?: string };
+      if (main === 'create' || main === 'settings') setMainTab(main);
+      if (typeof sub === 'string' && sub) setSubTab(sub);
+    } catch {
+      /* nu conteaza */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('radikalAdminTab', JSON.stringify({ main: mainTab, sub: subTab }));
+    } catch {
+      /* nu conteaza */
+    }
+  }, [mainTab, subTab]);
+
   // Pasul 2308005 (D) — cate cereri asteapta aprobarea (bulina rosie)
   const [pendingCount, setPendingCount] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
