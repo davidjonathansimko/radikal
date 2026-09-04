@@ -14,15 +14,7 @@ import { BlogPost } from '@/types';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { createClient } from '@/lib/supabase';
-import { 
-  FaRegHeart,
-  FaShare, 
-  FaWhatsapp, 
-  FaTelegram, 
-  FaEnvelope,
-  FaTwitter,
-  FaFacebook 
-} from 'react-icons/fa';
+import { FaRegHeart } from 'react-icons/fa';
 import { TfiComment } from 'react-icons/tfi';
 // Skeleton Loading / Skeleton-Laden / Încărcare Skeleton
 import { BlogCardSkeleton } from '@/components/Skeleton';
@@ -362,31 +354,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     }
   };
 
-  // Share functionality / Teilen-Funktionalität / Funcționalitate de distribuire
-  const sharePost = (post: BlogPost, platform: string) => {
-    const url = `${window.location.origin}/blogs/${post.slug}`;
-    // Use DeepL translated text for sharing / DeepL-übersetzten Text zum Teilen verwenden / Folosește textul tradus de DeepL pentru distribuire
-    const title = getTranslatedTitle(post);
-    const text = getTranslatedExcerpt(post);
-
-    switch (platform) {
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodeURIComponent(`${title} - ${text} ${url}`)}`);
-        break;
-      case 'telegram':
-        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
-        break;
-      case 'email':
-        window.open(`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`);
-        break;
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
-        break;
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
-        break;
-    }
-  };
+  // Pasul 0409d — butoanele de distribuire au plecat din lista in pagina
+  // articolului, unde omul a citit deja si chiar are ce impartasi.
 
   // Format date based on language / Datum je nach Sprache formatieren / Formatează data în funcție de limbă
   // Format date based on language / Datum je nach Sprache formatieren / Formatează data în funcție de limbă
@@ -487,23 +456,23 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         ref={carouselRef}
         className={isMobile 
           ? "flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" 
-          : "space-y-8"
+          : "grid gap-6 md:grid-cols-2 xl:grid-cols-3"
         }
         style={isMobile ? { scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' } : {}}
       >
         {posts.slice(0, 6).map((post, index) => (
           <React.Fragment key={post.id}>
-            <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : ""}
-              style={isMobile ? { maxHeight: 'calc(100vh - 160px)' } : {}}
-            >
-            <Link href={`/blogs/${post.slug}`}>
+            <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : "h-full"}>
+            <Link href={`/blogs/${post.slug}`} className="block h-full">
+            {/* Pasul 0409d — card scurt: titlu, imagine, doua randuri de text.
+                „Teilen" si descrierea intreaga au plecat in pagina articolului. */}
             <article 
-              className={`backdrop-blur-[1.5px] rounded-xl p-3 lg:p-6 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 ${isMobile ? 'shadow-md overflow-y-auto' : ''}`}
-              style={isMobile ? { maxHeight: 'calc(100vh - 170px)' } : { animationDelay: `${index * 0.1}s` }}
+              className="flex h-full flex-col backdrop-blur-[1.5px] rounded-xl p-3 lg:p-4 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 shadow-sm"
+              style={{ animationDelay: `${index * 0.06}s` }}
             >
               {/* Post header with theme-aware colors / Post-Kopf mit themenabhängigen Farben / Antet postare cu culori adaptate la temă */}
               <header className="mb-2">
-                <h2 className="text-lg sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-200">
+                <h2 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-1 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-200">
                   {getTranslatedTitle(post)}
                   {/* Pasul 2208002 (punctul 6) — INDICATOR pentru blogurile dinamice.
                       Un mic semn discret, langa titlu, care arata ca articolul
@@ -534,16 +503,16 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 </h2>
               
               {/* Post metadata with theme-aware colors / Post-Metadaten mit themenabhängigen Farben / Metadate postare cu culori adaptate la temă */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-white/60">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-white/60">
                 <time dateTime={post.created_at}>
                   {formatDate(post.created_at)}
                 </time>
                 {post.tags && post.tags.length > 0 && (
-                  <div className="flex gap-2">
-                    {getTranslatedTags(post).slice(0, 3).map((tag, idx) => (
+                  <div className="flex gap-1.5">
+                    {getTranslatedTags(post).slice(0, 2).map((tag, idx) => (
                       <span 
                         key={idx}
-                        className="px-2 py-1 bg-gray-300 dark:bg-white/10 text-gray-700 dark:text-white/80 rounded-full text-xs"
+                        className="px-2 py-[2px] bg-gray-300 dark:bg-white/10 text-gray-700 dark:text-white/80 rounded-full text-[11px]"
                       >
                         #{tag}
                       </span>
@@ -554,34 +523,33 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
             </header>
 
             {/* Post content / Post-Inhalt / Conținut postare */}
-            <div className="mb-4">
+            <div className="mb-3">
               {/* Featured image / Hauptbild / Imagine principală */}
               {post.image_url && (
-                <div className="mb-3 rounded-lg overflow-hidden">
+                <div className="mb-2 rounded-lg overflow-hidden">
                   <Image
                     src={post.image_url}
                     alt={getTranslatedTitle(post)}
                     width={800}
                     height={400}
                     /* Pasul 21082026 — performanta: nu mai descarcam 800px pe mobil */
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 800px"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z"
-                    className="w-full h-28 sm:h-64 object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-32 lg:h-40 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               )}
               
               {/* Post excerpt with theme-aware colors / Post-Auszug mit themenabhängigen Farben / Extras postare cu culori adaptate la temă */}
-              <p className="text-gray-700 dark:text-white/80 leading-relaxed text-sm lg:text-lg line-clamp-2 lg:line-clamp-none">
+              <p className="text-gray-700 dark:text-white/80 leading-relaxed text-sm line-clamp-2">
                 {getTranslatedExcerpt(post)}
               </p>
             </div>
 
             {/* Responsive footer — auto-stretch, monochrome, uniform spacing, never overflow */}
-            <footer className="flex flex-col items-stretch gap-2 pt-3 border-t border-gray-300 dark:border-white/20 overflow-hidden">
-              {/* Like & Comments — equal spacing from card edges */}
-              <div className="flex items-center justify-between w-full">
+            <footer className="mt-auto flex items-center justify-between gap-3 pt-2 border-t border-gray-300 dark:border-white/20">
+              <div className="flex items-center gap-4">
                 {/* Like button */}
                 <button
                   onClick={(e) => {
@@ -589,11 +557,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                     e.stopPropagation();
                     handleLike(post.id);
                   }}
-                  className={`flex items-center gap-2 transition-colors duration-200 ${
-                    likedPosts.has(post.id) 
-                      ? 'text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300' 
-                      : 'text-gray-600 dark:text-white/60 hover:text-red-500 dark:hover:text-red-400'
-                  }`}
+                  className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/60 transition-colors duration-200 hover:text-gray-900 dark:hover:text-white"
                 >
                   <FaRegHeart className={likedPosts.has(post.id) ? 'fill-current' : ''} />
                   <span>{post.likes_count || 0}</span>
@@ -606,85 +570,23 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                     e.stopPropagation();
                     window.location.href = `/blogs/${post.slug}#comments`;
                   }}
-                  className="flex items-center gap-2 text-gray-600 dark:text-white/60 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
+                  className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/60 transition-colors duration-200 hover:text-gray-900 dark:hover:text-white"
                 >
                   <TfiComment />
                   <span>{post.comments_count || 0}</span>
                 </button>
               </div>
 
-              {/* Pasul 2102001: Share buttons — all in one row, flex-wrap for long labels (Russian) */}
-              <div className="flex items-center gap-1.5 w-full overflow-x-auto">
-                <span className="text-gray-700 dark:text-white/70 flex-shrink-0 font-bold text-sm">
-                  {language === 'de' ? 'Teilen:' : 
-                   language === 'en' ? 'Share:' : 
-                   language === 'ro' ? 'Distribuie:' : 
-                   'Отправить:'}
-                </span>
-                <div className="flex items-center gap-2.5 flex-shrink-0 share-buttons-row">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    sharePost(post, 'whatsapp');
-                  }}
-                  className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
-                  title="WhatsApp"
-                >
-                  <FaWhatsapp className="w-[18px] h-[18px]" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    sharePost(post, 'telegram');
-                  }}
-                  className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
-                  title="Telegram"
-                >
-                  <FaTelegram className="w-[18px] h-[18px]" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    sharePost(post, 'email');
-                  }}
-                  className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
-                  title="Email"
-                >
-                  <FaEnvelope className="w-[18px] h-[18px]" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    sharePost(post, 'twitter');
-                  }}
-                  className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
-                  title="Twitter"
-                >
-                  <FaTwitter className="w-[18px] h-[18px]" />
-                </button>
-                </div>
-              </div>
-
               {/* Read more indicator */}
-              <div className="text-right">
-                <span className="text-base sm:text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:text-blue-500 dark:group-hover:text-blue-300 transition-colors duration-200">
-                  {language === 'de' ? 'Weiterlesen' : 
-                   language === 'en' ? 'Read More' : 
-                   language === 'ro' ? 'Citește Mai Mult' : 
-                   'Читать далее'} →
-                </span>
-              </div>
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:text-blue-500 dark:group-hover:text-blue-300 transition-colors duration-200">
+                {language === 'de' ? 'Weiterlesen' : 
+                 language === 'en' ? 'Read More' : 
+                 language === 'ro' ? 'Citește' : 
+                 'Читать далее'} →
+              </span>
             </footer>
           </article>
         </Link>
-        {/* Separator — only on desktop / Separator — nur auf Desktop / Separator — doar pe desktop */}
-        {!isMobile && index < Math.min(posts.length, 6) - 1 && (
-          <div className="border-b-2 border-gray-300 dark:border-white/20 my-2" />
-        )}
         </div>
         </React.Fragment>
         ))}
