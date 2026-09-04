@@ -729,8 +729,10 @@ export default function Navigation() {
     )}
 
     {/* ═══ DESKTOP NAV BAR — unchanged, only visible on lg+ ═══ */}
+    {/* Pasul 0409e — nimic din bara de sus nu se mai rupe pe doua randuri.
+        Cand apare butonul Admin, linkurile se string, nu se îndoaie. */}
     {!cleanScreen && (
-    <nav className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white/20 dark:bg-black/20 backdrop-blur-md border-b border-black/10 dark:border-white/10">
+    <nav className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white/20 dark:bg-black/20 backdrop-blur-md border-b border-black/10 dark:border-white/10 [&_a]:whitespace-nowrap [&_button]:whitespace-nowrap [&_span]:whitespace-nowrap">
       <div className="max-w-7xl mx-auto" style={{ padding: '0 clamp(8px, 3vw, 32px)' }}>
         <div className="flex items-center justify-between h-16 min-w-0" style={{ gap: 'clamp(8px, 3vw, 24px)' }}>
           {/* Logo section / Logo-Bereich / Secțiune logo */}
@@ -752,7 +754,7 @@ export default function Navigation() {
           </div>
 
           {/* Desktop navigation menu / Desktop-Navigationsmenü / Meniu navigare desktop */}
-          <div className="flex items-center space-x-8">
+          <div className="flex min-w-0 items-center gap-x-1 xl:gap-x-3">
             {/* Blogs dropdown with months submenu / Blog-Dropdown mit Monats-Untermenü / Dropdown bloguri cu submeniu luni */}
             <div 
               className="relative blogs-dropdown"
@@ -966,7 +968,7 @@ export default function Navigation() {
           </div>
 
           {/* Right side controls / Rechte Seitensteuerungen / Controale parte dreaptă */}
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-shrink-0 items-center gap-x-1 xl:gap-x-2">
             {/* Back to Home button (only show when not on homepage) */}
             {pathname !== '/' && (
               <Link
@@ -1093,8 +1095,8 @@ export default function Navigation() {
               <div className="flex items-center space-x-3">
                 {user ? (
                   // Logged in user menu / Angemeldetes Benutzermenü / Meniu utilizator autentificat
-                  <div className="flex items-center space-x-3">
-                    <span className="text-black/80 dark:text-white/80 text-sm">
+                  <div className="flex items-center gap-x-2">
+                    <span className="hidden max-w-[9rem] truncate text-sm text-black/80 dark:text-white/80 xl:inline">
                       {user.email}
                     </span>
                     <button
