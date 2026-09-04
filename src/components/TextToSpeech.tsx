@@ -290,9 +290,10 @@ export default function TextToSpeech({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
-  // Pasul 2208001: viteza implicita revine la 0.9x — 1x suna prea rapid.
-  // Default speed back to 0.9x (1x sounded too fast). Changeable by the user.
-  const [rate, setRate] = useState(0.9);
+  // Pasul 0409g — VITEZA CITIRII, valoarea de pornire.
+  // Schimb-o aici daca vrei alta: 0.9 mai rar, 1.2 mai iute.
+  // Butonul de viteza din player trece prin 0.9 → 1.0 → 1.2 → 1.5.
+  const [rate, setRate] = useState(1.0);
   const [voices, setVoices] = useState<VoiceOption[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isSupported, setIsSupported] = useState(true);

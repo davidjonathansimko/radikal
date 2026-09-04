@@ -1,12 +1,13 @@
 'use client';
 
 // =====================================================================
-// Pasul 2208001 — Editor de efecte pentru imagine (admin)
+// Pasul 0409a — Editor de efecte pentru imagine (admin)
 // =====================================================================
-// Aceleasi optiuni ca la reels, dar pentru articole:
-//   sepia · vignette · noise · grain   (noise si grain sunt SEPARATE,
-//   deci poti alege doar unul sau amandoua deodata)
-// Cu previzualizare LIVE pe imaginea reala a articolului.
+// Lista e strânsă: la început vezi doar numele efectelor. Când deschizi
+// unul, reglajul lui apare chiar sub el, iar imaginea vine imediat
+// dedesubt — reglaj și imagine, amândouă pe ecran, fără derulare.
+// Imaginea arată de fiecare dată TOATE efectele alese până atunci, nu
+// doar pe cel deschis.
 // =====================================================================
 
 import React from 'react';
@@ -28,6 +29,77 @@ interface ImageEffectsEditorProps {
   previewAspect?: '16/9' | '9/16';
 }
 
+/** Cheia unui rând: un efect, sau reglajul de opacitate al imaginii. */
+type RowKey = keyof ImageEffectSettings | 'backgroundOpacity';
+
+interface EffectRow {
+  key: RowKey;
+  /** Bifa care pornește efectul. Lipsește la opacitate, care e mereu activă. */
+  toggle?: keyof ImageEffectSettings;
+  label: string;
+  /** Reglajul care se deschide sub rând. */
+  slider: {
+    field: keyof ImageEffectSettings;
+    label: (v: number) => string;
+    min: number;
+    max: number;
+    fallback: number;
+  } | null;
+  note?: string;
+}
+
+const ROWS: EffectRow[] = [
+  {
+    key: 'effectNoise',
+    toggle: 'effectNoise',
+    label: 'Noise (zgomot fin)',
+    slider: { field: 'noiseIntensity', label: (v) => `Intensitate noise: ${v}%`, min: 0, max: 100, fallback: 35 },
+  },
+  {
+    key: 'effectGrain',
+    toggle: 'effectGrain',
+    label: 'Grain (granulație dinamică)',
+    slider: { field: 'grainOpacity', label: (v) => `Opacitate grain: ${v}%`, min: 0, max: 100, fallback: 25 },
+  },
+  {
+    key: 'effectSepia',
+    toggle: 'effectSepia',
+    label: 'Sepia',
+    slider: { field: 'sepiaIntensity', label: (v) => `Intensitate sepia: ${v}%`, min: 0, max: 100, fallback: 12 },
+  },
+  {
+    key: 'effectVignette',
+    toggle: 'effectVignette',
+    label: 'Vignette',
+    slider: { field: 'vignetteIntensity', label: (v) => `Intensitate vignette: ${v}%`, min: 0, max: 100, fallback: 45 },
+  },
+  {
+    key: 'effectBw',
+    toggle: 'effectBw',
+    label: 'Alb-negru',
+    slider: { field: 'bwIntensity', label: (v) => `Cât de puternic alb-negru: ${v}%`, min: 0, max: 100, fallback: 50 },
+    note: 'Mai puțin = blând și cenușiu. Mai mult = dur și contrastant.',
+  },
+  {
+    key: 'effectBloom',
+    toggle: 'effectBloom',
+    label: 'Halation (lumini difuze)',
+    slider: { field: 'bloomIntensity', label: (v) => `Intensitate halation: ${v}%`, min: 0, max: 100, fallback: 50 },
+  },
+  {
+    key: 'effectLetterbox',
+    toggle: 'effectLetterbox',
+    label: 'Bare de film',
+    slider: { field: 'letterboxSize', label: (v) => `Lățimea barelor: ${v}%`, min: 2, max: 20, fallback: 8 },
+  },
+  {
+    key: 'effectLightLeak',
+    toggle: 'effectLightLeak',
+    label: 'Scurgere de lumină',
+    slider: { field: 'lightLeakIntensity', label: (v) => `Intensitate scurgere: ${v}%`, min: 0, max: 100, fallback: 50 },
+  },
+];
+
 export default function ImageEffectsEditor({
   title,
   hint,
@@ -38,224 +110,164 @@ export default function ImageEffectsEditor({
   onBackgroundOpacityChange,
   previewAspect = '16/9',
 }: ImageEffectsEditorProps) {
-  // Pasul 2308006-E — fereastra mare de previzualizare („Vezi cum arată")
   const [showBig, setShowBig] = React.useState(false);
+  const [openKey, setOpenKey] = React.useState<RowKey | null>(null);
 
   const set = <K extends keyof ImageEffectSettings>(k: K, v: ImageEffectSettings[K]) =>
     onChange({ ...value, [k]: v });
 
   const labelClass =
     'block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1';
-  const rangeClass = 'w-full accent-black dark:accent-white disabled:opacity-40';
+  const rangeClass = 'w-full accent-black dark:accent-white';
+
+  const hasOpacity = typeof backgroundOpacity === 'number' && Boolean(onBackgroundOpacityChange);
+
+  /** Imaginea, cu toate efectele bifate până acum. */
+  const preview = (
+    <div
+      className="relative mx-auto w-full overflow-hidden rounded-xl bg-black"
+      style={{
+        aspectRatio: previewAspect.replace('/', ' / '),
+        maxHeight: '34vh',
+        maxWidth: previewAspect === '9/16' ? '190px' : '100%',
+      }}
+    >
+      {imageUrl ? (
+        // Imagine simpla (<img>) — este doar preview in admin, nu pagina publica.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt="Previzualizare efecte"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{
+            filter: effectsFilter(value),
+            opacity: typeof backgroundOpacity === 'number' ? backgroundOpacity / 100 : 1,
+          }}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center px-3 text-center text-xs text-white/50">
+          Adaugă o imagine ca să vezi efectele
+        </div>
+      )}
+      <ImageEffectLayers settings={value} zIndex={2} />
+    </div>
+  );
+
+  /** Rândul deschis arată reglajul, apoi imaginea, apoi butonul de mărire. */
+  const openPanel = (
+    slider: EffectRow['slider'],
+    note: string | undefined,
+    opacityRow: boolean,
+  ) => (
+    <div className="border-t border-black/10 px-3 pb-3 pt-3 dark:border-white/10">
+      {opacityRow && hasOpacity ? (
+        <div className="mb-3">
+          <label className={labelClass}>Opacitate imagine: {backgroundOpacity}%</label>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={backgroundOpacity}
+            onChange={(e) => onBackgroundOpacityChange?.(Number(e.target.value))}
+            className={rangeClass}
+          />
+        </div>
+      ) : slider ? (
+        <div className="mb-3">
+          <label className={labelClass}>
+            {slider.label((value[slider.field] as number) ?? slider.fallback)}
+          </label>
+          <input
+            type="range"
+            min={slider.min}
+            max={slider.max}
+            value={(value[slider.field] as number) ?? slider.fallback}
+            onChange={(e) => set(slider.field, Number(e.target.value) as never)}
+            className={rangeClass}
+          />
+          {note && <p className="mt-1 text-[11px] text-black/40 dark:text-white/40">{note}</p>}
+        </div>
+      ) : null}
+
+      {preview}
+
+      {imageUrl && (
+        <button
+          type="button"
+          onClick={() => setShowBig(true)}
+          className="mt-2 w-full rounded-lg border border-black/15 px-3 py-2 text-xs font-medium text-black/70 transition-colors hover:bg-black/5 dark:border-white/20 dark:text-white/70 dark:hover:bg-white/10"
+        >
+          Vezi cum arată, mare
+        </button>
+      )}
+    </div>
+  );
 
   return (
-    <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">
-      <p className="text-sm font-semibold text-black dark:text-white mb-1">{title}</p>
-      {hint && <p className="text-xs text-black/50 dark:text-white/50 mb-3">{hint}</p>}
+    <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+      <p className="mb-1 text-sm font-semibold text-black dark:text-white">{title}</p>
+      {hint && <p className="mb-3 text-xs text-black/50 dark:text-white/50">{hint}</p>}
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_auto]">
-        {/* --------- Setari --------- */}
-        <div className="grid gap-4 sm:grid-cols-2 min-w-0">
-          <div className="sm:col-span-2 flex flex-wrap gap-5">
-            {([
-              ['Noise (zgomot fin)', 'effectNoise'],
-              ['Grain (granulație dinamică)', 'effectGrain'],
-              ['Sepia', 'effectSepia'],
-              ['Vignette', 'effectVignette'],
-              // Pasul 2308005 (E) — efecte noi, discrete și profesionale
-              ['Alb-negru', 'effectBw'],
-              ['Halation (lumini difuze)', 'effectBloom'],
-              ['Bare de film', 'effectLetterbox'],
-              ['Scurgere de lumină', 'effectLightLeak'],
-            ] as const).map(([label, key]) => (
-              <label
-                key={key}
-                className="flex items-center gap-2 text-sm text-black dark:text-white cursor-pointer"
-              >
+      <div className="space-y-1.5">
+        {ROWS.map((row) => {
+          const on = Boolean(row.toggle && value[row.toggle]);
+          const open = openKey === row.key;
+
+          return (
+            <div
+              key={String(row.key)}
+              className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10"
+            >
+              <div className="flex items-center gap-2 px-3 py-2">
                 <input
                   type="checkbox"
-                  checked={Boolean(value[key])}
-                  onChange={(e) => set(key, e.target.checked)}
-                  className="h-4 w-4 accent-black dark:accent-white"
+                  checked={on}
+                  onChange={(e) => {
+                    if (row.toggle) set(row.toggle, e.target.checked as never);
+                    // Bifarea deschide singură reglajul: nu mai cauți nimic.
+                    setOpenKey(e.target.checked ? row.key : null);
+                  }}
+                  className="h-4 w-4 flex-shrink-0 accent-black dark:accent-white"
+                  aria-label={row.label}
                 />
-                {label}
-              </label>
-            ))}
-          </div>
-
-          {/* -----------------------------------------------------------
-              Pasul 2308006-E — REGLAJELE.
-              Fiecare slider apare DOAR daca efectul lui este bifat.
-              Inainte erau toate mereu pe ecran, doar „stinse", si nu se
-              intelegea care la ce foloseste. Acum lista creste odata cu
-              ce alegi tu — vezi doar ce te priveste.
-              ----------------------------------------------------------- */}
-
-          {value.effectSepia && (
-            <div>
-              <label className={labelClass}>Intensitate sepia: {value.sepiaIntensity}%</label>
-              <input
-                type="range" min={0} max={100}
-                value={value.sepiaIntensity}
-                onChange={(e) => set('sepiaIntensity', Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-
-          {value.effectVignette && (
-            <div>
-              <label className={labelClass}>Intensitate vignette: {value.vignetteIntensity}%</label>
-              <input
-                type="range" min={0} max={100}
-                value={value.vignetteIntensity}
-                onChange={(e) => set('vignetteIntensity', Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-
-          {value.effectGrain && (
-            <div>
-              <label className={labelClass}>Opacitate grain: {value.grainOpacity}%</label>
-              <input
-                type="range" min={0} max={100}
-                value={value.grainOpacity}
-                onChange={(e) => set('grainOpacity', Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-
-          {value.effectNoise && (
-            <div>
-              <label className={labelClass}>
-                Intensitate noise: {value.noiseIntensity ?? 35}%
-              </label>
-              <input
-                type="range" min={0} max={100}
-                value={value.noiseIntensity ?? 35}
-                onChange={(e) => set('noiseIntensity', Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-
-          {value.effectBw && (
-            <div>
-              <label className={labelClass}>
-                Cât de puternic alb-negru: {value.bwIntensity ?? 50}%
-              </label>
-              <input
-                type="range" min={0} max={100}
-                value={value.bwIntensity ?? 50}
-                onChange={(e) => set('bwIntensity', Number(e.target.value))}
-                className={rangeClass}
-              />
-              <p className="mt-1 text-[11px] text-black/40 dark:text-white/40">
-                Mai puțin = blând și cenușiu. Mai mult = dur și contrastant.
-              </p>
-            </div>
-          )}
-
-          {value.effectBloom && (
-            <div>
-              <label className={labelClass}>
-                Intensitate halation: {value.bloomIntensity ?? 50}%
-              </label>
-              <input
-                type="range" min={0} max={100}
-                value={value.bloomIntensity ?? 50}
-                onChange={(e) => set('bloomIntensity', Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-
-          {value.effectLightLeak && (
-            <div>
-              <label className={labelClass}>
-                Intensitate scurgere de lumină: {value.lightLeakIntensity ?? 50}%
-              </label>
-              <input
-                type="range" min={0} max={100}
-                value={value.lightLeakIntensity ?? 50}
-                onChange={(e) => set('lightLeakIntensity', Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-
-          {value.effectLetterbox && (
-            <div>
-              <label className={labelClass}>
-                Lățimea barelor de film: {value.letterboxSize ?? 8}%
-              </label>
-              <input
-                type="range" min={2} max={20}
-                value={value.letterboxSize ?? 8}
-                onChange={(e) => set('letterboxSize', Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-
-          {typeof backgroundOpacity === 'number' && onBackgroundOpacityChange && (
-            <div>
-              <label className={labelClass}>Opacitate imagine: {backgroundOpacity}%</label>
-              <input
-                type="range" min={0} max={100}
-                value={backgroundOpacity}
-                onChange={(e) => onBackgroundOpacityChange(Number(e.target.value))}
-                className={rangeClass}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* --------- Previzualizare live (miniatura) --------- */}
-        <div className={previewAspect === '9/16' ? 'lg:w-[200px]' : 'lg:w-[280px]'}>
-          <p className={labelClass}>Previzualizare</p>
-          <div
-            className="relative overflow-hidden rounded-xl bg-black"
-            style={{ aspectRatio: previewAspect.replace('/', ' / ') }}
-          >
-            {imageUrl ? (
-              // Imagine simpla (<img>) — este doar preview in admin, nu pagina publica.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt="Previzualizare efecte"
-                className="absolute inset-0 h-full w-full object-cover"
-                style={{
-                  filter: effectsFilter(value),
-                  opacity:
-                    typeof backgroundOpacity === 'number' ? backgroundOpacity / 100 : 1,
-                }}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-xs text-white/50 px-3 text-center">
-                Adaugă o imagine ca să vezi efectele
+                <button
+                  type="button"
+                  onClick={() => setOpenKey(open ? null : row.key)}
+                  className="flex flex-1 items-center justify-between gap-2 text-left text-sm text-black dark:text-white"
+                >
+                  <span className={on ? 'font-medium' : 'opacity-60'}>{row.label}</span>
+                  <span className="flex-shrink-0 text-xs text-black/40 dark:text-white/40">
+                    {open ? '▾' : '▸'}
+                  </span>
+                </button>
               </div>
-            )}
 
-            <ImageEffectLayers settings={value} zIndex={2} />
-          </div>
+              {open && openPanel(row.slider, row.note, false)}
+            </div>
+          );
+        })}
 
-          {/* Pasul 2308006-E — miniatura e mica si nu se vede bine cat de
-              tare e un efect. Butonul asta deschide aceeasi imagine mare,
-              pe tot ecranul, cu exact aceleasi reglaje. */}
-          {imageUrl && (
+        {hasOpacity && (
+          <div className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
             <button
               type="button"
-              onClick={() => setShowBig(true)}
-              className="mt-2 w-full rounded-lg border border-black/15 dark:border-white/20 px-3 py-2 text-xs font-medium text-black/70 dark:text-white/70 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+              onClick={() =>
+                setOpenKey(openKey === 'backgroundOpacity' ? null : 'backgroundOpacity')
+              }
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-black dark:text-white"
             >
-              Vezi cum arată
+              <span className="font-medium">Opacitate imagine: {backgroundOpacity}%</span>
+              <span className="text-xs text-black/40 dark:text-white/40">
+                {openKey === 'backgroundOpacity' ? '▾' : '▸'}
+              </span>
             </button>
-          )}
-        </div>
+            {openKey === 'backgroundOpacity' && openPanel(null, undefined, true)}
+          </div>
+        )}
       </div>
+
+      {/* Când nu e nimic deschis, imaginea rămâne totuși la vedere. */}
+      {openKey === null && <div className="mt-3">{preview}</div>}
 
       {/* --------- Previzualizare MARE, pe tot ecranul --------- */}
       {showBig && imageUrl && (
@@ -278,8 +290,7 @@ export default function ImageEffectsEditor({
               className="absolute inset-0 h-full w-full object-cover"
               style={{
                 filter: effectsFilter(value),
-                opacity:
-                  typeof backgroundOpacity === 'number' ? backgroundOpacity / 100 : 1,
+                opacity: typeof backgroundOpacity === 'number' ? backgroundOpacity / 100 : 1,
               }}
             />
             <ImageEffectLayers settings={value} zIndex={2} />
