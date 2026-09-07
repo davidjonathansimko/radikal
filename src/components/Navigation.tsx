@@ -135,6 +135,8 @@ export default function Navigation() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  /** Sesiunea n-a răspuns la timp. Arătăm meniul oricum, ca să nu rămâi blocat. */
+  const [authUnknown, setAuthUnknown] = useState(false);
 
   // Pasul 2308006-F — se arata rubrica News in meniu?
   const newsMenu = useNewsMenu();
@@ -166,7 +168,7 @@ export default function Navigation() {
   }, []);
 
   const cleanScreen = pathname === '/verset' || introActive;
-  const canSeeNav = (!!user || isGuest) && !cleanScreen;
+  const canSeeNav = (!!user || isGuest || authUnknown) && !cleanScreen;
   
   // Language dropdown state / Sprach-Dropdown-Status / Stare dropdown limbă
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
@@ -204,14 +206,38 @@ export default function Navigation() {
 
   // Check user authentication status on component mount / Benutzer-Authentifizierungsstatus beim Laden der Komponente prüfen / Verifică starea autentificării utilizatorului la montarea componentei
   useEffect(() => {
+    // Pasul 0809000 — PLASA DE SIGURANȚĂ.
+    // Dacă sesiunea salvată în telefon e stricată sau răspunsul nu mai vine,
+    // înainte rămâneam pentru totdeauna în „se încarcă”, iar meniul nu mai
+    // apărea deloc: nici intrare, nici ieșire, nimic. Acum, după opt secunde,
+    // arătăm meniul oricum, ca omul să poată intra din nou.
+    let settled = false;
+    const guard = setTimeout(() => {
+      if (settled) return;
+      setAuthUnknown(true);
+      setLoading(false);
+    }, 8000);
+
     // Get initial session / Anfangssession abrufen / Obține sesiunea inițială
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      
-      // Check if user is admin / Prüfen, ob Benutzer Admin ist / Verifică dacă utilizatorul este admin
-      setIsAdmin(isAdminUser(session?.user));
-      setLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        // Sesiune stricată (jeton expirat, date corupte): o ștergem local, ca
+        // aplicația să își revină singură, fără „șterge datele site-ului”.
+        if (error) {
+          await supabase.auth.signOut().catch(() => {});
+        }
+        setUser(session?.user ?? null);
+        setIsAdmin(isAdminUser(session?.user));
+      } catch {
+        setUser(null);
+        setIsAdmin(false);
+      } finally {
+        settled = true;
+        clearTimeout(guard);
+        setAuthUnknown(false);
+        setLoading(false);
+      }
     };
 
     getInitialSession();
@@ -219,15 +245,21 @@ export default function Navigation() {
     // Listen for auth state changes / Auf Authentifizierungsstatusänderungen hören / Ascultă schimbările stării de autentificare
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: any, session: any) => {
+        settled = true;
+        clearTimeout(guard);
         setUser(session?.user ?? null);
         
         // Update admin status / Admin-Status aktualisieren / Actualizează starea de admin
         setIsAdmin(isAdminUser(session?.user));
+        setAuthUnknown(false);
         setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(guard);
+      subscription.unsubscribe();
+    };
   }, [supabase.auth]);
 
   // Fetch blog months for dropdown / Blog-Monate für Dropdown abrufen / Obține lunile cu bloguri pentru dropdown
