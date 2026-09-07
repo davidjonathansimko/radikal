@@ -27,6 +27,7 @@ import { paginateText } from '@/lib/paginateText';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
+import ImageEffectLayers, { DEFAULT_IMAGE_EFFECTS } from '@/components/ImageEffectLayers';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -79,6 +80,12 @@ export interface Reel {
   effect_bloom?: boolean;
   effect_letterbox?: boolean;
   effect_light_leak?: boolean;
+  // Pasul 0809000 — cat de tare, nu doar daca. Lipsesc pana rulezi SQL-ul.
+  noise_intensity?: number;
+  bw_intensity?: number;
+  bloom_intensity?: number;
+  letterbox_size?: number;
+  light_leak_intensity?: number;
 
   /**
    * Pasul 2308006-A — randurile alese manual de tine in admin
@@ -576,28 +583,31 @@ export function ReelSlide({
         />
       )}
 
-      {/* --- Efect NOISE / sand grain — foarte fin ---
-           Pasul 2308001: `inset-0` a fost scos. Clasa `.reel-noise` isi pune
-           singura o suprafata mai mare decat ecranul, ca marginile sa nu se
-           mai descopere cand boabele se misca. */}
-      {reel.effect_noise && (
-        <div
-          aria-hidden="true"
-          className="reel-noise"
-          style={{ opacity: isDark ? 0.16 : 0.1 }}
-        />
-      )}
-
-      {/* --- Pasul 2208001: GRAIN dinamic (film), separat de noise ---
-          `pointer-events-none` + z-index mic => nu acopera niciodata
-          butoanele de like / share / paginare. */}
-      {reel.effect_grain && (
-        <div
-          aria-hidden="true"
-          className="dynamic-grain"
-          style={{ ['--grain-opacity' as string]: String((reel.grain_opacity ?? 25) / 100) }}
-        />
-      )}
+      {/* Pasul 0809000 — aceleași straturi ca în previzualizarea din admin.
+          Înainte reel-ul își desena singur efectele și nu ținea seama de
+          niveluri, deci ce alegeai în admin nu era ce vedeai aici. */}
+      <ImageEffectLayers
+        settings={{
+          ...DEFAULT_IMAGE_EFFECTS,
+          effectNoise: reel.effect_noise,
+          effectGrain: Boolean(reel.effect_grain),
+          grainOpacity: reel.grain_opacity ?? 25,
+          effectSepia: reel.effect_sepia,
+          sepiaIntensity: reel.sepia_intensity,
+          effectVignette: reel.effect_vignette,
+          vignetteIntensity: reel.vignette_intensity,
+          effectBw: Boolean(reel.effect_bw),
+          effectBloom: Boolean(reel.effect_bloom),
+          effectLetterbox: Boolean(reel.effect_letterbox),
+          effectLightLeak: Boolean(reel.effect_light_leak),
+          noiseIntensity: reel.noise_intensity ?? 35,
+          bwIntensity: reel.bw_intensity ?? 50,
+          bloomIntensity: reel.bloom_intensity ?? 50,
+          letterboxSize: reel.letterbox_size ?? 8,
+          lightLeakIntensity: reel.light_leak_intensity ?? 50,
+        }}
+        zIndex={1}
+      />
 
       {/* --- Sepia peste tot continutul (cand nu exista imagine de fundal) --- */}
       {reel.effect_sepia && !reel.background_image_url && (
@@ -610,35 +620,6 @@ export function ReelSlide({
             mixBlendMode: 'soft-light',
           }}
         />
-      )}
-
-      {/* --- VIGNETTE: colturile putin intunecate --- */}
-      {reel.effect_vignette && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            // Pasul 2108002: intensitatea vine acum din baza de date (0–100)
-            background: `radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,${
-              (Math.min(100, Math.max(0, reel.vignette_intensity)) / 100) * (isDark ? 1 : 0.7)
-            }) 100%)`,
-          }}
-        />
-      )}
-
-      {/* --- Pasul 2308005 (E): BLOOM cinematic (halou cald, „respira") --- */}
-      {reel.effect_bloom && <div aria-hidden="true" className="cine-bloom" />}
-
-      {/* --- Pasul 2308005 (E): LIGHT LEAK (scurgere de lumina, ca la film) --- */}
-      {reel.effect_light_leak && <div aria-hidden="true" className="cine-light-leak" />}
-
-      {/* --- Pasul 2308005 (E): LETTERBOX (barele negre cinema).
-              Sunt randate ULTIMELE ca sa stea peste toate celelalte straturi. --- */}
-      {reel.effect_letterbox && (
-        <>
-          <div aria-hidden="true" className="pointer-events-none absolute top-0 left-0 right-0 h-[8%] bg-black" />
-          <div aria-hidden="true" className="pointer-events-none absolute bottom-0 left-0 right-0 h-[8%] bg-black" />
-        </>
       )}
 
       {/* Textul animat, PERFECT centrat pe ecran.
@@ -1007,6 +988,11 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
         // daca STEP_2708001 nu a fost rulat, coloanele nu exista.
         const TEXT_MARTURIE_COLUMNS = 'text_color, testimonies(slug), ';
 
+        // Pasul 0809000 — nivelurile efectelor. Aceeasi grija: fara
+        // STEP_0809000_REELS_NIVELE.sql, coloanele nu exista.
+        const LEVEL_COLUMNS =
+          'noise_intensity, bw_intensity, bloom_intensity, letterbox_size, light_leak_intensity, ';
+
         const runQuery = (columns: string) =>
           supabase
             .from('reels')
@@ -1017,8 +1003,13 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
 
         // Incercam pe rand, de la „tot" spre „minimul sigur".
         let { data, error } = await runQuery(
-          TEXT_MARTURIE_COLUMNS + LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
+          LEVEL_COLUMNS + TEXT_MARTURIE_COLUMNS + LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
         );
+        if (error?.code === '42703' || error?.code === 'PGRST200') {
+          ({ data, error } = await runQuery(
+            TEXT_MARTURIE_COLUMNS + LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
+          ));
+        }
         if (error?.code === '42703' || error?.code === 'PGRST200') {
           ({ data, error } = await runQuery(
             LIGHT_COLUMN + MANUAL_PAGES_COLUMN + NEW_EFFECT_COLUMNS + BASE_COLUMNS,
@@ -1097,6 +1088,11 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
               effect_bloom: Boolean(row.effect_bloom),
               effect_letterbox: Boolean(row.effect_letterbox),
               effect_light_leak: Boolean(row.effect_light_leak),
+              noise_intensity: (row.noise_intensity as number) ?? 35,
+              bw_intensity: (row.bw_intensity as number) ?? 50,
+              bloom_intensity: (row.bloom_intensity as number) ?? 50,
+              letterbox_size: (row.letterbox_size as number) ?? 8,
+              light_leak_intensity: (row.light_leak_intensity as number) ?? 50,
               // Pasul 2308009 — randurile alese manual raman ACELEASI in orice
               // limba. Traducerea salvata tine randurile despartite prin linie
               // noua; le folosim doar daca numarul se potriveste cu originalul,

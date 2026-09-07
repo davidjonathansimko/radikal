@@ -408,11 +408,14 @@ export default function DailyVerseAdmin() {
               <div className="mt-4">
                 <ImageEffectsEditor
                   title="Efecte pentru imagine"
-                  hint="Aceleași efecte ca la reels."
+                  hint="Imaginea de aici are deja lumina, contrastul și cât de tare se vede, alese mai sus."
                   imageUrl={imageUrl}
                   value={effects}
                   onChange={setEffects}
                   previewAspect="9/16"
+                  backgroundOpacity={opacity}
+                  onBackgroundOpacityChange={setOpacity}
+                  baseFilter={`brightness(${brightness}%) contrast(${contrast}%) blur(${blur}px)`}
                 />
               </div>
             </>

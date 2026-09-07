@@ -147,14 +147,6 @@ function BlogsPageContent() {
               </Link>
             </div>
           )}
-          
-          <p className="text-sm sm:text-xl text-gray-700 dark:text-white/80 max-w-2xl mx-auto animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            {language === 'de' ? 'Vielleicht suchst du nicht, um zu finden, sondern suchst, um dich selbst zu finden.' : 
-             language === 'en' ? 'Perhaps you are not searching to find, but searching to rediscover yourself.' : 
-             language === 'ro' ? 'Poate că nu cauți pentru a găsi, ci cauți pentru a te regăsi.' : 
-             'Возможно, вы ищете не для того, чтобы найти, а для того, чтобы заново открыть себя.'}
-          </p>
-          
           {/* Back to home button - hidden on mobile, shown on desktop (moved below BlogList on mobile) */}
           <BackToHome className="mt-6 hidden lg:flex justify-center" />
           

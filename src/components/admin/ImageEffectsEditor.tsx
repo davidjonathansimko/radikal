@@ -27,6 +27,12 @@ interface ImageEffectsEditorProps {
   onBackgroundOpacityChange?: (v: number) => void;
   /** Aspectul previzualizarii: articolul e lat, modalul e 9:16 */
   previewAspect?: '16/9' | '9/16';
+  /**
+   * Reglajele facute in alta parte (lumina, contrast, cat de moale). Se pun
+   * INAINTEA efectelor, exact ca pe pagina adevarata, ca previzualizarea de
+   * aici sa arate ce va vedea cititorul.
+   */
+  baseFilter?: string;
 }
 
 /** Cheia unui rând: un efect, sau reglajul de opacitate al imaginii. */
@@ -109,9 +115,12 @@ export default function ImageEffectsEditor({
   backgroundOpacity,
   onBackgroundOpacityChange,
   previewAspect = '16/9',
+  baseFilter = '',
 }: ImageEffectsEditorProps) {
   const [showBig, setShowBig] = React.useState(false);
   const [openKey, setOpenKey] = React.useState<RowKey | null>(null);
+
+  const fullFilter = `${baseFilter} ${effectsFilter(value)}`.trim();
 
   const set = <K extends keyof ImageEffectSettings>(k: K, v: ImageEffectSettings[K]) =>
     onChange({ ...value, [k]: v });
@@ -140,7 +149,7 @@ export default function ImageEffectsEditor({
           alt="Previzualizare efecte"
           className="absolute inset-0 h-full w-full object-cover"
           style={{
-            filter: effectsFilter(value),
+            filter: fullFilter,
             opacity: typeof backgroundOpacity === 'number' ? backgroundOpacity / 100 : 1,
           }}
         />
@@ -289,7 +298,7 @@ export default function ImageEffectsEditor({
               alt="Previzualizare efecte, mărime mare"
               className="absolute inset-0 h-full w-full object-cover"
               style={{
-                filter: effectsFilter(value),
+                filter: fullFilter,
                 opacity: typeof backgroundOpacity === 'number' ? backgroundOpacity / 100 : 1,
               }}
             />

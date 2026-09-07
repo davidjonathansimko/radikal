@@ -17,6 +17,8 @@ import { createClient } from '@/lib/supabase';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import MediaUpload from './MediaUpload';
 import ReelPreview from './ReelPreview';
+import ImageEffectsEditor from './ImageEffectsEditor';
+import { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import AdminListFilterBar from './AdminListFilterBar';
 import PostSearchSelect from './PostSearchSelect';
 import { useAdminListFilter } from './useAdminListFilter';
@@ -85,6 +87,12 @@ export default function ReelsAdmin() {
   const [effectBloom, setEffectBloom] = useState(false);
   const [effectLetterbox, setEffectLetterbox] = useState(false);
   const [effectLightLeak, setEffectLightLeak] = useState(false);
+  // Pasul 0809000 — cat de tare, nu doar daca. Necesita STEP_0809000_REELS_NIVELE.sql.
+  const [noiseIntensity, setNoiseIntensity] = useState(35);
+  const [bwIntensity, setBwIntensity] = useState(50);
+  const [bloomIntensity, setBloomIntensity] = useState(50);
+  const [letterboxSize, setLetterboxSize] = useState(8);
+  const [lightLeakIntensity, setLightLeakIntensity] = useState(50);
 
   // Pasul 2308000 — titlu intern, stilul literelor, rânduri manuale
   const [title, setTitle] = useState('');
@@ -128,6 +136,11 @@ export default function ReelsAdmin() {
     setEffectBloom(false);
     setEffectLetterbox(false);
     setEffectLightLeak(false);
+    setNoiseIntensity(35);
+    setBwIntensity(50);
+    setBloomIntensity(50);
+    setLetterboxSize(8);
+    setLightLeakIntensity(50);
     setTitle('');
     setUppercaseText(false);
     setUseManualPages(false);
@@ -177,6 +190,44 @@ export default function ReelsAdmin() {
   }, []);
 
   const draft = useFormDraft('radikalReelDraft', draftValues, applyDraft, editingId === null);
+
+  // Puntea intre starile separate ale reel-ului si editorul de efecte, care
+  // lucreaza cu un singur obiect.
+  const reelEffects = useMemo<ImageEffectSettings>(
+    () => ({
+      ...DEFAULT_IMAGE_EFFECTS,
+      effectNoise, effectGrain, grainOpacity,
+      effectSepia, sepiaIntensity,
+      effectVignette, vignetteIntensity,
+      effectBw, effectBloom, effectLetterbox, effectLightLeak,
+      noiseIntensity, bwIntensity, bloomIntensity, letterboxSize, lightLeakIntensity,
+    }),
+    [
+      effectNoise, effectGrain, grainOpacity, effectSepia, sepiaIntensity,
+      effectVignette, vignetteIntensity, effectBw, effectBloom, effectLetterbox,
+      effectLightLeak, noiseIntensity, bwIntensity, bloomIntensity, letterboxSize,
+      lightLeakIntensity,
+    ],
+  );
+
+  const applyReelEffects = useCallback((next: ImageEffectSettings) => {
+    setEffectNoise(next.effectNoise);
+    setEffectGrain(next.effectGrain);
+    setGrainOpacity(next.grainOpacity);
+    setEffectSepia(next.effectSepia);
+    setSepiaIntensity(next.sepiaIntensity);
+    setEffectVignette(next.effectVignette);
+    setVignetteIntensity(next.vignetteIntensity);
+    setEffectBw(Boolean(next.effectBw));
+    setEffectBloom(Boolean(next.effectBloom));
+    setEffectLetterbox(Boolean(next.effectLetterbox));
+    setEffectLightLeak(Boolean(next.effectLightLeak));
+    setNoiseIntensity(next.noiseIntensity ?? 35);
+    setBwIntensity(next.bwIntensity ?? 50);
+    setBloomIntensity(next.bloomIntensity ?? 50);
+    setLetterboxSize(next.letterboxSize ?? 8);
+    setLightLeakIntensity(next.lightLeakIntensity ?? 50);
+  }, []);
 
   // Pasul 2708004 — la editare, formularul se mută sub reel-ul apăsat.
   const [editorSlot, setEditorSlot] = useState<HTMLElement | null>(null);
@@ -296,6 +347,12 @@ export default function ReelsAdmin() {
         effect_bloom: effectBloom,
         effect_letterbox: effectLetterbox,
         effect_light_leak: effectLightLeak,
+        // Pasul 0809000 — nivelurile efectelor
+        noise_intensity: noiseIntensity,
+        bw_intensity: bwIntensity,
+        bloom_intensity: bloomIntensity,
+        letterbox_size: letterboxSize,
+        light_leak_intensity: lightLeakIntensity,
         // Pasul 2308000 — titlu intern + stilul textului
         title: title.trim() || null,
         uppercase_text: uppercaseText,
@@ -319,13 +376,18 @@ export default function ReelsAdmin() {
           background_opacity_light: _omitLight,
           text_color: _omitColor,
           testimony_id: _omitTestimony,
+          noise_intensity: _omitNoise,
+          bw_intensity: _omitBw,
+          bloom_intensity: _omitBloom,
+          letterbox_size: _omitBox,
+          light_leak_intensity: _omitLeak,
           ...withoutNew
         } = payload;
         ({ error } = await send(withoutNew));
         if (!error) {
           notify(
             'ok',
-            'Salvat. Culoarea textului, mărturia legată și reglajul pentru tema luminoasă au nevoie de STEP_2708001 și STEP_2508001.',
+            'Salvat. Culoarea textului, mărturia legată, reglajul pentru tema luminoasă și nivelurile efectelor au nevoie de STEP_2708001, STEP_2508001 și STEP_0809000_REELS_NIVELE.sql.',
           );
         }
       }
@@ -389,6 +451,12 @@ export default function ReelsAdmin() {
       setEffectBloom(Boolean(r.effect_bloom));
       setEffectLetterbox(Boolean(r.effect_letterbox));
       setEffectLightLeak(Boolean(r.effect_light_leak));
+      // Pasul 0809000 — nivelurile
+      setNoiseIntensity((r.noise_intensity as number) ?? 35);
+      setBwIntensity((r.bw_intensity as number) ?? 50);
+      setBloomIntensity((r.bloom_intensity as number) ?? 50);
+      setLetterboxSize((r.letterbox_size as number) ?? 8);
+      setLightLeakIntensity((r.light_leak_intensity as number) ?? 50);
       // Pasul 2308000
       setTitle((r.title as string) ?? '');
       setUppercaseText(Boolean(r.uppercase_text));
@@ -852,73 +920,20 @@ export default function ReelsAdmin() {
                 </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
-                  Intensitate sepia: {sepiaIntensity}%
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={sepiaIntensity}
-                  onChange={(e) => setSepiaIntensity(Number(e.target.value))}
-                  disabled={!effectSepia}
-                  className="w-full accent-black dark:accent-white disabled:opacity-40"
+              {/* Pasul 0809000 — același editor ca la versetul zilei: bifezi un
+                  efect, reglajul lui se deschide sub el, iar imaginea de
+                  dedesubt arată TOATE efectele alese până atunci. */}
+              <div className="sm:col-span-2">
+                <ImageEffectsEditor
+                  title="Efecte pentru imagine"
+                  hint="Imaginea arată mereu toate efectele bifate, nu doar pe cel deschis."
+                  imageUrl={backgroundImageUrl}
+                  value={reelEffects}
+                  onChange={applyReelEffects}
+                  previewAspect="9/16"
+                  backgroundOpacity={backgroundOpacity}
+                  onBackgroundOpacityChange={setBackgroundOpacity}
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
-                  Intensitate vignette: {vignetteIntensity}%
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={vignetteIntensity}
-                  onChange={(e) => setVignetteIntensity(Number(e.target.value))}
-                  disabled={!effectVignette}
-                  className="w-full accent-black dark:accent-white disabled:opacity-40"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60 mb-1">
-                  Opacitate grain: {grainOpacity}%
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={grainOpacity}
-                  onChange={(e) => setGrainOpacity(Number(e.target.value))}
-                  disabled={!effectGrain}
-                  className="w-full accent-black dark:accent-white disabled:opacity-40"
-                />
-              </div>
-
-              <div className="sm:col-span-2 flex flex-wrap gap-5">
-                {([
-                  ['Noise (zgomot fin)', effectNoise, setEffectNoise] as const,
-                  ['Grain (granulație dinamică)', effectGrain, setEffectGrain] as const,
-                  ['Sepia', effectSepia, setEffectSepia] as const,
-                  ['Vignette', effectVignette, setEffectVignette] as const,
-                  // Pasul 2308005 (E) — efecte cinematice noi
-                  ['Alb-negru', effectBw, setEffectBw] as const,
-                  ['Bloom (halou cald)', effectBloom, setEffectBloom] as const,
-                  ['Bare cinema (letterbox)', effectLetterbox, setEffectLetterbox] as const,
-                  ['Light leak (scurgere de lumină)', effectLightLeak, setEffectLightLeak] as const,
-                ]).map(([label, value, setter]) => (
-                  <label key={label} className="flex items-center gap-2 text-sm text-black dark:text-white cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={value}
-                      onChange={(e) => setter(e.target.checked)}
-                      className="h-4 w-4 accent-black dark:accent-white"
-                    />
-                    {label}
-                  </label>
-                ))}
               </div>
             </div>
 
