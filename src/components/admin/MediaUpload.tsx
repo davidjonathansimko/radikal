@@ -30,7 +30,7 @@ export default function MediaUpload({
   kind,
   value,
   onChange,
-  maxSizeMb = kind === 'audio' ? 15 : 8,
+  maxSizeMb = kind === 'audio' ? 50 : 25,
 }: MediaUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

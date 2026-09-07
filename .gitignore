@@ -98,6 +98,16 @@ release.md
 # Protocol / documentation files (local only)
 protokol.md
 
+# Pasul 0809001 — nimic din notele de lucru nu urca pe GitHub.
+# Fisierele raman pe calculator, dar nu se publica.
+*.md
+!README.md
+*.txt
+!public/robots.txt
+"Befehl Modal About/Noi texte about/"
+src/app/testtext.txt
+ANLEITUNG_TTS_CACHE_SETUP.md
+
 # Jest config (not needed for production)
 jest.config.js
 jest.setup.js

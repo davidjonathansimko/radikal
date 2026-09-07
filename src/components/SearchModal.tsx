@@ -81,10 +81,15 @@ const translations = {
 interface SearchResult {
   id: string;
   title: string;
+  title_de?: string;
   title_en?: string;
   title_ro?: string;
   title_ru?: string;
   excerpt: string;
+  excerpt_de?: string;
+  excerpt_en?: string;
+  excerpt_ro?: string;
+  excerpt_ru?: string;
   image_url?: string;
   created_at: string;
   tags?: string;
@@ -93,6 +98,14 @@ interface SearchResult {
   highlightedExcerpt?: string;
   relevanceScore?: number;
 }
+
+/**
+ * Pasul 0809001 — cerem TOATE limbile, nu doar engleza.
+ * Inainte lipseau `title_de` si `title_ru`, asa ca un cititor pe germana
+ * vedea titlurile in romana.
+ */
+const POST_COLUMNS =
+  'id, title, title_de, title_en, title_ro, title_ru, excerpt, excerpt_de, excerpt_en, excerpt_ro, excerpt_ru, image_url, created_at, slug';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -117,7 +130,6 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) setScope(inMarturii ? 'marturii' : 'blogs');
   }, [isOpen, inMarturii]);
-
   const scopeLabels = {
     blogs: language === 'de' ? 'Blogs' : language === 'en' ? 'Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги',
     marturii:
@@ -173,9 +185,20 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   // Translate results when language changes or results change
   // Ergebnisse übersetzen wenn Sprache oder Ergebnisse sich ändern
+  /**
+   * Ce se arata in lista, dupa regula simpla:
+   *  - ai scris ceva  → rezultatele cautarii;
+   *  - n-ai scris dar ai bifat categorii → blogurile acelor categorii.
+   */
+  const shownResults = query.length >= 2 ? results : scope === 'blogs' ? catResults : [];
+
   useEffect(() => {
     const translateResults = async () => {
-      if (results.length === 0 || language === 'ro') {
+      // Pasul 0809001 — traducem CE SE VEDE. Înainte traduceam doar
+      // rezultatele căutării, iar blogurile alese după categorie rămâneau
+      // în română pentru un cititor pe germană.
+      const list = shownResults;
+      if (list.length === 0 || language === 'ro') {
         // Romanian is the original language, no translation needed
         setTranslatedTitles(new Map());
         setTranslatedExcerpts(new Map());
@@ -183,8 +206,8 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       }
 
       try {
-        const titles = results.map(r => r.title);
-        const excerpts = results.map(r => r.excerpt);
+        const titles = list.map(r => r.title);
+        const excerpts = list.map(r => r.excerpt);
         
         const [translatedTitlesList, translatedExcerptsList] = await Promise.all([
           translateBatch(titles, language),
@@ -194,7 +217,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
         const newTitles = new Map<string, string>();
         const newExcerpts = new Map<string, string>();
         
-        results.forEach((result, index) => {
+        list.forEach((result, index) => {
           newTitles.set(result.id, translatedTitlesList[index] || result.title);
           newExcerpts.set(result.id, translatedExcerptsList[index] || result.excerpt);
         });
@@ -207,7 +230,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     };
 
     translateResults();
-  }, [results, language, translateBatch]);
+  }, [shownResults, language, translateBatch]);
 
   // Load recent searches from localStorage / Letzte Suchen aus localStorage laden
   useEffect(() => {
@@ -296,7 +319,9 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
         const { data: found, error: findErr } = await supabase
           .from('testimonies')
-          .select('id, title, excerpt, image_url, created_at, slug')
+          .select(
+            'id, title, title_de, title_en, title_ro, title_ru, excerpt, excerpt_de, excerpt_en, excerpt_ro, excerpt_ru, image_url, created_at, slug',
+          )
           .eq('published', true)
           .or(conditions)
           .order('created_at', { ascending: false })
@@ -324,25 +349,17 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       if (supabase) {
         console.log('Using direct Supabase search fallback - fuzzy search');
         const searchTerm = searchQuery.trim().toLowerCase().replace(/[%_]/g, '\\$&');
-        
-        // Create fuzzy terms (original + shorter versions)
-        const fuzzyTerms: string[] = [searchTerm];
-        for (let i = searchTerm.length - 1; i >= 2; i--) {
-          fuzzyTerms.push(searchTerm.substring(0, i));
-        }
-        
-        // Build OR conditions for fuzzy search
-        const fuzzyConditions = fuzzyTerms.slice(0, 5).flatMap(t => [
-          `title.ilike.%${t}%`,
-          `title_en.ilike.%${t}%`,
-          `excerpt.ilike.%${t}%`,
-          `excerpt_en.ilike.%${t}%`
-        ]).join(',');
+
+        // Pasul 0809001 — doar ce contine cu adevarat ce ai scris.
+        // Inainte cautam si „Ar” cand scriai „Arb”, si de acolo veneau
+        // rezultatele care n-aveau nicio legatura.
+        const fields = ['title', 'title_de', 'title_en', 'title_ru', 'excerpt', 'excerpt_de', 'excerpt_en', 'excerpt_ru'];
+        const fuzzyConditions = fields.map((f) => `${f}.ilike.%${searchTerm}%`).join(',');
         
         // Search in all available language fields with fuzzy matching
         const { data: posts, error } = await supabase
           .from('blog_posts')
-          .select('id, title, title_en, excerpt, excerpt_en, image_url, created_at, slug')
+          .select(POST_COLUMNS)
           .eq('published', true)
           .or(fuzzyConditions)
           .order('created_at', { ascending: false })
@@ -357,7 +374,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
         
         // Also try searching in translation_cache for non-Romanian languages
         if (language !== 'ro') {
-          for (const fuzzyTerm of fuzzyTerms.slice(0, 3)) {
+          for (const fuzzyTerm of [searchTerm]) {
             const { data: translations } = await supabase
               .from('translation_cache')
               .select('original_text')
@@ -371,7 +388,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                 const origSnippet = t.original_text.substring(0, 50).replace(/[%_]/g, '\\$&');
                 const { data: matchedPosts } = await supabase
                   .from('blog_posts')
-                  .select('id, title, title_en, excerpt, excerpt_en, image_url, created_at, slug')
+                  .select(POST_COLUMNS)
                   .eq('published', true)
                   .or(`title.ilike.%${origSnippet}%,excerpt.ilike.%${origSnippet}%`)
                   .limit(3);
@@ -401,19 +418,9 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       if (supabase) {
         try {
           const searchTerm = searchQuery.trim().toLowerCase().replace(/[%_]/g, '\\$&');
-          
-          // Create fuzzy terms for fallback
-          const fuzzyTerms: string[] = [searchTerm];
-          for (let i = searchTerm.length - 1; i >= 2; i--) {
-            fuzzyTerms.push(searchTerm.substring(0, i));
-          }
-          
-          const fuzzyConditions = fuzzyTerms.slice(0, 5).flatMap(t => [
-            `title.ilike.%${t}%`,
-            `title_en.ilike.%${t}%`,
-            `excerpt.ilike.%${t}%`,
-            `excerpt_en.ilike.%${t}%`
-          ]).join(',');
+
+          const fields = ['title', 'title_de', 'title_en', 'title_ru', 'excerpt', 'excerpt_de', 'excerpt_en', 'excerpt_ru'];
+          const fuzzyConditions = fields.map((f) => `${f}.ilike.%${searchTerm}%`).join(',');
           
           const { data: posts } = await supabase
             .from('blog_posts')
@@ -454,7 +461,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   // `overlaps` = „are macar una dintre aceste categorii", exact ce trebuie
   // ca sa vezi laolalta si familie, si casnicie.
   useEffect(() => {
-    if (!isOpen || selectedCats.length === 0 || !supabase) {
+    if (!isOpen || scope !== 'blogs' || selectedCats.length === 0 || !supabase) {
       setCatResults([]);
       return;
     }
@@ -462,7 +469,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     (async () => {
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('id, title, title_en, excerpt, excerpt_en, image_url, created_at, slug')
+        .select(POST_COLUMNS)
         .eq('published', true)
         .overlaps('category_ids', selectedCats)
         .order('created_at', { ascending: false })
@@ -472,14 +479,15 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       setCatResults(error ? [] : ((data ?? []) as SearchResult[]));
     })();
     return () => { alive = false; };
-  }, [isOpen, selectedCats]);
+  }, [isOpen, selectedCats, scope]);
 
-  /**
-   * Ce se arata in lista, dupa regula simpla:
-   *  - ai scris ceva  → rezultatele cautarii;
-   *  - n-ai scris dar ai bifat categorii → blogurile acelor categorii.
-   */
-  const shownResults = query.length >= 2 ? results : catResults;
+  // Pasul 0809001 — cand treci de la Blogs la Zeugnisse, lista veche pleacă.
+  // Înainte rămâneau blogurile pe ecran și părea că mărturiile sunt bloguri.
+  useEffect(() => {
+    setResults([]);
+    setSelectedIndex(0);
+    if (scope !== 'blogs') setSelectedCats([]);
+  }, [scope]);
 
   // Handle input change with debounce / Input-Änderung mit Debounce handhaben
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -518,26 +526,33 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   // Get title based on language - use translated version if available
   // Titel basierend auf Sprache abrufen - übersetzte Version wenn verfügbar
   const getTitle = (result: SearchResult) => {
-    // First check if we have a DeepL translation
+    // Traducerea scrisa de tine are intaietate.
+    const written =
+      language === 'de' ? result.title_de :
+      language === 'en' ? result.title_en :
+      language === 'ru' ? result.title_ru :
+      result.title_ro;
+    if (written && written.trim()) return written;
+
+    // Apoi cea ceruta de la DeepL.
     const translatedTitle = translatedTitles.get(result.id);
     if (translatedTitle) return translatedTitle;
-    
-    // Fallback to stored translations
-    switch (language) {
-      case 'en': return result.title_en || result.title;
-      case 'ro': return result.title;
-      case 'ru': return result.title_ru || result.title;
-      default: return result.title;
-    }
+
+    return result.title;
   };
 
   // Get excerpt based on language - use translated version if available
   const getExcerpt = (result: SearchResult) => {
-    // First check if we have a DeepL translation
+    const written =
+      language === 'de' ? result.excerpt_de :
+      language === 'en' ? result.excerpt_en :
+      language === 'ru' ? result.excerpt_ru :
+      result.excerpt_ro;
+    if (written && written.trim()) return written;
+
     const translatedExcerpt = translatedExcerpts.get(result.id);
     if (translatedExcerpt) return translatedExcerpt;
-    
-    // Fallback to stored translations or original
+
     return result.excerpt;
   };
 

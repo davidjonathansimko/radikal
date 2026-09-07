@@ -30,9 +30,9 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Die Datei ist zu groß. Maximale Größe: 5MB');
+    // Pasul 0809001 — pana la 25 MB. Fotografiile de telefon trec usor de 5.
+    if (file.size > 25 * 1024 * 1024) {
+      alert('Die Datei ist zu groß. Maximale Größe: 25MB');
       return;
     }
 

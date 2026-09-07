@@ -467,12 +467,13 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
             {/* Pasul 0409d — card scurt: titlu, imagine, doua randuri de text.
                 „Teilen" si descrierea intreaga au plecat in pagina articolului. */}
             <article 
-              className="flex h-full flex-col backdrop-blur-[1.5px] rounded-xl p-3 lg:p-4 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 shadow-sm"
+              className="flex h-full flex-col backdrop-blur-[1.5px] rounded-xl p-3 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 shadow-sm"
               style={{ animationDelay: `${index * 0.06}s` }}
             >
               {/* Post header with theme-aware colors / Post-Kopf mit themenabhängigen Farben / Antet postare cu culori adaptate la temă */}
-              <header className="mb-2">
-                <h2 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-1 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-200">
+              <header className="mb-1.5">
+                {/* Pasul 0809001 — titlul se vede întreg, oricât de lung ar fi. */}
+                <h2 className="mb-0.5 text-lg font-bold leading-tight text-gray-900 transition-colors duration-200 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-300 lg:text-xl">
                   {getTranslatedTitle(post)}
                   {/* Pasul 2208002 (punctul 6) — INDICATOR pentru blogurile dinamice.
                       Un mic semn discret, langa titlu, care arata ca articolul
@@ -523,10 +524,10 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
             </header>
 
             {/* Post content / Post-Inhalt / Conținut postare */}
-            <div className="mb-3">
+            <div className="mb-2">
               {/* Featured image / Hauptbild / Imagine principală */}
               {post.image_url && (
-                <div className="mb-2 rounded-lg overflow-hidden">
+                <div className="mb-2 overflow-hidden rounded-lg">
                   <Image
                     src={post.image_url}
                     alt={getTranslatedTitle(post)}

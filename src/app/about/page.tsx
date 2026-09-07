@@ -190,35 +190,36 @@ export default function AboutPage() {
       <div className={`min-h-screen py-12 ${showStoryModal ? 'pointer-events-none select-none' : ''}`}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page header / Seitenkopf / Antet pagină */}
+        {/* Pasul 0809001 — titlul paginii a urcat sus, în bara de meniu.
+            Aici rămâne doar chemarea, cu semnul Play, ca la „Play Blog". */}
         <header className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl font-bold text-black dark:text-white mb-6 animate-fadeIn">
-            {t.title}
-          </h1>
-
           {/* "Discover RADIKAL" — same bouncing animation as the
               "Discover more" button on the homepage. Starts the story. */}
           <button
             type="button"
             onClick={() => setShowStoryModal(true)}
-            className="mx-auto flex flex-col items-center gap-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors duration-300 animate-heartbeat animate-fadeIn"
+            className="mx-auto flex flex-col items-center gap-3 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors duration-300 animate-fadeIn"
             style={{ animationDelay: '0.2s' }}
             aria-label={t.discover}
           >
-            <span className="text-xl sm:text-2xl font-semibold">
+            <span className="font-cinzel text-2xl sm:text-3xl font-semibold tracking-wide">
               {t.discover}
             </span>
-            <svg 
-              className="w-8 h-8" 
-              fill="currentColor" 
-              viewBox="0 0 511.994 511.994"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path d="M403.079,310.458c-3.627-7.232-11.008-11.797-19.093-11.797h-64v-85.333c0-11.776-9.536-21.333-21.333-21.333H213.32 c-11.776,0-21.333,9.557-21.333,21.333v85.333h-64c-8.064,0-15.445,4.565-19.072,11.797c-3.605,7.232-2.837,15.872,2.027,22.336 l128,170.667c4.011,5.376,10.347,8.533,17.045,8.533c6.72,0,13.056-3.157,17.067-8.533l128-170.667 C405.917,326.33,406.685,317.69,403.079,310.458z"/>
-              <path d="M298.663,128.001H213.33c-11.797,0-21.333,9.536-21.333,21.333c0,11.797,9.536,21.333,21.333,21.333h85.333 c11.797,0,21.333-9.536,21.333-21.333C319.996,137.537,310.46,128.001,298.663,128.001z"/>
-              <path d="M298.663,64.001H213.33c-11.797,0-21.333,9.536-21.333,21.333s9.536,21.333,21.333,21.333h85.333 c11.797,0,21.333-9.536,21.333-21.333S310.46,64.001,298.663,64.001z"/>
-              <path d="M298.664,0H213.33c-11.797,0-21.333,9.536-21.333,21.333c0,11.798,9.536,21.334,21.333,21.334h85.333 c11.797,0,21.333-9.536,21.333-21.333C319.997,9.536,310.461,0,298.664,0z"/>
-            </svg>
+
+            {/* Semnul Play, cu un cerc care „respiră" în spate, ca să se vadă
+                dintr-o privire că e ceva de pornit. */}
+            <span className="relative flex h-14 w-14 items-center justify-center">
+              <span className="absolute inset-0 animate-ping rounded-full border border-current opacity-40" />
+              <span className="absolute inset-0 rounded-full border border-current opacity-70" />
+              <svg
+                className="relative ml-1 h-6 w-6"
+                viewBox="0 0 14 14"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M3 1.5v11l9-5.5-9-5.5z" />
+              </svg>
+            </span>
           </button>
         </header>
 
