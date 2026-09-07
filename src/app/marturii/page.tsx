@@ -200,12 +200,12 @@ export default function MarturiiPage() {
     <div className="min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* ---------- Antet: semnul cărții, centrat, cu textul dedesubt ---------- */}
-        <header className="text-center mb-16">
-          <div className="mx-auto mb-6 flex justify-center text-black/90 dark:text-white/90">
+        <header className="text-center mb-8">
+          <div className="mx-auto mb-4 flex justify-center text-black/90 dark:text-white/90">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 32 32"
-              className="w-16 h-16"
+              className="w-14 h-14"
               fill="currentColor"
               aria-hidden="true"
             >
@@ -217,32 +217,39 @@ export default function MarturiiPage() {
             </svg>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-bold text-black dark:text-white mb-6 animate-fadeIn">
+          <h1 className="text-4xl sm:text-5xl font-bold text-black dark:text-white mb-2 animate-fadeIn">
             {t.title}
           </h1>
 
-          <p className="mx-auto max-w-2xl text-black/80 dark:text-white/80 leading-relaxed animate-fadeIn">
-            {t.intro}
-          </p>
+          {/* Pasul 0809001 — textul de proba a plecat. Daca pui unul adevarat
+              din Setări → Pagini, apare din nou. */}
+          {t.intro && t.intro.trim() && t.intro.trim() !== 'Hi test text Marturii' && (
+            <p className="mx-auto mt-4 max-w-2xl text-black/80 dark:text-white/80 leading-relaxed animate-fadeIn">
+              {t.intro}
+            </p>
+          )}
         </header>
 
         {/* ---------- Rubricile ---------- */}
         <section className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
-          {/* Pasul 2708002 — acelasi panou de rasfoire ca la bloguri */}
-          <div className="mb-8 flex justify-center">
-            <BlogBrowse
-              table="testimonies"
-              basePath="/marturii/m"
-              browseLabel={{
-                ro: 'Răsfoiește Mărturii',
-                de: 'Zeugnisse durchsuchen',
-                en: 'Browse Testimonies',
-                ru: 'Просмотр свидетельств',
-              }}
-            />
+          {/* Pasul 2708002 — acelasi panou de rasfoire ca la bloguri.
+              Pasul 0809001 — ramane la vedere cat timp cobori. */}
+          <div className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
+            <div className="flex justify-center">
+              <BlogBrowse
+                table="testimonies"
+                basePath="/marturii/m"
+                browseLabel={{
+                  ro: 'Răsfoiește Mărturii',
+                  de: 'Zeugnisse durchsuchen',
+                  en: 'Browse Testimonies',
+                  ru: 'Просмотр свидетельств',
+                }}
+              />
+            </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-black dark:text-white text-center mb-8">
+          <h2 className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-black/45 dark:text-white/45">
             {t.sectionsTitle}
           </h2>
 
@@ -260,37 +267,38 @@ export default function MarturiiPage() {
               )}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            /* Pasul 0809001 — rânduri curate, cu indicatorul „›" la capăt. */
+            <ul className="divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">
               {sections.map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/marturii/${s.slug}`}
-                  className="glass-effect group rounded-2xl p-6 transition-transform duration-300 hover:scale-[1.02]"
-                >
-                  <h3 className="font-cinzel text-xl font-semibold text-black dark:text-white">
-                    {s.name}
-                  </h3>
-                  {s.description && (
-                    <p className="mt-2 text-sm leading-relaxed text-black/70 dark:text-white/70">
-                      {s.description}
-                    </p>
-                  )}
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-black/60 dark:text-white/60">
-                    {t.open}
-                    <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">
-                      →
+                <li key={s.id}>
+                  <Link
+                    href={`/marturii/${s.slug}`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-cinzel text-base font-semibold text-black dark:text-white">
+                        {s.name}
+                      </span>
+                      {s.description && (
+                        <span className="mt-0.5 line-clamp-1 block text-xs text-black/55 dark:text-white/55">
+                          {s.description}
+                        </span>
+                      )}
                     </span>
-                  </span>
-                </Link>
+                    <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
+                      ›
+                    </span>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
 
-        <div className="mt-16 text-center">
+        <div className="mt-10 text-center">
           <Link
             href="/"
-            className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors"
+            className="text-sm text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
           >
             ← {t.back}
           </Link>

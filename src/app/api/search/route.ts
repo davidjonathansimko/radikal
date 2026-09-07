@@ -48,32 +48,25 @@ export async function GET(request: NextRequest) {
     const term = searchTerms[0];
     const escapedTerm = term.replace(/[%_]/g, '\\$&');
     
-    // FUZZY SEARCH: Create variations for partial matching
-    // "Jesus" should find "Jesu", "Jes" should find "Jesus", etc.
-    // Generates: original term + progressively shorter versions (min 2 chars)
+    // Pasul 0809001 — CAUTARE EXACTA.
+    // Inainte cautam si bucati din ce ai scris: pentru „Arb” cautam si „Ar”,
+    // si veneau articole care n-aveau nicio legatura. Acum se cauta doar ce
+    // ai scris, dar in toate limbile.
     const fuzzyTerms: string[] = [escapedTerm];
-    
-    // Add shorter versions (for when user types more than exists in DB)
-    // e.g., "Jesus" → "Jesu", "Jes", "Je"
-    for (let i = escapedTerm.length - 1; i >= 2; i--) {
-      fuzzyTerms.push(escapedTerm.substring(0, i));
-    }
-    
-    // Build OR conditions for all fuzzy terms
-    const fuzzyConditions = fuzzyTerms.flatMap(t => [
-      `title.ilike.%${t}%`,
-      `title_en.ilike.%${t}%`,
-      `excerpt.ilike.%${t}%`,
-      `excerpt_en.ilike.%${t}%`
-    ]).join(',');
-    
-    console.log(`🔍 Fuzzy search terms: ${fuzzyTerms.join(', ')}`);
+
+    const POST_COLUMNS =
+      'id, title, title_de, title_en, title_ro, title_ru, excerpt, excerpt_de, excerpt_en, excerpt_ro, excerpt_ru, image_url, created_at, slug';
+
+    const fuzzyConditions = [
+      'title', 'title_de', 'title_en', 'title_ru',
+      'excerpt', 'excerpt_de', 'excerpt_en', 'excerpt_ru',
+    ].map((f) => `${f}.ilike.%${escapedTerm}%`).join(',');
 
     // Search in blog_posts table with fuzzy matching
     // This covers Romanian (original) and English translations
     const { data: directResults, error: directError } = await supabase
       .from('blog_posts')
-      .select('id, title, title_en, excerpt, excerpt_en, image_url, created_at, slug')
+      .select(POST_COLUMNS)
       .eq('published', true)
       .or(fuzzyConditions)
       .order('created_at', { ascending: false })
@@ -137,7 +130,7 @@ export async function GET(request: NextRequest) {
         
         const { data: matchedPosts, error: matchError } = await supabase
           .from('blog_posts')
-          .select('id, title, title_en, excerpt, excerpt_en, image_url, created_at, slug')
+          .select(POST_COLUMNS)
           .eq('published', true)
           .or(`title.ilike.%${snippet}%,excerpt.ilike.%${snippet}%`)
           .limit(3);
@@ -159,7 +152,7 @@ export async function GET(request: NextRequest) {
             
             const { data: fallbackPosts } = await supabase
               .from('blog_posts')
-              .select('id, title, title_en, excerpt, excerpt_en, image_url, created_at, slug')
+              .select(POST_COLUMNS)
               .eq('published', true)
               .or(`title.ilike.%${firstWord}%,excerpt.ilike.%${firstWord}%`)
               .limit(3);

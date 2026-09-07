@@ -169,6 +169,43 @@ export default function Navigation() {
 
   const cleanScreen = pathname === '/verset' || introActive;
   const canSeeNav = (!!user || isGuest || authUnknown) && !cleanScreen;
+
+  /**
+   * Pasul 0809001 — TITLUL PAGINII, sus, între logo și meniu.
+   * Rămâne acolo tot timpul cât ești în secțiunea aceea, ca să știi mereu unde
+   * te afli. Gol = pagina principală, unde apare „Der Weg".
+   */
+  const pageTitle = (() => {
+    if (!pathname) return '';
+    if (pathname === '/blogs' || pathname.startsWith('/blogs/')) {
+      return language === 'ro' ? 'Bloguri' : language === 'ru' ? 'Блоги' : 'Blogs';
+    }
+    if (pathname.startsWith('/marturii')) {
+      return language === 'de' ? 'Zeugnisse'
+        : language === 'en' ? 'Testimonies'
+        : language === 'ro' ? 'Mărturii'
+        : 'Свидетельства';
+    }
+    if (pathname.startsWith('/andacht')) {
+      return language === 'de' ? 'Andacht'
+        : language === 'en' ? 'Devotion'
+        : language === 'ro' ? 'Meditație'
+        : 'Размышление';
+    }
+    if (pathname.startsWith('/copii')) {
+      return language === 'de' ? 'Für Kinder'
+        : language === 'en' ? 'For Kids'
+        : language === 'ro' ? 'Pentru copii'
+        : 'Для детей';
+    }
+    if (pathname.startsWith('/about')) {
+      return language === 'de' ? 'Über' : language === 'ro' ? 'Despre' : language === 'ru' ? 'О нас' : 'About';
+    }
+    if (pathname.startsWith('/contact')) {
+      return language === 'ru' ? 'Контакт' : 'Kontakt';
+    }
+    return '';
+  })();
   
   // Language dropdown state / Sprach-Dropdown-Status / Stare dropdown limbă
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
@@ -605,6 +642,16 @@ export default function Navigation() {
         </div>
       )}
 
+      {/* Pasul 0809001 — titlul paginii, cât timp nu ești pe pagina principală
+          și nu se citește un articol (acolo locul îl ia pilula de progres). */}
+      {!isHomePage && !isMobileMenuOpen && pageTitle && !(isBlogDetailPage && blogReadProgress > 0) && (
+        <div className="relative mx-2 h-7 flex-1">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <WayTitle visible text={pageTitle} />
+          </div>
+        </div>
+      )}
+
       {/* Pasul 2202000: Blog reading progress pill — between logo and hamburger (blog detail pages only) */}
       {/* Lese-Fortschritts-Pill — zwischen Logo und Hamburger (nur Blog-Detailseiten) */}
       {/* Pilulă progres citire — între logo și hamburger (doar pagini detaliu blog) */}
@@ -784,6 +831,13 @@ export default function Navigation() {
               </span>
             </Link>
           </div>
+
+          {/* Pasul 0809001 — titlul paginii, lângă logo, ca să știi mereu unde ești. */}
+          {(pageTitle || isHomePage) && (
+            <div className="hidden flex-shrink-0 items-center xl:flex">
+              <WayTitle visible text={pageTitle || undefined} />
+            </div>
+          )}
 
           {/* Desktop navigation menu / Desktop-Navigationsmenü / Meniu navigare desktop */}
           <div className="flex min-w-0 items-center gap-x-1 xl:gap-x-3">

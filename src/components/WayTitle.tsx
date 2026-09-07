@@ -1,11 +1,14 @@
 'use client';
 
 /**
- * Pasul 2708026 — „Der Weg", între logo și meniu.
+ * Pasul 2708026 — titlul paginii, între logo și meniu.
  *
  * Apare cu aceeași animație ca versetele de intro: cuvintele intră unul câte
  * unul, din ceață. Când cititorul coboară în pagină, se sting la fel de
  * liniștit și lasă locul pilulei de progres. Când urcă înapoi sus, revin.
+ *
+ * Pasul 0809001 — poate arăta orice text, nu doar „Der Weg": pe pagina de
+ * bloguri scrie BLOGS, la mărturii ZEUGNISSE, și așa mai departe.
  */
 
 import React, { useRef } from 'react';
@@ -21,10 +24,10 @@ const WORDS: Record<string, string> = {
   ru: 'Путь',
 };
 
-export default function WayTitle({ visible }: { visible: boolean }) {
+export default function WayTitle({ visible, text: given }: { visible: boolean; text?: string }) {
   const { language } = useLanguage();
   const { reduced: reduceMotion } = useReducedMotion();
-  const text = WORDS[language] || WORDS.de;
+  const text = given || WORDS[language] || WORDS.de;
   const words = text.split(' ');
 
   const rootRef = useRef<HTMLDivElement>(null);

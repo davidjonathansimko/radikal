@@ -109,26 +109,17 @@ function BlogsPageContent() {
     <div className="min-h-screen pt-4 lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page header with theme-aware text colors / Seitenkopf mit themenabhängigen Textfarben / Antet pagină cu culori text adaptate la temă */}
+        {/* Pasul 0809001 — „Neueste Blogs" a plecat: numele paginii stă acum
+            sus, în bara de meniu, cât timp ești aici. */}
         <header className="text-center mb-4 lg:mb-12">
-          <h1 className="text-2xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4 animate-fadeIn">
-            {monthLabel ? (
-              // Show filtered title / Gefilterten Titel anzeigen / Afișează titlu filtrat
-              <>
-                {language === 'de' ? `Blogs - ${monthLabel}` : 
-                 language === 'en' ? `Blogs - ${monthLabel}` : 
-                 language === 'ro' ? `Bloguri - ${monthLabel}` : 
-                 `Блоги - ${monthLabel}`}
-              </>
-            ) : (
-              // Show default title / Standard-Titel anzeigen / Afișează titlu implicit
-              <>
-                {language === 'de' ? 'Neueste Blogs' : 
-                 language === 'en' ? 'Latest Blogs' : 
-                 language === 'ro' ? 'Bloguri Recente' : 
-                 'Последние Блоги'}
-              </>
-            )}
-          </h1>
+          {monthLabel && (
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4 animate-fadeIn">
+              {language === 'de' ? `Blogs - ${monthLabel}` : 
+               language === 'en' ? `Blogs - ${monthLabel}` : 
+               language === 'ro' ? `Bloguri - ${monthLabel}` : 
+               `Блоги - ${monthLabel}`}
+            </h1>
+          )}
           
           {/* Show filter info and clear button if filtering / Filterinfo und Löschen-Button anzeigen wenn gefiltert / Afișează info filtru și buton ștergere dacă se filtrează */}
           {monthLabel && (
