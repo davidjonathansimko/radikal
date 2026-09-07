@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import TrailPills from '@/components/content/TrailPills';
 import { CONTENT_ITEMS_TABLE, CONTENT_KINDS, type ContentKind } from '@/lib/contentKinds';
 import {
   fetchChildSections,
@@ -184,44 +185,13 @@ export default function ContentListPage({
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Pasul 0409b — DRUMUL, scris pe un singur rând. Înainte erau două
-            butoane late care mâncau jumătate de ecran. */}
-        <nav aria-label="Drum" className="mb-5 flex flex-wrap items-center gap-1.5 text-sm">
-          <Link
-            href="/"
-            className="text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
-          >
-            {t.home}
-          </Link>
-          <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
-          <Link
-            href={def.basePath}
-            className={
-              section
-                ? 'text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white'
-                : 'font-medium text-black dark:text-white'
-            }
-          >
-            {def.title[lang] || def.title.de}
-          </Link>
-          {trail.map((s) => (
-            <React.Fragment key={s.id}>
-              <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
-              <Link
-                href={`${def.basePath}/${s.slug}`}
-                className="text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
-              >
-                {s.name}
-              </Link>
-            </React.Fragment>
-          ))}
-          {section && (
-            <>
-              <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
-              <span className="font-medium text-black dark:text-white">{section.name}</span>
-            </>
-          )}
-        </nav>
+        {/* Pasul 0809002 — drumul, adunat în pastile cu ✕. */}
+        <TrailPills
+          steps={section ? [...trail.map((s) => ({ slug: s.slug, name: s.name })), { slug: section.slug, name: section.name }] : []}
+          rootHref={def.basePath}
+          rootLabel={def.title[lang] || def.title.de}
+          hrefFor={(s) => `${def.basePath}/${s}`}
+        />
 
         <header className="mb-6 text-center">
           <h1 className="font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">
@@ -250,30 +220,68 @@ export default function ContentListPage({
           </div>
         </div>
 
-        {/* Rubricile, ca file, pe un singur rând care se trage cu degetul. */}
+        {/* Pasul 0809002 — rubricile: chipuri două pe rând la primul nivel,
+            apoi părți, ca un cuprins. */}
         {sections.length > 0 && (
-          <div className="scrollbar-hide mb-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6">
-            <Link
-              href={def.basePath}
-              className={`flex-shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                section
-                  ? 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
-                  : 'border-transparent bg-black text-white dark:bg-white dark:text-black'
-              }`}
-            >
-              {t.all}
-            </Link>
-            {sections.map((s) => (
-              <Link
-                key={s.id}
-                href={`${def.basePath}/${s.slug}`}
-                title={s.description || undefined}
-                className="flex-shrink-0 whitespace-nowrap rounded-full border border-black/15 px-4 py-1.5 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
-              >
-                {s.name}
-              </Link>
-            ))}
-          </div>
+          trail.length === 0 && !section ? (
+            <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {sections.map((s, i) => (
+                <Link
+                  key={s.id}
+                  href={`${def.basePath}/${s.slug}`}
+                  className="flex flex-col gap-2 rounded-xl border border-black/10 p-3 transition-colors hover:bg-black/[0.04] dark:border-white/10 dark:hover:bg-white/[0.06]"
+                >
+                  <span className="flex aspect-square items-center justify-center rounded-lg bg-black/[0.05] font-cinzel text-2xl font-bold text-black/25 dark:bg-white/[0.06] dark:text-white/25">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span className="font-cinzel text-sm font-semibold leading-tight text-black dark:text-white">
+                    {s.name}
+                  </span>
+                  {s.description && (
+                    <span className="line-clamp-1 text-[11px] text-black/50 dark:text-white/50">
+                      {s.description}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <ul className="mb-8 divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">
+              {sections.map((s) => (
+                <li key={s.id}>
+                  <Link
+                    href={`${def.basePath}/${s.slug}`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                  >
+                    <svg
+                      className="h-4 w-4 flex-shrink-0 text-black/35 dark:text-white/35"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      aria-hidden="true"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                    </svg>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-cinzel text-base font-semibold text-black dark:text-white">
+                        {s.name}
+                      </span>
+                      {s.description && (
+                        <span className="mt-0.5 line-clamp-1 block text-xs text-black/50 dark:text-white/50">
+                          {s.description}
+                        </span>
+                      )}
+                    </span>
+                    <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
+                      ›
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
         )}
 
         {loading ? (

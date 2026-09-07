@@ -13,6 +13,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import TrailPills from '@/components/content/TrailPills';
 import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
@@ -87,6 +88,9 @@ export default function SectionPage() {
   const [trail, setTrail] = useState<{ slug: string; name: string }[]>([]);
   const [rows, setRows] = useState<TestimonyRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  /** Câte rubrici ai coborât până aici. 0 = prima rubrică din listă. */
+  const depth = trail.length;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -192,35 +196,13 @@ export default function SectionPage() {
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Pasul 0409b — DRUMUL, pe un singur rând. */}
-        <nav aria-label="Drum" className="mb-5 flex flex-wrap items-center gap-1.5 text-sm">
-          <Link
-            href="/"
-            className="text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
-          >
-            {t.home}
-          </Link>
-          <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
-          <Link
-            href="/marturii"
-            className="text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
-          >
-            {t.back}
-          </Link>
-          {trail.map((s) => (
-            <React.Fragment key={s.slug}>
-              <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
-              <Link
-                href={`/marturii/${s.slug}`}
-                className="text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
-              >
-                {s.name}
-              </Link>
-            </React.Fragment>
-          ))}
-          <span aria-hidden="true" className="text-black/25 dark:text-white/25">›</span>
-          <span className="font-medium text-black dark:text-white">{sectionName}</span>
-        </nav>
+        {/* Pasul 0809002 — drumul, adunat în pastile cu ✕. */}
+        <TrailPills
+          steps={[...trail, { slug, name: sectionName }]}
+          rootHref="/marturii"
+          rootLabel={t.back}
+          hrefFor={(s) => `/marturii/${s}`}
+        />
 
         <header className="mb-6 text-center">
           <h1 className="font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">
@@ -245,20 +227,68 @@ export default function SectionPage() {
           </div>
         </div>
 
-        {/* Rubricile dinăuntru, ca file pe un singur rând */}
+        {/* Pasul 0809002 — rubricile dinăuntru, altfel la fiecare adâncime.
+            Primul nivel: chipuri, două pe rând. Mai adânc: părți, ca un cuprins. */}
         {children.length > 0 && (
-          <div className="scrollbar-hide mb-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6">
-            {children.map((c) => (
-              <Link
-                key={c.id}
-                href={`/marturii/${c.slug}`}
-                title={c.description || undefined}
-                className="flex-shrink-0 whitespace-nowrap rounded-full border border-black/15 px-4 py-1.5 text-sm text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
-              >
-                {c.name}
-              </Link>
-            ))}
-          </div>
+          depth === 0 ? (
+            <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {children.map((c, i) => (
+                <Link
+                  key={c.id}
+                  href={`/marturii/${c.slug}`}
+                  className="group flex flex-col gap-2 rounded-xl border border-black/10 p-3 transition-colors hover:bg-black/[0.04] dark:border-white/10 dark:hover:bg-white/[0.06]"
+                >
+                  <span className="flex aspect-square items-center justify-center rounded-lg bg-black/[0.05] font-cinzel text-2xl font-bold text-black/25 dark:bg-white/[0.06] dark:text-white/25">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span className="font-cinzel text-sm font-semibold leading-tight text-black dark:text-white">
+                    {c.name}
+                  </span>
+                  {c.description && (
+                    <span className="line-clamp-1 text-[11px] text-black/50 dark:text-white/50">
+                      {c.description}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <ul className="mb-8 divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">
+              {children.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/marturii/${c.slug}`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                  >
+                    <svg
+                      className="h-4 w-4 flex-shrink-0 text-black/35 dark:text-white/35"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      aria-hidden="true"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                    </svg>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-cinzel text-base font-semibold text-black dark:text-white">
+                        {c.name}
+                      </span>
+                      {c.description && (
+                        <span className="mt-0.5 line-clamp-1 block text-xs text-black/50 dark:text-white/50">
+                          {c.description}
+                        </span>
+                      )}
+                    </span>
+                    <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
+                      ›
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
         )}
 
         {loading ? (
