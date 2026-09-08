@@ -25,6 +25,7 @@ import { FaSun, FaMoon, FaSearch } from 'react-icons/fa';
 import SearchModal from '@/components/SearchModal';
 import ReelsIcon from '@/components/ReelsIcon';
 import WayTitle from '@/components/WayTitle';
+import { MARTURII_ACTIVE_KEY } from '@/lib/marturiiSession';
 import { useGuestMode, clearGuestMode } from '@/hooks/useGuestMode';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -181,6 +182,19 @@ export default function Navigation() {
   useEffect(() => {
     const home = pathname === '/';
     const auth = Boolean(pathname?.startsWith('/auth/'));
+
+    // Pasul 0809007 — cand ai plecat din zona Marturii, uitam ca ai fost acolo,
+    // ca versetul de intrare sa apara din nou la urmatoarea venire. Inainte
+    // treaba asta o facea un fisier de aranjament sub /marturii, care bloca
+    // navigarea interna a intregii aplicatii.
+    if (!pathname?.startsWith('/marturii')) {
+      try {
+        sessionStorage.removeItem(MARTURII_ACTIVE_KEY);
+      } catch {
+        /* filă privată */
+      }
+    }
+
     if (!home && !auth) {
       document.documentElement.classList.remove('radikal-hide-nav');
       document.body.classList.remove('modal-active');
