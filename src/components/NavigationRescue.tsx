@@ -25,8 +25,8 @@ export default function NavigationRescue() {
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
-      // Doar apăsări simple, stânga, fără taste de control.
-      if (event.defaultPrevented) return;
+      // NU verificăm `defaultPrevented`: tocmai asta e situația pe care o
+      // păzim — navigarea internă a oprit apăsarea și apoi n-a făcut nimic.
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
         return;
       }
