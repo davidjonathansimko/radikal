@@ -18,7 +18,7 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-const WAIT_MS = 600;
+const WAIT_MS = 280;
 
 export default function NavigationRescue() {
   const pathname = usePathname();
