@@ -1598,6 +1598,15 @@ body.modal-active div[data-mobile-nav] {
   overflow: hidden !important;
 }
 
+/* Pasul 0809004 — cât timp ruleăză un verset pe tot ecranul, nimic nu are ce
+   pluti peste el: nici săgeata de sus, nici barele de meniu. */
+body.intro-active [data-back-to-top],
+body.intro-active nav,
+body.intro-active footer,
+body.intro-active div[data-mobile-nav] {
+  display: none !important;
+}
+
 /* ========================================
    MOBILE OPTIMIZATIONS / MOBIL-OPTIMIERUNGEN / OPTIMIZĂRI MOBIL
    ======================================== */

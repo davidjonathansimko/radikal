@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { useCleanScreen } from '@/lib/appFullscreen';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 // ===========================================================================
 // ⏱️  DURATA PAUZEI DE CITIRE (identica cu WelcomeModal.tsx)
@@ -50,6 +51,8 @@ export default function AboutIntroQuote({ onFinish }: AboutIntroQuoteProps) {
 
   // Pasul 2708016 — in aplicatie, versetul ocupa tot ecranul.
   useCleanScreen(true);
+  // Pasul 0809004 — cât timp citești versetul, pagina din spate stă pe loc.
+  useBodyScrollLock(true);
 
   // Refs identice cu WelcomeModal / Same refs as WelcomeModal
   const verseContainerRef = useRef<HTMLDivElement>(null);
@@ -169,20 +172,25 @@ export default function AboutIntroQuote({ onFinish }: AboutIntroQuoteProps) {
               outline: 'none',
             }}
           >
-            <span className="inline tracking-wider">&quot;</span>
-            {bibleVerses[lang].split(' ').map((word, index) => (
-              <span
-                key={index}
-                ref={(el) => {
-                  wordsRef.current[index] = el;
-                }}
-                className="inline-block mx-1 tracking-wider"
-                style={{ opacity: 0 }}
-              >
-                {word}
-              </span>
-            ))}
-            <span className="inline tracking-wider">&quot;</span>
+            {/* Pasul 0809004 — ghilimelele stau lipite de primul și de ultimul
+                cuvânt și apar odată cu ele, nu singure, dinainte. */}
+            {(() => {
+              const parts = bibleVerses[lang].split(' ');
+              return parts.map((word, index) => (
+                <span
+                  key={index}
+                  ref={(el) => {
+                    wordsRef.current[index] = el;
+                  }}
+                  className="inline-block mx-1 tracking-wider"
+                  style={{ opacity: 0 }}
+                >
+                  {index === 0 ? '\u201E' : ''}
+                  {word}
+                  {index === parts.length - 1 ? '\u201C' : ''}
+                </span>
+              ));
+            })()}
           </blockquote>
 
           {/* Referinta biblica - animata cu GSAP */}

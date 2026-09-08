@@ -44,29 +44,30 @@ export function useNewsMenu(): NewsMenuState {
     let cancelled = false;
 
     (async () => {
+      // Pasul 0809004 — butonul din Setări → Pagini hotărăște singur dacă
+      // rubrica apare. Înainte mai era nevoie și de un al doilea comutator,
+      // ascuns în baza de date, iar rubrica nu apărea deși scria că e pornită.
+      let allowed = false;
+      try {
+        const pages = await fetchEnabledPages();
+        allowed = pages.has('news');
+      } catch {
+        /* fara tabelul de setari, rubrica ramane ascunsa */
+      }
+
+      let count = 0;
       try {
         const { data, error } = await getSupabaseClient().rpc('news_menu_state');
-        if (cancelled || error || !data) return;
-
-        // Functia intoarce un singur rand.
-        const row = Array.isArray(data) ? data[0] : data;
-        const enabled = Boolean(row?.enabled);
-        const count = Number(row?.item_count ?? 0);
-
-        // Amandoua conditiile trebuie indeplinite.
-        // Pasul 0809003 — plus butonul din Setări → Pagini → Neuigkeiten.
-        let allowed = true;
-        try {
-          const pages = await fetchEnabledPages();
-          allowed = pages.has('news');
-        } catch {
-          /* fara tabelul de setari, ne luam dupa vechea regula */
+        if (!error && data) {
+          const row = Array.isArray(data) ? data[0] : data;
+          count = Number(row?.item_count ?? 0);
         }
-
-        setState({ visible: allowed && enabled && count > 0, count });
       } catch {
-        /* fara tabel sau fara internet — rubrica ramane ascunsa */
+        /* fara functia din baza de date, numaram zero stiri */
       }
+
+      if (cancelled) return;
+      setState({ visible: allowed, count });
     })();
 
     return () => { cancelled = true; };

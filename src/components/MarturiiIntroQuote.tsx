@@ -11,6 +11,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useCleanScreen } from '@/lib/appFullscreen';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
@@ -74,6 +75,8 @@ export default function MarturiiIntroQuote({
 
   // Pasul 2708016 — in aplicatie, versetul ocupa tot ecranul.
   useCleanScreen(true);
+  // Pasul 0809004 — cât timp citești versetul, pagina din spate stă pe loc.
+  useBodyScrollLock(true);
 
   // Textul scris de tine bate textul din cod.
   const verseText = (verse || '').trim() || verses[lang];

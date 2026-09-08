@@ -135,8 +135,6 @@ export default function Navigation() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  /** Sesiunea n-a răspuns la timp. Arătăm meniul oricum, ca să nu rămâi blocat. */
-  const [authUnknown, setAuthUnknown] = useState(false);
 
   // Pasul 2308006-F — se arata rubrica News in meniu?
   const newsMenu = useNewsMenu();
@@ -168,14 +166,39 @@ export default function Navigation() {
   }, []);
 
   const cleanScreen = pathname === '/verset' || introActive;
-  const canSeeNav = (!!user || isGuest || authUnknown) && !cleanScreen;
 
-  // Pasul 0809003 — plasă de siguranță: în afara paginii principale, nicio
-  // urmă de la ecranele care ascund meniul nu are ce căuta pe pagină.
+  // Paginile de intrare/înregistrare nu au meniu: acolo omul încă nu e nimeni.
+  const isAuthPage = Boolean(pathname?.startsWith('/auth/'));
+
+  // Pasul 0809004 — meniul apare DOAR pentru cine e înăuntru: cont sau
+  // vizitator. „Nu știu încă" nu înseamnă „lasă-l să intre".
+  const canSeeNav = (!!user || isGuest) && !cleanScreen && !isAuthPage;
+
+  // Pasul 0809004 — CURĂȚENIE LA FIECARE PAGINĂ.
+  // Ecranele care ascund meniul lasă în urmă clase și stiluri pe document.
+  // Dacă rămân, meniul dispare pentru totdeauna și pagina pare înghețată.
+  // Aici le ridicăm pe toate, la fiecare schimbare de pagină.
   useEffect(() => {
-    if (pathname === '/') return;
-    document.body.classList.remove('modal-active');
-    if (pathname !== '/verset') document.body.classList.remove('intro-active');
+    const home = pathname === '/';
+    const auth = Boolean(pathname?.startsWith('/auth/'));
+    if (!home && !auth) {
+      document.documentElement.classList.remove('radikal-hide-nav');
+      document.body.classList.remove('modal-active');
+    }
+    if (pathname !== '/verset') {
+      // Versetele de intro își pun singure clasa la loc, imediat.
+      document.body.classList.remove('intro-active');
+    }
+    // Blocarea derulării lăsată în urmă de un modal închis brusc.
+    if (document.body.style.position === 'fixed') {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
   }, [pathname]);
 
   /**
@@ -256,13 +279,11 @@ export default function Navigation() {
   useEffect(() => {
     // Pasul 0809000 — PLASA DE SIGURANȚĂ.
     // Dacă sesiunea salvată în telefon e stricată sau răspunsul nu mai vine,
-    // înainte rămâneam pentru totdeauna în „se încarcă”, iar meniul nu mai
-    // apărea deloc: nici intrare, nici ieșire, nimic. Acum, după opt secunde,
-    // arătăm meniul oricum, ca omul să poată intra din nou.
+    // înainte rămâneam pentru totdeauna în „se încarcă”. Acum ne oprim din
+    // așteptat după opt secunde și mergem mai departe ca nelogat.
     let settled = false;
     const guard = setTimeout(() => {
       if (settled) return;
-      setAuthUnknown(true);
       setLoading(false);
     }, 8000);
 
@@ -283,7 +304,6 @@ export default function Navigation() {
       } finally {
         settled = true;
         clearTimeout(guard);
-        setAuthUnknown(false);
         setLoading(false);
       }
     };
@@ -299,7 +319,6 @@ export default function Navigation() {
         
         // Update admin status / Admin-Status aktualisieren / Actualizează starea de admin
         setIsAdmin(isAdminUser(session?.user));
-        setAuthUnknown(false);
         setLoading(false);
       }
     );
