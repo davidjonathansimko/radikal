@@ -134,15 +134,21 @@ export default function DailyVersePage() {
       setReference(originalReference);
       return;
     }
-    setText(original);
-    setReference(originalReference);
+    // Pasul 0809003 — nu mai arătăm o clipă românescul înainte de traducere.
+    // Mai bine o clipă de liniște decât o clipă în limba greșită.
+    setText('');
+    setReference('');
     translateBatch([original, originalReference].filter(Boolean), lang, 'ro')
       .then((out) => {
         if (!alive) return;
         setText(out[0] || original);
         if (originalReference) setReference(out[1] || originalReference);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!alive) return;
+        setText(original);
+        setReference(originalReference);
+      });
     return () => {
       alive = false;
     };

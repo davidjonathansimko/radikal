@@ -383,6 +383,11 @@ export default function HomePage() {
     }
     // Pasul 12005: Clean up loginSuccess flag from auth redirect
     delete document.body.dataset.loginSuccess;
+
+    // Pasul 0809003 — dacă pleci de pe pagina principală cât timp clasa e
+    // pusă, ea rămânea pe pagină pentru totdeauna și ascundea meniul peste
+    // tot. O ridicăm mereu la ieșire.
+    return () => document.body.classList.remove('modal-active');
   }, [showModal, isCheckingSession, showSplash]);
 
   // Show nothing while checking session — use skeleton / Nichts anzeigen während Sitzung geprüft wird — verwende Skeleton / Nu afișa nimic în timp ce se verifică sesiunea — folosește schelet

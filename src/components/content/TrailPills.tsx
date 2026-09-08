@@ -32,11 +32,11 @@ export default function TrailPills({ steps, rootHref, rootLabel, hrefFor }: Trai
   return (
     <nav
       aria-label="Drum"
-      className="scrollbar-hide -mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6"
+      className="mb-4 flex flex-wrap items-center gap-1.5"
     >
       <Link
         href={rootHref}
-        className="flex-shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
+        className="max-w-[9rem] truncate rounded-full px-2 py-1 text-xs font-medium text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
       >
         {rootLabel}
       </Link>
@@ -47,29 +47,38 @@ export default function TrailPills({ steps, rootHref, rootLabel, hrefFor }: Trai
         const isLast = i === steps.length - 1;
 
         return (
-          <span
+          <div
             key={step.slug}
-            className={`flex flex-shrink-0 items-center gap-1 rounded-full border py-1 pl-3 pr-1 text-xs ${
+            // `force-white-text` pe pastila plină: fără ea, regula generală a
+            // temei luminoase face textul negru pe fundal negru.
+            className={`flex items-center gap-0.5 rounded-full border py-0.5 pl-2.5 pr-1 text-xs leading-none ${
               isLast
-                ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
-                : 'border-black/15 text-black/70 dark:border-white/15 dark:text-white/70'
+                ? 'force-white-text border-transparent bg-black dark:bg-white'
+                : 'border-black/15 dark:border-white/15'
             }`}
           >
-            <Link href={hrefFor(step.slug)} className="max-w-[10rem] truncate whitespace-nowrap">
+            <Link
+              href={hrefFor(step.slug)}
+              className={`max-w-[8rem] truncate py-1 ${
+                isLast
+                  ? 'text-white dark:text-black'
+                  : 'text-black/70 dark:text-white/70'
+              }`}
+            >
               {step.name}
             </Link>
             <Link
               href={back}
               aria-label={`Ieși din ${step.name}`}
-              className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
+              className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] transition-colors ${
                 isLast
-                  ? 'hover:bg-white/25 dark:hover:bg-black/20'
-                  : 'hover:bg-black/10 dark:hover:bg-white/10'
+                  ? 'text-white hover:bg-white/25 dark:text-black dark:hover:bg-black/15'
+                  : 'text-black/45 hover:bg-black/10 dark:text-white/45 dark:hover:bg-white/10'
               }`}
             >
               ✕
             </Link>
-          </span>
+          </div>
         );
       })}
     </nav>
