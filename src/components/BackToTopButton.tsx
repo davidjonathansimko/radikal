@@ -81,6 +81,7 @@ export default function BackToTopButton({
       onClick={handleClick}
       aria-label={label}
       title={label}
+      data-back-to-top=""
       className={[
         'fixed rounded-full overflow-hidden isolate',
         'flex items-center justify-center',

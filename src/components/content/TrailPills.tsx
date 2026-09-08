@@ -49,14 +49,14 @@ export default function TrailPills({ steps, rootHref, rootLabel, hrefFor }: Trai
         return (
           <div
             key={step.slug}
-            // `force-white-text` pe pastila plină: fără ea, regula generală a
-            // temei luminoase face textul negru pe fundal negru.
             className={`flex items-center gap-0.5 rounded-full border py-0.5 pl-2.5 pr-1 text-xs leading-none ${
               isLast
-                ? 'force-white-text border-transparent bg-black dark:bg-white'
+                ? 'border-transparent bg-black dark:bg-white'
                 : 'border-black/15 dark:border-white/15'
             }`}
           >
+            {/* Clasa `dark:text-…` nu e doar pentru tema închisă: ea scoate
+                elementul de sub regula care înnegrește totul pe tema albă. */}
             <Link
               href={hrefFor(step.slug)}
               className={`max-w-[8rem] truncate py-1 ${
