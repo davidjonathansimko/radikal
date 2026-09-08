@@ -838,9 +838,10 @@ export default function Navigation() {
     )}
 
     {/* ═══ DESKTOP NAV BAR — unchanged, only visible on lg+ ═══ */}
-    {/* Pasul 0409e — nimic din bara de sus nu se mai rupe pe doua randuri.
-        Cand apare butonul Admin, linkurile se string, nu se îndoaie. */}
-    {!cleanScreen && (
+    {/* Pasul 0809005 — bara de pe Desktop nu verifica deloc daca esti inauntru:
+        se vedea intreaga si pe pagina de intrare, pentru oricine. Acum tine
+        de aceeasi regula ca bara de pe telefon. */}
+    {canSeeNav && (
     <nav className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white/20 dark:bg-black/20 backdrop-blur-md border-b border-black/10 dark:border-white/10 [&_a]:whitespace-nowrap [&_button]:whitespace-nowrap [&_span]:whitespace-nowrap">
       <div className="mx-auto w-full max-w-[110rem]" style={{ padding: '0 clamp(8px, 2vw, 24px)' }}>
         <div className="flex h-16 min-w-0 items-center justify-between" style={{ gap: 'clamp(4px, 1vw, 16px)' }}>

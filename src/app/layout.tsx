@@ -11,6 +11,7 @@ import '@/styles/accessibility.css';
 import { LanguageProvider } from '@/hooks/useLanguage';
 import { ThemeProvider } from '@/hooks/useTheme';
 import Navigation from '@/components/Navigation';
+import NavigationRescue from '@/components/NavigationRescue';
 import FooterComponent from '@/components/FooterComponent';
 import { ReadingModeProvider, ReadingModeOverlay } from '@/components/ReadingMode';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -241,6 +242,10 @@ export default function RootLayout({
 
                   {/* Main navigation / Hauptnavigation / Navigare principală */}
                   <Navigation />
+
+                  {/* Pasul 0809005 — daca navigarea interna se blocheaza, ducem
+                      cititorul mai departe pe drumul obisnuit. */}
+                  <NavigationRescue />
                   
                   {/* Reading mode overlay for distraction-free reading / Lesemodus-Overlay für ablenkungsfreies Lesen / Suprapunere mod citire pentru lectură fără distrageri */}
                   <ReadingModeOverlay />
