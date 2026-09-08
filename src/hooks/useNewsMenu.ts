@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
+import { fetchEnabledPages } from '@/lib/pageSettings';
 
 export interface NewsMenuState {
   /** Se arata rubrica in meniu? */
@@ -26,7 +27,7 @@ export interface NewsMenuState {
 
 /** Titlul rubricii in cele 4 limbi */
 export const NEWS_MENU_LABELS: Record<string, string> = {
-  de: 'News',
+  de: 'Neuigkeiten',
   en: 'News',
   ro: 'Noutăți',
   ru: 'Новости',
@@ -53,7 +54,16 @@ export function useNewsMenu(): NewsMenuState {
         const count = Number(row?.item_count ?? 0);
 
         // Amandoua conditiile trebuie indeplinite.
-        setState({ visible: enabled && count > 0, count });
+        // Pasul 0809003 — plus butonul din Setări → Pagini → Neuigkeiten.
+        let allowed = true;
+        try {
+          const pages = await fetchEnabledPages();
+          allowed = pages.has('news');
+        } catch {
+          /* fara tabelul de setari, ne luam dupa vechea regula */
+        }
+
+        setState({ visible: allowed && enabled && count > 0, count });
       } catch {
         /* fara tabel sau fara internet — rubrica ramane ascunsa */
       }

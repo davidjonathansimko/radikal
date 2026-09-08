@@ -6,6 +6,7 @@
 import React, { useState, useRef } from 'react';
 import { FaImage, FaTimes, FaUpload, FaSpinner } from 'react-icons/fa';
 import { createClient } from '@/lib/supabase';
+import { shrinkImage } from '@/lib/shrinkImage';
 
 interface ImageUploadProps {
   onImageUploaded: (url: string) => void;
@@ -39,16 +40,20 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
     setUploading(true);
 
     try {
+      // Pasul 0809003 — poza pleaca micsorata spre server, ca cititorii sa nu
+      // descarce 25 MB pe internet mobil.
+      const upload = await shrinkImage(file);
+
       // Create preview immediately
-      const previewUrl = URL.createObjectURL(file);
+      const previewUrl = URL.createObjectURL(upload);
       setPreview(previewUrl);
 
       // Upload actual file to Supabase Storage
-      const fileName = `blog-images/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileName = `blog-images/${Date.now()}-${upload.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       
       const { data, error } = await supabase.storage
         .from('blog-images')
-        .upload(fileName, file, {
+        .upload(fileName, upload, {
           cacheControl: '3600',
           upsert: false
         });

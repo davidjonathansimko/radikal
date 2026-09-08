@@ -170,6 +170,14 @@ export default function Navigation() {
   const cleanScreen = pathname === '/verset' || introActive;
   const canSeeNav = (!!user || isGuest || authUnknown) && !cleanScreen;
 
+  // Pasul 0809003 — plasă de siguranță: în afara paginii principale, nicio
+  // urmă de la ecranele care ascund meniul nu are ce căuta pe pagină.
+  useEffect(() => {
+    if (pathname === '/') return;
+    document.body.classList.remove('modal-active');
+    if (pathname !== '/verset') document.body.classList.remove('intro-active');
+  }, [pathname]);
+
   /**
    * Pasul 0809001 — TITLUL PAGINII, sus, între logo și meniu.
    * Rămâne acolo tot timpul cât ești în secțiunea aceea, ca să știi mereu unde
@@ -202,7 +210,10 @@ export default function Navigation() {
       return language === 'de' ? 'Über' : language === 'ro' ? 'Despre' : language === 'ru' ? 'О нас' : 'About';
     }
     if (pathname.startsWith('/contact')) {
-      return language === 'ru' ? 'Контакт' : 'Kontakt';
+      return language === 'ro' ? 'Contact'
+        : language === 'en' ? 'Contact'
+        : language === 'ru' ? 'Контакт'
+        : 'Kontakt';
     }
     return '';
   })();
@@ -812,8 +823,8 @@ export default function Navigation() {
         Cand apare butonul Admin, linkurile se string, nu se îndoaie. */}
     {!cleanScreen && (
     <nav className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white/20 dark:bg-black/20 backdrop-blur-md border-b border-black/10 dark:border-white/10 [&_a]:whitespace-nowrap [&_button]:whitespace-nowrap [&_span]:whitespace-nowrap">
-      <div className="max-w-7xl mx-auto" style={{ padding: '0 clamp(8px, 3vw, 32px)' }}>
-        <div className="flex items-center justify-between h-16 min-w-0" style={{ gap: 'clamp(8px, 3vw, 24px)' }}>
+      <div className="mx-auto w-full max-w-[110rem]" style={{ padding: '0 clamp(8px, 2vw, 24px)' }}>
+        <div className="flex h-16 min-w-0 items-center justify-between" style={{ gap: 'clamp(4px, 1vw, 16px)' }}>
           {/* Logo section / Logo-Bereich / Secțiune logo */}
           <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center space-x-3">
@@ -834,13 +845,15 @@ export default function Navigation() {
 
           {/* Pasul 0809001 — titlul paginii, lângă logo, ca să știi mereu unde ești. */}
           {(pageTitle || isHomePage) && (
-            <div className="hidden flex-shrink-0 items-center xl:flex">
+            <div className="hidden flex-shrink-0 items-center 2xl:flex">
               <WayTitle visible text={pageTitle || undefined} />
             </div>
           )}
 
           {/* Desktop navigation menu / Desktop-Navigationsmenü / Meniu navigare desktop */}
-          <div className="flex min-w-0 items-center gap-x-1 xl:gap-x-3">
+          {/* Pasul 0809003 — cand pornesti pagini noi (Andacht, Copii, News),
+              linkurile se string singure in loc sa se calce unele pe altele. */}
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-x-0.5 [&_a]:px-2 [&_a]:text-[13px] xl:[&_a]:px-3 xl:[&_a]:text-sm">
             {/* Blogs dropdown with months submenu / Blog-Dropdown mit Monats-Untermenü / Dropdown bloguri cu submeniu luni */}
             <div 
               className="relative blogs-dropdown"

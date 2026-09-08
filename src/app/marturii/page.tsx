@@ -13,6 +13,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useTranslation } from '@/hooks/useTranslation';
 import { getSupabaseClient } from '@/lib/supabase';
 import { usePageText } from '@/lib/pageContent';
 import { registerPageDefaults } from '@/lib/pageDefaults';
@@ -97,10 +98,12 @@ interface Section {
   slug: string;
   name: string;
   description: string | null;
+  written?: boolean;
 }
 
 export default function MarturiiPage() {
   const { language } = useLanguage();
+  const { translateBatch } = useTranslation();
   const lang = (['ro', 'de', 'en', 'ru'].includes(language) ? language : 'de') as Lang;
   const t = usePageText('marturii', T, lang);
 
@@ -163,18 +166,47 @@ export default function MarturiiPage() {
       }
 
       const rows = (data || []) as unknown as Record<string, unknown>[];
-      setSections(
-        rows.map((r) => ({
-          id: r.id as string,
-          slug: r.slug as string,
-          name: ((r[`name_${lang}`] as string) || (r.name_ro as string) || '').trim(),
-          description: ((r[`description_${lang}`] as string) || (r.description_ro as string) || null),
-        })),
-      );
+      const mapped = rows.map((r) => ({
+        id: r.id as string,
+        slug: r.slug as string,
+        name: ((r[`name_${lang}`] as string) || (r.name_ro as string) || '').trim(),
+        description: ((r[`description_${lang}`] as string) || (r.description_ro as string) || null),
+        /** Ai scris tu textul pentru limba asta? Atunci DeepL n-are ce face. */
+        written: Boolean(
+          ((r[`name_${lang}`] as string) || '').trim() &&
+            ((r[`description_${lang}`] as string) || '').trim(),
+        ),
+      }));
+      setSections(mapped);
+
+      // Pasul 0809003 — ce n-ai scris tu se cere de la DeepL, ca rubricile să
+      // nu mai rămână în română pentru un cititor pe germană.
+      if (lang !== 'ro') {
+        const missing = mapped.filter((s) => !s.written);
+        if (missing.length > 0) {
+          const texts = missing.flatMap((s) => [s.name, s.description || '']);
+          try {
+            const out = await translateBatch(texts, lang, 'ro');
+            setSections((prev) =>
+              prev.map((s) => {
+                const i = missing.findIndex((m) => m.id === s.id);
+                if (i < 0) return s;
+                return {
+                  ...s,
+                  name: out[i * 2] || s.name,
+                  description: s.description ? out[i * 2 + 1] || s.description : s.description,
+                };
+              }),
+            );
+          } catch {
+            /* fără traducere, rămâne originalul */
+          }
+        }
+      }
     } finally {
       setLoading(false);
     }
-  }, [lang]);
+  }, [lang, translateBatch]);
 
   useEffect(() => {
     void load();
@@ -217,7 +249,7 @@ export default function MarturiiPage() {
             </svg>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-bold text-black dark:text-white mb-2 animate-fadeIn">
+          <h1 className="hidden lg:block text-4xl sm:text-5xl font-bold text-black dark:text-white mb-2 animate-fadeIn">
             {t.title}
           </h1>
 

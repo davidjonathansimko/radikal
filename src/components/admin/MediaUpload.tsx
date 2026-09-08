@@ -11,6 +11,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import { shrinkImage } from '@/lib/shrinkImage';
 
 const BUCKET = 'reels-media';
 
@@ -52,14 +53,17 @@ export default function MediaUpload({
 
   const accept = kind === 'audio' ? 'audio/*' : 'image/*';
 
-  const handleFile = async (file: File) => {
+  const handleFile = async (original: File) => {
     setError('');
 
     const maxBytes = maxSizeMb * 1024 * 1024;
-    if (file.size > maxBytes) {
+    if (original.size > maxBytes) {
       setError(`Fișierul este prea mare (max. ${maxSizeMb} MB).`);
       return;
     }
+
+    // Pasul 0809003 — pozele pleaca micsorate spre server. Sunetul ramane cum e.
+    const file = kind === 'audio' ? original : await shrinkImage(original);
 
     // Previzualizare instantanee, inainte de orice cerere de retea
     setLocalUrl((prev) => {

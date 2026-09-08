@@ -38,7 +38,7 @@ export const EDITABLE_PAGES = [
   { id: 'verset', label: 'Un verset zilnic', path: '/verset' },
   { id: 'impressum', label: 'Impressum', path: '/impressum' },
   { id: 'datenschutz', label: 'Confidențialitate (Datenschutz)', path: '/datenschutz' },
-  { id: 'news', label: 'News', path: '/news' },
+  { id: 'news', label: 'Neuigkeiten (News)', path: '/news' },
 ] as const;
 
 export type PageId = (typeof EDITABLE_PAGES)[number]['id'];

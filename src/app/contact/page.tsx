@@ -356,8 +356,10 @@ export default function ContactPage() {
     <div className="min-h-screen py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page header / Seitenkopf */}
-        <header className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl font-bold text-black dark:text-white mb-6 animate-fadeIn">
+        {/* Pasul 0809003 — pe telefon, numele paginii stă sus în bara de meniu,
+            deci aici ar fi de două ori. Pe Desktop rămâne. */}
+        <header className="text-center mb-10 lg:mb-16">
+          <h1 className="hidden lg:block text-4xl sm:text-5xl font-bold text-black dark:text-white mb-6 animate-fadeIn">
             {t.title}
           </h1>
           <p className="text-xl text-black/80 dark:text-white/80 max-w-2xl mx-auto leading-relaxed animate-fadeIn" style={{ animationDelay: '0.2s' }}>
