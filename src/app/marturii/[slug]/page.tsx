@@ -206,7 +206,7 @@ export default function SectionPage() {
         <TrailPills
           steps={[...trail, { slug, name: sectionName }]}
           rootHref="/marturii"
-          rootLabel={t.back}
+          rootLabel={{ de: 'Zeugnisse', en: 'Testimonies', ro: 'Mărturii', ru: 'Свидетельства' }[lang]}
           hrefFor={(s) => `/marturii/${s}`}
         />
 

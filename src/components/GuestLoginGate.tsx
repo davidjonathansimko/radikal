@@ -7,6 +7,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { cameFromList } from '@/lib/navHistory';
+import { trackEvent } from '@/lib/analytics';
+import { useEffect } from 'react';
+
+function track(action: string) {
+  trackEvent({ name: 'guest_gate', category: 'conversion', action });
+}
 
 const TEXTS: Record<string, { title: string; text: string; login: string; signup: string }> = {
   de: {
@@ -45,6 +51,10 @@ interface Props {
 export default function GuestLoginGate({ backHref, backLabel, articlePrefix }: Props) {
   const { language } = useLanguage();
   const router = useRouter();
+
+  useEffect(() => {
+    track('shown');
+  }, []);
   const t = TEXTS[language] ?? TEXTS.de;
 
   return (
@@ -64,12 +74,14 @@ export default function GuestLoginGate({ backHref, backLabel, articlePrefix }: P
         <div className="flex flex-col gap-3">
           <Link
             href="/auth/login"
+            onClick={() => track('login_click')}
             className="btn-solid rounded-xl bg-black px-6 py-3 font-semibold text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-black"
           >
             {t.login}
           </Link>
           <Link
             href="/auth/signup"
+            onClick={() => track('signup_click')}
             className="rounded-xl border border-black/20 px-6 py-3 font-semibold transition-colors hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
           >
             {t.signup}
