@@ -20,6 +20,8 @@ import { registerPageDefaults } from '@/lib/pageDefaults';
 import { MARTURII_TEXTS } from '@/lib/pageTexts/marturii';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import TestimonyToc from '@/components/content/TestimonyToc';
+import ContinueReading from '@/components/ContinueReading';
 import MarturiiIntroQuote from '@/components/MarturiiIntroQuote';
 import { MARTURII_ACTIVE_KEY } from '@/lib/marturiiSession';
 
@@ -54,6 +56,23 @@ export default function MarturiiPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
+  // Cuprins (rubrici care se desfac) sau lista simpla. Se tine minte pe telefon.
+  const [view, setView] = useState<'toc' | 'list'>('toc');
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('radikalMarturiiView') === 'list') setView('list');
+    } catch {
+      /* fila privata */
+    }
+  }, []);
+  const chooseView = (v: 'toc' | 'list') => {
+    setView(v);
+    try {
+      localStorage.setItem('radikalMarturiiView', v);
+    } catch {
+      /* fila privata */
+    }
+  };
 
   useEffect(() => {
     let alreadyInside = false;
@@ -223,6 +242,30 @@ export default function MarturiiPage() {
             {t.sectionsTitle}
           </h2>
 
+          <ContinueReading className="mb-5" />
+
+          {hasSections && (
+            <div className="mb-4 flex justify-center gap-2">
+              {(['toc', 'list'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => chooseView(v)}
+                  aria-pressed={view === v}
+                  className={`btn-solid rounded-full border px-4 py-1.5 text-xs transition-colors ${
+                    view === v
+                      ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+                      : 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
+                  }`}
+                >
+                  {v === 'toc'
+                    ? { de: 'Inhalt', en: 'Contents', ro: 'Cuprins', ru: 'Содержание' }[lang]
+                    : { de: 'Liste', en: 'List', ro: 'Listă', ru: 'Список' }[lang]}
+                </button>
+              ))}
+            </div>
+          )}
+
           {loading ? (
             <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>
           ) : !hasSections ? (
@@ -236,6 +279,8 @@ export default function MarturiiPage() {
                 <p className="mt-2 text-xs text-black/45 dark:text-white/45">{t.emptyHint}</p>
               )}
             </div>
+          ) : view === 'toc' ? (
+            <TestimonyToc sections={sections} lang={lang} />
           ) : (
             /* Pasul 0809001 — rânduri curate, cu indicatorul „›" la capăt. */
             <ul className="divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">

@@ -59,6 +59,35 @@ export async function setGuestAllowed(enabled: boolean): Promise<{ ok: boolean; 
   }
 }
 
+/** Pasul 2210007 — pot vizitatorii sa citeasca articole? Fara rand salvat = nu. */
+export async function fetchGuestReadAllowed(): Promise<boolean> {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('page_settings')
+      .select('enabled')
+      .eq('page_id', 'guest_read')
+      .maybeSingle();
+    if (error || !data) return false;
+    return Boolean((data as { enabled: boolean }).enabled);
+  } catch {
+    return false;
+  }
+}
+
+export async function setGuestReadAllowed(enabled: boolean): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await getSupabaseClient()
+      .from('page_settings')
+      .upsert(
+        { page_id: 'guest_read', enabled, updated_at: new Date().toISOString() },
+        { onConflict: 'page_id' },
+      );
+    return error ? { ok: false, error: error.message } : { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'eroare' };
+  }
+}
+
 export async function isPageEnabled(pageId: TogglablePage): Promise<boolean> {
   const on = await fetchEnabledPages();
   return on.has(pageId);

@@ -1,4 +1,4 @@
-﻿// Blogs page component / Blogs-Seiten-Komponente / Componentă pagina Bloguri
+// Blogs page component / Blogs-Seiten-Komponente / Componentă pagina Bloguri
 // This displays all blog posts with pagination and filtering
 // Dies zeigt alle Blog-Posts mit Paginierung und Filterung
 // Aceasta afișează toate posturile de blog cu paginare și filtrare
@@ -13,6 +13,7 @@ import { useRouteProtection } from '@/hooks/useRouteProtection';
 import BackToHome from '@/components/BackToHome';
 import BlogBrowse from '@/components/BlogBrowse';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
+import ContinueReading from '@/components/ContinueReading';
 import NewsletterSubscribe from '@/components/NewsletterSubscribe';
 import { CircularReadingProgress } from '@/components/ReadingProgress';
 import Link from 'next/link';
@@ -147,7 +148,8 @@ function BlogsPageContent() {
           <div className="flex justify-center">
             <BlogBrowse />
           </div>
-          <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} className="mt-4" />
+          <ContinueReading className="mt-4" />
+          <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="blog_posts" className="mt-4" />
         </header>
 
         {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}

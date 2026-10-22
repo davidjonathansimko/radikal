@@ -290,7 +290,7 @@ export default function ContentListPage({
           )
         )}
 
-        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} className="mb-5" />
+        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="content_items" kind={kind} className="mb-5" />
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

@@ -90,7 +90,7 @@ export default function DailyArchive({ kind }: { kind: ContentKind }) {
           {t.archiveTitle}
         </h1>
 
-        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} className="mb-6" />
+        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="content_items" kind={kind} className="mb-6" />
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

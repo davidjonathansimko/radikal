@@ -23,7 +23,7 @@ import {
   type PageLanguage,
 } from '@/lib/pageContent';
 import { originalTextsFor, isPageEditable, ensurePageDefaultsLoaded } from '@/lib/pageDefaults';
-import { fetchEnabledPages, setPageEnabled, fetchGuestAllowed, setGuestAllowed, type TogglablePage } from '@/lib/pageSettings';
+import { fetchEnabledPages, setPageEnabled, fetchGuestAllowed, setGuestAllowed, fetchGuestReadAllowed, setGuestReadAllowed, type TogglablePage } from '@/lib/pageSettings';
 
 const LANG_NAMES: Record<PageLanguage, string> = {
   ro: 'Română',
@@ -79,6 +79,34 @@ export default function PageContentAdmin() {
       setError(`Nu am putut schimba: ${res.error}`);
     }
     setTogglingGuest(false);
+  };
+
+  // Pasul 2210007 — pot vizitatorii sa citeasca articole? Oprit = ecran de logare.
+  const [guestRead, setGuestRead] = useState<boolean | null>(null);
+  const [togglingRead, setTogglingRead] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchGuestReadAllowed().then((ok) => alive && setGuestRead(ok));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const toggleGuestRead = async () => {
+    const next = !guestRead;
+    setTogglingRead(true);
+    setError('');
+    const res = await setGuestReadAllowed(next);
+    if (res.ok) {
+      setGuestRead(next);
+      setNote(
+        next
+          ? 'Vizitatorii pot citi bloguri, mărturii și textele pentru copii.'
+          : 'Vizitatorii văd listele, dar pentru a citi trebuie să se autentifice.',
+      );
+    } else {
+      setError(`Nu am putut schimba: ${res.error}`);
+    }
+    setTogglingRead(false);
   };
 
   useEffect(() => {
@@ -296,6 +324,34 @@ export default function PageContentAdmin() {
             }`}
           >
             {togglingGuest ? 'Se schimbă…' : guestOn === false ? 'Permite vizitatori' : 'Oprește vizitatorii'}
+          </button>
+        </div>
+      </div>
+
+      {/* --- Citirea pentru vizitatori (pasul 2210007) --- */}
+      <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-black dark:text-white">
+              {guestRead ? 'Vizitatorii pot citi totul' : 'Vizitatorii nu pot citi: li se cere contul'}
+            </p>
+            <p className="mt-1 text-xs text-black/55 dark:text-white/55">
+              {guestRead
+                ? 'Bloguri, mărturii și pagina pentru copii se deschid și fără cont, ca înainte.'
+                : 'Vizitatorii văd listele de carduri, dar la deschiderea unui articol apare ecranul care cere autentificarea.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void toggleGuestRead()}
+            disabled={togglingRead || guestRead === null}
+            className={`btn-solid shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 ${
+              guestRead
+                ? 'border border-black/15 text-black dark:border-white/15 dark:text-white'
+                : 'bg-black text-white dark:bg-white dark:text-black'
+            }`}
+          >
+            {togglingRead ? 'Se schimbă…' : guestRead ? 'Cere cont pentru citit' : 'Lasă vizitatorii să citească'}
           </button>
         </div>
       </div>

@@ -34,6 +34,8 @@ export interface CategoryPickerProps {
   /** Textul din casuta de cautare */
   placeholder?: string;
   className?: string;
+  /** Cate articole are fiecare categorie (id -> numar). Fara el, nu se arata numere. */
+  counts?: Record<string, number>;
 }
 
 export default function CategoryPicker({
@@ -44,6 +46,7 @@ export default function CategoryPicker({
   visibleCount = 4,
   placeholder,
   className = '',
+  counts,
 }: CategoryPickerProps) {
   const [query, setQuery] = useState('');
   /** „Arata-le pe toate" — apasat manual, fara sa scrii nimic */
@@ -106,6 +109,9 @@ export default function CategoryPicker({
               }`}
             >
               {categoryName(c, lang)}
+              {counts && counts[c.id] != null && (
+                <span className="ml-1.5 opacity-50">{counts[c.id]}</span>
+              )}
             </button>
           );
         })}

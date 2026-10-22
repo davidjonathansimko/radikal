@@ -11,6 +11,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { cameFromList } from '@/lib/navHistory';
+import { LAST_READ_KEY } from '@/components/ContinueReading';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -51,6 +52,7 @@ import { CiHeart } from 'react-icons/ci';
 // Dynamic imports for heavy components (loaded only when needed)
 const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ssr: false });
 import GuestLoginGate from '@/components/GuestLoginGate';
+import { fetchGuestReadAllowed } from '@/lib/pageSettings';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
 // const BookmarkButton = dynamic(() => import('@/components/BookmarkButton'), { ssr: false });
@@ -209,6 +211,16 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
 
   // Pasul C2: modul vizitator — fara comentarii / Guest mode — no comments
   const { isGuest } = useGuestMode();
+  // Din admin: vizitatorii au voie sa citeasca? null = inca nu stim.
+  const [guestReadAllowed, setGuestReadAllowed] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!isGuest || !source.requiresLogin) return;
+    let alive = true;
+    fetchGuestReadAllowed().then((ok) => alive && setGuestReadAllowed(ok));
+    return () => {
+      alive = false;
+    };
+  }, [isGuest, source.requiresLogin]);
 
   // ------------------------------------------------------------------
   // Pasul 2208001 — BLOG DINAMIC („Play Blog")
@@ -773,6 +785,24 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
     return () => { document.title = 'RADIKAL'; };
   }, [displayTitle]);
 
+  // Pasul 2210007 — tine minte ce ai citit ultima data, pentru „Continuă”.
+  useEffect(() => {
+    if (!post || !displayTitle) return;
+    if (isGuest && source.requiresLogin && guestReadAllowed !== true) return;
+    try {
+      localStorage.setItem(
+        LAST_READ_KEY,
+        JSON.stringify({
+          href: `${source.basePath}/${originalSlugRef.current || post.slug}`,
+          title: displayTitle,
+          at: Date.now(),
+        }),
+      );
+    } catch {
+      /* filă privată */
+    }
+  }, [post, displayTitle, isGuest, guestReadAllowed, source.basePath, source.requiresLogin]);
+
   // 🌐 Update URL slug to match translated title (cosmetic only — does NOT trigger navigation)
   // Uses window.history.replaceState which does NOT affect Next.js router or useParams
   // All DB queries use originalSlugRef.current, so this is 100% safe
@@ -1168,7 +1198,11 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   }
 
   // Vizitatorul fara cont: intai modalul de intro (daca exista), apoi poarta de logare.
-  if (isGuest && source.requiresLogin && introModalCompleted) {
+  if (isGuest && source.requiresLogin && introModalCompleted && guestReadAllowed === null) {
+    return <div className="min-h-screen" />;
+  }
+
+  if (isGuest && source.requiresLogin && introModalCompleted && guestReadAllowed === false) {
     return (
       <GuestLoginGate
         backHref={source.listPath}
