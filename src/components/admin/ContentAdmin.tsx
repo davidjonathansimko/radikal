@@ -17,6 +17,7 @@ import BlogAudioGenerator from '@/components/admin/BlogAudioGenerator';
 import CustomAudioManager from '@/components/admin/CustomAudioManager';
 import ContentSectionsAdmin from '@/components/admin/ContentSectionsAdmin';
 import SectionTreePicker from '@/components/admin/SectionTreePicker';
+import CategoryField from '@/components/admin/CategoryField';
 import { useAdminListFilter } from '@/components/admin/useAdminListFilter';
 import { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import { CONTENT_ITEMS_TABLE, CONTENT_SECTIONS_TABLE, CONTENT_KINDS, type ContentKind } from '@/lib/contentKinds';
@@ -87,6 +88,9 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
   const [published, setPublished] = useState(false);
   const [isDynamic, setIsDynamic] = useState(false);
   const [sectionIds, setSectionIds] = useState<string[]>([]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  // Coloana `category_ids` exista doar dupa ce rulezi STEP_2210003_CATEGORII_PESTE_TOT.sql.
+  const [hasCategoryColumn, setHasCategoryColumn] = useState(false);
   const [effects, setEffects] = useState<ImageEffectSettings>(DEFAULT_IMAGE_EFFECTS);
   const [customAudioLangs, setCustomAudioLangs] = useState<string[]>([]);
   const [manual, setManual] = useState(emptyManual());
@@ -148,6 +152,8 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
     setPublished(false);
     setIsDynamic(false);
     setSectionIds([]);
+    setCategoryIds([]);
+    setHasCategoryColumn(false);
     setEffects(DEFAULT_IMAGE_EFFECTS);
     setManual(emptyManual());
     setOpenLang('de');
@@ -176,6 +182,7 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
           published,
           is_dynamic: isDynamic,
           section_ids: sectionIds,
+          ...(categoryIds.length > 0 || hasCategoryColumn ? { category_ids: categoryIds } : {}),
           updated_at: new Date().toISOString(),
           effect_noise: effects.effectNoise,
           effect_grain: effects.effectGrain,
@@ -219,7 +226,7 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
         setSaving(false);
       }
     },
-    [kind, title, excerpt, content, imageUrl, published, isDynamic, sectionIds, effects, manual, editingId, load, resetForm, say],
+    [kind, title, excerpt, content, imageUrl, published, isDynamic, sectionIds, categoryIds, hasCategoryColumn, effects, manual, editingId, load, resetForm, say],
   );
 
   const startEdit = useCallback(async (id: string) => {
@@ -239,6 +246,8 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
     setPublished(Boolean(r.published));
     setIsDynamic(Boolean(r.is_dynamic));
     setSectionIds(Array.isArray(r.section_ids) ? (r.section_ids as string[]) : []);
+    setHasCategoryColumn('category_ids' in r);
+    setCategoryIds(Array.isArray(r.category_ids) ? (r.category_ids as string[]) : []);
     setEffects({
       ...DEFAULT_IMAGE_EFFECTS,
       effectNoise: Boolean(r.effect_noise),
@@ -385,6 +394,8 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
               onChange={setSectionIds}
               emptyHint="Nu există încă nicio rubrică. Creează prima mai sus."
             />
+
+            <CategoryField value={categoryIds} onChange={setCategoryIds} />
 
             <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">
               <p className={labelClass}>Imaginea</p>

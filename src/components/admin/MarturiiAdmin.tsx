@@ -24,6 +24,7 @@ import BlogAudioGenerator from '@/components/admin/BlogAudioGenerator';
 import CustomAudioManager from '@/components/admin/CustomAudioManager';
 import MarturiiSectionsAdmin from '@/components/admin/MarturiiSectionsAdmin';
 import SectionTreePicker from '@/components/admin/SectionTreePicker';
+import CategoryField from '@/components/admin/CategoryField';
 import { useAdminListFilter } from '@/components/admin/useAdminListFilter';
 import {
   DEFAULT_IMAGE_EFFECTS,
@@ -89,6 +90,9 @@ export default function MarturiiAdmin() {
   const [published, setPublished] = useState(false);
   const [isDynamic, setIsDynamic] = useState(false);
   const [sectionIds, setSectionIds] = useState<string[]>([]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  // Coloana `category_ids` exista doar dupa ce rulezi STEP_2210003_CATEGORII_PESTE_TOT.sql.
+  const [hasCategoryColumn, setHasCategoryColumn] = useState(false);
   const [effects, setEffects] = useState<ImageEffectSettings>(DEFAULT_IMAGE_EFFECTS);
 
   // Limbile in care ai incarcat vocea ta — in ele nu se mai genereaza TTS.
@@ -163,6 +167,8 @@ export default function MarturiiAdmin() {
     setPublished(false);
     setIsDynamic(false);
     setSectionIds([]);
+    setCategoryIds([]);
+    setHasCategoryColumn(false);
     setEffects(DEFAULT_IMAGE_EFFECTS);
     setManual({
       ro: { title: '', excerpt: '', content: '' },
@@ -195,6 +201,7 @@ export default function MarturiiAdmin() {
           published,
           is_dynamic: isDynamic,
           section_ids: sectionIds,
+          ...(categoryIds.length > 0 || hasCategoryColumn ? { category_ids: categoryIds } : {}),
           updated_at: new Date().toISOString(),
           // Efectele imaginii — aceleași coloane ca la bloguri
           effect_noise: effects.effectNoise,
@@ -262,7 +269,7 @@ export default function MarturiiAdmin() {
         setSaving(false);
       }
     },
-    [title, excerpt, content, imageUrl, published, isDynamic, sectionIds, effects, manual, editingId, load, resetForm, say],
+    [title, excerpt, content, imageUrl, published, isDynamic, sectionIds, categoryIds, hasCategoryColumn, effects, manual, editingId, load, resetForm, say],
   );
 
   // ---- Editare
@@ -280,6 +287,8 @@ export default function MarturiiAdmin() {
     setPublished(Boolean(r.published));
     setIsDynamic(Boolean(r.is_dynamic));
     setSectionIds(Array.isArray(r.section_ids) ? (r.section_ids as string[]) : []);
+    setHasCategoryColumn('category_ids' in r);
+    setCategoryIds(Array.isArray(r.category_ids) ? (r.category_ids as string[]) : []);
 
     setEffects({
       ...DEFAULT_IMAGE_EFFECTS,
@@ -437,6 +446,9 @@ export default function MarturiiAdmin() {
           onChange={setSectionIds}
           emptyHint="Nu există încă nicio rubrică. Creează prima mai jos, în „Rubricile mărturiilor”."
         />
+
+        {/* ---------------------- CATEGORIILE ---------------------- */}
+        <CategoryField value={categoryIds} onChange={setCategoryIds} />
 
         {/* ---------------------- IMAGINEA ---------------------- */}
         <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">

@@ -11,6 +11,8 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import CategoryFilterBar from '@/components/CategoryFilterBar';
+import { matchesSelectedCategories } from '@/lib/categories';
 import TrailPills from '@/components/content/TrailPills';
 import { CONTENT_ITEMS_TABLE, CONTENT_KINDS, type ContentKind } from '@/lib/contentKinds';
 import {
@@ -114,6 +116,7 @@ export default function ContentListPage({
   const [trail, setTrail] = useState<PublicSection[]>([]);
   const [missing, setMissing] = useState(false);
   const [rows, setRows] = useState<ContentItemRow[]>([]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Pagina oprită = vizitatorul e trimis acasă.
@@ -157,7 +160,9 @@ export default function ContentListPage({
   }, [allowed, load]);
 
   const visible = useMemo(() => {
-    const withText = rows.map((r) => ({
+    const withText = rows
+      .filter((r) => matchesSelectedCategories(r.category_ids as string[] | null, categoryIds))
+      .map((r) => ({
       row: r,
       title: pickContentText(r, 'title', lang),
       excerpt: pickContentText(r, 'excerpt', lang),
@@ -167,7 +172,7 @@ export default function ContentListPage({
       const db = new Date(b.row.created_at ?? 0).getTime();
       return db - da;
     });
-  }, [rows, lang]);
+  }, [rows, lang, categoryIds]);
 
   if (allowed === null || allowed === false) return null;
 
@@ -283,6 +288,8 @@ export default function ContentListPage({
             </ul>
           )
         )}
+
+        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} className="mb-5" />
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

@@ -12,6 +12,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import CategoryFilterBar from '@/components/CategoryFilterBar';
+import { matchesSelectedCategories } from '@/lib/categories';
 import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
@@ -88,6 +90,7 @@ function MarturiiToateInner() {
   const month = Number(params.get('month')) || null;
 
   const [rows, setRows] = useState<TestimonyRow[]>([]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -117,7 +120,9 @@ function MarturiiToateInner() {
       });
     }
 
-    const withText = base.map((r) => ({
+    const withText = base
+      .filter((r) => matchesSelectedCategories(r.category_ids as string[] | null, categoryIds))
+      .map((r) => ({
       row: r,
       title: pickTestimonyText(r, 'title', lang),
       excerpt: pickTestimonyText(r, 'excerpt', lang),
@@ -128,7 +133,7 @@ function MarturiiToateInner() {
       const db = new Date(b.row.created_at ?? 0).getTime();
       return db - da;
     });
-  }, [rows, lang, year, month]);
+  }, [rows, lang, year, month, categoryIds]);
 
   return (
     <div className="min-h-screen py-12">
@@ -169,6 +174,8 @@ function MarturiiToateInner() {
             />
           </div>
         </div>
+
+        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} className="mb-5" />
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

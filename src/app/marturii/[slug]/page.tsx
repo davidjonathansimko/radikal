@@ -13,6 +13,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import CategoryFilterBar from '@/components/CategoryFilterBar';
+import { matchesSelectedCategories } from '@/lib/categories';
 import TrailPills from '@/components/content/TrailPills';
 import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
 
@@ -87,6 +89,7 @@ export default function SectionPage() {
   const [children, setChildren] = useState<{ id: string; slug: string; name: string; description: string | null }[]>([]);
   const [trail, setTrail] = useState<{ slug: string; name: string }[]>([]);
   const [rows, setRows] = useState<TestimonyRow[]>([]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   /** Câte rubrici ai coborât până aici. 0 = prima rubrică din listă. */
@@ -170,7 +173,9 @@ export default function SectionPage() {
   }, [load]);
 
   const visible = useMemo(() => {
-    const withText = rows.map((r) => ({
+    const withText = rows
+      .filter((r) => matchesSelectedCategories(r.category_ids as string[] | null, categoryIds))
+      .map((r) => ({
       row: r,
       title: pickTestimonyText(r, 'title', lang),
       excerpt: pickTestimonyText(r, 'excerpt', lang),
@@ -180,7 +185,7 @@ export default function SectionPage() {
       const db = new Date(b.row.created_at ?? 0).getTime();
       return db - da;
     });
-  }, [rows, lang]);
+  }, [rows, lang, categoryIds]);
 
   if (sectionMissing) {
     return (
@@ -290,6 +295,8 @@ export default function SectionPage() {
             </ul>
           )
         )}
+
+        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} className="mb-5" />
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

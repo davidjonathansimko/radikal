@@ -24,6 +24,8 @@ interface BlogListProps {
   showOlderButton?: boolean;
   filterYear?: number | null;
   filterMonth?: number | null; // 0-indexed (0 = January)
+  /** Pasul 2210003 — doar bloguri din aceste categorii (gol = toate). */
+  categoryIds?: string[];
 }
 
 // Pasul 2208002 (punctul 13) — coloanele de care are nevoie LISTA de bloguri.
@@ -46,7 +48,8 @@ const BLOG_LIST_COLUMNS = [
   'is_dynamic',
 ].join(', ');
 
-export default function BlogList({ initialPosts = [], showOlderButton = true, filterYear = null, filterMonth = null }: BlogListProps) {
+export default function BlogList({ initialPosts = [], showOlderButton = true, filterYear = null, filterMonth = null, categoryIds = [] }: BlogListProps) {
+  const categoryKey = categoryIds.join(',');
   // Get language context / Sprachkontext abrufen / Obține contextul limbii
   const { language } = useLanguage();
   
@@ -134,6 +137,10 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
           .lte('created_at', endOfMonth.toISOString());
       }
 
+      if (categoryIds.length > 0) {
+        query = query.overlaps('category_ids', categoryIds);
+      }
+
       let { data, error } = await query.range(from, to);
 
       // Pasul 2308001 — PLASA DE SIGURANTA.
@@ -159,6 +166,9 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
           const s = new Date(filterYear, filterMonth, 1);
           const e = new Date(filterYear, filterMonth + 1, 0, 23, 59, 59, 999);
           fallback = fallback.gte('created_at', s.toISOString()).lte('created_at', e.toISOString());
+        }
+        if (categoryIds.length > 0) {
+          fallback = fallback.overlaps('category_ids', categoryIds);
         }
 
         const retry = await fallback.range(from, to);
@@ -199,7 +209,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     console.log('BlogList: Component mounted or filter changed, loading posts...');
     setPage(1);
     loadPosts(1, true);
-  }, [filterYear, filterMonth]); // Reload when filter changes / Neu laden wenn Filter sich ändert / Reîncarcă când filtrul se schimbă
+  }, [filterYear, filterMonth, categoryKey]); // Reload when filter changes / Neu laden wenn Filter sich ändert / Reîncarcă când filtrul se schimbă
 
   // 🌐 DeepL AUTO-TRANSLATION: Translate posts when language changes
   // 🌐 DeepL AUTO-ÜBERSETZUNG: Posts automatisch übersetzen wenn Sprache sich ändert

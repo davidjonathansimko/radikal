@@ -12,6 +12,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
 import BackToHome from '@/components/BackToHome';
 import BlogBrowse from '@/components/BlogBrowse';
+import CategoryFilterBar from '@/components/CategoryFilterBar';
 import NewsletterSubscribe from '@/components/NewsletterSubscribe';
 import { CircularReadingProgress } from '@/components/ReadingProgress';
 import Link from 'next/link';
@@ -32,6 +33,7 @@ function BlogsPageContent() {
   
   // Check if user is authenticated for newsletter / Prüfen ob Benutzer für Newsletter authentifiziert ist / Verifică dacă utilizatorul este autentificat pentru newsletter
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const supabase = createClient();
   
   useEffect(() => {
@@ -145,6 +147,7 @@ function BlogsPageContent() {
           <div className="flex justify-center">
             <BlogBrowse />
           </div>
+          <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} className="mt-4" />
         </header>
 
         {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
@@ -173,7 +176,7 @@ function BlogsPageContent() {
               ))}
             </div>
           }>
-            <BlogList filterYear={filterYear} filterMonth={filterMonth} />
+            <BlogList filterYear={filterYear} filterMonth={filterMonth} categoryIds={categoryIds} />
           </Suspense>
         </div>
 
