@@ -508,14 +508,22 @@ export function ReelSlide({
       };
     }
 
+    // Pasul 2210002 — observatorul se declanseaza si la 0.6, si la 1.0 cat
+    // timp reel-ul intra in ecran. A doua oara animatia pornea din nou: textul
+    // aparea o secunda, disparea brusc si abia apoi curgea. Acum pornim o data.
+    let started = false;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+            if (started) return;
+            started = true;
             isActiveRef.current = true;
             onActive(reel);
             play();
           } else {
+            started = false;
             isActiveRef.current = false;
             reset();
             // Reel-ul a iesit din ecran -> textul reincepe de la prima pagina
@@ -1183,13 +1191,22 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   // pagina din spate, iar reel-ul ramanea deschis peste ea. Acum, la
   // deschidere, punem un semn in istoric; „inapoi" il consuma pe acela si
   // inchide reel-ul, exact ca butonul X.
+  // Pasul 2210002 — `onClose` se schimba la fiecare randare a parintelui, iar
+  // efectul de mai jos depindea de el: la fiecare randare se punea inca un semn
+  // in istoric, deci „inapoi” consuma un semn in plus si nu inchidea reel-ul.
+  // Acum semnul se pune o singura data, la deschidere.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
     window.history.pushState({ radikalReels: true }, '');
-    const onPop = () => onClose();
+    const onPop = () => onCloseRef.current();
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   // Inchiderea trece tot prin istoric, ca semnul pus la deschidere sa nu
   // ramana in urma si sa ceara o a doua apasare pe „inapoi".

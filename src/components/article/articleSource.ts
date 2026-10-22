@@ -44,6 +44,8 @@ export interface ArticleSource {
   audioPrefix: string;
   /** Cum se numeste in Supabase: 'blog' sau 'marturie' */
   contentType: 'blog' | 'marturie' | 'andacht' | 'copii';
+  /** Vizitatorul fara cont vede lista, dar nu poate deschide articolul. */
+  requiresLogin: boolean;
 }
 
 export const BLOG_SOURCE: ArticleSource = {
@@ -67,6 +69,7 @@ export const BLOG_SOURCE: ArticleSource = {
   breadcrumbLabel: 'Blogs',
   audioPrefix: '',
   contentType: 'blog',
+  requiresLogin: true,
 };
 
 export const TESTIMONY_SOURCE: ArticleSource = {
@@ -90,6 +93,7 @@ export const TESTIMONY_SOURCE: ArticleSource = {
   breadcrumbLabel: 'Zeugnisse',
   audioPrefix: 'm-',
   contentType: 'marturie',
+  requiresLogin: true,
 };
 
 /** Pasul 2708018 — rubricile noi, toate din acelasi tabel. */
@@ -111,6 +115,7 @@ function contentSource(
     breadcrumbLabel: labels.crumb,
     audioPrefix: `${kind}-`,
     contentType: kind,
+    requiresLogin: kind === 'copii',
   };
 }
 

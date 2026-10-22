@@ -1,29 +1,44 @@
 'use client';
 
 /**
- * Pasul 0809005 — PLASA DE SIGURANȚĂ LA NAVIGARE.
+ * Pasul 0809009 — PLASA DE SIGURANȚĂ LA NAVIGARE.
  *
  * Din când în când, navigarea internă a aplicației se blochează: apeși un
- * link și nu se întâmplă absolut nimic — nici măcar o eroare. Am verificat
- * direct în browser: nici o comandă dată prin cod nu mai mișcă pagina.
- * Până găsesc cauza adâncă, aici stă paza:
+ * link și nu se întâmplă absolut nimic — nici măcar o eroare.
  *
- *   apeși un link → dacă după o jumătate de secundă adresa e tot aceeași,
- *   încărcăm pagina în felul obișnuit, ca un site normal.
+ * Aici stă paza. Dar ea nu se uită doar la ceas, ci la ce face aplicația:
+ * la o navigare sănătoasă, aplicația cere imediat pagina nouă de la server.
+ * Dacă după o clipă n-a cerut NIMIC, înseamnă că nici nu a încercat — abia
+ * atunci încărcăm pagina în felul obișnuit.
  *
- * E puțin mai lent decât navigarea obișnuită, dar nimeni nu mai rămâne
- * blocat într-o aplicație care pare stricată.
+ * Așa, o navigare lentă pe internet slab e lăsată în pace; doar una moartă
+ * este salvată.
  */
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-const WAIT_MS = 280;
+/** Cât așteptăm până verificăm dacă aplicația a cerut ceva. */
+const CHECK_MS = 300;
+/** Cât mai așteptăm o navigare care a pornit, dar merge greu. */
+const PATIENCE_MS = 6000;
 
 export default function NavigationRescue() {
   const pathname = usePathname();
 
   useEffect(() => {
+    /** A cerut aplicația pagina nouă de la server după apăsare? */
+    const askedForPage = (since: number) => {
+      try {
+        return performance
+          .getEntriesByType('resource')
+          .some((e) => e.startTime >= since && e.name.includes('_rsc'));
+      } catch {
+        // Fără măsurători nu riscăm: presupunem că a cerut.
+        return true;
+      }
+    };
+
     const onClick = (event: MouseEvent) => {
       // NU verificăm `defaultPrevented`: tocmai asta e situația pe care o
       // păzim — navigarea internă a oprit apăsarea și apoi n-a făcut nimic.
@@ -52,10 +67,23 @@ export default function NavigationRescue() {
       const to = destination.pathname + destination.search;
       if (from === to) return;
 
+      const clickedAt = performance.now();
+      const here = () => window.location.pathname + window.location.search;
+
       window.setTimeout(() => {
-        const now = window.location.pathname + window.location.search;
-        if (now === from) window.location.assign(destination.href);
-      }, WAIT_MS);
+        if (here() !== from) return;
+
+        if (!askedForPage(clickedAt)) {
+          // Nici n-a încercat. Mergem noi.
+          window.location.assign(destination.href);
+          return;
+        }
+
+        // A pornit, dar merge greu. Îi dăm timp; dacă tot nu ajunge, preluăm.
+        window.setTimeout(() => {
+          if (here() === from) window.location.assign(destination.href);
+        }, PATIENCE_MS);
+      }, CHECK_MS);
     };
 
     document.addEventListener('click', onClick);

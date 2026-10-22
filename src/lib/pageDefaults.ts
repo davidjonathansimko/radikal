@@ -35,7 +35,12 @@ export function ensurePageDefaultsLoaded(): Promise<void> {
       import('@/app/about/page'),
       import('@/app/page'),
       import('@/app/contact/page'),
-      import('@/app/marturii/page'),
+      // Pasul 0809009 — textele Mărturiilor stau într-un fișier al lor, nu în
+      // fișierul paginii. Next.js nu se așteaptă ca fișierele de pagină să fie
+      // importate din altă parte.
+      import('@/lib/pageTexts/marturii').then((m) =>
+        registerPageDefaults('marturii', m.MARTURII_TEXTS),
+      ),
       import('@/app/impressum/page'),
       import('@/app/datenschutz/page'),
       import('@/app/news/page'),

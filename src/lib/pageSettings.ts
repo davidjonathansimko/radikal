@@ -30,6 +30,35 @@ export async function fetchEnabledPages(): Promise<Set<string>> {
   }
 }
 
+/** Pasul 2210001 — se poate intra ca vizitator? Fara rand salvat = da. */
+export async function fetchGuestAllowed(): Promise<boolean> {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('page_settings')
+      .select('enabled')
+      .eq('page_id', 'guest_access')
+      .maybeSingle();
+    if (error || !data) return true;
+    return Boolean((data as { enabled: boolean }).enabled);
+  } catch {
+    return true;
+  }
+}
+
+export async function setGuestAllowed(enabled: boolean): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await getSupabaseClient()
+      .from('page_settings')
+      .upsert(
+        { page_id: 'guest_access', enabled, updated_at: new Date().toISOString() },
+        { onConflict: 'page_id' },
+      );
+    return error ? { ok: false, error: error.message } : { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'eroare' };
+  }
+}
+
 export async function isPageEnabled(pageId: TogglablePage): Promise<boolean> {
   const on = await fetchEnabledPages();
   return on.has(pageId);

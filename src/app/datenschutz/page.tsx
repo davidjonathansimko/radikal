@@ -100,7 +100,8 @@ const translations = {
     aiTitle: '13. Übersetzung und Vorlesefunktion',
     aiText: 'Beiträge können automatisch in andere Sprachen übersetzt werden. Dafür nutzen wir DeepL (DeepL SE, Köln, Deutschland). Übertragen wird ausschließlich der Text des jeweiligen Beitrags — keine personenbezogenen Daten. Für die Vorlesefunktion wird der Beitragstext an einen Sprachdienst übermittelt und die erzeugte Audiodatei bei uns zwischengespeichert, damit derselbe Text nicht erneut gesendet werden muss. Ihre Stimme wird zu keinem Zeitpunkt aufgezeichnet.',
     
-    pwaTitle: '14. Installierte App (PWA)',
+    pwaTitle: '14. Installierte App (PWA und Google Play)',
+    playText: 'Die App ist auch im Google Play Store erhältlich. Beim Herunterladen über Google Play gelten zusätzlich die Datenschutzbestimmungen von Google. Die App selbst lädt dieselbe Webseite wie im Browser und erhebt keine weiteren Daten über Sie.',
     pwaText: 'Sie können RADIKAL über Ihren Browser als App auf dem Startbildschirm installieren. Dabei findet keine Installation über einen App-Store statt und es werden keine zusätzlichen Daten an uns übertragen. Die App ist dieselbe Webseite: Ein sogenannter Service Worker legt Seiten, Bilder und Schriften lokal auf Ihrem Gerät ab, damit die App schneller startet und auch ohne Internetverbindung nutzbar bleibt. Angemeldete Bereiche und Formulardaten werden dabei bewusst nicht zwischengespeichert. Einstellungen wie Sprache, Design und Lesemodus liegen ausschließlich lokal in Ihrem Browser (localStorage). Sie können all das jederzeit entfernen, indem Sie die App deinstallieren oder die Browserdaten für diese Seite löschen.',
     
     // Footer links
@@ -182,7 +183,8 @@ const translations = {
     aiTitle: '13. Translation and Read-Aloud',
     aiText: 'Articles can be translated automatically into other languages. For this we use DeepL (DeepL SE, Cologne, Germany). Only the text of the article is transmitted — no personal data. For the read-aloud feature, the article text is sent to a speech service and the resulting audio file is cached on our side, so the same text does not have to be sent again. Your voice is never recorded.',
     
-    pwaTitle: '14. Installed App (PWA)',
+    pwaTitle: '14. Installed App (PWA and Google Play)',
+    playText: 'The app is also available on the Google Play Store. When you download it through Google Play, Google\'s own privacy policy applies in addition. The app itself loads the same website as the browser and does not collect any further data about you.',
     pwaText: 'You can install RADIKAL as an app on your home screen directly from your browser. There is no app-store installation involved and no additional data is sent to us. The app is the same website: a service worker stores pages, images and fonts locally on your device so the app starts faster and keeps working without an internet connection. Signed-in areas and form data are deliberately not cached. Settings such as language, theme and reading mode are kept only locally in your browser (localStorage). You can remove all of this at any time by uninstalling the app or clearing the browser data for this site.',
     
     impressum: 'Legal Notice',
@@ -263,7 +265,8 @@ const translations = {
     aiTitle: '13. Traducere și citire cu voce',
     aiText: 'Articolele pot fi traduse automat în alte limbi. Pentru aceasta folosim DeepL (DeepL SE, Köln, Germania). Se transmite doar textul articolului — niciun fel de date personale. Pentru funcția de citire cu voce, textul articolului este trimis unui serviciu de sinteză vocală, iar fișierul audio rezultat este păstrat la noi, ca să nu fie nevoie să trimitem același text din nou. Vocea dumneavoastră nu este înregistrată niciodată.',
     
-    pwaTitle: '14. Aplicația instalată (PWA)',
+    pwaTitle: '14. Aplicația instalată (PWA și Google Play)',
+    playText: 'Aplicația poate fi descărcată și din Google Play Store. La descărcarea prin Google Play se aplică în plus politica de confidențialitate a Google. Aplicația în sine încarcă același site ca în browser și nu colectează alte date despre dumneavoastră.',
     pwaText: 'Puteți instala RADIKAL ca aplicație pe ecranul telefonului, direct din browser. Nu există nicio instalare printr-un magazin de aplicații și nu ne sunt trimise date suplimentare. Aplicația este același site: un așa-numit service worker păstrează local, pe dispozitivul dumneavoastră, pagini, imagini și fonturi, ca aplicația să pornească mai repede și să funcționeze și fără internet. Zonele cu autentificare și datele din formulare nu sunt păstrate intenționat. Setările precum limba, tema și modul de citire rămân doar local, în browserul dumneavoastră (localStorage). Puteți șterge oricând tot ce am descris, dezinstalând aplicația sau ștergând datele browserului pentru acest site.',
     
     impressum: 'Imprimat Legal',
@@ -344,7 +347,8 @@ const translations = {
     aiTitle: '13. Перевод и озвучивание',
     aiText: 'Статьи могут автоматически переводиться на другие языки. Для этого мы используем DeepL (DeepL SE, Кёльн, Германия). Передаётся только текст статьи — никаких персональных данных. Для функции озвучивания текст статьи отправляется в службу синтеза речи, а полученный аудиофайл сохраняется у нас, чтобы не отправлять тот же текст повторно. Ваш голос никогда не записывается.',
     
-    pwaTitle: '14. Установленное приложение (PWA)',
+    pwaTitle: '14. Установленное приложение (PWA и Google Play)',
+    playText: 'Приложение также доступно в Google Play Store. При загрузке через Google Play дополнительно действует политика конфиденциальности Google. Само приложение загружает тот же сайт, что и браузер, и не собирает о вас никаких дополнительных данных.',
     pwaText: 'Вы можете установить RADIKAL как приложение на главный экран прямо из браузера. Установка через магазин приложений не происходит, дополнительные данные нам не передаются. Приложение — это тот же сайт: так называемый service worker сохраняет страницы, изображения и шрифты локально на вашем устройстве, чтобы приложение запускалось быстрее и работало без интернета. Разделы с авторизацией и данные форм намеренно не кэшируются. Настройки — язык, тема и режим чтения — хранятся только локально в вашем браузере (localStorage). Вы можете в любой момент всё это удалить, удалив приложение или очистив данные браузера для этого сайта.',
     
     impressum: 'Юридическая информация',
@@ -553,6 +557,9 @@ export default function DatenschutzPage() {
             <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">{t.pwaTitle}</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               {t.pwaText}
+            </p>
+            <p className="mt-4 text-gray-700 dark:text-gray-300 leading-relaxed">
+              {t.playText}
             </p>
           </section>
 

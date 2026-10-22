@@ -17,6 +17,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { getSupabaseClient } from '@/lib/supabase';
 import { usePageText } from '@/lib/pageContent';
 import { registerPageDefaults } from '@/lib/pageDefaults';
+import { MARTURII_TEXTS } from '@/lib/pageTexts/marturii';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
 import MarturiiIntroQuote from '@/components/MarturiiIntroQuote';
@@ -24,71 +25,8 @@ import { MARTURII_ACTIVE_KEY } from '@/lib/marturiiSession';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
 
-const T: Record<Lang, Record<string, string>> = {
-  de: {
-    // —— Ecranul de intrare (se poate schimba din Setări → Pagini)
-    // Scrie „nu" ca să oprești ecranul de intrare cu totul.
-    introEnabled: 'da',
-    introVerse: 'Jesus Christus ist derselbe gestern und heute und in Ewigkeit!',
-    introReference: 'Hebräer 13,8',
-    introSecond: 'Der Mensch aber ist wandelbar, wandelbar wie das Wetter.',
-    // —— Pagina
-    title: 'Zeugnisse',
-    intro: 'Hi test text Marturii',
-    sectionsTitle: 'Rubriken',
-    empty: 'Es gibt noch keine Rubriken.',
-    emptyHint: 'Lege die erste Rubrik im Admin-Bereich an.',
-    loading: 'Wird geladen …',
-    open: 'Öffnen',
-    soon: 'Die Zeugnisse dieser Rubrik folgen in Kürze.',
-    back: 'Zurück zur Startseite',
-  },
-  en: {
-    introEnabled: 'da',
-    introVerse: 'Jesus Christ is the same yesterday and today and forever!',
-    introReference: 'Hebrews 13:8',
-    introSecond: 'But man is changeable, changeable as the weather.',
-    title: 'Testimonies',
-    intro: 'Hi test text Marturii',
-    sectionsTitle: 'Sections',
-    empty: 'There are no sections yet.',
-    emptyHint: 'Create the first section in the admin area.',
-    loading: 'Loading …',
-    open: 'Open',
-    soon: 'The testimonies of this section are coming soon.',
-    back: 'Back to home',
-  },
-  ro: {
-    introEnabled: 'da',
-    introVerse: 'Isus Hristos este același ieri și azi și în veci!',
-    introReference: 'Evrei 13:8',
-    introSecond: 'Dar omul este schimbător, schimbător ca vremea.',
-    title: 'Mărturii',
-    intro: 'Hi test text Marturii',
-    sectionsTitle: 'Rubrici',
-    empty: 'Nu există încă nicio rubrică.',
-    emptyHint: 'Creează prima rubrică din panoul de administrare.',
-    loading: 'Se încarcă …',
-    open: 'Deschide',
-    soon: 'Mărturiile din această rubrică vin în curând.',
-    back: 'Înapoi la pagina principală',
-  },
-  ru: {
-    introEnabled: 'da',
-    introVerse: 'Иисус Христос вчера и сегодня и вовеки Тот же!',
-    introReference: 'Евреям 13:8',
-    introSecond: 'А человек изменчив, изменчив, как погода.',
-    title: 'Свидетельства',
-    intro: 'Hi test text Marturii',
-    sectionsTitle: 'Рубрики',
-    empty: 'Рубрик пока нет.',
-    emptyHint: 'Создайте первую рубрику в панели администратора.',
-    loading: 'Загрузка …',
-    open: 'Открыть',
-    soon: 'Свидетельства этой рубрики появятся скоро.',
-    back: 'На главную',
-  },
-};
+// Pasul 0809009 — textele stau acum în `src/lib/pageTexts/marturii.ts`.
+const T = MARTURII_TEXTS;
 
 registerPageDefaults('marturii', T);
 

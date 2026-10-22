@@ -49,6 +49,7 @@ import { CiHeart } from 'react-icons/ci';
 
 // Dynamic imports for heavy components (loaded only when needed)
 const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ssr: false });
+import GuestLoginGate from '@/components/GuestLoginGate';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
 // const BookmarkButton = dynamic(() => import('@/components/BookmarkButton'), { ssr: false });
@@ -1160,6 +1161,16 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       <BlogIntroModal 
         post={post} 
         onComplete={handleIntroModalComplete} 
+      />
+    );
+  }
+
+  // Vizitatorul fara cont: intai modalul de intro (daca exista), apoi poarta de logare.
+  if (isGuest && source.requiresLogin && introModalCompleted) {
+    return (
+      <GuestLoginGate
+        backHref={source.listPath}
+        backLabel={source.backLabel[language] ?? source.backLabel.de}
       />
     );
   }

@@ -23,7 +23,7 @@ import {
   type PageLanguage,
 } from '@/lib/pageContent';
 import { originalTextsFor, isPageEditable, ensurePageDefaultsLoaded } from '@/lib/pageDefaults';
-import { fetchEnabledPages, setPageEnabled, type TogglablePage } from '@/lib/pageSettings';
+import { fetchEnabledPages, setPageEnabled, fetchGuestAllowed, setGuestAllowed, type TogglablePage } from '@/lib/pageSettings';
 
 const LANG_NAMES: Record<PageLanguage, string> = {
   ro: 'Română',
@@ -56,6 +56,30 @@ export default function PageContentAdmin() {
   // Pasul 2708018 — paginile care se pot ascunde de vizitatori.
   const [enabledPages, setEnabledPages] = useState<Set<string>>(new Set());
   const [togglingPage, setTogglingPage] = useState(false);
+
+  // Pasul 2210001 — „Continuă ca vizitator” pe ecranul de intrare.
+  const [guestOn, setGuestOn] = useState<boolean | null>(null);
+  const [togglingGuest, setTogglingGuest] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchGuestAllowed().then((ok) => alive && setGuestOn(ok));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const toggleGuest = async () => {
+    const next = !guestOn;
+    setTogglingGuest(true);
+    setError('');
+    const res = await setGuestAllowed(next);
+    if (res.ok) {
+      setGuestOn(next);
+      setNote(next ? 'Vizitatorii pot intra fără cont.' : 'Doar cei cu cont pot intra.');
+    } else {
+      setError(`Nu am putut schimba: ${res.error}`);
+    }
+    setTogglingGuest(false);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -248,6 +272,34 @@ export default function PageContentAdmin() {
 
   return (
     <div className="space-y-5">
+      {/* --- Acces vizitatori (pasul 2210001) --- */}
+      <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-black dark:text-white">
+              {guestOn === false ? 'Doar cu cont' : 'Butonul „Continuă ca vizitator” este activ'}
+            </p>
+            <p className="mt-1 text-xs text-black/55 dark:text-white/55">
+              {guestOn === false
+                ? 'Ecranul de intrare oferă doar autentificare și înregistrare.'
+                : 'Vizitatorii pot răsfoi, dar pentru a citi bloguri, mărturii sau pagina pentru copii trebuie să se autentifice.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void toggleGuest()}
+            disabled={togglingGuest || guestOn === null}
+            className={`btn-solid shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 ${
+              guestOn === false
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'border border-black/15 text-black dark:border-white/15 dark:text-white'
+            }`}
+          >
+            {togglingGuest ? 'Se schimbă…' : guestOn === false ? 'Permite vizitatori' : 'Oprește vizitatorii'}
+          </button>
+        </div>
+      </div>
+
       {/* --- Ce pagină --- */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/50 dark:text-white/50">

@@ -13,6 +13,7 @@ import { useTheme } from '@/hooks/useTheme';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { useIntroText } from '@/lib/introText';
+import { fetchGuestAllowed } from '@/lib/pageSettings';
 
 // Bible verses in all 4 languages from BibleQuotes.tsx
 const bibleVerses = {
@@ -77,6 +78,13 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
   // Inainte de a fi aleasa o limba folosim germana, limba implicita a siteului.
   const { introText } = useIntroText(selectedLanguage || 'de');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Ascuns pana aflam raspunsul, ca butonul sa nu apara si apoi sa dispara.
+  const [guestAllowed, setGuestAllowed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchGuestAllowed().then((ok) => alive && setGuestAllowed(ok));
+    return () => { alive = false; };
+  }, []);
   
   // Refs for GSAP animation
   // Refs für GSAP-Animation
@@ -610,6 +618,7 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                 </button>
 
                 {/* Pasul C1: Continue as Guest / Als Gast fortfahren / Continuă ca vizitator */}
+                {guestAllowed && (
                 <button
                   onClick={handleGuest}
                   className="group w-full max-w-md rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl backdrop-blur-sm"
@@ -631,6 +640,7 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                     </div>
                   </div>
                 </button>
+                )}
 
                 {/* Change Language Button */}
                 <button

@@ -26,7 +26,7 @@ import SearchModal from '@/components/SearchModal';
 import ReelsIcon from '@/components/ReelsIcon';
 import WayTitle from '@/components/WayTitle';
 import { MARTURII_ACTIVE_KEY } from '@/lib/marturiiSession';
-import { useGuestMode, clearGuestMode } from '@/hooks/useGuestMode';
+import { useGuestMode, clearGuestMode, isGuestMode } from '@/hooks/useGuestMode';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 // Pasul 2308006-F — rubrica News apare doar cand e pornita si are continut
@@ -308,7 +308,7 @@ export default function Navigation() {
         // Sesiune stricată (jeton expirat, date corupte): o ștergem local, ca
         // aplicația să își revină singură, fără „șterge datele site-ului”.
         if (error) {
-          await supabase.auth.signOut().catch(() => {});
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
         }
         setUser(session?.user ?? null);
         setIsAdmin(isAdminUser(session?.user));
@@ -325,10 +325,27 @@ export default function Navigation() {
     getInitialSession();
 
     // Listen for auth state changes / Auf Authentifizierungsstatusänderungen hören / Ascultă schimbările stării de autentificare
+    let hadUser = false;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: any, session: any) => {
         settled = true;
         clearTimeout(guard);
+        if (session?.user) hadUser = true;
+
+        // Sesiunea a disparut (ex. jeton revocat): inapoi la ecranul de intrare,
+        // altfel ramane o pagina fara meniu.
+        if (event === 'SIGNED_OUT' && hadUser) {
+          const p = window.location.pathname;
+          const publicPath =
+            p === '/' || p.startsWith('/auth/') || p === '/impressum' ||
+            p === '/datenschutz' || p === '/datenloeschung' || p === '/offline';
+          if (!publicPath && !isGuestMode()) {
+            localStorage.removeItem('radikalSelectedLanguage');
+            sessionStorage.removeItem('radikalModalSeen');
+            window.location.replace('/');
+            return;
+          }
+        }
         setUser(session?.user ?? null);
         
         // Update admin status / Admin-Status aktualisieren / Actualizează starea de admin
@@ -553,7 +570,8 @@ export default function Navigation() {
       setLoading(true);
       
       // Clear any cached auth data first
-      await supabase.auth.signOut({ scope: 'global' });
+      // Doar acest dispozitiv: celelalte (telefonul) raman autentificate.
+      await supabase.auth.signOut({ scope: 'local' });
       
       // Clear local state immediately
       setUser(null);
