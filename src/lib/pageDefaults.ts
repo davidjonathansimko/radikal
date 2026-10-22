@@ -44,6 +44,10 @@ export function ensurePageDefaultsLoaded(): Promise<void> {
       import('@/app/impressum/page'),
       import('@/app/datenschutz/page'),
       import('@/app/news/page'),
+      import('@/lib/pageTexts/daily').then((m) => {
+        registerPageDefaults('andacht', m.ANDACHT_TEXTS);
+        registerPageDefaults('copii', m.COPII_TEXTS);
+      }),
     ]).then(() => undefined);
   }
   return loaded;

@@ -44,6 +44,10 @@ const translations = {
     value4Text: 'Der Schlaf der Toten. „Wache auf, der du schläfst, und stehe auf aus den Toten, so wird Christus dich erleuchten!“ (Epheser 5,14)',
     authorTitle: 'Über den Autor',
     authorName: 'D. I. Simko',
+    appTitle: 'Auch als App',
+    appText: 'RADIKAL gibt es auch im Google Play Store. Lade die App herunter und lies bequem auf deinem Telefon.',
+    appButton: 'Im Google Play Store ansehen',
+    appUrl: 'https://play.google.com/store/apps/details?id=blog.radikal.app',
     ctaTitle: 'Entdecke',
     ctaText: '...',
     ctaBlogs: 'Blogs entdecken',
@@ -68,6 +72,10 @@ const translations = {
     value4Text: 'The sleep of the dead. “Awake, O sleeper, and arise from the dead, and Christ will shine on you!” (Ephesians 5:14)',
     authorTitle: 'About the Author',
     authorName: 'D. I. Simko',
+    appTitle: 'Also as an app',
+    appText: 'RADIKAL is also available on the Google Play Store. Download the app and read comfortably on your phone.',
+    appButton: 'View on Google Play',
+    appUrl: 'https://play.google.com/store/apps/details?id=blog.radikal.app',
     ctaTitle: 'Discover',
     ctaText: '...',
     ctaBlogs: 'Explore Blogs',
@@ -92,6 +100,10 @@ const translations = {
     value4Text: 'Somnul morților. „Trezește-te, tu care dormi, și scoală-te din morți, și Hristos te va lumina!” (Efeseni 5:14)',
     authorTitle: 'Despre Autor',
     authorName: 'D. I. Simko',
+    appTitle: 'Și ca aplicație',
+    appText: 'RADIKAL poate fi descărcat și din Google Play Store. Instalează aplicația și citește comod pe telefon.',
+    appButton: 'Vezi în Google Play Store',
+    appUrl: 'https://play.google.com/store/apps/details?id=blog.radikal.app',
     ctaTitle: 'Descoperă',
     ctaText: '...',
     ctaBlogs: 'Explorează Blogurile',
@@ -116,6 +128,10 @@ const translations = {
     value4Text: 'Сон мертвых. «Проснись, спящий, и встань из мертвых, и Христос осветит тебя!» (Ефесянам 5:14)',
     authorTitle: 'Об авторе',
     authorName: 'D. I. Simko',
+    appTitle: 'Также как приложение',
+    appText: 'RADIKAL доступен и в Google Play Store. Скачайте приложение и читайте удобно на телефоне.',
+    appButton: 'Открыть в Google Play',
+    appUrl: 'https://play.google.com/store/apps/details?id=blog.radikal.app',
     ctaTitle: 'Открой',
     ctaText: '...',
     ctaBlogs: 'Исследовать блоги',
@@ -340,6 +356,22 @@ export default function AboutPage() {
               </div>
             </div>
           </section>
+
+          {/* Play Store — textul, butonul și linkul se editează din Setări → Pagini → Despre */}
+          {/^https?:\/\//i.test(t.appUrl) && (
+            <section className="glass-effect rounded-2xl p-8 text-center animate-fadeIn" style={{ animationDelay: '0.9s' }}>
+              <h2 className="text-2xl font-bold text-black dark:text-white mb-4">{t.appTitle}</h2>
+              <p className="text-black/80 dark:text-white/80 mb-6 max-w-2xl mx-auto">{t.appText}</p>
+              <a
+                href={t.appUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary inline-block"
+              >
+                {t.appButton}
+              </a>
+            </section>
+          )}
 
           {/* Call to action / Handlungsaufforderung */}
           <section className="text-center animate-fadeIn" style={{ animationDelay: '1s' }}>

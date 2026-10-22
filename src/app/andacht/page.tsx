@@ -1,7 +1,7 @@
 'use client';
 
-import ContentListPage from '@/components/content/ContentListPage';
+import DailyPage from '@/components/content/DailyPage';
 
 export default function AndachtPage() {
-  return <ContentListPage kind="andacht" />;
+  return <DailyPage kind="andacht" />;
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import ContentListPage from '@/components/content/ContentListPage';
+import DailyPage from '@/components/content/DailyPage';
 
 export default function CopiiPage() {
-  return <ContentListPage kind="copii" />;
+  return <DailyPage kind="copii" />;
 }
+

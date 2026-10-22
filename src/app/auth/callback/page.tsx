@@ -34,7 +34,7 @@ export default function AuthCallback() {
         
         if (error) {
           console.error('Auth callback error:', error);
-          router.push('/auth/login?error=callback_error');
+          router.replace('/auth/login?error=callback_error');
           return;
         }
 
@@ -47,14 +47,14 @@ export default function AuthCallback() {
             localStorage.setItem('radikalSelectedLanguage', pendingLang);
             sessionStorage.removeItem('radikalPendingLanguage');
           }
-          router.push('/');
+          router.replace('/');
         } else {
           // No session found, redirect to login / Keine Session gefunden, zur Anmeldung weiterleiten
-          router.push('/auth/login');
+          router.replace('/auth/login');
         }
       } catch (error) {
         console.error('Unexpected error during auth callback:', error);
-        router.push('/auth/login?error=unexpected_error');
+        router.replace('/auth/login?error=unexpected_error');
       }
     };
 

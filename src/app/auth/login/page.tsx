@@ -68,7 +68,7 @@ export default function LoginPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         document.body.dataset.loginSuccess = 'true';
-        router.push('/'); // Redirect to home if already logged in / Zur Startseite weiterleiten, wenn bereits angemeldet
+        router.replace('/'); // Redirect to home if already logged in / Zur Startseite weiterleiten, wenn bereits angemeldet
       }
     };
     checkUser();
@@ -107,7 +107,7 @@ export default function LoginPage() {
           localStorage.setItem('radikalSelectedLanguage', pendingLang);
           sessionStorage.removeItem('radikalPendingLanguage');
         }
-        router.push('/'); // Redirect to home after successful login / Nach erfolgreicher Anmeldung zur Startseite weiterleiten
+        router.replace('/'); // Redirect to home after successful login / Nach erfolgreicher Anmeldung zur Startseite weiterleiten
       }
     } catch (err) {
       setError('Ein unerwarteter Fehler ist aufgetreten.');

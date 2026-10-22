@@ -89,7 +89,10 @@ export default function BackToTopButton({
         // Un fundal semi-transparent cu `backdrop-blur` desenează, în Chrome,
         // un pătrat estompat în spatele cercului: exact „marginile" care se
         // vedeau pe alb. Peste fundal întunecat blurul se pierde, deci rămâne.
-        'bg-white dark:bg-black/70 dark:backdrop-blur-xl',
+        // Pasul 2210005 — nici pe tema inchisa nu folosim blur: cat timp sageata
+        // pulsa, blurul ei redesena marginea elementelor de dedesubt si se
+        // vedea o linie care clipea (Kontakt, Despre).
+        'bg-white dark:bg-black',
         'border border-black/[0.06] dark:border-white/15',
         'shadow-[0_4px_16px_rgba(0,0,0,0.10)] dark:shadow-lg',
         'text-black/70 dark:text-white/70',
