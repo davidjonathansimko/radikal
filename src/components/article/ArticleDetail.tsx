@@ -9,7 +9,8 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { cameFromList } from '@/lib/navHistory';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -68,6 +69,7 @@ import ArticleAudioDownload from '@/components/article/ArticleAudioDownload';
 export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: ArticleSource }) {
   // Protect this route - redirect to home if modal not completed / Diese Route schützen - zur Startseite weiterleiten wenn Modal nicht abgeschlossen / Protejează această rută - redirecționează la pagină principală dacă modalul nu este finalizat
   const { isAllowed, isChecking } = useRouteProtection();
+  const router = useRouter();
 
   /** Cheia sub care se leaga comentariile si aprecierile de acest articol. */
   const interactionId = useCallback(
@@ -1170,6 +1172,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
     return (
       <GuestLoginGate
         backHref={source.listPath}
+        articlePrefix={source.basePath}
         backLabel={source.backLabel[language] ?? source.backLabel.de}
       />
     );
@@ -1232,6 +1235,13 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         {/* Back button - hidden in print / Zurück-Button - versteckt beim Drucken / Buton înapoi - ascuns la printare */}
         <Link 
           href={source.listPath}
+          onClick={(e) => {
+            // Venit din lista: un pas inapoi in istoric, nu o intrare noua.
+            if (cameFromList(source.listPath, source.basePath)) {
+              e.preventDefault();
+              router.back();
+            }
+          }}
           className="back-button inline-flex items-center gap-2 text-gray-800 dark:text-white/80 hover:text-gray-600 dark:hover:text-white mb-4 sm:mb-8 transition-colors duration-200"
         >
           <FaArrowLeft />

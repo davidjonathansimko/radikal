@@ -590,8 +590,8 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           role="dialog"
           aria-modal="true"
           aria-label="Suche / Search"
-          className="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white/95 dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 shadow-2xl animate-slideUp"
-          style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
+          className="flex w-[calc(100%-2rem)] max-w-2xl flex-col overflow-hidden rounded-2xl bg-white/95 dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 shadow-2xl animate-slideUp"
+          style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
           onClick={e => e.stopPropagation()}
           onTouchEnd={e => e.stopPropagation()}
         >

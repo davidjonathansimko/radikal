@@ -4,7 +4,9 @@
 // citească trebuie să aibă cont. Acoperă tot ecranul, inclusiv meniul.
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
+import { cameFromList } from '@/lib/navHistory';
 
 const TEXTS: Record<string, { title: string; text: string; login: string; signup: string }> = {
   de: {
@@ -36,10 +38,13 @@ const TEXTS: Record<string, { title: string; text: string; login: string; signup
 interface Props {
   backHref: string;
   backLabel: string;
+  /** Adresa de baza a articolelor, ca sa stim daca inapoi duce la lista. */
+  articlePrefix: string;
 }
 
-export default function GuestLoginGate({ backHref, backLabel }: Props) {
+export default function GuestLoginGate({ backHref, backLabel, articlePrefix }: Props) {
   const { language } = useLanguage();
+  const router = useRouter();
   const t = TEXTS[language] ?? TEXTS.de;
 
   return (
@@ -47,9 +52,10 @@ export default function GuestLoginGate({ backHref, backLabel }: Props) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="guest-gate-title"
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/95 px-6 text-black backdrop-blur-md dark:bg-black/95 dark:text-white"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/95 text-black backdrop-blur-md dark:bg-black/95 dark:text-white"
     >
-      <div className="w-full max-w-md text-center">
+      {/* Marginile stau pe elementul interior: regula globala .fixed.z-[9999] anuleaza padding-ul celui exterior. */}
+      <div className="mx-5 w-full max-w-md rounded-3xl border border-black/10 bg-black/[0.03] p-6 text-center dark:border-white/10 dark:bg-white/[0.04] sm:p-8">
         <h1 id="guest-gate-title" className="mb-4 font-cinzel text-2xl font-bold sm:text-3xl">
           {t.title}
         </h1>
@@ -70,6 +76,12 @@ export default function GuestLoginGate({ backHref, backLabel }: Props) {
           </Link>
           <Link
             href={backHref}
+            onClick={(e) => {
+              if (cameFromList(backHref, articlePrefix)) {
+                e.preventDefault();
+                router.back();
+              }
+            }}
             className="mt-2 text-sm text-black/60 underline hover:text-black dark:text-white/60 dark:hover:text-white"
           >
             {backLabel}

@@ -14,6 +14,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
+import AccordionCards from '@/components/content/AccordionCards';
 import { matchesSelectedCategories } from '@/lib/categories';
 import TrailPills from '@/components/content/TrailPills';
 import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
@@ -308,6 +309,17 @@ export default function SectionPage() {
               {t.empty}
             </p>
           ) : null
+        ) : children.length === 0 ? (
+          // Pasul 2210006 — nivelul 4: la capătul arborelui, carduri cu acordeon.
+          <AccordionCards
+            readLabel={t.read}
+            items={visible.map(({ row, title, excerpt }) => ({
+              id: row.id,
+              href: `/marturii/m/${row.slug}`,
+              title,
+              excerpt,
+            }))}
+          />
         ) : (
           <ul className="divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">
             {visible.map(({ row, title, excerpt }) => (
