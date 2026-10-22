@@ -18,6 +18,7 @@ import { FaRegHeart } from 'react-icons/fa';
 import { TfiComment } from 'react-icons/tfi';
 // Skeleton Loading / Skeleton-Laden / Încărcare Skeleton
 import { BlogCardSkeleton } from '@/components/Skeleton';
+import { ReadTick } from '@/components/ReadMark';
 
 interface BlogListProps {
   initialPosts?: BlogPost[];
@@ -47,6 +48,10 @@ const BLOG_LIST_COLUMNS = [
   // „column blog_posts.views does not exist", deci nu se incarca niciun blog.
   'is_dynamic',
 ].join(', ');
+
+// Pasul 2210010 — felul cardurilor. 'overlay' = titlul peste imaginea intunecata,
+// 'classic' = cardul de dinainte (nemodificat). Schimba aici ca sa revii.
+const CARD_STYLE: 'overlay' | 'classic' = 'overlay';
 
 export default function BlogList({ initialPosts = [], showOlderButton = true, filterYear = null, filterMonth = null, categoryIds = [] }: BlogListProps) {
   const categoryKey = categoryIds.join(',');
@@ -474,8 +479,55 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
           <React.Fragment key={post.id}>
             <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : "h-full"}>
             <Link href={`/blogs/${post.slug}`} className="block h-full">
-            {/* Pasul 0409d — card scurt: titlu, imagine, doua randuri de text.
-                „Teilen" si descrierea intreaga au plecat in pagina articolului. */}
+            {CARD_STYLE === 'overlay' ? (
+              <article
+                className="force-white-text group relative flex aspect-[4/3] h-full min-h-[240px] w-full cursor-pointer flex-col justify-end overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-neutral-800 to-black shadow-sm animate-fadeIn sm:aspect-[16/11]"
+                style={{ animationDelay: `${index * 0.06}s` }}
+              >
+                {post.image_url && (
+                  <Image
+                    src={post.image_url}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 400px"
+                    className="object-cover brightness-[0.7] transition-transform duration-500 group-hover:scale-105"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" aria-hidden="true" />
+
+                {post.is_dynamic && (
+                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/40 px-2 py-[2px] text-[10px] font-medium tracking-wide text-white backdrop-blur-sm">
+                    <svg width="9" height="9" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                      <path d="M3 1.5v11l9-5.5-9-5.5z" />
+                    </svg>
+                    PLAY
+                  </span>
+                )}
+
+                <div className="relative p-4">
+                  <h2 className="mb-1.5 text-xl font-bold leading-tight text-white drop-shadow-md">
+                    {getTranslatedTitle(post)}
+                  </h2>
+                  <div className="flex items-center justify-between gap-3 text-xs text-white/75">
+                    <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+                    <ReadTick href={`/blogs/${post.slug}`} className="text-white/80" />
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleLike(post.id);
+                      }}
+                      className="flex items-center gap-1.5 text-white/80 transition-colors hover:text-white"
+                    >
+                      <FaRegHeart className={likedPosts.has(post.id) ? 'fill-current' : ''} />
+                      <span>{post.likes_count || 0}</span>
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ) : (
+            /* Pasul 0409d — card scurt: titlu, imagine, doua randuri de text.
+                „Teilen" si descrierea intreaga au plecat in pagina articolului. */
             <article 
               className="flex h-full flex-col backdrop-blur-[1.5px] rounded-xl p-3 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all duration-300 lg:hover:scale-[1.02] animate-fadeIn cursor-pointer group border border-gray-300 dark:border-white/10 shadow-sm"
               style={{ animationDelay: `${index * 0.06}s` }}
@@ -597,6 +649,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
               </span>
             </footer>
           </article>
+            )}
         </Link>
         </div>
         </React.Fragment>

@@ -9,8 +9,8 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useParams, useRouter } from 'next/navigation';
-import { cameFromList } from '@/lib/navHistory';
+import { useParams } from 'next/navigation';
+import { stepsBackTo, listMatcher, goBackSteps } from '@/lib/navHistory';
 import { LAST_READ_KEY } from '@/components/ContinueReading';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -52,6 +52,7 @@ import { CiHeart } from 'react-icons/ci';
 // Dynamic imports for heavy components (loaded only when needed)
 const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ssr: false });
 import GuestLoginGate from '@/components/GuestLoginGate';
+import { ReadToggle } from '@/components/ReadMark';
 import { fetchGuestReadAllowed } from '@/lib/pageSettings';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
@@ -71,7 +72,6 @@ import ArticleAudioDownload from '@/components/article/ArticleAudioDownload';
 export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: ArticleSource }) {
   // Protect this route - redirect to home if modal not completed / Diese Route schützen - zur Startseite weiterleiten wenn Modal nicht abgeschlossen / Protejează această rută - redirecționează la pagină principală dacă modalul nu este finalizat
   const { isAllowed, isChecking } = useRouteProtection();
-  const router = useRouter();
 
   /** Cheia sub care se leaga comentariile si aprecierile de acest articol. */
   const interactionId = useCallback(
@@ -1270,10 +1270,12 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         <Link 
           href={source.listPath}
           onClick={(e) => {
-            // Venit din lista: un pas inapoi in istoric, nu o intrare noua.
-            if (cameFromList(source.listPath, source.basePath)) {
+            // Venit din lista: ne intoarcem prin istoric, nu adaugam o intrare noua.
+            const steps = stepsBackTo(listMatcher(source.listPath, source.basePath));
+            if (steps > 0) {
               e.preventDefault();
-              router.back();
+              e.currentTarget.setAttribute('data-history-nav', '1');
+              goBackSteps(steps);
             }
           }}
           className="back-button inline-flex items-center gap-2 text-gray-800 dark:text-white/80 hover:text-gray-600 dark:hover:text-white mb-4 sm:mb-8 transition-colors duration-200"
@@ -1441,6 +1443,10 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             )}
           </h1>
         </header>
+
+        <div className="mb-6 flex justify-center">
+          <ReadToggle href={`${source.basePath}/${originalSlugRef.current || post.slug}`} />
+        </div>
 
         {/* Post content with proper light/dark mode contrast and readable backdrop / Post-Inhalt mit richtigen Hell/Dunkel-Modus-Kontrast und lesbarem Hintergrund / Conținut postare cu contrast corect mod luminos/întunecat și fundal lizibil */}
         <div id="blog-content" className="blog-content-backdrop mb-12 animate-fadeIn" style={{ animationDelay: '0.6s' }}>

@@ -4,7 +4,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
 import { FaHome } from 'react-icons/fa';
 
@@ -17,7 +17,7 @@ export default function BackToHome({ className = '' }: BackToHomeProps) {
 
   return (
     <div className={`block lg:hidden ${className}`}>
-      <Link 
+      <UpLink 
         href="/"
         className="inline-flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-sm font-medium rounded-lg transition-all duration-300 border border-white/20 hover:border-white/30"
       >
@@ -26,7 +26,7 @@ export default function BackToHome({ className = '' }: BackToHomeProps) {
                language === 'en' ? 'Back to Home' : 
                language === 'ro' ? 'Înapoi Acasă' : 
                'Назад домой'}</span>
-      </Link>
+      </UpLink>
     </div>
   );
 }

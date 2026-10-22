@@ -1,49 +1,75 @@
 /**
- * Pasul 2210007 — testele pentru istoricul de navigare: pagina de dinainte
- * trebuie retinuta corect, ca „inapoi" sa nu se invarta in cerc.
+ * Pasul 2210010 — harta istoricului: fiecare intrare noua primeste un numar,
+ * iar „inapoi la X" afla cati pasi are de facut.
  */
 
-import { trackPath, previousPath, cameFromList } from '@/lib/navHistory';
+import { installNavTracking, trackPath, stepsBackTo, listMatcher } from '@/lib/navHistory';
+
+/** Simuleaza o navigare: `push` adauga o intrare, `replace` o inlocuieste. */
+function go(path: string, how: 'push' | 'replace' = 'push') {
+  if (how === 'push') window.history.pushState({}, '', path);
+  else window.history.replaceState({}, '', path);
+  trackPath(path);
+}
 
 describe('navHistory', () => {
-  beforeEach(() => sessionStorage.clear());
-
-  it('retine pagina de dinaintea celei de acum', () => {
-    trackPath('/andacht');
-    trackPath('/andacht/arhiva');
-    expect(previousPath()).toBe('/andacht');
+  beforeAll(() => installNavTracking());
+  beforeEach(() => {
+    sessionStorage.clear();
+    window.history.replaceState(null, '', '/');
   });
 
-  it('nu schimba nimic cand pagina ramane aceeasi', () => {
-    trackPath('/a');
-    trackPath('/b');
-    trackPath('/b');
-    expect(previousPath()).toBe('/a');
+  it('afla cati pasi inapoi e o pagina', () => {
+    trackPath('/');
+    go('/blogs');
+    go('/blogs/ceva');
+    expect(stepsBackTo('/')).toBe(2);
+    expect(stepsBackTo('/blogs')).toBe(1);
+    expect(stepsBackTo('/nu-exista')).toBe(0);
   });
 
-  it('plimbarea intre doua pagini tine mereu minte cealalta', () => {
-    for (let i = 0; i < 5; i += 1) {
-      trackPath('/andacht');
-      trackPath('/andacht/arhiva');
+  it('distanta pana la origine se numara corect si dupa multe plimbari', () => {
+    trackPath('/');
+    go('/andacht');
+    for (let i = 0; i < 6; i += 1) {
+      go('/andacht/arhiva');
+      go('/andacht');
     }
-    expect(previousPath()).toBe('/andacht');
+    expect(stepsBackTo('/')).toBe(13);
   });
 
-  it('recunoaste ca ai venit din lista, nu dintr-un alt articol', () => {
-    trackPath('/blogs');
-    trackPath('/blogs/ceva');
-    expect(cameFromList('/blogs', '/blogs')).toBe(true);
-
-    trackPath('/blogs/altceva');
-    expect(cameFromList('/blogs', '/blogs')).toBe(false);
+  it('dupa o intoarcere prin istoric harta ramane corecta', () => {
+    trackPath('/');
+    go('/blogs');
+    go('/blogs/ceva');
+    // „inapoi" doua pagini: intrarea tinta isi aduce numarul din state
+    window.history.replaceState({ radikalIdx: 0 }, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { radikalIdx: 0 } }));
+    trackPath('/');
+    go('/contact');
+    expect(stepsBackTo('/')).toBe(1);
+    expect(stepsBackTo('/blogs')).toBe(0);
   });
 
-  it('la marturii, o rubrica conteaza ca lista, o marturie nu', () => {
-    trackPath('/marturii/rubrica');
-    trackPath('/marturii/m/una');
-    expect(cameFromList('/marturii', '/marturii/m')).toBe(true);
+  it('replace nu adauga o intrare', () => {
+    trackPath('/');
+    go('/auth/login');
+    go('/', 'replace');
+    expect(stepsBackTo('/')).toBe(1);
+    expect(stepsBackTo('/auth/login')).toBe(0);
+  });
 
-    trackPath('/marturii/m/alta');
-    expect(cameFromList('/marturii', '/marturii/m')).toBe(false);
+  it('lista unui articol: lista sau rubrica da, alt articol nu', () => {
+    const isList = listMatcher('/marturii', '/marturii/m');
+    expect(isList('/marturii')).toBe(true);
+    expect(isList('/marturii/rubrica')).toBe(true);
+    expect(isList('/marturii/m/una')).toBe(false);
+    expect(isList('/blogs')).toBe(false);
+
+    trackPath('/');
+    go('/marturii/rubrica');
+    go('/marturii/m/una');
+    go('/marturii/m/alta');
+    expect(stepsBackTo(isList)).toBe(2);
   });
 });

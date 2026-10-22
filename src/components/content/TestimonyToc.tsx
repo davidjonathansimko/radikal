@@ -7,6 +7,7 @@ import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase';
 import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
+import { ReadTick } from '@/components/ReadMark';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
 
@@ -95,10 +96,17 @@ function TocNode({ section, lang, depth }: { section: TocSection; lang: Lang; de
           >
             <polyline points="9 6 15 12 9 18" />
           </svg>
-          <span className="min-w-0 flex-1 truncate font-cinzel text-base font-semibold text-black dark:text-white">
-            {section.name}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-cinzel text-base font-semibold text-black dark:text-white">
+              {section.name}
+            </span>
+            {section.description && (
+              <span className="mt-0.5 line-clamp-1 block text-xs font-normal text-black/50 dark:text-white/50">
+                {section.description}
+              </span>
+            )}
           </span>
-          {total !== null && (
+          {total !== null && total > 0 && (
             <span className="shrink-0 text-xs tabular-nums text-black/40 dark:text-white/40">{total}</span>
           )}
         </button>
@@ -140,6 +148,7 @@ function TocNode({ section, lang, depth }: { section: TocSection; lang: Lang; de
                   <path d="M14 2v6h6" />
                 </svg>
                 <span className="min-w-0 flex-1 truncate">{it.title}</span>
+                <ReadTick href={`/marturii/m/${it.slug}`} />
               </Link>
             </li>
           ))}

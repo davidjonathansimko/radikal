@@ -11,6 +11,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import UpLink from '@/components/content/UpLink';
 import Image from 'next/image';
 import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
@@ -164,9 +165,9 @@ export default function NewsPage() {
         {!loading && !hasItems && (
           <div className="rounded-2xl border border-current/15 p-8 text-center">
             <p className="text-sm opacity-70">{t.empty}</p>
-            <Link href="/" className="mt-4 inline-block text-sm underline opacity-80 hover:opacity-100">
+            <UpLink href="/" className="mt-4 inline-block text-sm underline opacity-80 hover:opacity-100">
               {t.back}
-            </Link>
+            </UpLink>
           </div>
         )}
 

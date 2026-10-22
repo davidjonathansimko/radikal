@@ -6,6 +6,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 
@@ -158,12 +159,12 @@ export default function DatenloeschungPage() {
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <Link
+        <UpLink
           href="/"
           className="mb-8 inline-block text-sm text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
         >
           {t.back}
-        </Link>
+        </UpLink>
 
         <header className="mb-10">
           <h1 className="mb-4 font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">

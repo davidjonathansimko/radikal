@@ -45,7 +45,7 @@ export default function TrailPills({ steps, rootHref, rootLabel, hrefFor }: Trai
       >
         <UpLink
           href={rootHref}
-          className="shrink-0 rounded-full px-2.5 py-1.5 text-xs font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+          className="flex h-8 min-h-0 min-w-0 shrink-0 items-center rounded-full px-2.5 text-xs font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
         >
           {rootLabel}
         </UpLink>
@@ -62,17 +62,17 @@ export default function TrailPills({ steps, rootHref, rootLabel, hrefFor }: Trai
               </span>
 
               {isLast ? (
-                <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-black py-0.5 pl-3 pr-1 text-xs leading-none dark:bg-white">
+                <div className="flex h-8 shrink-0 items-center rounded-full bg-black pl-3 pr-1 text-xs leading-none dark:bg-white">
                   <Link
                     href={hrefFor(step.slug)}
-                    className="max-w-[11rem] truncate py-1.5 font-medium text-white dark:text-black"
+                    className="flex h-full min-h-0 min-w-0 max-w-[11rem] items-center truncate font-medium text-white dark:text-black"
                   >
                     {step.name}
                   </Link>
                   <UpLink
                     href={back}
                     aria-label={`Ieși din ${step.name}`}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] text-white/80 transition-colors hover:bg-white/25 dark:text-black/70 dark:hover:bg-black/15"
+                    className="ml-1 flex h-6 min-h-0 w-6 min-w-0 shrink-0 items-center justify-center rounded-full text-[10px] text-white/80 transition-colors hover:bg-white/25 dark:text-black/70 dark:hover:bg-black/15"
                   >
                     ✕
                   </UpLink>
@@ -80,7 +80,7 @@ export default function TrailPills({ steps, rootHref, rootLabel, hrefFor }: Trai
               ) : (
                 <UpLink
                   href={hrefFor(step.slug)}
-                  className="max-w-[9rem] shrink-0 truncate rounded-full px-2.5 py-1.5 text-xs font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="flex h-8 min-h-0 min-w-0 max-w-[9rem] shrink-0 items-center truncate rounded-full px-2.5 text-xs font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
                 >
                   {step.name}
                 </UpLink>

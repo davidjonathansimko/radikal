@@ -13,6 +13,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import ContinueReading from '@/components/ContinueReading';
+import { ReadTick } from '@/components/ReadMark';
 import { CONTENT_KINDS, type ContentKind } from '@/lib/contentKinds';
 import { fetchItems, pickContentText, type ContentItemRow } from '@/lib/contentPublic';
 import { fetchEnabledPages } from '@/lib/pageSettings';
@@ -191,6 +192,7 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
                         <span className="min-w-0 flex-1 truncate font-cinzel text-base font-semibold text-black dark:text-white">
                           {pickContentText(row, 'title', lang)}
                         </span>
+                        <ReadTick href={`${def.itemPath}/${row.slug}`} />
                         <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
                           ›
                         </span>

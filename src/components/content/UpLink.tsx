@@ -1,25 +1,21 @@
 'use client';
 
-// Pasul 2210007 — link care urca un nivel. Daca pagina de dinaintea celei de
-// acum este chiar tinta lui, face un pas inapoi in istoric in loc sa adauge o
-// intrare noua. Asa „inapoi" de pe telefon nu se mai invarte in cerc, oricate
-// ori te plimbi intre doua pagini.
+// Pasul 2210010 — link care urca la o pagina pe care ai mai vazut-o. Daca
+// pagina tinta e deja in istoricul acestei file, se intoarce prin istoric
+// (oricati pasi trebuie) in loc sa adauge o intrare noua. Altfel merge ca un
+// link obisnuit.
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { previousPath } from '@/lib/navHistory';
+import { stepsBackTo, goBackSteps } from '@/lib/navHistory';
 
-type Props = Omit<React.ComponentProps<typeof Link>, 'href'> & { href: string };
+type Props = Omit<React.ComponentProps<typeof Link>, 'href'> & {
+  href: string;
+  /** Alta potrivire decat adresa exacta (ex. „lista unui articol"). */
+  match?: (path: string) => boolean;
+};
 
-function plain(path: string): string {
-  const clean = path.split(/[?#]/)[0];
-  return clean.length > 1 ? clean.replace(/\/$/, '') : clean;
-}
-
-export default function UpLink({ href, onClick, ...rest }: Props) {
-  const router = useRouter();
-
+export default function UpLink({ href, match, onClick, ...rest }: Props) {
   return (
     <Link
       href={href}
@@ -27,10 +23,13 @@ export default function UpLink({ href, onClick, ...rest }: Props) {
       onClick={(e) => {
         onClick?.(e);
         if (e.defaultPrevented) return;
-        const prev = previousPath();
-        if (prev && plain(prev) === plain(href)) {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const steps = stepsBackTo(match ?? href);
+        if (steps > 0) {
           e.preventDefault();
-          router.back();
+          // Semnal pentru plasa de siguranta: navigarea merge prin istoric.
+          e.currentTarget.setAttribute('data-history-nav', '1');
+          goBackSteps(steps);
         }
       }}
     />

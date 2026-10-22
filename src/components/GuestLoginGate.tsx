@@ -4,15 +4,11 @@
 // citească trebuie să aibă cont. Acoperă tot ecranul, inclusiv meniul.
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
-import { cameFromList } from '@/lib/navHistory';
-import { trackEvent } from '@/lib/analytics';
+import { listMatcher } from '@/lib/navHistory';
+import { useAnalyticsContext } from '@/components/AnalyticsProvider';
 import { useEffect } from 'react';
-
-function track(action: string) {
-  trackEvent({ name: 'guest_gate', category: 'conversion', action });
-}
 
 const TEXTS: Record<string, { title: string; text: string; login: string; signup: string }> = {
   de: {
@@ -50,10 +46,12 @@ interface Props {
 
 export default function GuestLoginGate({ backHref, backLabel, articlePrefix }: Props) {
   const { language } = useLanguage();
-  const router = useRouter();
+  const { trackEvent } = useAnalyticsContext();
+  const track = (action: string) => void trackEvent('guest_gate', 'conversion', action);
 
   useEffect(() => {
     track('shown');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const t = TEXTS[language] ?? TEXTS.de;
 
@@ -86,18 +84,13 @@ export default function GuestLoginGate({ backHref, backLabel, articlePrefix }: P
           >
             {t.signup}
           </Link>
-          <Link
+          <UpLink
             href={backHref}
-            onClick={(e) => {
-              if (cameFromList(backHref, articlePrefix)) {
-                e.preventDefault();
-                router.back();
-              }
-            }}
+            match={listMatcher(backHref, articlePrefix)}
             className="mt-2 text-sm text-black/60 underline hover:text-black dark:text-white/60 dark:hover:text-white"
           >
             {backLabel}
-          </Link>
+          </UpLink>
         </div>
       </div>
     </div>

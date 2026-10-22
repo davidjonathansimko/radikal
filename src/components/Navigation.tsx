@@ -26,7 +26,8 @@ import SearchModal from '@/components/SearchModal';
 import ReelsIcon from '@/components/ReelsIcon';
 import WayTitle from '@/components/WayTitle';
 import { MARTURII_ACTIVE_KEY } from '@/lib/marturiiSession';
-import { trackPath } from '@/lib/navHistory';
+import { installNavTracking, trackPath } from '@/lib/navHistory';
+import UpLink from '@/components/content/UpLink';
 import { useGuestMode, clearGuestMode, isGuestMode } from '@/hooks/useGuestMode';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -129,6 +130,7 @@ export default function Navigation() {
   useEffect(() => {
     const home = pathname === '/';
     const auth = Boolean(pathname?.startsWith('/auth/'));
+    installNavTracking();
     if (pathname) trackPath(pathname);
 
     // Pasul 0809007 — cand ai plecat din zona Marturii, uitam ca ai fost acolo,
@@ -601,7 +603,7 @@ export default function Navigation() {
       {/* Pasul 2202000: zero vertical padding — header height comes only from logo+hamburger intrinsic size */}
       <div className="relative flex items-center justify-between px-3 py-0">
       {/* Logo — top left */}
-      <Link href="/" className="pointer-events-auto flex items-center">
+      <UpLink href="/" className="pointer-events-auto flex items-center">
         <Image
           src={theme === 'dark' ? '/radikal.logo.weiß.hintergrund.png' : '/radikal.logo.schwarz.hintergrund.png'}
           alt="Radikal Logo"
@@ -612,7 +614,7 @@ export default function Navigation() {
              si pagina „sare" cand se incarca logo-ul */
           style={{ width: 'clamp(65px, 22vw, 95px)', height: 'auto' }}
         />
-      </Link>
+      </UpLink>
 
       {/* Pasul 1202025: Section progress pill — between logo and hamburger (homepage only) */}
       {/* Pasul 2708028 — un singur loc pentru mijlocul barei. „Der Weg" și pilula
@@ -827,7 +829,7 @@ export default function Navigation() {
         <div className="flex h-16 min-w-0 items-center justify-between" style={{ gap: 'clamp(4px, 1vw, 16px)' }}>
           {/* Logo section / Logo-Bereich / Secțiune logo */}
           <div className="flex items-center flex-shrink-0">
-            <Link href="/" className="flex items-center space-x-3">
+            <UpLink href="/" className="flex items-center space-x-3">
               <Image
                 src={theme === 'dark' ? '/radikal.logo.weiß.hintergrund.png' : '/radikal.logo.schwarz.hintergrund.png'}
                 alt="Radikal Logo"
@@ -840,7 +842,7 @@ export default function Navigation() {
               <span className="font-cinzel text-2xl font-bold text-black dark:text-white tracking-wider">
                 
               </span>
-            </Link>
+            </UpLink>
           </div>
 
           {/* Pasul 0809001 — titlul paginii, lângă logo, ca să știi mereu unde ești. */}
@@ -1070,7 +1072,7 @@ export default function Navigation() {
           <div className="flex flex-shrink-0 items-center gap-x-1 xl:gap-x-2">
             {/* Back to Home button (only show when not on homepage) */}
             {pathname !== '/' && (
-              <Link
+              <UpLink
                 href="/"
                 className="px-3 py-2 rounded-md text-sm font-medium text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-1"
                 title={language === 'de' ? 'Zurück zur Startseite' : language === 'en' ? 'Back to Home' : language === 'ro' ? 'Înapoi la Început' : 'На главную'}
@@ -1081,7 +1083,7 @@ export default function Navigation() {
                 <span className="hidden xl:block">
                   {language === 'de' ? 'Startseite' : language === 'en' ? 'Home' : language === 'ro' ? 'Acasă' : 'Главная'}
                 </span>
-              </Link>
+              </UpLink>
             )}
 
             {/* Language switcher with SVG flag icons / Sprachumschalter mit SVG-Flaggen / Comutator limbă cu icoane steaguri SVG */}

@@ -11,7 +11,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getSupabaseClient } from '@/lib/supabase';
@@ -56,23 +56,6 @@ export default function MarturiiPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
-  // Cuprins (rubrici care se desfac) sau lista simpla. Se tine minte pe telefon.
-  const [view, setView] = useState<'toc' | 'list'>('toc');
-  useEffect(() => {
-    try {
-      if (localStorage.getItem('radikalMarturiiView') === 'list') setView('list');
-    } catch {
-      /* fila privata */
-    }
-  }, []);
-  const chooseView = (v: 'toc' | 'list') => {
-    setView(v);
-    try {
-      localStorage.setItem('radikalMarturiiView', v);
-    } catch {
-      /* fila privata */
-    }
-  };
 
   useEffect(() => {
     let alreadyInside = false;
@@ -244,28 +227,6 @@ export default function MarturiiPage() {
 
           <ContinueReading className="mb-5" />
 
-          {hasSections && (
-            <div className="mb-4 flex justify-center gap-2">
-              {(['toc', 'list'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => chooseView(v)}
-                  aria-pressed={view === v}
-                  className={`btn-solid rounded-full border px-4 py-1.5 text-xs transition-colors ${
-                    view === v
-                      ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
-                      : 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
-                  }`}
-                >
-                  {v === 'toc'
-                    ? { de: 'Inhalt', en: 'Contents', ro: 'Cuprins', ru: 'Содержание' }[lang]
-                    : { de: 'Liste', en: 'List', ro: 'Listă', ru: 'Список' }[lang]}
-                </button>
-              ))}
-            </div>
-          )}
-
           {loading ? (
             <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>
           ) : !hasSections ? (
@@ -279,44 +240,18 @@ export default function MarturiiPage() {
                 <p className="mt-2 text-xs text-black/45 dark:text-white/45">{t.emptyHint}</p>
               )}
             </div>
-          ) : view === 'toc' ? (
-            <TestimonyToc sections={sections} lang={lang} />
           ) : (
-            /* Pasul 0809001 — rânduri curate, cu indicatorul „›" la capăt. */
-            <ul className="divide-y divide-black/10 overflow-hidden rounded-2xl border border-black/10 dark:divide-white/10 dark:border-white/10">
-              {sections.map((s) => (
-                <li key={s.id}>
-                  <Link
-                    href={`/marturii/${s.slug}`}
-                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-cinzel text-base font-semibold text-black dark:text-white">
-                        {s.name}
-                      </span>
-                      {s.description && (
-                        <span className="mt-0.5 line-clamp-1 block text-xs text-black/55 dark:text-white/55">
-                          {s.description}
-                        </span>
-                      )}
-                    </span>
-                    <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
-                      ›
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <TestimonyToc sections={sections} lang={lang} />
           )}
         </section>
 
         <div className="mt-10 text-center">
-          <Link
+          <UpLink
             href="/"
             className="text-sm text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
           >
             ← {t.back}
-          </Link>
+          </UpLink>
         </div>
       </div>
 

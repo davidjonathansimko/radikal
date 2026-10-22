@@ -6,6 +6,7 @@
 'use client';
 
 import Link from 'next/link';
+import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import { usePageText } from '@/lib/pageContent';
@@ -206,12 +207,12 @@ export default function ImpressumPage() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-12">
-          <Link 
+          <UpLink 
             href="/"
             className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white mb-4 inline-flex items-center gap-2 transition-colors"
           >
             {t.backToHome}
-          </Link>
+          </UpLink>
           <h1 className="text-4xl md:text-5xl font-cinzel font-bold mt-4 mb-4">
             {t.title}
           </h1>
@@ -361,9 +362,9 @@ export default function ImpressumPage() {
               {t.contact}
             </Link>
             <span className="text-gray-400 dark:text-gray-600">|</span>
-            <Link href="/" className="text-red-600 dark:text-red-400 hover:underline">
+            <UpLink href="/" className="text-red-600 dark:text-red-400 hover:underline">
               {t.home}
-            </Link>
+            </UpLink>
           </div>
         </div>
       </div>

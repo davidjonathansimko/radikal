@@ -27,7 +27,15 @@ export default function NavigationRescue() {
   const pathname = usePathname();
 
   useEffect(() => {
-    /** A cerut aplicația pagina nouă de la server după apăsare? */
+    // Pasul 2210010 — cronometrele pornite la o apasare nu mai au voie sa traiasca
+    // dupa ce pagina s-a schimbat. Altfel, dupa cateva secunde, o navigare veche
+    // te arunca singura intr-o pagina pe care o parasisesi deja.
+    const timers: number[] = [];
+    const later = (fn: () => void, ms: number) => {
+      timers.push(window.setTimeout(fn, ms));
+    };
+
+    /** A cerut aplicatia pagina noua de la server dupa apasare? */
     const askedForPage = (since: number) => {
       try {
         return performance
@@ -54,6 +62,8 @@ export default function NavigationRescue() {
       if (!href || href.startsWith('#')) return;
       if (anchor.target && anchor.target !== '_self') return;
       if (anchor.hasAttribute('download')) return;
+      // Linkurile care se intorc prin istoric (UpLink) nu cer pagina de la server.
+      if (anchor.hasAttribute('data-history-nav')) return;
 
       let destination: URL;
       try {
@@ -70,7 +80,7 @@ export default function NavigationRescue() {
       const clickedAt = performance.now();
       const here = () => window.location.pathname + window.location.search;
 
-      window.setTimeout(() => {
+      later(() => {
         if (here() !== from) return;
 
         if (!askedForPage(clickedAt)) {
@@ -80,14 +90,17 @@ export default function NavigationRescue() {
         }
 
         // A pornit, dar merge greu. Îi dăm timp; dacă tot nu ajunge, preluăm.
-        window.setTimeout(() => {
+        later(() => {
           if (here() === from) window.location.assign(destination.href);
         }, PATIENCE_MS);
       }, CHECK_MS);
     };
 
     document.addEventListener('click', onClick);
-    return () => document.removeEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('click', onClick);
+      timers.forEach((id) => window.clearTimeout(id));
+    };
   }, [pathname]);
 
   return null;
