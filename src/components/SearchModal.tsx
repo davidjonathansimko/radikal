@@ -16,6 +16,8 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 import CategoryPicker from '@/components/CategoryPicker';
 import { fetchCategories, type Category } from '@/lib/categories';
+import { fetchEnabledPages } from '@/lib/pageSettings';
+import { CONTENT_KINDS } from '@/lib/contentKinds';
 
 // Pasul A1: folosim clientul Supabase SINGLETON (evită "Multiple GoTrueClient instances detected")
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -125,16 +127,38 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   // loc porneste in bloguri, dar poti comuta oricand din cele doua butoane.
   // ------------------------------------------------------------------
   const inMarturii = Boolean(pathname?.startsWith('/marturii'));
-  const [scope, setScope] = useState<'blogs' | 'marturii'>(inMarturii ? 'marturii' : 'blogs');
+  const inAndacht = Boolean(pathname?.startsWith('/andacht'));
+  const inCopii = Boolean(pathname?.startsWith('/copii'));
+  type Scope = 'blogs' | 'marturii' | 'andacht' | 'copii';
+  const homeScope: Scope = inMarturii ? 'marturii' : inAndacht ? 'andacht' : inCopii ? 'copii' : 'blogs';
+  const [scope, setScope] = useState<Scope>(homeScope);
+
+  // Pasul 2210007 — Andacht si Pentru copii apar ca file doar cand sunt pornite.
+  const [enabledPages, setEnabledPages] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isOpen) return;
+    let alive = true;
+    fetchEnabledPages().then((s) => alive && setEnabledPages(s));
+    return () => {
+      alive = false;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen) setScope(inMarturii ? 'marturii' : 'blogs');
-  }, [isOpen, inMarturii]);
-  const scopeLabels = {
+    if (isOpen) setScope(homeScope);
+  }, [isOpen, homeScope]);
+  const scopeLabels: Record<Scope, string> = {
     blogs: language === 'de' ? 'Blogs' : language === 'en' ? 'Blogs' : language === 'ro' ? 'Bloguri' : 'Блоги',
     marturii:
       language === 'de' ? 'Zeugnisse' : language === 'en' ? 'Testimonies' : language === 'ro' ? 'Mărturii' : 'Свидетельства',
+    andacht: CONTENT_KINDS.andacht.title[language] ?? CONTENT_KINDS.andacht.title.de,
+    copii: CONTENT_KINDS.copii.title[language] ?? CONTENT_KINDS.copii.title.de,
   };
+  const scopes: Scope[] = [
+    'blogs',
+    'marturii',
+    ...((['andacht', 'copii'] as const).filter((k) => enabledPages.has(k)) as Scope[]),
+  ];
 
   const placeholder =
     scope === 'marturii'
@@ -145,7 +169,9 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           : language === 'ro'
             ? 'Caută mărturii...'
             : 'Поиск свидетельств...'
-      : t.placeholder;
+      : scope === 'blogs'
+        ? t.placeholder
+        : `${scopeLabels[scope]} …`;
   
   // State / Zustand
   const [query, setQuery] = useState('');
@@ -304,7 +330,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       // original ȘI în traducerile scrise de tine, ca „viu" să fie găsit
       // indiferent de limba în care ai scris mărturia.
       // ---------------------------------------------------------------
-      if (scope === 'marturii') {
+      if (scope !== 'blogs') {
         if (!supabase) {
           setResults([]);
           setLoading(false);
@@ -317,12 +343,14 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           .flatMap((f) => langs.map((l) => `${f}${l}.ilike.%${term}%`))
           .join(',');
 
-        const { data: found, error: findErr } = await supabase
-          .from('testimonies')
+        let finder = supabase
+          .from(scope === 'marturii' ? 'testimonies' : 'content_items')
           .select(
             'id, title, title_de, title_en, title_ro, title_ru, excerpt, excerpt_de, excerpt_en, excerpt_ro, excerpt_ru, image_url, created_at, slug',
           )
-          .eq('published', true)
+          .eq('published', true);
+        if (scope !== 'marturii') finder = finder.eq('kind', scope);
+        const { data: found, error: findErr } = await finder
           .or(conditions)
           .order('created_at', { ascending: false })
           .limit(8);
@@ -513,7 +541,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     
     // Navigate to post / Zum Post navigieren
     const slug = result.slug || result.id;
-    router.push(scope === 'marturii' ? `/marturii/m/${slug}` : `/blogs/${slug}`);
+    router.push(
+      scope === 'marturii'
+        ? `/marturii/m/${slug}`
+        : scope === 'blogs'
+          ? `/blogs/${slug}`
+          : `${CONTENT_KINDS[scope].itemPath}/${slug}`,
+    );
     onClose();
   };
 
@@ -628,7 +662,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
             {/* Pasul 2608006 — UNDE cauți: în bloguri sau în mărturii. */}
             <div className="mb-5 flex flex-wrap gap-2">
-              {(['blogs', 'marturii'] as const).map((s) => (
+              {scopes.map((s) => (
                 <button
                   key={s}
                   type="button"

@@ -16,6 +16,7 @@ export const ANDACHT_TEXTS: Texts = {
     empty: 'Hier gibt es noch nichts.',
     read: 'Lesen',
     back: 'Zurück zur Andacht',
+    home: 'Zurück zur Startseite',
     loading: 'Wird geladen …',
   },
   en: {
@@ -29,6 +30,7 @@ export const ANDACHT_TEXTS: Texts = {
     empty: 'There is nothing here yet.',
     read: 'Read',
     back: 'Back to the devotion',
+    home: 'Back to home',
     loading: 'Loading …',
   },
   ro: {
@@ -42,6 +44,7 @@ export const ANDACHT_TEXTS: Texts = {
     empty: 'Aici nu există încă nimic.',
     read: 'Citește',
     back: 'Înapoi la meditație',
+    home: 'Înapoi acasă',
     loading: 'Se încarcă …',
   },
   ru: {
@@ -55,6 +58,7 @@ export const ANDACHT_TEXTS: Texts = {
     empty: 'Здесь пока ничего нет.',
     read: 'Читать',
     back: 'Назад к размышлению',
+    home: 'Назад домой',
     loading: 'Загрузка …',
   },
 };

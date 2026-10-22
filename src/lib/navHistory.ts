@@ -16,6 +16,15 @@ export function trackPath(pathname: string): void {
   }
 }
 
+/** Adresa paginii de dinaintea celei de acum (fara parametri). */
+export function previousPath(): string | null {
+  try {
+    return sessionStorage.getItem(PREV);
+  } catch {
+    return null;
+  }
+}
+
 /** Pagina anterioara era lista (nu alt articol)? */
 export function cameFromList(listPath: string, articlePrefix: string): boolean {
   try {

@@ -7,6 +7,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import UpLink from '@/components/content/UpLink';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
@@ -101,6 +102,13 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
   return (
     <div className="min-h-screen py-10">
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
+        <UpLink
+          href="/"
+          className="mb-4 inline-block text-sm text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
+        >
+          ← {t.home}
+        </UpLink>
+
         <h1
           className={`mb-3 text-center font-cinzel text-2xl font-bold text-black dark:text-white sm:text-3xl ${
             upper ? 'uppercase tracking-widest' : ''

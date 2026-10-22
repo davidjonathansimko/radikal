@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
@@ -78,12 +79,12 @@ export default function DailyArchive({ kind }: { kind: ContentKind }) {
   return (
     <div className="min-h-screen py-10">
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
-        <Link
+        <UpLink
           href={def.basePath}
           className="mb-4 inline-block text-sm text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
         >
           ← {t.back}
-        </Link>
+        </UpLink>
 
         <h1 className="mb-6 text-center font-cinzel text-2xl font-bold text-black dark:text-white sm:text-3xl">
           {t.archiveTitle}

@@ -12,6 +12,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import UpLink from '@/components/content/UpLink';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import { matchesSelectedCategories } from '@/lib/categories';
 import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
@@ -138,12 +139,12 @@ function MarturiiToateInner() {
   return (
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <Link
+        <UpLink
           href="/marturii"
           className="mb-6 inline-block text-sm text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
         >
           ← {t.back}
-        </Link>
+        </UpLink>
 
         <header className="mb-8 text-center">
           <h1 className="font-cinzel text-3xl font-bold text-black dark:text-white sm:text-4xl">
