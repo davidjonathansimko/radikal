@@ -91,6 +91,21 @@ export function BlogCardSkeleton() {
 }
 
 /**
+ * Pasul 2210014 - schelet pentru cardul „titlu peste imagine" (CARD_STYLE='overlay'):
+ * aceeasi forma ca la cardul real, ca pagina sa nu sara cand se incarca.
+ */
+export function BlogOverlayCardSkeleton() {
+  return (
+    <div className="relative flex aspect-[4/3] min-h-[240px] w-full flex-col justify-end overflow-hidden rounded-2xl border border-black/10 bg-black/5 dark:border-white/10 dark:bg-white/5 sm:aspect-[16/11]">
+      <div className="space-y-2 p-4">
+        <Skeleton width="28%" height={14} className="rounded" />
+        <Skeleton width="85%" height={22} />
+        <Skeleton width="60%" height={22} />
+      </div>
+    </div>
+  );
+}
+/**
  * Blog List Skeleton - shows multiple blog card skeletons
  */
 export function BlogListSkeleton({ count = 6 }: { count?: number }) {

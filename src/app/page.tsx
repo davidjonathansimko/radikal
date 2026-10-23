@@ -1,4 +1,4 @@
-﻿// Homepage component - Main landing page / Homepage-Komponente - Hauptlandingpage / Componentă pagină principală - Pagina de destinație principală
+// Homepage component - Main landing page / Homepage-Komponente - Hauptlandingpage / Componentă pagină principală - Pagina de destinație principală
 // This creates the beautiful homepage with the design matching the example image
 // Dies erstellt die schöne Homepage mit dem Design, das dem Beispielbild entspricht
 // Aceasta creează pagina de start frumoasă cu designul potrivit imaginii exemplu
@@ -18,6 +18,7 @@ import { fetchEnabledPages } from '@/lib/pageSettings';
 // Pasul 2208001 — vizitatorul ramane vizitator pana apasa butonul din hamburger
 import { isGuestMode } from '@/hooks/useGuestMode';
 import TriangleLoader from '@/components/TriangleLoader';
+import OnboardingTour from '@/components/OnboardingTour';
 
 // Dynamic import for WelcomeModal (includes GSAP, loaded only when needed)
 const WelcomeModal = dynamic(() => import('@/components/WelcomeModal'), { ssr: false });
@@ -339,8 +340,10 @@ export default function HomePage() {
   // Timer ecran splash - arată logo 2,5 secunde apoi dispare
   useEffect(() => {
     if (!showSplash) return;
+    // Pasul 2210014: a doua plasa de siguranta (tableta ramanea pe logo) - ecranul se inchide si singur, si la atingere.
     const timer = setTimeout(() => setShowSplash(false), 2500);
-    return () => clearTimeout(timer);
+    const watchdog = setTimeout(() => setShowSplash(false), 5000);
+    return () => { clearTimeout(timer); clearTimeout(watchdog); };
   }, [showSplash]);
 
   // Monitor language changes in modal (for immediate application) / Sprachänderungen im Modal überwachen (für sofortige Anwendung) / Monitorizează schimbările de limbă în modal (pentru aplicare imediată)
@@ -417,7 +420,7 @@ export default function HomePage() {
   // Arată logo splash pentru utilizatorii care se întorc
   if (showSplash) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-white dark:bg-black flex items-center justify-center animate-fadeIn">
+      <div onClick={() => setShowSplash(false)} className="fixed inset-0 z-[9999] bg-white dark:bg-black flex items-center justify-center animate-fadeIn">
         <div className="text-center">
           <Image
             src={theme === 'dark' ? '/radikal.logo.weiß.hintergrund.png' : '/radikal.logo.schwarz.hintergrund.png'}
@@ -779,6 +782,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <OnboardingTour />
     </div>
   );
 }

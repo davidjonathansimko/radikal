@@ -17,7 +17,7 @@ import { createClient } from '@/lib/supabase';
 import { FaRegHeart } from 'react-icons/fa';
 import { TfiComment } from 'react-icons/tfi';
 // Skeleton Loading / Skeleton-Laden / Încărcare Skeleton
-import { BlogCardSkeleton } from '@/components/Skeleton';
+import { BlogCardSkeleton, BlogOverlayCardSkeleton } from '@/components/Skeleton';
 import { ReadTick } from '@/components/ReadMark';
 
 interface BlogListProps {
@@ -385,9 +385,9 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     // Show skeleton while loading / Skeleton während des Ladens anzeigen / Afișează skeleton în timpul încărcării
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {[...Array(3)].map((_, i) => (
-          <BlogCardSkeleton key={i} />
-        ))}
+        {[...Array(3)].map((_, i) =>
+          CARD_STYLE === 'overlay' ? <BlogOverlayCardSkeleton key={i} /> : <BlogCardSkeleton key={i} />,
+        )}
       </div>
     );
   }
