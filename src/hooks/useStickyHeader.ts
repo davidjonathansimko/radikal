@@ -133,7 +133,19 @@ export function useStickyHeader(
 
     setupObserver();
 
+    // Sectiunile pornite din admin (Andacht, Copii, Verset) apar dupa ce se
+    // citesc setarile. Le prindem si pe ele, altfel pastila sarea peste ele.
+    const lateTimers = [600, 1500, 3000, 6000].map((ms) =>
+      window.setTimeout(() => {
+        sections.forEach((section) => {
+          const element = document.getElementById(section.id);
+          if (element) observerRef.current?.observe(element);
+        });
+      }, ms),
+    );
+
     return () => {
+      lateTimers.forEach((id) => window.clearTimeout(id));
       if (retryTimer) clearTimeout(retryTimer);
       observerRef.current?.disconnect();
     };

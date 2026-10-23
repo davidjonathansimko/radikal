@@ -2159,3 +2159,45 @@ html.modal-open {
 .light .force-white-text h4 {
   color: #ffffff !important;
 }
+
+/* Pasul 2210012 - tranzitie de tema (val din butonul apasat) + liste care se deschid fin + bara de derulare ascunsa pe telefon. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2147483646; }
+
+@keyframes dropdownUp {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes dropdownDown {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes dropdownItem {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-dropdown-up   { transform-origin: bottom center; animation: dropdownUp 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-dropdown-down { transform-origin: top right;     animation: dropdownDown 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-dropdown-up > button,
+.animate-dropdown-down > button { animation: dropdownItem 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-dropdown-up > button:nth-child(2),
+.animate-dropdown-down > button:nth-child(2) { animation-delay: 40ms; }
+.animate-dropdown-up > button:nth-child(3),
+.animate-dropdown-down > button:nth-child(3) { animation-delay: 80ms; }
+.animate-dropdown-up > button:nth-child(4),
+.animate-dropdown-down > button:nth-child(4) { animation-delay: 120ms; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-dropdown-up, .animate-dropdown-down,
+  .animate-dropdown-up > button, .animate-dropdown-down > button { animation: none; }
+}
+
+/* Pe telefon si tableta nu se vede bara de derulare; pagina se deruleaza ca inainte. */
+@media (max-width: 1023px), (pointer: coarse) {
+  html { scrollbar-width: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+}

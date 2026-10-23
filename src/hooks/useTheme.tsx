@@ -3,6 +3,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 
 // Added 'bw' (black & white / Schwarz-Weiß / alb-negru) theme option
 export type Theme = 'dark' | 'light';
@@ -10,7 +11,7 @@ export type Theme = 'dark' | 'light';
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
+  toggleTheme: (origin?: { x: number; y: number }) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -64,8 +65,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [theme, mounted]);
 
-  const toggleTheme = () => {
-  setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  // Schimbarea temei se desfasoara ca un val care porneste din butonul apasat.
+  const toggleTheme = (origin?: { x: number; y: number }) => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!doc.startViewTransition || reduce) {
+      setTheme(next);
+      return;
+    }
+    const x = origin?.x ?? window.innerWidth / 2;
+    const y = origin?.y ?? window.innerHeight;
+    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    const transition = doc.startViewTransition(() => {
+      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.add(next);
+      flushSync(() => setTheme(next));
+    });
+    transition.ready
+      .then(() => {
+        document.documentElement.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+          { duration: 650, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' },
+        );
+      })
+      .catch(() => {});
   };
 
   const contextValue: ThemeContextType = {

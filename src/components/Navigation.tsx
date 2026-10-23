@@ -728,7 +728,7 @@ export default function Navigation() {
               </span>
             </button>
             {showMobileLanguageDropdown && (
-              <div className="absolute bottom-full mb-2 min-w-[120px] bg-white dark:bg-black rounded-xl shadow-xl py-1 z-[100] border border-black/15 dark:border-white/15">
+              <div className="animate-dropdown-up absolute bottom-full mb-2 min-w-[120px] bg-white dark:bg-black rounded-xl shadow-xl py-1 z-[100] border border-black/15 dark:border-white/15">
                 <button onClick={() => handleLanguageChange('de')} className={`w-full text-left px-3 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2 ${language === 'de' ? 'bg-black/10 dark:bg-white/10' : ''}`}>
                   <FlagDE className="w-5 h-4 rounded-sm flex-shrink-0" /><span>Deutsch</span>
                 </button>
@@ -761,7 +761,7 @@ export default function Navigation() {
 
           {/* Theme toggle */}
           <button
-            onClick={() => { tapMedium(); toggleTheme(); }}
+            onClick={(e) => { tapMedium(); toggleTheme({ x: e.clientX, y: e.clientY }); }}
             className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 group"
             title={theme === 'dark' ? (language === 'de' ? 'Helles Thema' : 'Light Theme') : (language === 'de' ? 'Dunkles Thema' : 'Dark Theme')}
           >
@@ -1102,7 +1102,7 @@ export default function Navigation() {
               
               {/* Language dropdown menu with SVG flags */}
               {showLanguageDropdown && (
-                <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-black rounded-md shadow-lg py-1 z-50 border border-black/20 dark:border-white/20">
+                <div className="animate-dropdown-down absolute top-full right-0 mt-1 w-36 bg-white dark:bg-black rounded-md shadow-lg py-1 z-50 border border-black/20 dark:border-white/20">
                   <button
                     onClick={() => handleLanguageChange('de')}
                     className={`w-full text-left px-3 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2 ${language === 'de' ? 'bg-black/10 dark:bg-white/10' : ''}`}
@@ -1178,7 +1178,7 @@ export default function Navigation() {
 
             {/* Theme toggle button with animation / Themenumschalter mit Animation / Buton comutare temă cu animație */}
             <button
-              onClick={toggleTheme}
+              onClick={(e) => toggleTheme({ x: e.clientX, y: e.clientY })}
               className="px-3 py-2 rounded-md text-sm font-medium text-white/80 dark:text-white/80 hover:text-white dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/10 transition-all duration-300 flex items-center space-x-1 group"
               title={theme === 'dark' ? (language === 'de' ? 'Helles Thema' : language === 'en' ? 'Light Theme' : language === 'ro' ? 'Temă Luminoasă' : 'Светлая тема') : (language === 'de' ? 'Dunkles Thema' : language === 'en' ? 'Dark Theme' : language === 'ro' ? 'Temă Întunecată' : 'Темная тема')}
             >
