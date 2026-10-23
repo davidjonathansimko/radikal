@@ -1,4 +1,4 @@
-﻿/* Global styles for the Radikal blog application / Globale Stile für die Radikal-Blog-Anwendung */
+/* Global styles for the Radikal blog application / Globale Stile für die Radikal-Blog-Anwendung */
 /* This file contains all global CSS including Tailwind imports and custom styles */
 /* Diese Datei enthält alle globalen CSS einschließlich Tailwind-Importe und benutzerdefinierten Stilen */
 
@@ -2134,4 +2134,20 @@ html.modal-open {
   background-size: 200% 100%;
 }
 
-
+/* Semnul Play animat (pagina Despre): se deseneaza, ramane, se stinge. */
+.play-draw {
+  stroke-dasharray: 1;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: playDraw 3.6s ease-in-out infinite;
+}
+@keyframes playDraw {
+  0%   { stroke-dashoffset: 1; opacity: 1; transform: scale(1); }
+  38%  { stroke-dashoffset: 0; opacity: 1; transform: scale(1.07); }
+  82%  { stroke-dashoffset: 0; opacity: 1; transform: scale(1.07); }
+  94%  { stroke-dashoffset: 0; opacity: 0; transform: scale(1.07); }
+  100% { stroke-dashoffset: 1; opacity: 0; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .play-draw { animation: none; stroke-dashoffset: 0; }
+}

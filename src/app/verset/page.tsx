@@ -14,6 +14,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
 import { fetchEnabledPages } from '@/lib/pageSettings';
+import { shareVerseImage, IMAGE_SAVED } from '@/lib/shareImage';
 import ImageEffectLayers, { effectsFilter, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -193,6 +194,20 @@ export default function DailyVersePage() {
   const handleShare = useCallback(async () => {
     tapLight();
     const url = typeof window !== 'undefined' ? window.location.href : '';
+    // Intai incercam imaginea (verset peste poza); daca nu merge, ramane linkul.
+    const shared = await shareVerseImage({
+      text,
+      reference,
+      imageUrl: verse?.background_image_url,
+      url,
+      title: reference || 'RADIKAL.',
+    });
+    if (shared === 'shared' || shared === 'cancelled') return;
+    if (shared === 'downloaded') {
+      setShareMsg(IMAGE_SAVED[lang] ?? IMAGE_SAVED.de);
+      setTimeout(() => setShareMsg(''), 2500);
+      return;
+    }
     try {
       if (navigator.share) {
         await navigator.share({ title: reference || 'RADIKAL', text, url });
@@ -204,7 +219,7 @@ export default function DailyVersePage() {
     } catch {
       /* utilizatorul a renunțat */
     }
-  }, [tapLight, reference, text, t.copied]);
+  }, [tapLight, reference, text, t.copied, verse?.background_image_url, lang]);
 
   const handleClose = useCallback(() => {
     tapLight();

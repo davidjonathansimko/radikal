@@ -1,4 +1,4 @@
-﻿// Search Modal Component / Such-Modal-Komponente / Componenta Modal Căutare
+// Search Modal Component / Such-Modal-Komponente / Componenta Modal Căutare
 // Full-text search with instant results and keyboard navigation
 // Volltextsuche mit sofortigen Ergebnissen und Tastaturnavigation
 // Căutare full-text cu rezultate instantanee și navigare cu tastatura
@@ -109,6 +109,11 @@ interface SearchResult {
 const POST_COLUMNS =
   'id, title, title_de, title_en, title_ro, title_ru, excerpt, excerpt_de, excerpt_en, excerpt_ro, excerpt_ru, image_url, created_at, slug';
 
+/** Din ce tabel citim pentru fila aleasa. */
+function tableForScope(scope: string): string {
+  return scope === 'blogs' ? 'blog_posts' : scope === 'marturii' ? 'testimonies' : 'content_items';
+}
+
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -216,7 +221,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
    *  - ai scris ceva  → rezultatele cautarii;
    *  - n-ai scris dar ai bifat categorii → blogurile acelor categorii.
    */
-  const shownResults = query.length >= 2 ? results : scope === 'blogs' ? catResults : [];
+  const shownResults = query.length >= 2 ? results : catResults;
 
   useEffect(() => {
     const translateResults = async () => {
@@ -489,19 +494,19 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   // `overlaps` = „are macar una dintre aceste categorii", exact ce trebuie
   // ca sa vezi laolalta si familie, si casnicie.
   useEffect(() => {
-    if (!isOpen || scope !== 'blogs' || selectedCats.length === 0 || !supabase) {
+    if (!isOpen || selectedCats.length === 0 || !supabase) {
       setCatResults([]);
       return;
     }
     let alive = true;
     (async () => {
-      const { data, error } = await supabase
-        .from('blog_posts')
+      let q = supabase
+        .from(tableForScope(scope))
         .select(POST_COLUMNS)
         .eq('published', true)
-        .overlaps('category_ids', selectedCats)
-        .order('created_at', { ascending: false })
-        .limit(30);
+        .overlaps('category_ids', selectedCats);
+      if (scope === 'andacht' || scope === 'copii') q = q.eq('kind', scope);
+      const { data, error } = await q.order('created_at', { ascending: false }).limit(30);
 
       if (!alive) return;
       setCatResults(error ? [] : ((data ?? []) as SearchResult[]));
@@ -509,12 +514,38 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     return () => { alive = false; };
   }, [isOpen, selectedCats, scope]);
 
+  // Pasul 2210011 — numaram cate texte are fiecare categorie in fila aleasa;
+  // se arata doar categoriile care chiar au ceva.
+  const [catCounts, setCatCounts] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    setCatCounts(null);
+    if (!isOpen || !supabase) return;
+    let alive = true;
+    (async () => {
+      let q = supabase.from(tableForScope(scope)).select('category_ids').eq('published', true);
+      if (scope === 'andacht' || scope === 'copii') q = q.eq('kind', scope);
+      const { data, error } = await q.limit(5000);
+      if (!alive || error || !data) return;
+      const map: Record<string, number> = {};
+      (data as { category_ids: string[] | null }[]).forEach((r) =>
+        (r.category_ids ?? []).forEach((id) => {
+          map[id] = (map[id] ?? 0) + 1;
+        }),
+      );
+      setCatCounts(map);
+    })();
+    return () => { alive = false; };
+  }, [isOpen, scope]);
+  const visibleCategories = catCounts
+    ? categories.filter((c) => (catCounts[c.id] ?? 0) > 0 || selectedCats.includes(c.id))
+    : categories;
+
   // Pasul 0809001 — cand treci de la Blogs la Zeugnisse, lista veche pleacă.
   // Înainte rămâneau blogurile pe ecran și părea că mărturiile sunt bloguri.
   useEffect(() => {
     setResults([]);
     setSelectedIndex(0);
-    if (scope !== 'blogs') setSelectedCats([]);
+    setSelectedCats([]);
   }, [scope]);
 
   // Handle input change with debounce / Input-Änderung mit Debounce handhaben
@@ -683,7 +714,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                 mai multe deodată, apoi cauți în interiorul lor.
                 Pasul 2608006: categoriile sunt ale blogurilor, deci apar
                 doar când cauți în bloguri. */}
-            {scope === 'blogs' && categories.length > 0 && (
+            {visibleCategories.length > 0 && (
               <div className="mb-5 rounded-xl border border-gray-200 dark:border-white/10 p-4 text-gray-800 dark:text-white">
                 <p className="mb-3 text-sm text-gray-500 dark:text-white/40">
                   {language === 'de' ? 'Kategorien' :
@@ -691,10 +722,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                    language === 'ru' ? 'Категории' : 'Categorii'}
                 </p>
                 <CategoryPicker
-                  categories={categories}
+                  categories={visibleCategories}
                   value={selectedCats}
                   onChange={setSelectedCats}
                   lang={language}
+                  counts={catCounts ?? undefined}
                 />
                 {/* Pasul 2308006-C: textele („+ încă N", „Caută o categorie…",
                     „Șterge selecția") vin acum din `categoryUiText`, deci sunt

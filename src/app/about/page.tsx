@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
 import AboutStoryModal from '@/components/AboutStoryModal';
+import AnimatedPlayIcon from '@/components/AnimatedPlayIcon';
 import AboutIntroQuote from '@/components/AboutIntroQuote';
 import { usePageText } from '@/lib/pageContent';
 import BackToTopButton from '@/components/BackToTopButton';
@@ -222,19 +223,9 @@ export default function AboutPage() {
               {t.discover}
             </span>
 
-            {/* Semnul Play, cu un cerc care „respiră" în spate, ca să se vadă
-                dintr-o privire că e ceva de pornit. */}
-            <span className="relative flex h-14 w-14 items-center justify-center">
-              <span className="absolute inset-0 animate-ping rounded-full border border-current opacity-40" />
-              <span className="absolute inset-0 rounded-full border border-current opacity-70" />
-              <svg
-                className="relative ml-1 h-6 w-6"
-                viewBox="0 0 14 14"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M3 1.5v11l9-5.5-9-5.5z" />
-              </svg>
+            {/* Semnul Play animat (din play.json): pornește povestea. */}
+            <span className="flex h-20 w-20 items-center justify-center transition-transform duration-300 hover:scale-110">
+              <AnimatedPlayIcon className="h-16 w-16" />
             </span>
           </button>
         </header>

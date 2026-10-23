@@ -1,4 +1,4 @@
-﻿// Welcome Modal Component - Language selection and Bible verse with GSAP cinematic effect
+// Welcome Modal Component - Language selection and Bible verse with GSAP cinematic effect
 // Willkommen-Modal-Komponente - Sprachauswahl und Bibelvers mit GSAP kinematischem Effekt
 // Componentă Modal Bun Venit - Selectare limbă și verset biblic cu efect cinematic GSAP
 // This modal appears on first visit or when user is not logged in
@@ -255,7 +255,6 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
   const textMuted = theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
   const textLight = theme === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)';
   const textVeryLight = theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
-  const textExtraLight = theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
   const textSemiTransparent = theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
   const bgTransparent = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
   const bgTransparentMedium = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
@@ -540,18 +539,21 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                   textShadow: '0 0 20px rgba(255,255,255,0.15)'
                 }}
               >
-                <span className="inline tracking-wider">&quot;</span>
-                {bibleVerses[selectedLanguage].split(' ').map((word, index) => (
-                  <span
-                    key={index}
-                    ref={(el) => { wordsRef.current[index] = el; }}
-                    className="inline-block mx-1 tracking-wider"
-                    style={{ opacity: 0 }}
-                  >
-                    {word}
-                  </span>
-                ))}
-                <span className="inline tracking-wider">&quot;</span>
+                {(() => {
+                  // Ghilimelele stau lipite de primul si ultimul cuvant, ca sa apara odata cu ele.
+                  const q = ({ de: ['„', '“'], ro: ['„', '”'], en: ['“', '”'], ru: ['«', '»'] } as Record<string, string[]>)[selectedLanguage] ?? ['„', '“'];
+                  const words = bibleVerses[selectedLanguage].split(' ');
+                  return words.map((word, index) => (
+                    <span
+                      key={index}
+                      ref={(el) => { wordsRef.current[index] = el; }}
+                      className="inline-block mx-1 tracking-wider"
+                      style={{ opacity: 0 }}
+                    >
+                      {(index === 0 ? q[0] : '') + word + (index === words.length - 1 ? q[1] : '')}
+                    </span>
+                  ));
+                })()}
               </blockquote>
 
               {/* Bible reference - animated with GSAP */}
@@ -670,12 +672,6 @@ export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
                    selectedLanguage === 'en' ? `© ${new Date().getFullYear()} RADIKAL. All rights reserved.` :
                    selectedLanguage === 'ro' ? `© ${new Date().getFullYear()} RADIKAL. Toate drepturile rezervate.` :
                    `© ${new Date().getFullYear()} RADIKAL. Все права защищены.`}
-                </p>
-                <p className="text-center text-xs mt-1" style={{ color: textExtraLight }}>
-                  {selectedLanguage === 'de' ? 'Erstellt mit Next.js' :
-                   selectedLanguage === 'en' ? 'Created with Next.js' :
-                   selectedLanguage === 'ro' ? 'Creat cu Next.js' :
-                   'Создано с помощью Next.js'}
                 </p>
               </div>
             </div>

@@ -1275,7 +1275,12 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             if (steps > 0) {
               e.preventDefault();
               e.currentTarget.setAttribute('data-history-nav', '1');
+              const before = window.location.pathname;
               goBackSteps(steps);
+              // Daca harta istoricului a gresit si nu s-a intamplat nimic, mergem direct.
+              window.setTimeout(() => {
+                if (window.location.pathname === before) window.location.assign(source.listPath);
+              }, 700);
             }
           }}
           className="back-button inline-flex items-center gap-2 text-gray-800 dark:text-white/80 hover:text-gray-600 dark:hover:text-white mb-4 sm:mb-8 transition-colors duration-200"

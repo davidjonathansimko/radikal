@@ -192,7 +192,7 @@ export default function MarturiiIntroQuote({
                 Înainte erau două semne fixe, care nu se stingeau niciodată: rămâneau
                 pe ecran și peste fraza următoare, tăind cuvintele. Acum intră o dată
                 cu primul cuvânt, se închid după ultimul și dispar împreună cu el. */}
-            {['\u201E', ...verseText.split(' '), '\u201C'].map((word, index) => (
+            {verseText.split(' ').map((word, index, all) => (
               <span
                 key={index}
                 ref={(el) => {
@@ -201,7 +201,7 @@ export default function MarturiiIntroQuote({
                 className="inline-block mx-1 tracking-wider"
                 style={{ opacity: 0 }}
               >
-                {word}
+                {(index === 0 ? '\u201E' : '') + word + (index === all.length - 1 ? '\u201C' : '')}
               </span>
             ))}
           </blockquote>

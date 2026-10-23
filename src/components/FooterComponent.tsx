@@ -79,12 +79,6 @@ export default function FooterComponent() {
              language === 'ro' ? `© ${new Date().getFullYear()} RADIKAL. Toate drepturile rezervate.` :
              `© ${new Date().getFullYear()} RADIKAL. Все права защищены.`}
           </p>
-          <p className="text-black/50 dark:text-white/40 text-xs mt-2">
-            {language === 'de' ? 'Erstellt mit Next.js' :
-             language === 'en' ? 'Created with Next.js' :
-             language === 'ro' ? 'Creat cu Next.js' :
-             'Создано с помощью Next.js'}
-          </p>
         </div>
       </div>
     </footer>

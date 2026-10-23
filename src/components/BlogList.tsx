@@ -1,4 +1,4 @@
-﻿// Blog list component for displaying blog posts / Blog-Listen-Komponente zur Anzeige von Blog-Posts / Componentă listă blog pentru afișarea posturilor de blog
+// Blog list component for displaying blog posts / Blog-Listen-Komponente zur Anzeige von Blog-Posts / Componentă listă blog pentru afișarea posturilor de blog
 // This component shows the latest blogs with pagination and beautiful styling
 // Diese Komponente zeigt die neuesten Blogs mit Paginierung und schönem Styling
 // Această componentă afișează cele mai recente bloguri cu paginare și stilizare frumoasă
@@ -432,38 +432,6 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
 
       {/* Pasul 1125: Mobile = single card with left/right arrows, Desktop = vertical stack */}
       <div className="relative">
-        {/* Left arrow — mobile only (always rendered when activeSlide > 0) */}
-        {isMobile && activeSlide > 0 && (
-          <button
-            onClick={() => {
-              const carousel = carouselRef.current;
-              if (!carousel) return;
-              const cardWidth = carousel.offsetWidth;
-              carousel.scrollTo({ left: (activeSlide - 1) * cardWidth, behavior: 'smooth' });
-            }}
-            className="btn-solid absolute left-2 top-1/2 -translate-y-1/2 z-40 bg-black/85 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/40 dark:border-white/20 active:scale-90 transition-all"
-            aria-label="Previous blog"
-            style={{ pointerEvents: 'auto' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-        )}
-        {/* Right arrow — mobile only */}
-        {isMobile && activeSlide < Math.min(posts.length, 6) - 1 && (
-          <button
-            onClick={() => {
-              const carousel = carouselRef.current;
-              if (!carousel) return;
-              const cardWidth = carousel.offsetWidth;
-              carousel.scrollTo({ left: (activeSlide + 1) * cardWidth, behavior: 'smooth' });
-            }}
-            className="btn-solid absolute right-2 top-1/2 -translate-y-1/2 z-40 bg-black/85 dark:bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow-xl border border-white/40 dark:border-white/20 active:scale-90 transition-all"
-            aria-label="Next blog"
-            style={{ pointerEvents: 'auto' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        )}
 
         {/* Dot indicators moved below carousel */}
 
@@ -505,10 +473,10 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 )}
 
                 <div className="relative p-4">
-                  <h2 className="mb-1.5 text-xl font-bold leading-tight text-white drop-shadow-md">
+                  <h2 className="mb-1.5 text-xl font-bold leading-tight text-white drop-shadow-md" style={{ color: '#ffffff' }}>
                     {getTranslatedTitle(post)}
                   </h2>
-                  <div className="flex items-center justify-between gap-3 text-xs text-white/75">
+                  <div className="flex items-center justify-between gap-3 text-xs text-white/75" style={{ color: 'rgba(255,255,255,0.8)' }}>
                     <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
                     <ReadTick href={`/blogs/${post.slug}`} className="text-white/80" />
                     <button
@@ -655,6 +623,42 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         </React.Fragment>
         ))}
       </div>
+
+      {/* Pasul 2210011 — sagetile stau SUB card, nu peste el: un titlu lung nu mai
+          dispare sub ele. Doar pe telefon (pe desktop cardurile sunt in grila). */}
+      {isMobile && Math.min(posts.length, 6) > 1 && (
+        <div className="mt-3 flex items-center justify-center gap-5">
+          <button
+            type="button"
+            disabled={activeSlide === 0}
+            onClick={() => {
+              const carousel = carouselRef.current;
+              if (!carousel) return;
+              carousel.scrollTo({ left: (activeSlide - 1) * carousel.offsetWidth, behavior: 'smooth' });
+            }}
+            className="btn-solid flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-black transition-opacity disabled:opacity-30 dark:border-white/20 dark:text-white"
+            aria-label="Previous blog"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span className="min-w-[3rem] text-center text-xs tabular-nums text-gray-600 dark:text-white/60">
+            {activeSlide + 1} / {Math.min(posts.length, 6)}
+          </span>
+          <button
+            type="button"
+            disabled={activeSlide >= Math.min(posts.length, 6) - 1}
+            onClick={() => {
+              const carousel = carouselRef.current;
+              if (!carousel) return;
+              carousel.scrollTo({ left: (activeSlide + 1) * carousel.offsetWidth, behavior: 'smooth' });
+            }}
+            className="btn-solid flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-black transition-opacity disabled:opacity-30 dark:border-white/20 dark:text-white"
+            aria-label="Next blog"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      )}
 
       </div>
 

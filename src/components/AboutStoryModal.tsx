@@ -62,6 +62,9 @@ const storyContent = {
 // Story phrases are now imported from @/data/storyPhrases
 // Complete translations: DE (Schlachter 2000), EN (KJV), RO (Cornilescu), RU (Synodal)
 
+// Copie de 1280px (363 KB) a pozei originale de 6000px / 4 MB, care facea ecranul sa se incarce cu lag.
+const STORY_IMAGE = '/tree_beside_water_1280.jpg';
+
 export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalProps) {
   const container = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
@@ -271,10 +274,23 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Preloader
+  // Preloader: asteptam imaginea de fundal decodata, nu un timp fix, ca ecranul
+  // urmator sa nu apara cu imaginea venind pe jumatate.
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
+    let alive = true;
+    const started = Date.now();
+    const finish = () => {
+      const wait = Math.max(0, 700 - (Date.now() - started));
+      window.setTimeout(() => alive && setIsLoading(false), wait);
+    };
+    const img = new window.Image();
+    img.src = STORY_IMAGE;
+    (img.decode ? img.decode() : Promise.resolve()).then(finish, finish);
+    const safety = window.setTimeout(() => alive && setIsLoading(false), 3000);
+    return () => {
+      alive = false;
+      window.clearTimeout(safety);
+    };
   }, []);
 
   // Intro countdown (from 8 to 0)
@@ -641,7 +657,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
         {/* Full background image with blur and sepia */}
         <div className="absolute inset-0">
           <Image 
-            src="/tree_beside_water.jpg" 
+            src={STORY_IMAGE} unoptimized 
             alt="Background" 
             fill 
             sizes="100vw"
@@ -667,7 +683,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
           {/* Card with image - smaller on mobile to fit viewport */}
           <div className="mb-4 md:mb-6 w-48 h-32 sm:w-64 sm:h-44 md:w-80 md:h-52 relative rounded-lg overflow-hidden shadow-2xl border border-white/20 flex-shrink-0">
             <Image 
-              src="/tree_beside_water.jpg" 
+              src={STORY_IMAGE} unoptimized 
               alt="Root" 
               fill 
               sizes="(max-width: 768px) 60vw, 320px"
@@ -836,7 +852,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
       {isDark && (
         <div className="absolute inset-0 z-0">
           <Image 
-            src="/tree_beside_water.jpg" 
+            src={STORY_IMAGE} unoptimized 
             alt="Background" 
             fill 
             sizes="100vw"
@@ -856,7 +872,7 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
         background: isDark
           ? 'radial-gradient(ellipse at center, rgba(200,180,140,0.2) 0%, rgba(120,100,70,0.1) 35%, rgba(0,0,0,0) 70%)'
           : 'radial-gradient(ellipse at center, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 70%)',
-        filter: 'blur(100px)', left: '50%', top: '50%',
+        left: '50%', top: '50%', willChange: 'transform, opacity',
         transform: `translate(calc(-50% + ${mousePos.x * 30}px), calc(-50% + ${mousePos.y * 30}px))`, opacity: 0.5
       }} />
 

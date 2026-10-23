@@ -33,6 +33,78 @@ function todayISO(): string {
 
 const emptyLangs = (): Record<LangCode, string> => ({ ro: '', de: '', en: '', ru: '' });
 
+/** Cate zile se pastreaza versetele vechi; ce e mai vechi se sterge din baza de date. */
+const KEEP_DAYS = 30;
+
+function isoDaysAgo(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Luni, in format ISO, al saptamanii in care cade ziua data. */
+function weekStart(day: string): string {
+  const d = new Date(`${day}T12:00:00`);
+  const shift = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - shift);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function VerseListItem({
+  v,
+  onEdit,
+  onReuse,
+  onRemove,
+}: {
+  v: VerseRow;
+  onEdit: (day: string) => void;
+  onReuse: (v: VerseRow) => void;
+  onRemove: (v: VerseRow) => void;
+}) {
+  const isToday = v.for_day === todayISO();
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/10 px-3 py-2 dark:border-white/10">
+      <span className="min-w-0">
+        <span className="mr-2 font-mono text-xs text-black/50 dark:text-white/50">{v.for_day}</span>
+        <span className="text-sm text-black dark:text-white">
+          {v.content_ro.slice(0, 70)}
+          {v.content_ro.length > 70 ? '…' : ''}
+        </span>
+        {!v.published && (
+          <span className="ml-2 rounded-full bg-black/10 px-2 py-0.5 text-[11px] text-black/60 dark:bg-white/10 dark:text-white/60">
+            ciornă
+          </span>
+        )}
+      </span>
+      <span className="flex shrink-0 flex-wrap gap-2">
+        {!isToday && (
+          <button
+            type="button"
+            onClick={() => onReuse(v)}
+            className="rounded-lg border border-black/15 px-3 py-1 text-xs text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+          >
+            Refolosește pentru azi
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onEdit(v.for_day)}
+          className="rounded-lg border border-black/15 px-3 py-1 text-xs text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+        >
+          Editează
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(v)}
+          className="rounded-lg px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
+        >
+          Șterge
+        </button>
+      </span>
+    </li>
+  );
+}
+
 export default function DailyVerseAdmin() {
   const [items, setItems] = useState<VerseRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +133,12 @@ export default function DailyVerseAdmin() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      // Se pastreaza doar ultimele 30 de zile: ce e mai vechi se sterge din baza de date.
+      const old = await createClient().from('daily_verses').delete().lt('for_day', isoDaysAgo(KEEP_DAYS)).select('id');
+      if (!old.error && old.data && old.data.length > 0) {
+        say('ok', `${old.data.length} versete mai vechi de ${KEEP_DAYS} de zile au fost șterse.`);
+      }
+
       const { data, error } = await createClient()
         .from('daily_verses')
         .select('id, for_day, content_ro, reference_ro, published')
@@ -75,11 +153,39 @@ export default function DailyVerseAdmin() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [say]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** Pune un verset vechi pe ziua de azi (inlocuieste ce era deja pe azi). */
+  const reuseToday = useCallback(
+    async (v: VerseRow) => {
+      const today = todayISO();
+      const sb = createClient();
+      const existing = items.find((x) => x.for_day === today);
+      if (existing && !window.confirm('Pe azi există deja un verset. Îl înlocuiesc cu acesta?')) return;
+
+      const { data: full, error: readError } = await sb.from('daily_verses').select('*').eq('id', v.id).maybeSingle();
+      if (readError || !full) {
+        say('err', 'Nu am putut citi versetul.');
+        return;
+      }
+      const { id: _id, created_at: _c, updated_at: _u, for_day: _d, ...rest } = full as Record<string, unknown>;
+      const { error } = await sb
+        .from('daily_verses')
+        .upsert({ ...rest, for_day: today, published: true, updated_at: new Date().toISOString() }, { onConflict: 'for_day' });
+      if (error) {
+        say('err', `Nu am putut refolosi: ${error.message}`);
+        return;
+      }
+      say('ok', 'Versetul este acum pe ziua de azi.');
+      setForDay(today);
+      await load();
+    },
+    [items, load, say],
+  );
 
   /** Aduce în formular versetul zilei alese, dacă există deja unul. */
   const loadDay = useCallback(async (day: string) => {
@@ -468,7 +574,7 @@ export default function DailyVerseAdmin() {
       </form>
 
       <h3 className="mb-3 text-lg font-bold text-black dark:text-white">
-        Ultimele versete ({items.length})
+        Ultimele 10 versete
       </h3>
 
       {loading ? (
@@ -477,42 +583,41 @@ export default function DailyVerseAdmin() {
         <p className="text-sm text-black/50 dark:text-white/50">Niciun verset scris încă.</p>
       ) : (
         <ul className="grid gap-2">
-          {items.map((v) => (
-            <li
-              key={v.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/10 px-3 py-2 dark:border-white/10"
-            >
-              <span className="min-w-0">
-                <span className="mr-2 font-mono text-xs text-black/50 dark:text-white/50">{v.for_day}</span>
-                <span className="text-sm text-black dark:text-white">
-                  {v.content_ro.slice(0, 70)}
-                  {v.content_ro.length > 70 ? '…' : ''}
-                </span>
-                {!v.published && (
-                  <span className="ml-2 rounded-full bg-black/10 px-2 py-0.5 text-[11px] text-black/60 dark:bg-white/10 dark:text-white/60">
-                    ciornă
-                  </span>
-                )}
-              </span>
-              <span className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setForDay(v.for_day)}
-                  className="rounded-lg border border-black/15 px-3 py-1 text-xs text-black/70 transition-colors hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
-                >
-                  Editează
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void remove(v)}
-                  className="rounded-lg px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
-                >
-                  Șterge
-                </button>
-              </span>
-            </li>
+          {items.slice(0, 10).map((v) => (
+            <VerseListItem key={v.id} v={v} onEdit={setForDay} onReuse={reuseToday} onRemove={remove} />
           ))}
         </ul>
+      )}
+
+      {/* Arhiva: versetele mai vechi, pe saptamani. Se pastreaza doar ultimele 30 de zile. */}
+      {!loading && items.length > 10 && (
+        <details className="mt-6 rounded-xl border border-black/10 dark:border-white/10">
+          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-black dark:text-white">
+            Arhivă ({items.length - 10}) — ultimele {KEEP_DAYS} de zile
+          </summary>
+          <div className="space-y-3 px-3 pb-4">
+            {Object.entries(
+              items.slice(10).reduce<Record<string, VerseRow[]>>((acc, v) => {
+                const key = weekStart(v.for_day);
+                (acc[key] ||= []).push(v);
+                return acc;
+              }, {}),
+            )
+              .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+              .map(([week, list]) => (
+                <details key={week} className="rounded-lg">
+                  <summary className="cursor-pointer select-none px-1 py-2 text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/60">
+                    Săptămâna din {week} ({list.length})
+                  </summary>
+                  <ul className="grid gap-2">
+                    {list.map((v) => (
+                      <VerseListItem key={v.id} v={v} onEdit={setForDay} onReuse={reuseToday} onRemove={remove} />
+                    ))}
+                  </ul>
+                </details>
+              ))}
+          </div>
+        </details>
       )}
     </div>
   );

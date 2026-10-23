@@ -24,6 +24,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation';
 import gsap from 'gsap';
 import { paginateText } from '@/lib/paginateText';
+import { shareVerseImage, IMAGE_SAVED } from '@/lib/shareImage';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
@@ -336,6 +337,21 @@ export function ReelSlide({
     const title = `RADIKAL. #${reel.tag}`;
     const text = reel.reference ? `${reel.content}\n— ${reel.reference}` : reel.content;
 
+    // Intai incercam imaginea (verset peste poza); daca nu merge, ramane linkul.
+    const shared = await shareVerseImage({
+      text: reel.content,
+      reference: reel.reference,
+      imageUrl: reel.background_image_url,
+      url,
+      title,
+    });
+    if (shared === 'shared' || shared === 'cancelled') return;
+    if (shared === 'downloaded') {
+      setShareMsg(IMAGE_SAVED[language] ?? IMAGE_SAVED.de);
+      setTimeout(() => setShareMsg(''), 2200);
+      return;
+    }
+
     try {
       if (navigator.share) {
         await navigator.share({ title, text, url });
@@ -351,7 +367,7 @@ export function ReelSlide({
     } catch {
       /* utilizatorul a anulat share-ul */
     }
-  }, [reel.blog_slug, reel.tag, reel.content, reel.reference, language, tapLight]);
+  }, [reel.blog_slug, reel.tag, reel.content, reel.reference, reel.background_image_url, language, tapLight]);
 
   // Text lung -> mai multe "pagini" care se succed automat.
   // Pasul 2308006-A: daca in admin ai bifat „Aleg singur rândurile", folosim
