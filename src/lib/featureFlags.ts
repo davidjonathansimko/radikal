@@ -4,13 +4,14 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
-export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls';
+export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls' | 'scrollReveal';
 
 const ROW_ID: Record<FeatureKey, string> = {
   resume: 'feat_resume',
   swipe: 'feat_swipe',
   shareSelection: 'feat_share_selection',
   fontControls: 'feat_font_controls',
+  scrollReveal: 'feat_scroll_reveal',
 };
 
 export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
@@ -18,6 +19,7 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   swipe: true,
   shareSelection: true,
   fontControls: true,
+  scrollReveal: true,
 };
 
 let cache: Promise<Record<FeatureKey, boolean>> | null = null;

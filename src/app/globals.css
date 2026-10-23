@@ -2217,3 +2217,41 @@ html.modal-open {
 @media (prefers-reduced-motion: reduce) {
   .triangle-loader-stroke { animation: none; stroke-dasharray: 1 0; }
 }
+
+/* Pasul 231026a — sectiunile paginii principale curg in ecran si raman fixate; se retrag la derulare in sus.
+   Se aplica doar cand JS pune `.scroll-reveal` pe pagina si `data-reveal` pe sectiuni (se opreste din admin). */
+.scroll-reveal section[data-reveal] > div > h2,
+.scroll-reveal section[data-reveal] > div > p,
+.scroll-reveal section[data-reveal] > div > div,
+.scroll-reveal section[data-reveal] > div > a {
+  animation: none !important;
+  transition: opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1), transform 0.95s cubic-bezier(0.22, 1, 0.36, 1), filter 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scroll-reveal section[data-reveal] > div > p   { transition-delay: 0.15s; }
+.scroll-reveal section[data-reveal] > div > div { transition-delay: 0.3s; }
+.scroll-reveal section[data-reveal] > div > a   { transition-delay: 0.6s; }
+
+.scroll-reveal section[data-reveal="hidden"] > div > h2 { opacity: 0; transform: translateY(32px); filter: blur(10px); }
+.scroll-reveal section[data-reveal="hidden"] > div > p  { opacity: 0; transform: translateY(24px); filter: blur(6px); }
+.scroll-reveal section[data-reveal="hidden"] > div > a  { opacity: 0; transform: translateY(18px); }
+
+/* Simbolul „curge" de sus in jos, ca o cerneala care se asterne (masca moale care coboara). */
+.scroll-reveal section[data-reveal] > div > div svg {
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 60%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 60%);
+  -webkit-mask-size: 100% 260%;
+  mask-size: 100% 260%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  transition: -webkit-mask-position 1.7s cubic-bezier(0.45, 0, 0.2, 1) 0.35s, mask-position 1.7s cubic-bezier(0.45, 0, 0.2, 1) 0.35s, filter 1.2s ease 0.35s;
+}
+.scroll-reveal section[data-reveal="hidden"] > div > div svg {
+  -webkit-mask-position: 0 100%;
+  mask-position: 0 100%;
+  filter: blur(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal section[data-reveal] > div > * { transition: none !important; }
+}

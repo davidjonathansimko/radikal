@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -19,6 +19,7 @@ import { fetchEnabledPages } from '@/lib/pageSettings';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import TriangleLoader from '@/components/TriangleLoader';
 import OnboardingTour from '@/components/OnboardingTour';
+import { useFeatureFlags } from '@/lib/featureFlags';
 
 // Dynamic import for WelcomeModal (includes GSAP, loaded only when needed)
 const WelcomeModal = dynamic(() => import('@/components/WelcomeModal'), { ssr: false });
@@ -394,6 +395,45 @@ export default function HomePage() {
     return () => document.body.classList.remove('modal-active');
   }, [showModal, isCheckingSession, showSplash]);
 
+  // Pasul 231026a: sectiunile curg in ecran la derulare in jos si se retrag la derulare in sus.
+  // Se poate opri din admin (Setari -> Pagini -> Functii pentru cititori).
+  const featureFlags = useFeatureFlags();
+  const pageRootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = pageRootRef.current;
+    if (!root || !featureFlags.scrollReveal || showModal || isCheckingSession || showSplash) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const sections = Array.from(root.querySelectorAll<HTMLElement>('section:not(#hero)'));
+    root.classList.add('scroll-reveal');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const el = entry.target as HTMLElement;
+          if (entry.isIntersecting) {
+            el.dataset.reveal = 'visible';
+          } else if (entry.boundingClientRect.top > 0) {
+            // A ramas sub ecran (am derulat in sus): se retrage. Ce e deasupra ramane afisat.
+            el.dataset.reveal = 'hidden';
+          } else {
+            el.dataset.reveal = 'visible';
+          }
+        });
+      },
+      { threshold: 0.25 },
+    );
+    sections.forEach((el) => {
+      el.dataset.reveal = 'hidden';
+      observer.observe(el);
+    });
+
+    return () => {
+      observer.disconnect();
+      root.classList.remove('scroll-reveal');
+      sections.forEach((el) => delete el.dataset.reveal);
+    };
+  }, [featureFlags.scrollReveal, showModal, isCheckingSession, showSplash, enabledPages]);
+
   // Show nothing while checking session — use skeleton / Nichts anzeigen während Sitzung geprüft wird — verwende Skeleton / Nu afișa nimic în timp ce se verifică sesiunea — folosește schelet
   if (isCheckingSession) {
     return (
@@ -436,7 +476,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div ref={pageRootRef} className="min-h-screen">
       {/* ========================================================================== */}
       {/* SECTION 1 - HERO with Revelation 3:16 verse and scroll button */}
       {/* ========================================================================== */}

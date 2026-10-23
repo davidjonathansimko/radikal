@@ -31,6 +31,7 @@ const FEATURE_LIST: { key: FeatureKey; title: string; text: string }[] = [
   { key: 'swipe', title: 'Swipe între bloguri', text: 'Pe telefon, în articol, tragi stânga/dreapta între cele 6 bloguri din listă.' },
   { key: 'shareSelection', title: 'Trimite textul selectat ca imagine', text: 'Când selectezi o frază din articol apare butonul „Als Bild teilen”.' },
   { key: 'fontControls', title: 'Mărimea textului (A−/A+)', text: 'Butoanele de mărire și micșorare a textului din articole.' },
+  { key: 'scrollReveal', title: 'Pagina principală: secțiuni care curg la derulare', text: 'Titlul, textul și simbolul fiecărei secțiuni apar treptat când derulezi și se retrag când derulezi în sus. Oprit = pagina arată ca înainte.' },
 ];
 
 const LANG_NAMES: Record<PageLanguage, string> = {
