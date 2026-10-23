@@ -116,7 +116,7 @@ export default function TodayCard({ enabledPages }: Props) {
       {verse?.text && (
         <Link href="/verset" className={rowClass}>
           <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-black/50 dark:text-white/50">{VERSE[lang]}</span>
-          <span className="mt-1 line-clamp-3 block text-base italic leading-snug text-black dark:text-white">„{verse.text}"</span>
+          <span className="mt-1 line-clamp-3 block text-base italic leading-snug text-black dark:text-white">{`„${verse.text}“`}</span>
           {verse.reference && <span className="mt-1 block text-xs text-black/60 dark:text-white/60">— {verse.reference}</span>}
         </Link>
       )}
