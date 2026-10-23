@@ -34,9 +34,7 @@ async function decode(src: string): Promise<AudioBuffer | null> {
   }
 }
 
-function findPauses(buf: AudioBuffer): { start: number; end: number; pauses: Pause[] } | null {
-  const rate = buf.sampleRate;
-  const ch = buf.getChannelData(0);
+function findPauses(ch: Float32Array, rate: number): { start: number; end: number; pauses: Pause[] } | null {
   const win = Math.round(rate * 0.02);
   const n = Math.floor(ch.length / win);
   if (n < 50) return null;
@@ -75,7 +73,13 @@ export async function alignWordsToAudio(src: string, words: WeightedWord[]): Pro
   if (typeof window === 'undefined' || words.length < 8) return null;
   const buf = await decode(src);
   if (!buf) return null;
-  const found = findPauses(buf);
+  return alignFromChannel(buf.getChannelData(0), buf.sampleRate, words);
+}
+
+/** Partea de calcul, separata ca sa poata fi testata fara browser. */
+export function alignFromChannel(channel: Float32Array, sampleRate: number, words: WeightedWord[]): number[] | null {
+  if (words.length < 8) return null;
+  const found = findPauses(channel, sampleRate);
   if (!found || found.pauses.length < 2) return null;
   const { start: S, end: E, pauses } = found;
 
