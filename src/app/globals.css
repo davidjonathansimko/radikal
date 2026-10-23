@@ -2201,3 +2201,16 @@ html.modal-open {
   html { scrollbar-width: none; }
   html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 }
+
+/* Pasul 2210013 - linia care se deseneaza in jurul triunghiului. */
+@keyframes triangleTrace {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1; }
+}
+.triangle-loader-stroke {
+  stroke-dasharray: 0.38 0.62;
+  animation: triangleTrace 1.7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .triangle-loader-stroke { animation: none; stroke-dasharray: 1 0; }
+}

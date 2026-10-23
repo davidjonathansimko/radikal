@@ -17,6 +17,7 @@ import { registerPageDefaults } from '@/lib/pageDefaults';
 import { fetchEnabledPages } from '@/lib/pageSettings';
 // Pasul 2208001 — vizitatorul ramane vizitator pana apasa butonul din hamburger
 import { isGuestMode } from '@/hooks/useGuestMode';
+import TriangleLoader from '@/components/TriangleLoader';
 
 // Dynamic import for WelcomeModal (includes GSAP, loaded only when needed)
 const WelcomeModal = dynamic(() => import('@/components/WelcomeModal'), { ssr: false });
@@ -758,7 +759,8 @@ export default function HomePage() {
           <br></br>
 
           {/* Back to Top Button - positioned closer to footer with more spacing from clock */}
-          <div className="mt-8 mb-4">
+          <div className="mt-8 mb-4 flex items-center justify-center gap-3">
+            <TriangleLoader size={30} className="md:hidden animate-fadeIn" />
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"

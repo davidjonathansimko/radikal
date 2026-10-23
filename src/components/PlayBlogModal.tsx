@@ -24,6 +24,7 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useVoiceSyncedText } from '@/hooks/useVoiceSyncedText';
+import AnimatedPlayIcon from '@/components/AnimatedPlayIcon';
 import { paginateWords, pageIndexForWord } from '@/lib/paginateText';
 import { getSupabaseClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
@@ -101,6 +102,32 @@ export default function PlayBlogModal({
 
   useBodyScrollLock(isOpen);
   useFocusTrap(containerRef, isOpen);
+
+  // Pasul 2210013 — butonul „inapoi" al telefonului inchide modalul (ca la Reels).
+  // La deschidere punem un semn in istoric; „inapoi" il consuma si inchide modalul.
+  // Semnul de „freeze" (admin) este tratat separat: nu inchide modalul.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    window.history.pushState({ playBlogModal: true }, '');
+    const onPop = () => {
+      const st = window.history.state as { playBlogModal?: boolean; playBlogFrozen?: boolean } | null;
+      if (st?.playBlogModal || st?.playBlogFrozen) return;
+      onCloseRef.current();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [isOpen]);
+
+  const requestClose = useCallback(() => {
+    const st = window.history.state as { playBlogModal?: boolean } | null;
+    if (st?.playBlogModal) window.history.back();
+    else onCloseRef.current();
+  }, []);
 
   // ------------------------------------------------------------------
   // Pasul 2208002 (punctul 3) — audio PREGENERAT
@@ -259,7 +286,7 @@ export default function PlayBlogModal({
       ms.setActionHandler('seekto', (d) => {
         if (typeof d.seekTime === 'number') seek(d.seekTime);
       });
-      ms.setActionHandler('stop', () => onClose());
+      ms.setActionHandler('stop', () => requestClose());
     } catch {
       /* browserele vechi nu au MediaMetadata */
     }
@@ -274,7 +301,7 @@ export default function PlayBlogModal({
         /* ignoram */
       }
     };
-  }, [isOpen, isReady, title, imageUrl, toggle, seek, onClose]);
+  }, [isOpen, isReady, title, imageUrl, toggle, seek, requestClose]);
 
   // Pozitia curenta, ca sa o poata folosi butoanele de pe ecranul de blocare
   const elapsedRef = useRef(0);
@@ -300,7 +327,7 @@ export default function PlayBlogModal({
         // Pasul A13 — daca esti in „freeze", Escape doar iese din freeze.
         // Abia a doua apasare inchide modalul.
         if (frozen) { setFrozen(false); return; }
-        onClose();
+        requestClose();
       }
       if (e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
@@ -309,7 +336,7 @@ export default function PlayBlogModal({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose, toggle, frozen]);
+  }, [isOpen, requestClose, toggle, frozen]);
 
   // ------------------------------------------------------------------
   // Pasul A13 — cine este admin?
@@ -479,7 +506,7 @@ export default function PlayBlogModal({
           Pasul A13: dispare cat timp esti in „freeze". */}
       {!frozen && (
       <button
-        onClick={() => { tapLight(); onClose(); }}
+        onClick={() => { tapLight(); requestClose(); }}
         aria-label={uiLang === 'de' ? 'Schließen' : uiLang === 'ro' ? 'Închide' : 'Close'}
         className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-opacity hover:opacity-100"
         style={{ opacity: 0.75 }}
@@ -697,7 +724,7 @@ export default function PlayBlogModal({
                'Replay'}
             </button>
             <button
-              onClick={() => { tapLight(); onClose(); }}
+              onClick={() => { tapLight(); requestClose(); }}
               className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-transform active:scale-95 hover:bg-white/90"
             >
               {uiLang === 'de' ? 'Zurück zum Blog' :
@@ -771,9 +798,7 @@ export default function PlayBlogModal({
                 <rect x="8.5" y="1" width="3.5" height="12" rx="1" />
               </svg>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                <path d="M3 1.5v11l9-5.5-9-5.5z" />
-              </svg>
+              <AnimatedPlayIcon className="h-5 w-5" />
             )}
           </button>
 
