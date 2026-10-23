@@ -4,6 +4,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
+import { glitchViewTransition, scatterGlitch } from '@/lib/glitchEffects';
 
 // Added 'bw' (black & white / Schwarz-Weiß / alb-negru) theme option
 export type Theme = 'dark' | 'light';
@@ -11,7 +12,7 @@ export type Theme = 'dark' | 'light';
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  toggleTheme: (origin?: { x: number; y: number }) => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -65,18 +66,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [theme, mounted]);
 
-  // Schimbarea temei se desfasoara ca un val care porneste din butonul apasat.
-  const toggleTheme = (origin?: { x: number; y: number }) => {
+  // Schimbarea temei: felii de ecran nou cu culori „glitch" + cuvinte care tremura o clipa.
+  const toggleTheme = () => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
     const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!doc.startViewTransition || reduce) {
+    if (reduce) {
       setTheme(next);
       return;
     }
-    const x = origin?.x ?? window.innerWidth / 2;
-    const y = origin?.y ?? window.innerHeight;
-    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    if (!doc.startViewTransition) {
+      scatterGlitch();
+      setTheme(next);
+      return;
+    }
     const transition = doc.startViewTransition(() => {
       document.documentElement.classList.remove('dark', 'light');
       document.documentElement.classList.add(next);
@@ -84,14 +87,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
     transition.ready
       .then(() => {
-        document.documentElement.animate(
-          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-          { duration: 650, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' },
-        );
+        glitchViewTransition();
+        scatterGlitch();
       })
       .catch(() => {});
   };
-
   const contextValue: ThemeContextType = {
     theme,
     setTheme,

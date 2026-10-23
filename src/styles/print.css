@@ -495,3 +495,35 @@
 .dark .print-button:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* Pasul 231026a-2 — PDF curat: fara linkul „Zum Inhalt springen", fara efectele imaginii si fara umbre. */
+@media print {
+  .skip-link,
+  a[href="#main-content"],
+  .sr-only {
+    display: none !important;
+  }
+
+  article header .relative.overflow-hidden {
+    box-shadow: none !important;
+    border-radius: 8px !important;
+    background: none !important;
+  }
+
+  /* Vignette, grain, bloom, benzile cinematice: peste imagine ar iesi ca dungi gri in PDF. */
+  article header .relative.overflow-hidden > [aria-hidden="true"],
+  .reel-noise,
+  .dynamic-grain,
+  .cine-bloom,
+  .cine-light-leak {
+    display: none !important;
+  }
+
+  article header .relative.overflow-hidden img {
+    opacity: 1 !important;
+    filter: none !important;
+    max-height: 9cm !important;
+    width: 100% !important;
+    object-fit: cover !important;
+  }
+}

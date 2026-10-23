@@ -761,7 +761,7 @@ export default function Navigation() {
 
           {/* Theme toggle */}
           <button
-            onClick={(e) => { tapMedium(); toggleTheme({ x: e.clientX, y: e.clientY }); }}
+            onClick={() => { tapMedium(); toggleTheme(); }}
             className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 group"
             title={theme === 'dark' ? (language === 'de' ? 'Helles Thema' : 'Light Theme') : (language === 'de' ? 'Dunkles Thema' : 'Dark Theme')}
           >
@@ -1178,7 +1178,7 @@ export default function Navigation() {
 
             {/* Theme toggle button with animation / Themenumschalter mit Animation / Buton comutare temă cu animație */}
             <button
-              onClick={(e) => toggleTheme({ x: e.clientX, y: e.clientY })}
+              onClick={toggleTheme}
               className="px-3 py-2 rounded-md text-sm font-medium text-white/80 dark:text-white/80 hover:text-white dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/10 transition-all duration-300 flex items-center space-x-1 group"
               title={theme === 'dark' ? (language === 'de' ? 'Helles Thema' : language === 'en' ? 'Light Theme' : language === 'ro' ? 'Temă Luminoasă' : 'Светлая тема') : (language === 'de' ? 'Dunkles Thema' : language === 'en' ? 'Dark Theme' : language === 'ro' ? 'Temă Întunecată' : 'Темная тема')}
             >

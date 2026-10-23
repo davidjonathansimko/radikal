@@ -149,7 +149,7 @@ export default function OnboardingTour() {
       aria-modal="true"
       aria-label={current.title[lang]}
     >
-      <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white animate-dropdown-up">
+      <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white animate-fadeIn">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-black/5 text-2xl dark:bg-white/10" aria-hidden="true">
           {current.icon}
         </div>

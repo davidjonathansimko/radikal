@@ -2169,33 +2169,36 @@ html.modal-open {
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2147483646; }
 
-@keyframes dropdownUp {
-  from { opacity: 0; transform: translateY(8px) scale(0.96); }
-  to   { opacity: 1; transform: none; }
+/* Meniul de limba se formeaza din colturi, din monocrom in culori, cu despartire rosu/cian (glitch). */
+@keyframes glitchPanel {
+  0%   { opacity: 0; clip-path: inset(0 88% 88% 0); filter: grayscale(1) contrast(1.6) drop-shadow(-3px 0 #ff2a6d) drop-shadow(3px 0 #05d9e8); transform: translateX(-5px); }
+  14%  { opacity: 1; clip-path: inset(0 45% 72% 0);  filter: grayscale(1) contrast(1.4) drop-shadow(3px 0 #ff2a6d) drop-shadow(-3px 0 #05d9e8); transform: translateX(4px); }
+  28%  { clip-path: inset(62% 0 0 58%);              filter: grayscale(.9) drop-shadow(-2px 0 #ff2a6d) drop-shadow(2px 0 #05d9e8); transform: translateX(-3px); }
+  42%  { clip-path: inset(0 0 48% 30%);              filter: grayscale(.75) hue-rotate(60deg) drop-shadow(2px 0 #ff2a6d) drop-shadow(-2px 0 #05d9e8); transform: translateX(3px); }
+  58%  { clip-path: inset(38% 22% 0 0);              filter: grayscale(.5) hue-rotate(-40deg) drop-shadow(-2px 0 #ff2a6d) drop-shadow(2px 0 #05d9e8); transform: translateX(-2px); }
+  74%  { clip-path: inset(0 0 0 0);                  filter: grayscale(.25) drop-shadow(1px 0 #ff2a6d) drop-shadow(-1px 0 #05d9e8); transform: translateX(1px); }
+  100% { clip-path: inset(0 0 0 0);                  filter: none; transform: none; opacity: 1; }
 }
-@keyframes dropdownDown {
-  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
-  to   { opacity: 1; transform: none; }
+@keyframes glitchItem {
+  0%   { opacity: 0; text-shadow: -2px 0 #ff2a6d, 2px 0 #05d9e8; transform: translateX(-8px) skewX(-10deg); }
+  35%  { opacity: 1; text-shadow: 2px 0 #ff2a6d, -2px 0 #05d9e8; transform: translateX(5px) skewX(6deg); }
+  65%  { opacity: .7; text-shadow: -1px 0 #ff2a6d, 1px 0 #05d9e8; transform: translateX(-3px); }
+  100% { opacity: 1; text-shadow: none; transform: none; }
 }
-@keyframes dropdownItem {
-  from { opacity: 0; transform: translateX(-6px); }
-  to   { opacity: 1; transform: none; }
-}
-.animate-dropdown-up   { transform-origin: bottom center; animation: dropdownUp 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-dropdown-down { transform-origin: top right;     animation: dropdownDown 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-dropdown-up   { transform-origin: bottom center; animation: glitchPanel 560ms steps(14, end) backwards; }
+.animate-dropdown-down { transform-origin: top right;     animation: glitchPanel 560ms steps(14, end) backwards; }
 .animate-dropdown-up > button,
-.animate-dropdown-down > button { animation: dropdownItem 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-dropdown-down > button { animation: glitchItem 420ms steps(9, end) backwards; animation-delay: 140ms; }
 .animate-dropdown-up > button:nth-child(2),
-.animate-dropdown-down > button:nth-child(2) { animation-delay: 40ms; }
+.animate-dropdown-down > button:nth-child(2) { animation-delay: 200ms; }
 .animate-dropdown-up > button:nth-child(3),
-.animate-dropdown-down > button:nth-child(3) { animation-delay: 80ms; }
+.animate-dropdown-down > button:nth-child(3) { animation-delay: 260ms; }
 .animate-dropdown-up > button:nth-child(4),
-.animate-dropdown-down > button:nth-child(4) { animation-delay: 120ms; }
+.animate-dropdown-down > button:nth-child(4) { animation-delay: 320ms; }
 @media (prefers-reduced-motion: reduce) {
   .animate-dropdown-up, .animate-dropdown-down,
   .animate-dropdown-up > button, .animate-dropdown-down > button { animation: none; }
 }
-
 /* Pe telefon si tableta nu se vede bara de derulare; pagina se deruleaza ca inainte. */
 @media (max-width: 1023px), (pointer: coarse) {
   html { scrollbar-width: none; }
