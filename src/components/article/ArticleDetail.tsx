@@ -8,6 +8,9 @@
 'use client';
 
 import TriangleLoader from '@/components/TriangleLoader';
+import ShareSelection from '@/components/ShareSelection';
+import { useFeatureFlags } from '@/lib/featureFlags';
+import { useArticleSwipe } from '@/hooks/useArticleSwipe';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
@@ -69,6 +72,14 @@ const ArticleNavigation = dynamic(() => import('@/components/ArticleNavigation')
 
 import { BLOG_SOURCE, type ArticleSource } from '@/components/article/articleSource';
 import ArticleAudioDownload from '@/components/article/ArticleAudioDownload';
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
 
 export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: ArticleSource }) {
   // Protect this route - redirect to home if modal not completed / Diese Route schützen - zur Startseite weiterleiten wenn Modal nicht abgeschlossen / Protejează această rută - redirecționează la pagină principală dacă modalul nu este finalizat
@@ -212,6 +223,12 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
 
   // Pasul C2: modul vizitator — fara comentarii / Guest mode — no comments
   const { isGuest } = useGuestMode();
+  const featureFlags = useFeatureFlags();
+  const swipe = useArticleSwipe({
+    enabled: featureFlags.swipe && source.basePath === '/blogs',
+    currentSlug: safeDecode(slugString),
+    basePath: source.basePath,
+  });
   // Din admin: vizitatorii au voie sa citeasca? null = inca nu stim.
   const [guestReadAllowed, setGuestReadAllowed] = useState<boolean | null>(null);
   useEffect(() => {
@@ -1372,6 +1389,18 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             </div>
           )}
 
+          {/* Pasul 231026a: puncte pentru swipe intre cele 6 bloguri din lista (doar mobil) */}
+          {swipe.index >= 0 && swipe.total > 1 && (
+            <div className="mb-3 flex items-center justify-center gap-1.5 md:hidden" aria-hidden="true" data-no-swipe>
+              {Array.from({ length: swipe.total }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1 rounded-full transition-all duration-300 ${i === swipe.index ? 'w-5 bg-gray-700 dark:bg-white' : 'w-1.5 bg-gray-300 dark:bg-white/25'}`}
+                />
+              ))}
+            </div>
+          )}
+
           {/* 2. Post metadata UNDER image / Metadaten UNTER Bild / Metadate SUB imagine */}
           {/* Fluid flex-stretch layout - auto-adapts to screen size */}
           {/* Mobile: clamp 360→13px, 390→14px, 400→15px, bolder text. Desktop (sm+): original text-base */}
@@ -1444,13 +1473,19 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
 
         {/* Post content with proper light/dark mode contrast and readable backdrop / Post-Inhalt mit richtigen Hell/Dunkel-Modus-Kontrast und lesbarem Hintergrund / Conținut postare cu contrast corect mod luminos/întunecat și fundal lizibil */}
         <div id="blog-content" className="blog-content-backdrop mb-12 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
+          <ShareSelection
+            scope=".blog-body-text"
+            imageUrl={post.image_url}
+            title={displayTitle || post.title}
+            enabled={featureFlags.shareSelection}
+          />
           {/* Reading controls toolbar - all in one row on desktop */}
           {/* Desktop: FontSize + TTS + PDF + Focus in single row */}
           {/* Mobile: 2 rows with visible text labels */}
           <div className="reading-controls mb-6 pb-4 border-b border-gray-300 dark:border-white/20">
             {/* Desktop: Single row with all controls - NO wrap */}
             <div className="hidden md:flex items-center gap-2">
-              <FontSizeControls />
+              {featureFlags.fontControls && <FontSizeControls />}
               <div className="flex-1" />
               <PrintButton variant="icon" showLabel />
               {/* BookmarkButton commented out - replaced by Liked Posts */}
@@ -1462,7 +1497,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             <div className="md:hidden flex flex-col gap-2">
               {/* Pasul 2102005: Row 1: FontSize + PDF + Focus — flex-wrap to prevent text cut-off */}
               <div className="flex items-center justify-between gap-1 w-full">
-                <FontSizeControls />
+                {featureFlags.fontControls ? <FontSizeControls /> : <span />}
                 <div className="flex items-center gap-1 flex-shrink-0 min-w-0">
                   <PrintButton variant="icon" showLabel />
                   <ReadingModeToggle />
@@ -1486,7 +1521,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           <div className="prose prose-lg prose-gray dark:prose-invert max-w-none">
             <div 
               className="blog-body-text text-gray-800 dark:text-white/95 leading-relaxed transition-all duration-200"
-              style={{ fontSize: `${fontSize}%` }}
+              style={{ fontSize: `${featureFlags.fontControls ? fontSize : 100}%` }}
             >
               {/* Pasul 2202000: Show skeleton while translating to avoid Romanian flash */}
               {language !== 'ro' && !translatedContent ? (

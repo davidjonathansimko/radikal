@@ -491,6 +491,32 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isBlogDetailPage]);
 
+  // Pasul 231026a: in articole bara de sus se ascunde la derulare in jos si revine la derulare in sus.
+  const isArticlePage =
+    /^\/(blogs\/[^/]+|marturii\/m\/[^/]+|andacht\/a\/[^/]+|copii\/a\/[^/]+)$/.test(pathname) &&
+    pathname !== '/blogs/arhiva' &&
+    pathname !== '/marturii/toate';
+  const [navHidden, setNavHidden] = useState(false);
+  useEffect(() => {
+    if (!isArticlePage || isMobileMenuOpen) {
+      setNavHidden(false);
+      return;
+    }
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - last;
+      if (Math.abs(delta) < 10) return;
+      setNavHidden(delta > 0 && y > 140);
+      last = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      setNavHidden(false);
+    };
+  }, [isArticlePage, isMobileMenuOpen]);
+
   // Handle language change with persistence
   const handleLanguageChange = async (newLang: 'de' | 'en' | 'ro' | 'ru') => {
     setLanguage(newLang);
@@ -597,7 +623,7 @@ export default function Navigation() {
     {/* Visible for logged-in users AND for guests / Sichtbar für eingeloggte Benutzer UND Gäste */}
     {/* Vizibil pentru utilizatorii logați ȘI pentru vizitatori */}
     {canSeeNav && (
-    <div className="fixed top-0 left-0 right-0 z-[210] lg:hidden" data-mobile-nav="top">
+    <div className={`fixed top-0 left-0 right-0 z-[210] lg:hidden transition-transform duration-300 ease-out ${navHidden ? '-translate-y-full' : ''}`} data-mobile-nav="top">
       {/* Pasul 2102001: Blurred dark background bar — extends edge-to-edge, thin compact bar */}
       <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-black/10 dark:border-white/10" />
       {/* Pasul 2202000: zero vertical padding — header height comes only from logo+hamburger intrinsic size */}

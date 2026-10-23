@@ -24,6 +24,14 @@ import {
 } from '@/lib/pageContent';
 import { originalTextsFor, isPageEditable, ensurePageDefaultsLoaded } from '@/lib/pageDefaults';
 import { fetchEnabledPages, setPageEnabled, fetchGuestAllowed, setGuestAllowed, fetchGuestReadAllowed, setGuestReadAllowed, type TogglablePage } from '@/lib/pageSettings';
+import { fetchFeatureFlags, setFeatureFlag, FEATURE_DEFAULTS, type FeatureKey } from '@/lib/featureFlags';
+
+const FEATURE_LIST: { key: FeatureKey; title: string; text: string }[] = [
+  { key: 'resume', title: 'Continuă lectura', text: 'Cardul „Weiterlesen” cu ultimul articol deschis (Blogs, Zeugnisse, Andacht, Copii).' },
+  { key: 'swipe', title: 'Swipe între bloguri', text: 'Pe telefon, în articol, tragi stânga/dreapta între cele 6 bloguri din listă.' },
+  { key: 'shareSelection', title: 'Trimite textul selectat ca imagine', text: 'Când selectezi o frază din articol apare butonul „Als Bild teilen”.' },
+  { key: 'fontControls', title: 'Mărimea textului (A−/A+)', text: 'Butoanele de mărire și micșorare a textului din articole.' },
+];
 
 const LANG_NAMES: Record<PageLanguage, string> = {
   ro: 'Română',
@@ -79,6 +87,27 @@ export default function PageContentAdmin() {
       setError(`Nu am putut schimba: ${res.error}`);
     }
     setTogglingGuest(false);
+  };
+
+  // Pasul 2210007 — pot vizitatorii sa citeasca articole? Oprit = ecran de logare.
+  const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(FEATURE_DEFAULTS);
+  useEffect(() => {
+    let alive = true;
+    fetchFeatureFlags(true).then((f) => alive && setFeatures(f));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const toggleFeature = async (key: FeatureKey) => {
+    const next = !features[key];
+    setError('');
+    const res = await setFeatureFlag(key, next);
+    if (res.ok) {
+      setFeatures((f) => ({ ...f, [key]: next }));
+      setNote(next ? 'Funcția este pornită.' : 'Funcția este oprită.');
+    } else {
+      setError(`Nu am putut schimba: ${res.error}`);
+    }
   };
 
   // Pasul 2210007 — pot vizitatorii sa citeasca articole? Oprit = ecran de logare.
@@ -353,6 +382,34 @@ export default function PageContentAdmin() {
           >
             {togglingRead ? 'Se schimbă…' : guestRead ? 'Cere cont pentru citit' : 'Lasă vizitatorii să citească'}
           </button>
+        </div>
+      </div>
+
+      {/* --- Funcții pentru cititori (pasul 231026a) --- */}
+      <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-black/50 dark:text-white/50">
+          Funcții pentru cititori
+        </p>
+        <div className="space-y-3">
+          {FEATURE_LIST.map((f) => (
+            <div key={f.key} className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-black dark:text-white">{f.title}</p>
+                <p className="mt-0.5 text-xs text-black/55 dark:text-white/55">{f.text}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void toggleFeature(f.key)}
+                className={`btn-solid shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 ${
+                  features[f.key]
+                    ? 'border border-black/15 text-black dark:border-white/15 dark:text-white'
+                    : 'bg-black text-white dark:bg-white dark:text-black'
+                }`}
+              >
+                {features[f.key] ? 'Pornit · Oprește' : 'Oprit · Pornește'}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 

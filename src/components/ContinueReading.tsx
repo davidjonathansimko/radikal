@@ -7,6 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useFeatureFlags } from '@/lib/featureFlags';
 
 export const LAST_READ_KEY = 'radikalLastRead';
 
@@ -25,6 +26,7 @@ const LABEL: Record<string, string> = {
 
 export default function ContinueReading({ className = '' }: { className?: string }) {
   const { language } = useLanguage();
+  const flags = useFeatureFlags();
   const [item, setItem] = useState<LastRead | null>(null);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function ContinueReading({ className = '' }: { className?: string
     }
   }, []);
 
-  if (!item) return null;
+  if (!item || !flags.resume) return null;
 
   return (
     <div
