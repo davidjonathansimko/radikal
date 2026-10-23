@@ -21,6 +21,7 @@
 // =====================================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { alignWordsToAudio } from '@/lib/speechAlign';
 
 const MAX_CHUNK_CHARS = 1500; // sub limita de 2000 a rutei /api/tts
 
@@ -38,6 +39,8 @@ interface Chunk {
   words: { text: string; weight: number }[];
   audio: HTMLAudioElement | null;
   duration: number; // 0 = inca necunoscuta
+  /** Momentul real (secunde audio) cand se rosteste fiecare cuvant, daca analiza audio a reusit. */
+  times?: number[];
 }
 
 /** Taie textul in bucati la capat de propozitie */
@@ -239,6 +242,9 @@ export function useVoiceSyncedText({
       });
 
       setTotal(chunksRef.current.reduce((s, c) => s + (c.duration || c.text.length / 14), 0));
+      void alignWordsToAudio(audio.src, chunk.words).then((times) => {
+        if (times && !cancelledRef.current) chunk.times = times;
+      });
     },
     [language, speakingRate, blogSlug, blogTitle, contentType],
   );
@@ -285,6 +291,9 @@ export function useVoiceSyncedText({
         single.duration = isFinite(audio.duration) ? audio.duration : clean.length / 14;
         setTotal(single.duration);
         setIsReady(true);
+        void alignWordsToAudio(prebuiltUrl, words).then((times) => {
+          if (times && !cancelledRef.current) single.times = times;
+        });
       };
 
       if (audio.readyState >= 1 && isFinite(audio.duration)) {
@@ -390,15 +399,31 @@ export function useVoiceSyncedText({
     // literele sa se FORMEZE, nu sa apara brusc. Deci trebuie sa pornim si
     // mai devreme: pornim la ~60% din animatie inainte de sunet, ca in
     // clipa in care auzi cuvantul el sa fie deja aproape complet format.
-    const LEAD_SECONDS = 0.58 * (playbackRateRef.current || 1);
-    const target = ((t + LEAD_SECONDS) / dur) * totalWeight;
-
-    let acc = 0;
+    const rate = playbackRateRef.current || 1;
     let spokenInChunk = 0;
-    for (const w of chunk.words) {
-      acc += w.weight;
-      if (acc - w.weight / 2 <= target) spokenInChunk++;
-      else break;
+    if (chunk.times) {
+      // Pauzele reale din audio: cuvantul apare cu ~0,4 s inainte sa fie rostit.
+      const limit = t + 0.4 * rate;
+      const times = chunk.times;
+      let lo = 0;
+      let hi = times.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (times[mid] <= limit) lo = mid + 1;
+        else hi = mid;
+      }
+      spokenInChunk = lo;
+    } else {
+      // Estimare: vocea incepe dupa ~0,25 s de liniste si se sfarseste cu ~0,35 s inainte de capatul fisierului.
+      const LEAD_SILENCE = 0.25;
+      const span = Math.max(dur - 0.6, dur * 0.6);
+      const target = ((t + 0.45 * rate - LEAD_SILENCE) / span) * totalWeight;
+      let acc = 0;
+      for (const w of chunk.words) {
+        acc += w.weight;
+        if (acc - w.weight / 2 <= target) spokenInChunk++;
+        else break;
+      }
     }
 
     // Cat de departe a ajuns vocea (in cuvinte). La sfarsitul audio-ului: toate cuvintele.

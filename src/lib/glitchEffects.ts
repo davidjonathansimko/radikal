@@ -42,7 +42,7 @@ export function scatterGlitch(duration = 1000): void {
       frames[5].filter = 'blur(0px)';
     }
     try {
-      el.animate(frames, { duration: duration * rand(0.75, 1), delay: rand(0, 220), easing: 'steps(9, end)' });
+      el.animate(frames, { duration: duration * rand(0.75, 1), delay: rand(0, 90), easing: 'steps(9, end)' });
     } catch {
       /* browserele vechi fara `translate` animabil: sarim peste */
     }
@@ -54,8 +54,8 @@ export function glitchViewTransition(duration = 1300): void {
   try {
     const root = document.documentElement;
     root.animate(
-      [{ ['--smoke' as string]: '-40%' }, { ['--smoke' as string]: '150%' }],
-      { duration, easing: 'cubic-bezier(0.5, 0, 0.2, 1)', fill: 'both', pseudoElement: '::view-transition-new(root)' },
+      [{ ['--smoke' as string]: '0%' }, { ['--smoke' as string]: '150%' }],
+      { duration, easing: 'cubic-bezier(0.25, 0.7, 0.3, 1)', fill: 'both', pseudoElement: '::view-transition-new(root)' },
     );
     root.animate(
       [

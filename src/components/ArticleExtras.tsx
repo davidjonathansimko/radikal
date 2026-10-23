@@ -58,7 +58,7 @@ export function EveningModeToggle() {
       onClick={toggle}
       aria-pressed={on}
       title={EVENING_TITLE[language] ?? EVENING_TITLE.de}
-      className={`flex min-h-0 min-w-0 flex-shrink-0 items-center gap-0.5 xs:gap-1 rounded-lg px-1 xs:px-2 py-0.5 xs:py-1 sm:py-1.5 transition-colors duration-300 ${
+      className={`flex flex-shrink-0 items-center gap-0.5 xs:gap-1 rounded-lg px-1 xs:px-2 py-0.5 xs:py-1 sm:py-1.5 transition-colors duration-300 ${
         on
           ? 'bg-amber-500 text-black'
           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-white/60 dark:hover:bg-white/20'

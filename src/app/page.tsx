@@ -50,7 +50,7 @@ const translations = {
     marturiiText: '„Darum auch wir, weil wir eine solche Wolke von Zeugen um uns haben, lasst uns ablegen alles, was uns beschwert, und die Sünde, die uns ständig umstrickt, und lasst uns laufen mit Geduld in dem Kampf, der uns bestimmt ist." Hebräer 12,1',
     marturiiButton: 'Alle Zeugnisse ansehen',
     andachtTitle: 'Tägliche Andacht',
-    andachtText: 'Every day is different.',
+    andachtText: 'Jeder Tag ist anders.',
     andachtButton: 'Mehr entdecken',
     copiiTitle: 'Für Kinder',
     copiiText: 'Heiligkeit von Kindheit an',
@@ -415,9 +415,12 @@ export default function HomePage() {
     const onScroll = () => {
       const now = performance.now();
       const dt = now - lastT;
-      if (dt > 0) fast = Math.abs(window.scrollY - lastY) / dt > 1.4; // px pe ms
-      lastY = window.scrollY;
-      lastT = now;
+      // Viteza se masoara pe cel putin 80 ms; sub ~5 px/ms (rotita obisnuita) animatia ramane completa.
+      if (dt >= 80) {
+        fast = Math.abs(window.scrollY - lastY) / dt > 5;
+        lastY = window.scrollY;
+        lastT = now;
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
 

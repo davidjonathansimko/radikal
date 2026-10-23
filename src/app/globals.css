@@ -2527,3 +2527,89 @@ html.text-protect .blog-body-text * {
 @media (prefers-reduced-motion: reduce) {
   .reel-flow, .reel-flow-bg { animation: none !important; }
 }
+
+/* Pasul 231026d - sageata tutorialului: doua chevroane care aluneca spre elementul indicat. */
+@keyframes tourArrowIn { 0% { opacity: 0; transform: scale(0.6); } 100% { opacity: 1; transform: none; } }
+@keyframes tourChevron {
+  0%   { opacity: 0; transform: translateY(-8px); }
+  35%  { opacity: 1; }
+  70%  { opacity: 1; transform: translateY(5px); }
+  100% { opacity: 0; transform: translateY(10px); }
+}
+.tour-arrow-wrap { animation: tourArrowIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35)); }
+.tour-chev { animation: tourChevron 1.4s ease-in-out infinite; }
+.tour-chev:nth-child(2) { animation-delay: 0.3s; }
+@media (prefers-reduced-motion: reduce) { .tour-arrow-wrap, .tour-chev { animation: none; } }
+
+/* Pasul 231026d - pagina principala: ritm intermediar (nici prea lent, nici prea rapid). */
+.scroll-reveal section[data-reveal] > div > h2 {
+  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1), transform 1s cubic-bezier(0.22, 1, 0.36, 1), filter 1s cubic-bezier(0.22, 1, 0.36, 1), -webkit-mask-position 1.4s cubic-bezier(0.4, 0, 0.2, 1), mask-position 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.scroll-reveal section[data-reveal] > div > p {
+  transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, filter 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, -webkit-mask-position 1.6s cubic-bezier(0.4, 0, 0.2, 1) 0.15s, mask-position 1.6s cubic-bezier(0.4, 0, 0.2, 1) 0.15s;
+}
+.scroll-reveal section[data-reveal] > div > div { transition-delay: 0.35s; }
+.scroll-reveal section[data-reveal] > div > div svg {
+  transition: -webkit-mask-position 1.6s cubic-bezier(0.45, 0, 0.2, 1) 0.4s, mask-position 1.6s cubic-bezier(0.45, 0, 0.2, 1) 0.4s, filter 1.1s ease 0.4s, transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.4s;
+}
+.scroll-reveal section[data-reveal] > div > a { transition-delay: 0.7s; }
+.scroll-reveal section[data-speed="fast"] > div > *,
+.scroll-reveal section[data-speed="fast"] > div > div svg {
+  transition-duration: 0.5s !important;
+  transition-delay: 0s !important;
+}
+
+/* Pasul 231026d - meniul de limba: se formeaza din fum cald, moale, fara salturi; steagurile se asaza pe rand. */
+@keyframes smokePanel {
+  from { --smoke: -25%; opacity: 0; filter: blur(10px) saturate(0.4); transform: translateY(6px) scale(0.97); mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); -webkit-mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); }
+  60%  { opacity: 1; filter: blur(3px) saturate(0.8); }
+  to   { --smoke: 150%; opacity: 1; filter: none; transform: none; mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); -webkit-mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); }
+}
+@keyframes smokeItem {
+  from { opacity: 0; filter: blur(6px); transform: translateY(8px); }
+  to   { opacity: 1; filter: none; transform: none; }
+}
+.animate-dropdown-up,
+.animate-dropdown-down { overflow: visible; animation: smokePanel 820ms cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.animate-dropdown-up::after,
+.animate-dropdown-down::after { display: none; }
+.animate-dropdown-up > button,
+.animate-dropdown-down > button { animation: smokeItem 650ms cubic-bezier(0.22, 1, 0.36, 1) backwards; animation-delay: 260ms; }
+.animate-dropdown-up > button:nth-child(2),
+.animate-dropdown-down > button:nth-child(2) { animation-delay: 360ms; }
+.animate-dropdown-up > button:nth-child(3),
+.animate-dropdown-down > button:nth-child(3) { animation-delay: 460ms; }
+.animate-dropdown-up > button:nth-child(4),
+.animate-dropdown-down > button:nth-child(4) { animation-delay: 560ms; }
+
+/* Pasul 231026d - reels: ceata care acopera ecranul intre doua reel-uri (se vede doar cand derulezi). */
+@supports (animation-timeline: view()) {
+  .reel-slide::after {
+    content: '';
+    position: absolute;
+    inset: -12%;
+    z-index: 15;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 40% at 20% 30%, rgba(210, 210, 210, 0.55), transparent 70%),
+      radial-gradient(50% 45% at 80% 60%, rgba(170, 170, 170, 0.5), transparent 70%),
+      radial-gradient(70% 35% at 50% 85%, rgba(230, 230, 230, 0.45), transparent 70%),
+      radial-gradient(40% 30% at 65% 15%, rgba(190, 190, 190, 0.4), transparent 70%);
+    filter: blur(28px);
+    opacity: 0;
+    animation: reelFog linear both;
+    animation-timeline: --reel;
+    animation-range: cover 0% cover 100%;
+  }
+  @keyframes reelFog {
+    0%   { opacity: 0.95; transform: translateY(14vh) scale(1.25); }
+    42%  { opacity: 0.3; }
+    50%  { opacity: 0; transform: none; }
+    58%  { opacity: 0.3; }
+    100% { opacity: 0.95; transform: translateY(-14vh) scale(1.25); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-dropdown-up, .animate-dropdown-down, .animate-dropdown-up > button, .animate-dropdown-down > button { animation: none; }
+  .reel-slide::after { display: none; }
+}

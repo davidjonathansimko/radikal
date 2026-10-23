@@ -1487,7 +1487,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           {/* Mobile: 2 rows with visible text labels */}
           <div className="reading-controls mb-6 pb-4 border-b border-gray-300 dark:border-white/20">
             {/* Desktop: Single row with all controls - NO wrap */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2 mb-3">
               {featureFlags.fontControls && <FontSizeControls />}
               <div className="flex-1" />
               <PrintButton variant="icon" showLabel />
@@ -1498,7 +1498,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             </div>
             
             {/* Mobile layout: responsive rows */}
-            <div className="md:hidden flex flex-col gap-2">
+            <div className="md:hidden flex flex-col gap-2 mb-2">
               {/* Pasul 2102005: Row 1: FontSize + PDF + Focus — flex-wrap to prevent text cut-off */}
               <div className="flex items-center justify-between gap-1 w-full">
                 {featureFlags.fontControls ? <FontSizeControls /> : <span />}

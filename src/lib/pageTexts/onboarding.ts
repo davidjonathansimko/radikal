@@ -24,7 +24,7 @@ export const ONBOARDING_TEXTS: Record<'de' | 'en' | 'ro' | 'ru', OnboardingTexts
   de: {
     welcomeTitle: 'Willkommen bei RADIKAL.',
     welcomeText: 'Blogs, Zeugnisse und biblische Lehre.',
-    welcomeNote: 'Alle Texte hier sind Originale – nicht mit KI erstellt und nicht kopiert. Lehren vom Herrn Jesus Christus, die zuerst mir und meinem Haus zum Segen waren.',
+    welcomeNote: 'Ich hoffe, dass diese Lehren euch und euren Häusern zum Segen dienen.',
     navTitle: 'Navigation',
     navIntro: 'Unten die Einstellungsleiste:',
     navLang: 'Sprache',
@@ -43,7 +43,7 @@ export const ONBOARDING_TEXTS: Record<'de' | 'en' | 'ro' | 'ru', OnboardingTexts
   en: {
     welcomeTitle: 'Welcome to RADIKAL.',
     welcomeText: 'Blogs, testimonies and Biblical teaching.',
-    welcomeNote: 'All texts here are original – not made with AI and not copied. Teachings from the Lord Jesus Christ that first blessed me and my household.',
+    welcomeNote: 'I hope these teachings will be a blessing to you and your households.',
     navTitle: 'Navigation',
     navIntro: 'The settings bar below:',
     navLang: 'Language',
@@ -62,7 +62,7 @@ export const ONBOARDING_TEXTS: Record<'de' | 'en' | 'ro' | 'ru', OnboardingTexts
   ro: {
     welcomeTitle: 'Bine ai venit la RADIKAL.',
     welcomeText: 'Bloguri, mărturii și învățături biblice.',
-    welcomeNote: 'Toate textele de aici sunt originale – nu sunt create cu AI și nu sunt copiate. Învățături primite de la Domnul Isus Hristos, care mai întâi mie și casei mele ne-au fost de folos.',
+    welcomeNote: 'Sper că aceste învățături vor sluji drept binecuvântare vouă și caselor voastre.',
     navTitle: 'Navigare',
     navIntro: 'Jos, bara de setări:',
     navLang: 'Limbă',
@@ -81,7 +81,7 @@ export const ONBOARDING_TEXTS: Record<'de' | 'en' | 'ro' | 'ru', OnboardingTexts
   ru: {
     welcomeTitle: 'Добро пожаловать в RADIKAL.',
     welcomeText: 'Блоги, свидетельства и библейские учения.',
-    welcomeNote: 'Все тексты здесь оригинальны – не созданы с помощью ИИ и не скопированы. Учения от Господа Иисуса Христа, которые прежде всего были во благо мне и моему дому.',
+    welcomeNote: 'Надеюсь, эти учения послужат благословением вам и вашим домам.',
     navTitle: 'Навигация',
     navIntro: 'Внизу панель настроек:',
     navLang: 'Язык',

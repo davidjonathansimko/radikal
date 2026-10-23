@@ -41,7 +41,7 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindDef> = {
       ru: 'Ежедневное размышление',
     },
     intro: {
-      de: 'Every day is different.',
+      de: 'Jeder Tag ist anders.',
       en: 'Every day is different.',
       ro: 'Fiecare zi este altfel.',
       ru: 'Каждый день не похож на другой.',

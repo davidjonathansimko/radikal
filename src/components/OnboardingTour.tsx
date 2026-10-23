@@ -22,15 +22,40 @@ const STORAGE_KEY = 'radikalOnboardingDone';
 const STEPS = ['welcome', 'nav', 'listen'] as const;
 
 /** Momentele (ms) la care apare fiecare element din pasul „Navigation". */
-const NAV_SCHEDULE = [350, 1100, 1900, 2700, 3500, 4300, 5700, 7100];
+const NAV_SCHEDULE = [500, 1700, 3500, 5300, 7100, 8900, 11000, 13400];
+
+/** Elementul indicat de sageata, in fiecare faza. */
+const PHASE_TARGET: Record<number, string> = { 2: 'lang', 3: 'search', 4: 'theme', 5: 'reels', 6: 'menu', 7: 'logo' };
+
+/** Sageata animata (doua chevroane care aluneca), in jos sau in sus. */
+function TourArrow({ up }: { up: boolean }) {
+  return (
+    <div className="tour-arrow-wrap">
+      <svg
+        width="36"
+        height="46"
+        viewBox="0 0 36 46"
+        fill="none"
+        stroke="white"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ transform: up ? 'rotate(180deg)' : undefined }}
+      >
+        <path className="tour-chev" d="M6 6l12 12 12-12" />
+        <path className="tour-chev" d="M6 22l12 12 12-12" />
+      </svg>
+    </div>
+  );
+}
 
 function Seg({ show, className = '', children }: { show: boolean; className?: string; children: React.ReactNode }) {
   return <span className={`${show ? 'tour-text-in' : 'opacity-0'} ${className}`}>{children}</span>;
 }
 
 function GhostBar({ phase, t, lang }: { phase: number; t: OnboardingTexts; lang: string }) {
-  const item = (n: number, label: string, icon: React.ReactNode) => (
-    <div className={`flex flex-col items-center gap-0.5 px-3 py-1 text-white/85 ${phase >= n ? 'tour-ghost-in' : 'opacity-0'}`}>
+  const item = (n: number, key: string, label: string, icon: React.ReactNode) => (
+    <div data-tour-target={key} className={`flex flex-col items-center gap-0.5 px-3 py-1 text-white/85 ${phase >= n ? 'tour-ghost-in' : 'opacity-0'}`}>
       <span className="flex h-[22px] w-[22px] items-center justify-center">{icon}</span>
       <span className="text-[10px] font-semibold opacity-80">{label}</span>
     </div>
@@ -42,9 +67,10 @@ function GhostBar({ phase, t, lang }: { phase: number; t: OnboardingTexts; lang:
           phase >= 1 ? 'tour-ghost-in' : 'opacity-0'
         }`}
       >
-        {item(2, t.navLang, <LanguageFlag lang={lang} className="h-4 w-5 rounded-sm grayscale" />)}
+        {item(2, 'lang', t.navLang, <LanguageFlag lang={lang} className="h-4 w-5 rounded-sm grayscale" />)}
         {item(
           3,
+          'search',
           t.navSearch,
           <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -53,13 +79,14 @@ function GhostBar({ phase, t, lang }: { phase: number; t: OnboardingTexts; lang:
         )}
         {item(
           4,
+          'theme',
           t.navTheme,
           <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="12" cy="12" r="4.5" />
             <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" />
           </svg>,
         )}
-        {item(5, t.navReels, <ReelsIcon className="h-[22px] w-[22px]" />)}
+        {item(5, 'reels', t.navReels, <ReelsIcon className="h-[22px] w-[22px]" />)}
       </div>
     </div>
   );
@@ -68,7 +95,7 @@ function GhostBar({ phase, t, lang }: { phase: number; t: OnboardingTexts; lang:
 function GhostHeader({ phase, dark }: { phase: number; dark: boolean }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 flex items-center justify-between px-3 lg:hidden" aria-hidden="true">
-      <div className={phase >= 7 ? 'tour-logo-in' : 'opacity-0'}>
+      <div data-tour-target="logo" className={phase >= 7 ? 'tour-logo-in' : 'opacity-0'}>
         <Image
           src={dark ? '/radikal.logo.weiß.hintergrund.png' : '/radikal.logo.schwarz.hintergrund.png'}
           alt=""
@@ -78,7 +105,7 @@ function GhostHeader({ phase, dark }: { phase: number; dark: boolean }) {
           style={{ width: 'clamp(65px, 22vw, 95px)', height: 'auto' }}
         />
       </div>
-      <div className={`p-2 text-white ${phase >= 6 ? 'tour-burger-in' : 'opacity-0'}`}>
+      <div data-tour-target="menu" className={`p-2 text-white ${phase >= 6 ? 'tour-burger-in' : 'opacity-0'}`}>
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <path className="tour-burger-bar" d="M3 7h18" />
           <path className="tour-burger-bar" d="M3 12h18" />
@@ -97,6 +124,7 @@ export default function OnboardingTour() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState(0);
+  const [arrow, setArrow] = useState<{ x: number; y: number; up: boolean } | null>(null);
 
   useEffect(() => {
     try {
@@ -153,6 +181,23 @@ export default function OnboardingTour() {
     return () => timers.forEach(window.clearTimeout);
   }, [open, step]);
 
+  // Sageata arata spre elementul care tocmai a aparut (sub el pentru antet, deasupra lui pentru bara de jos).
+  useEffect(() => {
+    const key = open && STEPS[step] === 'nav' ? PHASE_TARGET[phase] : undefined;
+    if (!key) {
+      setArrow(null);
+      return;
+    }
+    const el = document.querySelector<HTMLElement>(`[data-tour-target="${key}"]`);
+    const r = el?.getBoundingClientRect();
+    if (!r || r.width === 0) {
+      setArrow(null);
+      return;
+    }
+    const up = key === 'menu' || key === 'logo';
+    setArrow({ x: r.left + r.width / 2, y: up ? r.bottom + 4 : r.top - 50, up });
+  }, [open, step, phase]);
+
   if (!open) return null;
 
   const kind = STEPS[step];
@@ -170,6 +215,11 @@ export default function OnboardingTour() {
         <>
           <GhostHeader phase={phase} dark={theme === 'dark'} />
           <GhostBar phase={phase} t={t} lang={language} />
+          {arrow && (
+            <div key={phase} className="pointer-events-none fixed" style={{ left: arrow.x, top: arrow.y, marginLeft: -18 }}>
+              <TourArrow up={arrow.up} />
+            </div>
+          )}
         </>
       )}
 
