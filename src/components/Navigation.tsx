@@ -13,6 +13,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useStickyHeader } from '@/hooks/useStickyHeader';
+import { useFeatureFlags } from '@/lib/featureFlags';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { fetchArchiveYears, type ArchiveYear } from '@/lib/archiveMonths';
@@ -62,6 +63,8 @@ export default function Navigation() {
   // Pasul 2202000: Blog reading progress pill in header (blog detail pages)
   const isBlogDetailPage = pathname.startsWith('/blogs/') && pathname !== '/blogs';
   const [blogReadProgress, setBlogReadProgress] = useState(0);
+  const [remainingMin, setRemainingMin] = useState(0);
+  const featureFlags = useFeatureFlags();
   const homeSections = useMemo(() => [
     { id: 'hero', title: { de: 'RADIKAL.', en: 'RADIKAL.', ro: 'RADIKAL.', ru: 'РАДИКАЛ.' } },
     { id: 'about', title: { de: 'Über', en: 'About', ro: 'Despre', ru: 'О нас' } },
@@ -478,12 +481,20 @@ export default function Navigation() {
 
   // Pasul 2202000: Track reading progress on blog detail pages for header pill
   useEffect(() => {
-    if (!isBlogDetailPage) { setBlogReadProgress(0); return; }
+    if (!isBlogDetailPage) { setBlogReadProgress(0); setRemainingMin(0); return; }
+    let words = 0;
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
       if (docHeight > 0) {
-        setBlogReadProgress(Math.min(Math.round((scrollTop / docHeight) * 100), 100));
+        const ratio = Math.min(scrollTop / docHeight, 1);
+        setBlogReadProgress(Math.min(Math.round(ratio * 100), 100));
+        // Timp ramas: cuvintele din text (~200 pe minut) inmultite cu ce a ramas de citit.
+        if (!words) {
+          const body = document.querySelector('.blog-body-text') as HTMLElement | null;
+          words = body ? body.innerText.split(/\s+/).filter(Boolean).length : 0;
+        }
+        setRemainingMin(words > 0 ? Math.ceil((words * (1 - ratio)) / 200) : 0);
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -700,6 +711,11 @@ export default function Navigation() {
             <span className="font-cinzel text-[10px] font-semibold text-black/60 dark:text-white/60 tracking-wider tabular-nums">
               {blogReadProgress}%
             </span>
+            {featureFlags.remainingTime && remainingMin > 0 && blogReadProgress < 100 && (
+              <span className="font-cinzel text-[10px] font-semibold text-black/50 dark:text-white/50 tracking-wider tabular-nums">
+                ~{remainingMin} {language === 'de' ? 'Min.' : language === 'ru' ? 'мин' : 'min'}
+              </span>
+            )}
             {/* Mini progress bar / Mini-Fortschrittsleiste / Bară de progres mini */}
             <div className="w-10 h-[3px] bg-black/10 dark:bg-white/10 rounded-full overflow-hidden flex-shrink-0">
               <div 

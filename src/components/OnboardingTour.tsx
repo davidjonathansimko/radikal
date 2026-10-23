@@ -7,20 +7,22 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHaptic } from '@/hooks/useHaptic';
+import TriangleLoader from '@/components/TriangleLoader';
+import { WriteLetterIcon, ToggleIcon } from '@/components/OnboardingIcons';
 
 const STORAGE_KEY = 'radikalOnboardingDone';
 
 type Lang = 'de' | 'en' | 'ro' | 'ru';
 
 interface Step {
-  icon: string;
+  icon: 'write' | 'toggle' | 'play';
   title: Record<Lang, string>;
   text: Record<Lang, string>;
 }
 
 const STEPS: Step[] = [
   {
-    icon: '✝',
+    icon: 'write',
     title: {
       de: 'Willkommen bei RADIKAL.',
       en: 'Welcome to RADIKAL.',
@@ -28,14 +30,14 @@ const STEPS: Step[] = [
       ru: 'Добро пожаловать в RADIKAL.',
     },
     text: {
-      de: 'Blogs, Zeugnisse, tägliche Andacht und Bibelverse – alles an einem Ort.',
-      en: 'Blogs, testimonies, a daily devotion and Bible verses – all in one place.',
-      ro: 'Bloguri, mărturii, Andacht zilnic și versete biblice – totul într-un singur loc.',
-      ru: 'Блоги, свидетельства, ежедневное размышление и стихи из Библии – всё в одном месте.',
+      de: 'Blogs, Zeugnisse und biblische Lehre.',
+      en: 'Blogs, testimonies and Biblical teaching.',
+      ro: 'Bloguri, mărturii și învățături biblice.',
+      ru: 'Блоги, свидетельства и библейские учения.',
     },
   },
   {
-    icon: '☰',
+    icon: 'toggle',
     title: {
       de: 'Navigation',
       en: 'Navigation',
@@ -43,40 +45,25 @@ const STEPS: Step[] = [
       ru: 'Навигация',
     },
     text: {
-      de: 'Unten findest du das Menü. Mit der Zurück-Taste deines Handys kommst du immer eine Seite zurück.',
-      en: 'The menu is at the bottom. Your phone’s back button always takes you one page back.',
-      ro: 'Meniul este jos. Butonul „înapoi” al telefonului te duce mereu o pagină în urmă.',
-      ru: 'Меню находится внизу. Кнопка «назад» на телефоне всегда возвращает на одну страницу.',
+      de: 'Unten die Einstellungsleiste: Sprache, Suche, Design und Reels. Oben rechts das Menü, oben links das Logo – es bringt dich überall zurück zur Startseite.',
+      en: 'The settings bar below: language, search, theme and reels. Menu at the top right; the logo at the top left always takes you home.',
+      ro: 'Jos găsești bara de setări: limbă, căutare, temă și reels. Sus în dreapta e meniul, iar logo-ul din stânga te duce oricând acasă.',
+      ru: 'Внизу панель настроек: язык, поиск, тема и рилсы. Справа вверху меню, а логотип слева всегда возвращает на главную.',
     },
   },
   {
-    icon: '🔍',
+    icon: 'play',
     title: {
-      de: 'Suche, Sprache, Design',
-      en: 'Search, language, theme',
-      ro: 'Căutare, limbă, temă',
-      ru: 'Поиск, язык, тема',
+      de: 'Anhören und lesen',
+      en: 'Listen and read',
+      ro: 'Ascultă și citește',
+      ru: 'Слушай и читай',
     },
     text: {
-      de: 'Suche in Blogs, Zeugnissen und Andacht, wechsle die Sprache und das helle oder dunkle Design.',
-      en: 'Search blogs, testimonies and devotions, switch the language and the light or dark theme.',
-      ro: 'Caută în bloguri, mărturii și Andacht, schimbă limba și tema luminoasă sau întunecată.',
-      ru: 'Ищи по блогам, свидетельствам и размышлениям, меняй язык и светлую или тёмную тему.',
-    },
-  },
-  {
-    icon: '▶',
-    title: {
-      de: 'Anhören und teilen',
-      en: 'Listen and share',
-      ro: 'Ascultă și împărtășește',
-      ru: 'Слушай и делись',
-    },
-    text: {
-      de: 'Jeder Artikel kann vorgelesen werden. Verse und Reels lassen sich als Bild teilen.',
-      en: 'Every article can be read aloud. Verses and reels can be shared as an image.',
-      ro: 'Fiecare articol poate fi ascultat. Versetele și reels-urile se pot trimite ca imagine.',
-      ru: 'Каждую статью можно прослушать. Стихи и рилсы можно отправить как картинку.',
+      de: 'Jeder Artikel kann vorgelesen oder im Fokus-Modus gelesen werden – für mehr Konzentration. Schriftgröße und Vorlesegeschwindigkeit lassen sich anpassen.',
+      en: 'Every article can be read aloud or read in focus mode for better concentration. Text size and reading speed can be adjusted.',
+      ro: 'Fiecare articol poate fi ascultat sau citit în modul Focus, pentru mai multă concentrare. Mărimea textului și viteza vocii se pot regla.',
+      ru: 'Каждую статью можно прослушать или читать в режиме фокуса — для лучшей концентрации. Размер шрифта и скорость чтения можно настроить.',
     },
   },
 ];
@@ -87,6 +74,12 @@ const LABELS: Record<Lang, { next: string; start: string; skip: string }> = {
   ro: { next: 'Înainte', start: 'Începe', skip: 'Sari peste' },
   ru: { next: 'Далее', start: 'Начать', skip: 'Пропустить' },
 };
+
+function StepIcon({ kind }: { kind: Step['icon'] }) {
+  if (kind === 'write') return <WriteLetterIcon className="h-10 w-10" />;
+  if (kind === 'toggle') return <ToggleIcon className="h-10 w-10" />;
+  return <TriangleLoader size={34} rotate={90} />;
+}
 
 export default function OnboardingTour() {
   const { language } = useLanguage();
@@ -150,13 +143,13 @@ export default function OnboardingTour() {
       aria-label={current.title[lang]}
     >
       <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white animate-fadeIn">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-black/5 text-2xl dark:bg-white/10" aria-hidden="true">
-          {current.icon}
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-black/5 text-black dark:bg-white/10 dark:text-white" aria-hidden="true">
+          <StepIcon key={step} kind={current.icon} />
         </div>
         <h2 key={`t${step}`} className="mb-2 font-cinzel text-xl font-bold animate-fadeIn">
           {current.title[lang]}
         </h2>
-        <p key={`p${step}`} className="mb-5 min-h-[5.5rem] text-sm leading-relaxed text-black/70 dark:text-white/70 animate-fadeIn">
+        <p key={`p${step}`} className="mb-5 min-h-[6.5rem] text-sm leading-relaxed text-black/70 dark:text-white/70 animate-fadeIn">
           {current.text[lang]}
         </p>
 

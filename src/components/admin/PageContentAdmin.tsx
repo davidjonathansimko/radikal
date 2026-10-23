@@ -32,6 +32,11 @@ const FEATURE_LIST: { key: FeatureKey; title: string; text: string }[] = [
   { key: 'shareSelection', title: 'Trimite textul selectat ca imagine', text: 'Când selectezi o frază din articol apare butonul „Als Bild teilen”.' },
   { key: 'fontControls', title: 'Mărimea textului (A−/A+)', text: 'Butoanele de mărire și micșorare a textului din articole.' },
   { key: 'scrollReveal', title: 'Pagina principală: secțiuni care curg la derulare', text: 'Titlul, textul și simbolul fiecărei secțiuni apar treptat când derulezi și se retrag când derulezi în sus. Oprit = pagina arată ca înainte.' },
+  { key: 'todayCard', title: 'Cardul „Azi” pe pagina principală', text: 'Versetul zilei, Andacht-ul zilei și „Weiterlesen”, într-un singur loc, sub primul ecran.' },
+  { key: 'listenPill', title: 'Butonul „PLAY” de pe carduri', text: 'Pe cardurile blogurilor dinamice, pastila PLAY pornește direct ascultarea.' },
+  { key: 'eveningMode', title: 'Lectură de seară', text: 'Buton în articol: culori calde și blânde, fără animații, pentru citit seara.' },
+  { key: 'remainingTime', title: 'Timp de citire rămas', text: 'În bara de sus a articolului apare cât mai e de citit (ex. „~3 min”).' },
+  { key: 'kidsParentMode', title: 'Pagina pentru copii, gândită pentru părinți', text: 'Text pentru părinți, butonul „Citește cu copilul” (text mare) și fără comentarii pe textele pentru copii.' },
 ];
 
 const LANG_NAMES: Record<PageLanguage, string> = {

@@ -13,6 +13,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import ContinueReading from '@/components/ContinueReading';
+import { useFeatureFlags } from '@/lib/featureFlags';
 import { ReadTick } from '@/components/ReadMark';
 import { CONTENT_KINDS, type ContentKind } from '@/lib/contentKinds';
 import { fetchItems, pickContentText, type ContentItemRow } from '@/lib/contentPublic';
@@ -22,6 +23,13 @@ import { usePageText } from '@/lib/pageContent';
 import { ANDACHT_TEXTS, COPII_TEXTS } from '@/lib/pageTexts/daily';
 
 const LOCALES: Record<string, string> = { de: 'de-DE', en: 'en-GB', ro: 'ro-RO', ru: 'ru-RU' };
+
+const PARENT_HINT: Record<string, string> = {
+  de: 'Für Eltern: Lest gemeinsam mit eurem Kind. Mit „Mit dem Kind lesen“ wird der Text groß und gut lesbar.',
+  en: 'For parents: read together with your child. “Read with your child” makes the text large and easy to read.',
+  ro: 'Pentru părinți: citiți împreună cu copilul. Cu „Citește cu copilul” textul devine mare și ușor de citit.',
+  ru: 'Для родителей: читайте вместе с ребёнком. Режим «Читать с ребёнком» делает текст крупным.',
+};
 
 /** Ziua calendaristica locala, ca „2026-10-22". */
 export function dayKey(value: string | Date | null | undefined): string {
@@ -44,6 +52,7 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
   const router = useRouter();
   const { language } = useLanguage();
   const lang = ['ro', 'de', 'en', 'ru'].includes(language) ? language : 'de';
+  const flags = useFeatureFlags();
   const t = usePageText(kind, kind === 'andacht' ? ANDACHT_TEXTS : COPII_TEXTS, language) as Record<string, string>;
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
@@ -123,6 +132,12 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
         </p>
 
         <ContinueReading className="mb-6" />
+
+        {kind === 'copii' && flags.kidsParentMode && (
+          <div className="mx-auto mb-6 max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-sm leading-relaxed text-black/75 dark:text-white/75">
+            {PARENT_HINT[lang] ?? PARENT_HINT.de}
+          </div>
+        )}
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

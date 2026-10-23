@@ -2167,23 +2167,47 @@ html.modal-open {
   mix-blend-mode: normal;
 }
 ::view-transition-old(root) { z-index: 1; }
-::view-transition-new(root) { z-index: 2147483646; }
+::view-transition-new(root) {
+  z-index: 2147483646;
+  /* Fum: mai multe pete moi care cresc din colturi si din mijloc pana acopera ecranul nou. */
+  mask-image:
+    radial-gradient(circle at 0% 0%, #000 var(--smoke), transparent calc(var(--smoke) + 30%)),
+    radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 - 4%), transparent calc(var(--smoke) * 0.9 + 26%)),
+    radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 - 8%), transparent calc(var(--smoke) * 0.8 + 24%)),
+    radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 - 2%), transparent calc(var(--smoke) * 0.95 + 28%)),
+    radial-gradient(circle at 50% 45%, #000 calc(var(--smoke) * 0.7 - 12%), transparent calc(var(--smoke) * 0.7 + 22%)),
+    radial-gradient(circle at 16% 58%, #000 calc(var(--smoke) * 0.6 - 10%), transparent calc(var(--smoke) * 0.6 + 20%)),
+    radial-gradient(circle at 84% 38%, #000 calc(var(--smoke) * 0.65 - 10%), transparent calc(var(--smoke) * 0.65 + 20%));
+  -webkit-mask-image:
+    radial-gradient(circle at 0% 0%, #000 var(--smoke), transparent calc(var(--smoke) + 30%)),
+    radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 - 4%), transparent calc(var(--smoke) * 0.9 + 26%)),
+    radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 - 8%), transparent calc(var(--smoke) * 0.8 + 24%)),
+    radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 - 2%), transparent calc(var(--smoke) * 0.95 + 28%)),
+    radial-gradient(circle at 50% 45%, #000 calc(var(--smoke) * 0.7 - 12%), transparent calc(var(--smoke) * 0.7 + 22%)),
+    radial-gradient(circle at 16% 58%, #000 calc(var(--smoke) * 0.6 - 10%), transparent calc(var(--smoke) * 0.6 + 20%)),
+    radial-gradient(circle at 84% 38%, #000 calc(var(--smoke) * 0.65 - 10%), transparent calc(var(--smoke) * 0.65 + 20%));
+}
+@property --smoke {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 150%;
+}
 
 /* Meniul de limba se formeaza din colturi, din monocrom in culori, cu despartire rosu/cian (glitch). */
 @keyframes glitchPanel {
-  0%   { opacity: 0; clip-path: inset(0 88% 88% 0); filter: grayscale(1) contrast(1.6) drop-shadow(-3px 0 #ff2a6d) drop-shadow(3px 0 #05d9e8); transform: translateX(-5px); }
-  14%  { opacity: 1; clip-path: inset(0 45% 72% 0);  filter: grayscale(1) contrast(1.4) drop-shadow(3px 0 #ff2a6d) drop-shadow(-3px 0 #05d9e8); transform: translateX(4px); }
-  28%  { clip-path: inset(62% 0 0 58%);              filter: grayscale(.9) drop-shadow(-2px 0 #ff2a6d) drop-shadow(2px 0 #05d9e8); transform: translateX(-3px); }
-  42%  { clip-path: inset(0 0 48% 30%);              filter: grayscale(.75) hue-rotate(60deg) drop-shadow(2px 0 #ff2a6d) drop-shadow(-2px 0 #05d9e8); transform: translateX(3px); }
-  58%  { clip-path: inset(38% 22% 0 0);              filter: grayscale(.5) hue-rotate(-40deg) drop-shadow(-2px 0 #ff2a6d) drop-shadow(2px 0 #05d9e8); transform: translateX(-2px); }
-  74%  { clip-path: inset(0 0 0 0);                  filter: grayscale(.25) drop-shadow(1px 0 #ff2a6d) drop-shadow(-1px 0 #05d9e8); transform: translateX(1px); }
+  0%   { opacity: 0; clip-path: inset(0 88% 88% 0); filter: grayscale(1) contrast(1.5) blur(5px) drop-shadow(-3px 0 rgba(255,255,255,0.55)) drop-shadow(3px 0 rgba(120,120,120,0.7)); transform: translateX(-5px); }
+  14%  { opacity: 1; clip-path: inset(0 45% 72% 0);  filter: grayscale(1) contrast(1.4) blur(4px) drop-shadow(3px 0 rgba(255,255,255,0.5)) drop-shadow(-3px 0 rgba(120,120,120,0.7)); transform: translateX(4px); }
+  28%  { clip-path: inset(62% 0 0 58%);              filter: grayscale(1) blur(3px) drop-shadow(-2px 0 rgba(255,255,255,0.45)) drop-shadow(2px 0 rgba(120,120,120,0.6)); transform: translateX(-3px); }
+  42%  { clip-path: inset(0 0 48% 30%);              filter: grayscale(1) blur(2.5px) drop-shadow(2px 0 rgba(255,255,255,0.4)) drop-shadow(-2px 0 rgba(120,120,120,0.6)); transform: translateX(3px); }
+  58%  { clip-path: inset(38% 22% 0 0);              filter: grayscale(0.7) blur(1.5px) drop-shadow(-2px 0 rgba(255,255,255,0.3)) drop-shadow(2px 0 rgba(120,120,120,0.5)); transform: translateX(-2px); }
+  74%  { clip-path: inset(0 0 0 0);                  filter: grayscale(0.3) blur(0.6px) drop-shadow(1px 0 rgba(255,255,255,0.25)); transform: translateX(1px); }
   100% { clip-path: inset(0 0 0 0);                  filter: none; transform: none; opacity: 1; }
 }
 @keyframes glitchItem {
-  0%   { opacity: 0; text-shadow: -2px 0 #ff2a6d, 2px 0 #05d9e8; transform: translateX(-8px) skewX(-10deg); }
-  35%  { opacity: 1; text-shadow: 2px 0 #ff2a6d, -2px 0 #05d9e8; transform: translateX(5px) skewX(6deg); }
-  65%  { opacity: .7; text-shadow: -1px 0 #ff2a6d, 1px 0 #05d9e8; transform: translateX(-3px); }
-  100% { opacity: 1; text-shadow: none; transform: none; }
+  0%   { opacity: 0; filter: blur(3px); text-shadow: -2px 0 rgba(255,255,255,0.7), 2px 0 rgba(120,120,120,0.8); transform: translateX(-8px) skewX(-10deg); }
+  35%  { opacity: 1; filter: blur(1.5px); text-shadow: 2px 0 rgba(255,255,255,0.6), -2px 0 rgba(120,120,120,0.7); transform: translateX(5px) skewX(6deg); }
+  65%  { opacity: .7; filter: blur(0.5px); text-shadow: -1px 0 rgba(255,255,255,0.4), 1px 0 rgba(120,120,120,0.5); transform: translateX(-3px); }
+  100% { opacity: 1; filter: none; text-shadow: none; transform: none; }
 }
 .animate-dropdown-up   { transform-origin: bottom center; animation: glitchPanel 560ms steps(14, end) backwards; }
 .animate-dropdown-down { transform-origin: top right;     animation: glitchPanel 560ms steps(14, end) backwards; }
@@ -2255,3 +2279,100 @@ html.modal-open {
 @media (prefers-reduced-motion: reduce) {
   .scroll-reveal section[data-reveal] > div > * { transition: none !important; }
 }
+
+/* Pasul 231026b - pictograme de prezentare (creion care scrie, comutator). */
+.wl-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.wl-line-1 { animation: wlLine1 6s linear infinite; }
+.wl-line-2 { animation: wlLine2 6s linear infinite; }
+.wl-line-3 { animation: wlLine3 6s linear infinite; }
+.wl-line-4 { animation: wlLine4 6s linear infinite; }
+@keyframes wlLine1 { 0% { stroke-dashoffset: 1; opacity: 1; } 12%, 96% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes wlLine2 { 0%, 18% { stroke-dashoffset: 1; opacity: 1; } 30%, 96% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes wlLine3 { 0%, 36% { stroke-dashoffset: 1; opacity: 1; } 48%, 96% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes wlLine4 { 0%, 54% { stroke-dashoffset: 1; opacity: 1; } 66%, 96% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.wl-pencil { animation: wlPencil 6s cubic-bezier(0.4, 0, 0.2, 1) infinite; transform: translate(1717px, 1802px); }
+@keyframes wlPencil {
+  0%   { transform: translate(1062px, 976px) rotate(9deg); opacity: 1; }
+  12%  { transform: translate(1843px, 976px) rotate(6deg); }
+  18%  { transform: translate(1062px, 1253px) rotate(6deg); }
+  30%  { transform: translate(1654px, 1253px) rotate(-3deg); }
+  36%  { transform: translate(1062px, 1526px) rotate(-3deg); }
+  48%  { transform: translate(1383px, 1526px) rotate(-6.8deg); }
+  54%  { transform: translate(1062px, 1802px) rotate(-6.8deg); }
+  66%  { transform: translate(1301px, 1802px) rotate(6deg); }
+  78%, 96% { transform: translate(1717px, 1802px) rotate(0deg); opacity: 1; }
+  100% { transform: translate(1717px, 1802px) rotate(0deg); opacity: 0; }
+}
+.tg-track { fill: currentColor; fill-opacity: 0; animation: tgTrack 2.8s ease-in-out infinite; }
+.tg-knob { transform: translateX(75.3px); animation: tgKnob 2.8s cubic-bezier(0.45, 0, 0.2, 1) infinite; }
+@keyframes tgKnob {
+  0%, 12% { transform: translateX(75.3px); }
+  30%, 62% { transform: translateX(115.3px); }
+  80%, 100% { transform: translateX(75.3px); }
+}
+@keyframes tgTrack {
+  0%, 12% { fill-opacity: 0; }
+  30%, 62% { fill-opacity: 0.22; }
+  80%, 100% { fill-opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-line, .wl-pencil, .tg-track, .tg-knob { animation: none !important; }
+  .wl-line { stroke-dashoffset: 0; }
+  .tg-knob { transform: translateX(115.3px); }
+}
+
+/* Pasul 231026b - lectura de seara, citit cu copilul. */
+html.evening-mode body { background-color: #15110c !important; }
+html.evening-mode #blog-background-overlay,
+html.evening-mode #blog-background-image { opacity: 0.35 !important; }
+html.evening-mode .blog-content-backdrop { background-color: rgba(21, 17, 12, 0.8) !important; }
+html.evening-mode .blog-body-text,
+html.evening-mode .blog-body-text * { color: #e4d6bb !important; }
+html.evening-mode img { filter: sepia(0.35) brightness(0.88); }
+html.evening-mode *,
+html.evening-mode *::before,
+html.evening-mode *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+html.kids-read .blog-body-text { font-size: 150% !important; line-height: 2 !important; }
+html.kids-read .blog-body-text p { margin-bottom: 1.6em; }
+
+/* Pasul 231026b - pagina principala, curgere mai fina: titlul si textul „curg" ca cerneala, simbolul creste usor. */
+.scroll-reveal section[data-reveal] > div > h2,
+.scroll-reveal section[data-reveal] > div > p {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  will-change: opacity, transform, filter;
+}
+.scroll-reveal section[data-reveal] > div > h2 {
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 42%, transparent 58%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 42%, transparent 58%);
+  -webkit-mask-size: 280% 100%;
+  mask-size: 280% 100%;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  transition: opacity 1.3s cubic-bezier(0.22, 1, 0.36, 1), transform 1.3s cubic-bezier(0.22, 1, 0.36, 1), filter 1.3s cubic-bezier(0.22, 1, 0.36, 1), -webkit-mask-position 1.7s cubic-bezier(0.4, 0, 0.2, 1), mask-position 1.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.scroll-reveal section[data-reveal="hidden"] > div > h2 {
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+  transform: translateY(26px) scale(0.97);
+}
+.scroll-reveal section[data-reveal] > div > p {
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 56%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 56%);
+  -webkit-mask-size: 100% 320%;
+  mask-size: 100% 320%;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  transition: opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s, transform 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s, filter 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s, -webkit-mask-position 2s cubic-bezier(0.4, 0, 0.2, 1) 0.25s, mask-position 2s cubic-bezier(0.4, 0, 0.2, 1) 0.25s;
+}
+.scroll-reveal section[data-reveal="hidden"] > div > p {
+  -webkit-mask-position: 0 100%;
+  mask-position: 0 100%;
+}
+.scroll-reveal section[data-reveal] > div > div { transition-delay: 0.55s; }
+.scroll-reveal section[data-reveal] > div > div svg {
+  transform-origin: 50% 50%;
+  transition: -webkit-mask-position 2.1s cubic-bezier(0.45, 0, 0.2, 1) 0.6s, mask-position 2.1s cubic-bezier(0.45, 0, 0.2, 1) 0.6s, filter 1.5s ease 0.6s, transform 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.6s;
+}
+.scroll-reveal section[data-reveal="hidden"] > div > div svg { transform: scale(0.9); }
+.scroll-reveal section[data-reveal] > div > a { transition-delay: 1.05s; }

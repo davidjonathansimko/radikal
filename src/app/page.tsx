@@ -19,6 +19,7 @@ import { fetchEnabledPages } from '@/lib/pageSettings';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import TriangleLoader from '@/components/TriangleLoader';
 import OnboardingTour from '@/components/OnboardingTour';
+import TodayCard from '@/components/TodayCard';
 import { useFeatureFlags } from '@/lib/featureFlags';
 
 // Dynamic import for WelcomeModal (includes GSAP, loaded only when needed)
@@ -520,6 +521,7 @@ export default function HomePage() {
       {/* ========================================================================== */}
       {/* SECTION 2 - DESPRE / ABOUT / ÜBER */}
       {/* ========================================================================== */}
+      {featureFlags.todayCard && <TodayCard enabledPages={enabledPages} />}
       <section id="about" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 lg:py-20 bg-black/5 dark:bg-white/5">
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Section Title */}

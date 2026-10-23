@@ -9,6 +9,7 @@
 
 import TriangleLoader from '@/components/TriangleLoader';
 import ShareSelection from '@/components/ShareSelection';
+import { EveningModeToggle, KidsReadToggle } from '@/components/ArticleExtras';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useArticleSwipe } from '@/hooks/useArticleSwipe';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -1426,7 +1427,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
 
             {/* Pasul 2202000: Social proof — view count display */}
             {typeof post.views === 'number' && post.views > 0 && (
-              <span className="flex items-center gap-1 whitespace-nowrap text-gray-500 dark:text-white/50">
+              <span className="no-print flex items-center gap-1 whitespace-nowrap text-gray-500 dark:text-white/50">
                 <span className="mx-0.5">·</span>
                 <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -1504,6 +1505,14 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                 </div>
               </div>
             </div>
+
+            {/* Pasul 231026b: lectura de seara + citit cu copilul */}
+            {(featureFlags.eveningMode || (featureFlags.kidsParentMode && source.contentType === 'copii')) && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {featureFlags.eveningMode && <EveningModeToggle />}
+                {featureFlags.kidsParentMode && source.contentType === 'copii' && <KidsReadToggle />}
+              </div>
+            )}
 
             {/* Pasul 2102003: TTS — SINGLE shared instance for both mobile and desktop (prevents double playback) */}
             <div className="w-full mt-2 md:mt-0">
@@ -1687,7 +1696,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
 
         {/* Pasul C2: Vizitatorii NU au acces la comentarii */}
         {/* Guests have NO access to comments / Gäste haben KEINEN Zugriff auf Kommentare */}
-        {isGuest && (
+        {isGuest && !(featureFlags.kidsParentMode && source.contentType === 'copii') && (
           <section className="comments-section animate-fadeIn" style={{ animationDelay: '1s' }}>
             <div className="glass-effect rounded-xl p-6 text-center">
               <p className="text-white/80">
@@ -1704,7 +1713,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         <section
           id="comments"
           className="comments-section animate-fadeIn"
-          style={{ animationDelay: '1s', display: isGuest ? 'none' : undefined }}
+          style={{ animationDelay: '1s', display: isGuest || (featureFlags.kidsParentMode && source.contentType === 'copii') ? 'none' : undefined }}
         >
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
             <TfiComment />

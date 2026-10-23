@@ -12,6 +12,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { de, enUS, ro, ru } from 'date-fns/locale';
 import { BlogPost } from '@/types';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useRouter } from 'next/navigation';
+import { useFeatureFlags } from '@/lib/featureFlags';
 import { useTranslation } from '@/hooks/useTranslation';
 import { createClient } from '@/lib/supabase';
 import { FaRegHeart } from 'react-icons/fa';
@@ -57,6 +59,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const categoryKey = categoryIds.join(',');
   // Get language context / Sprachkontext abrufen / Obține contextul limbii
   const { language } = useLanguage();
+  const router = useRouter();
+  const featureFlags = useFeatureFlags();
   
   // DeepL Translation hook / DeepL Übersetzungs-Hook / Hook traducere DeepL
   const { translateBatch, isTranslating } = useTranslation();
@@ -463,14 +467,30 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" aria-hidden="true" />
 
-                {post.is_dynamic && (
+                {post.is_dynamic && (featureFlags.listenPill ? (
+                  <button
+                    type="button"
+                    aria-label="Play"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      router.push(`/blogs/${post.slug}?play=1`);
+                    }}
+                    className="absolute right-3 top-3 inline-flex min-h-0 min-w-0 items-center gap-1 rounded-full border border-white/30 bg-black/60 px-2.5 py-[3px] text-[10px] font-medium tracking-wide text-white backdrop-blur-sm transition-transform active:scale-95"
+                  >
+                    <svg width="9" height="9" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                      <path d="M3 1.5v11l9-5.5-9-5.5z" />
+                    </svg>
+                    PLAY
+                  </button>
+                ) : (
                   <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/60 px-2 py-[2px] text-[10px] font-medium tracking-wide text-white backdrop-blur-sm">
                     <svg width="9" height="9" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
                       <path d="M3 1.5v11l9-5.5-9-5.5z" />
                     </svg>
                     PLAY
                   </span>
-                )}
+                ))}
 
                 <div className="relative p-4">
                   <h2 className="mb-1.5 text-xl font-bold leading-tight text-white drop-shadow-md" style={{ color: '#ffffff' }}>

@@ -1,8 +1,8 @@
-// Efect „glitch" pentru schimbarea temei: felii din ecranul nou apar pe rand, culorile se
-// despart in rosu/cian, iar cuvintele si butoanele de pe ecran tremura si se imprastie o clipa.
+// Schimbarea temei: ecranul nou se formeaza din fum (pete moi din colturi si din mijloc), in alb-negru
+// care capata incet culoare, iar cuvintele si butoanele tremura si se imprastie o clipa.
 
-const RED = '#ff2a6d';
-const CYAN = '#05d9e8';
+const LIGHT = 'rgba(255,255,255,0.75)';
+const GRAY = 'rgba(120,120,120,0.85)';
 
 function rand(min: number, max: number): number {
   return min + Math.random() * (max - min);
@@ -13,59 +13,70 @@ function inViewport(el: HTMLElement): boolean {
   return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
 }
 
-/** Cuvintele si butoanele vizibile tremura cu despartire de culori. Nu atinge `transform`, deci nu strica alte animatii. */
-export function scatterGlitch(duration = 750): void {
+/** Cuvintele si butoanele vizibile tremura. Nu atinge `transform`, deci nu strica alte animatii. */
+export function scatterGlitch(duration = 1000): void {
   const nodes = Array.from(
     document.querySelectorAll<HTMLElement>('h1, h2, h3, button, a, p, label, [role="button"]'),
   )
     .filter(inViewport)
-    .slice(0, 90);
+    .slice(0, 100);
 
   nodes.forEach((el) => {
-    const dx = rand(6, 26) * (Math.random() < 0.5 ? -1 : 1);
-    const dy = rand(0, 6) * (Math.random() < 0.5 ? -1 : 1);
+    const isText = /^(H1|H2|H3|P|LABEL)$/.test(el.tagName);
+    const dx = rand(8, 34) * (Math.random() < 0.5 ? -1 : 1);
+    const dy = rand(0, 10) * (Math.random() < 0.5 ? -1 : 1);
     const s = rand(2, 5);
+    const frames: Keyframe[] = [
+      { translate: '0 0', textShadow: 'none', opacity: 1, offset: 0 },
+      { translate: `${dx}px ${dy}px`, textShadow: `${s}px 0 ${LIGHT}, -${s}px 0 ${GRAY}`, opacity: 0.35, offset: 0.14 },
+      { translate: `${-dx * 0.6}px ${-dy}px`, textShadow: `-${s}px 0 ${LIGHT}, ${s}px 0 ${GRAY}`, opacity: 1, offset: 0.3 },
+      { translate: `${dx * 0.35}px ${dy * 0.5}px`, textShadow: `${s / 2}px 0 ${LIGHT}, -${s / 2}px 0 ${GRAY}`, opacity: 0.6, offset: 0.52 },
+      { translate: `${-dx * 0.15}px 0`, textShadow: `${s / 3}px 0 ${GRAY}`, opacity: 1, offset: 0.76 },
+      { translate: '0 0', textShadow: 'none', opacity: 1, offset: 1 },
+    ];
+    if (isText) {
+      // Textul se „risipeste" ca fumul: se incetoseaza si urca putin.
+      frames[1].filter = 'blur(4px)';
+      frames[2].filter = 'blur(1px)';
+      frames[3].filter = 'blur(2.5px)';
+      frames[5].filter = 'blur(0px)';
+    }
     try {
-      el.animate(
-        [
-          { translate: '0 0', textShadow: 'none', offset: 0 },
-          { translate: `${dx}px ${dy}px`, textShadow: `${s}px 0 ${RED}, -${s}px 0 ${CYAN}`, offset: 0.18 },
-          { translate: `${-dx * 0.6}px 0`, textShadow: `-${s}px 0 ${RED}, ${s}px 0 ${CYAN}`, offset: 0.38 },
-          { translate: `${dx * 0.3}px ${-dy}px`, textShadow: `${s / 2}px 0 ${RED}, -${s / 2}px 0 ${CYAN}`, offset: 0.62 },
-          { translate: '0 0', textShadow: 'none', offset: 1 },
-        ],
-        { duration: duration * rand(0.7, 1), delay: rand(0, 160), easing: 'steps(7, end)' },
-      );
+      el.animate(frames, { duration: duration * rand(0.75, 1), delay: rand(0, 220), easing: 'steps(9, end)' });
     } catch {
       /* browserele vechi fara `translate` animabil: sarim peste */
     }
   });
 }
 
-/** Felii din ecranul NOU se dezvaluie pe rand, cu culori care trec din saturate in normale. */
-export function glitchViewTransition(duration = 900): void {
-  const common = { duration, easing: 'linear', fill: 'both' as const };
+/** Ecranul NOU creste din fum; la inceput e alb-negru si tremura, apoi capata culoare. */
+export function glitchViewTransition(duration = 1300): void {
   try {
-    document.documentElement.animate(
-      [
-        { clipPath: 'inset(0 0 100% 0)', filter: 'hue-rotate(90deg) saturate(3)', transform: 'translateX(-10px)', offset: 0 },
-        { clipPath: 'inset(8% 0 78% 0)', filter: 'hue-rotate(-70deg) saturate(2.6)', transform: 'translateX(12px)', offset: 0.14 },
-        { clipPath: 'inset(52% 0 22% 0)', filter: 'hue-rotate(140deg) saturate(2.2)', transform: 'translateX(-8px)', offset: 0.28 },
-        { clipPath: 'inset(0 0 48% 0)', filter: 'hue-rotate(-40deg) saturate(2)', transform: 'translateX(6px)', offset: 0.44 },
-        { clipPath: 'inset(30% 0 0 0)', filter: 'hue-rotate(60deg) saturate(1.6)', transform: 'translateX(-4px)', offset: 0.6 },
-        { clipPath: 'inset(0 0 0 0)', filter: 'hue-rotate(-20deg) saturate(1.3)', transform: 'translateX(3px)', offset: 0.78 },
-        { clipPath: 'inset(0 0 0 0)', filter: 'none', transform: 'none', offset: 1 },
-      ],
-      { ...common, pseudoElement: '::view-transition-new(root)' },
+    const root = document.documentElement;
+    root.animate(
+      [{ ['--smoke' as string]: '-40%' }, { ['--smoke' as string]: '150%' }],
+      { duration, easing: 'cubic-bezier(0.5, 0, 0.2, 1)', fill: 'both', pseudoElement: '::view-transition-new(root)' },
     );
-    document.documentElement.animate(
+    root.animate(
       [
-        { filter: 'none', opacity: 1, offset: 0 },
-        { filter: 'hue-rotate(-90deg) saturate(3)', opacity: 1, offset: 0.3 },
-        { filter: 'hue-rotate(120deg) saturate(2)', opacity: 0.8, offset: 0.7 },
-        { filter: 'none', opacity: 0, offset: 1 },
+        { filter: 'grayscale(1) contrast(1.35) brightness(1.1)', transform: 'translateX(0)', offset: 0 },
+        { filter: 'grayscale(1) contrast(1.2)', transform: 'translateX(-9px)', offset: 0.12 },
+        { filter: 'grayscale(1) invert(0.08)', transform: 'translateX(8px)', offset: 0.24 },
+        { filter: 'grayscale(0.85)', transform: 'translateX(-5px)', offset: 0.38 },
+        { filter: 'grayscale(0.6) contrast(1.1)', transform: 'translateX(4px)', offset: 0.52 },
+        { filter: 'grayscale(0.3)', transform: 'translateX(-2px)', offset: 0.7 },
+        { filter: 'none', transform: 'none', offset: 1 },
       ],
-      { ...common, pseudoElement: '::view-transition-old(root)' },
+      { duration, easing: 'steps(12, end)', fill: 'both', pseudoElement: '::view-transition-new(root)' },
+    );
+    root.animate(
+      [
+        { filter: 'grayscale(0) blur(0px)', opacity: 1, offset: 0 },
+        { filter: 'grayscale(1) blur(3px)', opacity: 0.9, offset: 0.35 },
+        { filter: 'grayscale(1) blur(8px)', opacity: 0.5, offset: 0.75 },
+        { filter: 'grayscale(1) blur(12px)', opacity: 0, offset: 1 },
+      ],
+      { duration, easing: 'ease-in-out', fill: 'both', pseudoElement: '::view-transition-old(root)' },
     );
   } catch {
     /* fara suport pentru pseudoElement: schimbarea ramane simpla */
