@@ -3,9 +3,10 @@
 // Pasul 2708020 — scrii versetul zilei.
 // Un verset pe zi. Îl poți schimba oricând, iar cele vechi rămân în listă.
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import ImageUpload from '@/components/ImageUpload';
+import { cleanupReplaced, cleanupDeleted, storageFolder } from '@/lib/storageCleanup';
 import ImageEffectsEditor from '@/components/admin/ImageEffectsEditor';
 import { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 
@@ -130,13 +131,22 @@ export default function DailyVerseAdmin() {
     setTimeout(() => setNote(null), 6000);
   }, []);
 
+  // Poza salvata pentru ziua aleasa: daca o schimbi, cea veche se sterge din Storage.
+  const originalImage = useRef<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       // Se pastreaza doar ultimele 30 de zile: ce e mai vechi se sterge din baza de date.
-      const old = await createClient().from('daily_verses').delete().lt('for_day', isoDaysAgo(KEEP_DAYS)).select('id');
+      const old = await createClient()
+        .from('daily_verses')
+        .delete()
+        .lt('for_day', isoDaysAgo(KEEP_DAYS))
+        .select('id, background_image_url, audio_url');
       if (!old.error && old.data && old.data.length > 0) {
         say('ok', `${old.data.length} versete mai vechi de ${KEEP_DAYS} de zile au fost șterse.`);
+        const files = (old.data as unknown as { background_image_url: string | null; audio_url: string | null }[]).flatMap((r) => [r.background_image_url, r.audio_url]);
+        void cleanupDeleted(files);
       }
 
       const { data, error } = await createClient()
@@ -196,6 +206,7 @@ export default function DailyVerseAdmin() {
       .maybeSingle();
 
     if (!data) {
+      originalImage.current = null;
       setContents(emptyLangs());
       setReferences(emptyLangs());
       setImageUrl('');
@@ -219,6 +230,7 @@ export default function DailyVerseAdmin() {
     setContents(c);
     setReferences(ref);
     setImageUrl((r.background_image_url as string) || '');
+    originalImage.current = (r.background_image_url as string) || null;
     setOpacity((r.background_opacity as number) ?? 15);
     setBrightness((r.image_brightness as number) ?? 100);
     setContrast((r.image_contrast as number) ?? 100);
@@ -323,6 +335,8 @@ export default function DailyVerseAdmin() {
           return;
         }
         say('ok', 'Versetul zilei a fost salvat.');
+        void cleanupReplaced(originalImage.current, imageUrl.trim() || null);
+        originalImage.current = imageUrl.trim() || null;
         await load();
       } finally {
         setSaving(false);
@@ -334,11 +348,15 @@ export default function DailyVerseAdmin() {
   const remove = useCallback(
     async (v: VerseRow) => {
       if (!window.confirm(`Ștergi versetul din ${v.for_day}?`)) return;
-      const { error } = await createClient().from('daily_verses').delete().eq('id', v.id);
+      const sb = createClient();
+      const { data: doomed } = await sb.from('daily_verses').select('background_image_url, audio_url').eq('id', v.id).maybeSingle();
+      const { error } = await sb.from('daily_verses').delete().eq('id', v.id);
       if (error) {
         say('err', `Nu am putut șterge: ${error.message}`);
         return;
       }
+      const d = doomed as { background_image_url?: string | null; audio_url?: string | null } | null;
+      void cleanupDeleted([d?.background_image_url, d?.audio_url]);
       say('ok', 'Verset șters.');
       await load();
     },
@@ -434,7 +452,7 @@ export default function DailyVerseAdmin() {
 
         <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
           <p className={labelClass}>Imaginea din fundal (opțional)</p>
-          <ImageUpload currentImageUrl={imageUrl} onImageUploaded={setImageUrl} />
+          <ImageUpload currentImageUrl={imageUrl} onImageUploaded={setImageUrl} folder={storageFolder('verset', forDay)} />
 
           {imageUrl && (
             <>

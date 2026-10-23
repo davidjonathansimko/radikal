@@ -14,6 +14,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 import ImageUpload from '@/components/ImageUpload';
+import { cleanupReplaced, cleanupDeleted, storageFolder } from '@/lib/storageCleanup';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
 const LANGS: { id: Lang; label: string }[] = [
@@ -135,13 +136,17 @@ export default function NewsAdmin() {
     setSaving(false);
     if (error) { setMessage(`Eroare: ${error.message}`); return; }
     setMessage(editingId ? 'Salvat.' : 'Adăugat.');
+    const before = editingId ? items.find((i) => i.id === editingId)?.image_url : null;
+    void cleanupReplaced(before, form.image_url);
     reset();
     void load();
   };
 
   const remove = async (id: string) => {
     if (!confirm('Ștergi definitiv această știre?')) return;
-    await getSupabaseClient().from('news_items').delete().eq('id', id);
+    const doomed = items.find((i) => i.id === id)?.image_url;
+    const { error } = await getSupabaseClient().from('news_items').delete().eq('id', id);
+    if (!error) void cleanupDeleted([doomed]);
     void load();
   };
 
@@ -284,6 +289,7 @@ export default function NewsAdmin() {
         <div className="mb-4">
           <ImageUpload
             currentImageUrl={form.image_url ?? ''}
+            folder={storageFolder('news', form.title_ro || form.title_de || form.title_en)}
             onImageUploaded={(url: string) => setForm((f) => ({ ...f, image_url: url || null }))}
           />
         </div>

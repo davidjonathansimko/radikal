@@ -13,6 +13,7 @@ import { isAdminUser } from '@/lib/isAdmin';
 import { BlogPost } from '@/types';
 import { autoTranslateBlogPost } from '@/utils/translation';
 import ImageUpload from '@/components/ImageUpload';
+import { cleanupReplaced, cleanupDeleted, storageFolder } from '@/lib/storageCleanup';
 import ReelsAdmin from '@/components/admin/ReelsAdmin';
 import StoryContentAdmin from '@/components/admin/StoryContentAdmin';
 import MaintenanceAdmin from '@/components/admin/MaintenanceAdmin';
@@ -504,6 +505,8 @@ export default function AdminPage() {
       }
 
       // Reset form and reload posts / Formular zurücksetzen und Posts neu laden
+      // Poza veche, inlocuita acum, se sterge din Storage (daca nu o mai foloseste nimeni).
+      void cleanupReplaced(editingPost.image_url, formData.image_url);
       resetForm();
       setEditingPost(null);
       await loadPosts();
@@ -523,6 +526,10 @@ export default function AdminPage() {
     }
 
     try {
+      // Fisierele postului (poza + inregistrarile proprii) se sterg impreuna cu el.
+      const { data: doomed } = await supabase.from('blog_posts').select('image_url').eq('id', postId).maybeSingle();
+      const { data: voices } = await supabase.from('blog_custom_audio').select('audio_url').eq('blog_id', postId);
+
       const { error } = await supabase
         .from('blog_posts')
         .delete()
@@ -534,6 +541,10 @@ export default function AdminPage() {
         return;
       }
 
+      void cleanupDeleted([
+        (doomed as { image_url?: string | null } | null)?.image_url,
+        ...((voices as { audio_url: string }[] | null) ?? []).map((v) => v.audio_url),
+      ]);
       loadPosts();
       alert('Post erfolgreich gelöscht!');
     } catch (error) {
@@ -915,6 +926,7 @@ export default function AdminPage() {
                 <ImageUpload
                   onImageUploaded={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
                   currentImageUrl={formData.image_url}
+                  folder={storageFolder('blog', formData.title || editingPost?.slug)}
                 />
               </div>
 
@@ -1400,6 +1412,7 @@ export default function AdminPage() {
                   <div className="mt-4 [&_*]:text-white">
                     <CustomAudioManager
                       blogId={editingPost.id}
+                      folder={storageFolder('blog', editingPost.title)}
                       onLangsChange={setCustomAudioLangs}
                     />
                     <p className="mt-2 text-[11px] leading-relaxed text-white/45">

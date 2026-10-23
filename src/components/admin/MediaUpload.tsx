@@ -12,6 +12,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { shrinkImage } from '@/lib/shrinkImage';
+import { removeIfUnused } from '@/lib/storageCleanup';
 
 const BUCKET = 'reels-media';
 
@@ -24,6 +25,8 @@ interface MediaUploadProps {
   onChange: (url: string) => void;
   /** limita in MB */
   maxSizeMb?: number;
+  /** Folder in Storage, ex. `reels/zilele-sfarsitului` (vezi `storageFolder`). */
+  folder?: string;
 }
 
 export default function MediaUpload({
@@ -32,8 +35,16 @@ export default function MediaUpload({
   value,
   onChange,
   maxSizeMb = kind === 'audio' ? 50 : 25,
+  folder,
 }: MediaUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  // Fisierele urcate in aceasta sesiune: daca sunt inlocuite si nu au fost salvate, se sterg.
+  const sessionUploads = useRef<string[]>([]);
+  const dropUnsaved = () => {
+    const list = sessionUploads.current;
+    sessionUploads.current = [];
+    list.forEach((u) => void removeIfUnused(u));
+  };
   const [uploading, setUploading] = useState(false);
   const [progressText, setProgressText] = useState('');
   const [error, setError] = useState('');
@@ -87,7 +98,7 @@ export default function MediaUpload({
         .replace(/^-|-$/g, '')
         .toLowerCase()
         .slice(0, 40) || 'fisier';
-      const path = `${kind}/${Date.now()}-${safeName}.${ext}`;
+      const path = `${folder || kind}/${kind}-${Date.now()}-${safeName}.${ext}`;
 
       // Pasul 2208001 — BUG „melodia arata 00:00 si Play nu face nimic":
       // fara `contentType`, Supabase Storage servea fisierul ca
@@ -166,6 +177,8 @@ export default function MediaUpload({
         );
       }
 
+      dropUnsaved();
+      sessionUploads.current.push(publicUrl);
       onChange(publicUrl);
       setProgressText(reachable ? 'Încărcat ✓' : 'Încărcat (vezi avertismentul)');
       setTimeout(() => setProgressText(''), 3500);
@@ -195,7 +208,7 @@ export default function MediaUpload({
         {value && !uploading && (
           <button
             type="button"
-            onClick={() => onChange('')}
+            onClick={() => { dropUnsaved(); onChange(''); }}
             className="rounded-lg px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
           >
             Elimină

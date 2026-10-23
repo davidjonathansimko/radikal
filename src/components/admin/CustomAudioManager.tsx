@@ -25,6 +25,8 @@ import {
 export interface CustomAudioManagerProps {
   blogId: string;
   className?: string;
+  /** Folder clar in Storage, ex. `bloguri/der-weg`. */
+  folder?: string;
   /**
    * Se cheama de fiecare data cand se schimba lista, ca generatorul TTS
    * sa stie imediat in ce limbi nu mai are ce genera.
@@ -35,6 +37,7 @@ export interface CustomAudioManagerProps {
 export default function CustomAudioManager({
   blogId,
   className = '',
+  folder,
   onLangsChange,
 }: CustomAudioManagerProps) {
   const [items, setItems] = useState<CustomAudio[]>([]);
@@ -68,7 +71,7 @@ export default function CustomAudioManager({
 
     setBusyLang(lang);
     setMessage('');
-    const res = await uploadCustomAudio(blogId, lang, file);
+    const res = await uploadCustomAudio(blogId, lang, file, folder);
     setBusyLang(null);
 
     if (!res.ok) { setMessage(`Eroare: ${res.error}`); return; }

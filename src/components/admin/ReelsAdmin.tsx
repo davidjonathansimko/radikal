@@ -11,11 +11,12 @@
 
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import MediaUpload from './MediaUpload';
+import { cleanupReplaced, cleanupDeleted, storageFolder } from '@/lib/storageCleanup';
 import ReelPreview from './ReelPreview';
 import ImageEffectsEditor from './ImageEffectsEditor';
 import { DEFAULT_IMAGE_EFFECTS, type ImageEffectSettings } from '@/components/ImageEffectLayers';
@@ -112,7 +113,11 @@ export default function ReelsAdmin() {
   const [loadingEdit, setLoadingEdit] = useState(false);
 
   /** Goleste formularul si iese din modul de editare */
+  // Fisierele cu care a fost incarcat reel-ul: daca le schimbi, cele vechi se sterg din Storage.
+  const originalMedia = useRef<{ audio: string | null; image: string | null }>({ audio: null, image: null });
+
   const resetForm = useCallback(() => {
+    originalMedia.current = { audio: null, image: null };
     setEditingId(null);
     setContent('');
     setReference('');
@@ -396,6 +401,8 @@ export default function ReelsAdmin() {
         notify('err', `Eroare la salvare: ${error.message}`);
       } else {
         notify('ok', editingId ? 'Reel actualizat.' : 'Reel creat cu succes.');
+        void cleanupReplaced(originalMedia.current.audio, audioUrl.trim() || null);
+        void cleanupReplaced(originalMedia.current.image, backgroundImageUrl.trim() || null);
         draft.clear();
         resetForm();
         await load();
@@ -433,6 +440,10 @@ export default function ReelsAdmin() {
       setSortOrder((r.sort_order as number) ?? 0);
       setAudioUrl((r.audio_url as string) ?? '');
       setBackgroundImageUrl((r.background_image_url as string) ?? '');
+      originalMedia.current = {
+        audio: (r.audio_url as string) || null,
+        image: (r.background_image_url as string) || null,
+      };
       setBackgroundOpacity((r.background_opacity as number) ?? 15);
       setTextColor(((r.text_color as string) as 'auto' | 'light' | 'dark') || 'auto');
       setTestimonyId((r.testimony_id as string) || '');
@@ -599,11 +610,14 @@ export default function ReelsAdmin() {
     if (!window.confirm('Sigur ștergi acest reel? Acțiunea nu poate fi anulată.')) return;
 
     const supabase = createClient();
+    const { data: doomed } = await supabase.from('reels').select('audio_url, background_image_url').eq('id', reel.id).maybeSingle();
     const { error } = await supabase.from('reels').delete().eq('id', reel.id);
 
     if (error) {
       notify('err', `Nu am putut șterge: ${error.message}`);
     } else {
+      const d = doomed as { audio_url?: string | null; background_image_url?: string | null } | null;
+      void cleanupDeleted([d?.audio_url, d?.background_image_url]);
       setReels((prev) => prev.filter((r) => r.id !== reel.id));
       notify('ok', 'Reel șters.');
     }
@@ -854,6 +868,7 @@ export default function ReelsAdmin() {
                 kind="audio"
                 value={audioUrl}
                 onChange={setAudioUrl}
+                folder={storageFolder('reel', title || content.slice(0, 40))}
               />
 
               <MediaUpload
@@ -861,6 +876,7 @@ export default function ReelsAdmin() {
                 kind="image"
                 value={backgroundImageUrl}
                 onChange={setBackgroundImageUrl}
+                folder={storageFolder('reel', title || content.slice(0, 40))}
               />
 
               <div>

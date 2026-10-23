@@ -15,6 +15,7 @@
  */
 
 import { getSupabaseClient } from '@/lib/supabase';
+import { removeIfUnused } from '@/lib/storageCleanup';
 
 export const AUDIO_LANGS = ['ro', 'de', 'en', 'ru'] as const;
 export type AudioLang = (typeof AUDIO_LANGS)[number];
@@ -83,13 +84,20 @@ export async function uploadCustomAudio(
   blogId: string,
   lang: string,
   file: File,
+  /** Folder clar, ex. `bloguri/der-weg` (vezi `storageFolder`). */
+  folder?: string,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const sb = getSupabaseClient();
 
   // Numele fisierului contine limba si ora, ca sa nu se suprascrie din greseala
   // si ca browserul sa nu serveasca din cache o inregistrare veche.
   const ext = file.name.split('.').pop()?.toLowerCase() || 'mp3';
-  const path = `${blogId}/${lang}-${Date.now()}.${ext}`;
+  const path = folder
+    ? `voce-proprie/${folder}--${blogId.slice(0, 8)}/${lang}-${Date.now()}.${ext}`
+    : `${blogId}/${lang}-${Date.now()}.${ext}`;
+
+  // Inregistrarea de acum (daca exista): dupa inlocuire, fisierul ei vechi se sterge.
+  const previous = await fetchCustomAudioForLang(blogId, lang);
 
   const { error: upErr } = await sb.storage
     .from(BUCKET)
@@ -118,6 +126,7 @@ export async function uploadCustomAudio(
     );
 
   if (dbErr) return { ok: false, error: dbErr.message };
+  if (previous?.audio_url && previous.audio_url !== url) void removeIfUnused(previous.audio_url);
   return { ok: true, url };
 }
 
@@ -129,11 +138,13 @@ export async function deleteCustomAudio(
   blogId: string,
   lang: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  const previous = await fetchCustomAudioForLang(blogId, lang);
   const { error } = await getSupabaseClient()
     .from('blog_custom_audio')
     .delete()
     .eq('blog_id', blogId)
     .eq('lang', lang);
+  if (!error && previous?.audio_url) void removeIfUnused(previous.audio_url);
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 

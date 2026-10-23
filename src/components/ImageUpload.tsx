@@ -7,19 +7,30 @@ import React, { useState, useRef } from 'react';
 import { FaImage, FaTimes, FaUpload, FaSpinner } from 'react-icons/fa';
 import { createClient } from '@/lib/supabase';
 import { shrinkImage } from '@/lib/shrinkImage';
+import { removeIfUnused, safeFileName } from '@/lib/storageCleanup';
 
 interface ImageUploadProps {
   onImageUploaded: (url: string) => void;
   currentImageUrl?: string;
   className?: string;
+  /** Folder in Storage, ex. `bloguri/der-weg` (vezi `storageFolder`). */
+  folder?: string;
 }
 
-export default function ImageUpload({ onImageUploaded, currentImageUrl, className = '' }: ImageUploadProps) {
+export default function ImageUpload({ onImageUploaded, currentImageUrl, className = '', folder }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  // Pozele urcate in aceasta sesiune: daca sunt inlocuite si nu au fost salvate nicaieri, se sterg.
+  const sessionUploads = useRef<string[]>([]);
+
+  const dropUnsaved = () => {
+    const list = sessionUploads.current;
+    sessionUploads.current = [];
+    list.forEach((u) => void removeIfUnused(u));
+  };
 
   // Handle file selection
   const handleFileSelect = async (file: File) => {
@@ -49,7 +60,7 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
       setPreview(previewUrl);
 
       // Upload actual file to Supabase Storage
-      const fileName = `blog-images/${Date.now()}-${upload.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileName = `${folder || 'fara-titlu'}/${Date.now()}-${safeFileName(upload.name)}`;
       
       const { data, error } = await supabase.storage
         .from('blog-images')
@@ -75,6 +86,9 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
         .getPublicUrl(fileName);
 
       const publicUrl = publicData.publicUrl;
+      // Poza urcata mai devreme in aceasta sesiune si nesalvata nu mai are rost.
+      dropUnsaved();
+      sessionUploads.current.push(publicUrl);
       onImageUploaded(publicUrl);
       setPreview(publicUrl);
       alert('Bild erfolgreich hochgeladen!');
@@ -118,6 +132,7 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl, classNam
 
   // Remove image
   const removeImage = () => {
+    dropUnsaved();
     setPreview(null);
     onImageUploaded('');
     if (fileInputRef.current) {

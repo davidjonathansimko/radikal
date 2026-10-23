@@ -14,11 +14,12 @@
 //   • pornești „Ascultă mărturia" (varianta dinamică)
 // =====================================================================
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
 import ImageEffectsEditor from '@/components/admin/ImageEffectsEditor';
 import ImageUpload from '@/components/ImageUpload';
+import { cleanupReplaced, cleanupDeleted, storageFolder } from '@/lib/storageCleanup';
 import AdminListFilterBar from '@/components/admin/AdminListFilterBar';
 import BlogAudioGenerator from '@/components/admin/BlogAudioGenerator';
 import CustomAudioManager from '@/components/admin/CustomAudioManager';
@@ -158,7 +159,11 @@ export default function MarturiiAdmin() {
     void load();
   }, [load]);
 
+  // Poza cu care a fost incarcata marturia: daca o schimbi, cea veche se sterge din Storage.
+  const originalImage = useRef<string | null>(null);
+
   const resetForm = useCallback(() => {
+    originalImage.current = null;
     setEditingId(null);
     setTitle('');
     setExcerpt('');
@@ -263,6 +268,7 @@ export default function MarturiiAdmin() {
         }
 
         say('ok', editingId ? 'Mărturie actualizată.' : 'Mărturie creată.');
+        void cleanupReplaced(originalImage.current, imageUrl.trim() || null);
         resetForm();
         await load();
       } finally {
@@ -284,6 +290,7 @@ export default function MarturiiAdmin() {
     setExcerpt((r.excerpt as string) || '');
     setContent((r.content as string) || '');
     setImageUrl((r.image_url as string) || '');
+    originalImage.current = (r.image_url as string) || null;
     setPublished(Boolean(r.published));
     setIsDynamic(Boolean(r.is_dynamic));
     setSectionIds(Array.isArray(r.section_ids) ? (r.section_ids as string[]) : []);
@@ -325,16 +332,19 @@ export default function MarturiiAdmin() {
     async (id: string, name: string) => {
       if (!window.confirm(`Ștergi definitiv mărturia „${name}"?`)) return;
       const sb = createClient();
+      const doomedImage = items.find((it) => it.id === id)?.image_url;
+      const { data: voices } = await sb.from('blog_custom_audio').select('audio_url').eq('blog_id', id);
       const { error } = await sb.from('testimonies').delete().eq('id', id);
       if (error) {
         say('err', `Nu am putut șterge: ${error.message}`);
         return;
       }
+      void cleanupDeleted([doomedImage, ...((voices as { audio_url: string }[] | null) ?? []).map((v) => v.audio_url)]);
       say('ok', 'Mărturie ștearsă.');
       if (editingId === id) resetForm();
       await load();
     },
-    [editingId, load, resetForm, say],
+    [editingId, items, load, resetForm, say],
   );
 
   const filter = useAdminListFilter<Testimony>(
@@ -453,7 +463,7 @@ export default function MarturiiAdmin() {
         {/* ---------------------- IMAGINEA ---------------------- */}
         <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">
           <p className={labelClass}>Imaginea mărturiei</p>
-          <ImageUpload currentImageUrl={imageUrl} onImageUploaded={setImageUrl} />
+          <ImageUpload currentImageUrl={imageUrl} onImageUploaded={setImageUrl} folder={storageFolder('marturie', title)} />
 
           {imageUrl && (
             <div className="mt-4">
@@ -581,7 +591,7 @@ export default function MarturiiAdmin() {
               customAudioLangs={customAudioLangs}
             />
             <div className="mt-4">
-              <CustomAudioManager blogId={editingItem.id} onLangsChange={setCustomAudioLangs} />
+              <CustomAudioManager blogId={editingItem.id} folder={storageFolder('marturie', editingItem.title)} onLangsChange={setCustomAudioLangs} />
             </div>
           </div>
         ) : (
