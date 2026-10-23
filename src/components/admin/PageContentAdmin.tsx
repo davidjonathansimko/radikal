@@ -26,19 +26,74 @@ import { originalTextsFor, isPageEditable, ensurePageDefaultsLoaded } from '@/li
 import { fetchEnabledPages, setPageEnabled, fetchGuestAllowed, setGuestAllowed, fetchGuestReadAllowed, setGuestReadAllowed, type TogglablePage } from '@/lib/pageSettings';
 import { fetchFeatureFlags, setFeatureFlag, FEATURE_DEFAULTS, type FeatureKey } from '@/lib/featureFlags';
 
-const FEATURE_LIST: { key: FeatureKey; title: string; text: string }[] = [
-  { key: 'resume', title: 'Continuă lectura', text: 'Cardul „Weiterlesen” cu ultimul articol deschis (Blogs, Zeugnisse, Andacht, Copii).' },
-  { key: 'swipe', title: 'Swipe între bloguri', text: 'Pe telefon, în articol, tragi stânga/dreapta între cele 6 bloguri din listă.' },
-  { key: 'shareSelection', title: 'Trimite textul selectat ca imagine', text: 'Când selectezi o frază din articol apare butonul „Als Bild teilen”.' },
-  { key: 'fontControls', title: 'Mărimea textului (A−/A+)', text: 'Butoanele de mărire și micșorare a textului din articole.' },
-  { key: 'scrollReveal', title: 'Pagina principală: secțiuni care curg la derulare', text: 'Titlul, textul și simbolul fiecărei secțiuni apar treptat când derulezi și se retrag când derulezi în sus. Oprit = pagina arată ca înainte.' },
-  { key: 'todayCard', title: 'Cardul „Azi” pe pagina principală', text: 'Versetul zilei, Andacht-ul zilei și „Weiterlesen”, într-un singur loc, sub primul ecran.' },
-  { key: 'listenPill', title: 'Butonul „PLAY” de pe carduri', text: 'Pe cardurile blogurilor dinamice, pastila PLAY pornește direct ascultarea.' },
-  { key: 'eveningMode', title: 'Lectură de seară', text: 'Buton în articol: culori calde și blânde, fără animații, pentru citit seara.' },
-  { key: 'remainingTime', title: 'Timp de citire rămas', text: 'În bara de sus a articolului apare cât mai e de citit (ex. „~3 min”).' },
-  { key: 'kidsParentMode', title: 'Pagina pentru copii, gândită pentru părinți', text: 'Text pentru părinți, butonul „Citește cu copilul” (text mare) și fără comentarii pe textele pentru copii.' },
+type FeatureGroup = 'article' | 'home' | 'kids';
+
+const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text: string }[] = [
+  { key: 'resume', group: 'article', title: 'Continuă lectura', text: 'Cardul „Weiterlesen” cu ultimul articol deschis (Blogs, Zeugnisse, Andacht, Copii).' },
+  { key: 'swipe', group: 'article', title: 'Swipe între bloguri', text: 'Pe telefon, în articol, tragi stânga/dreapta între cele 6 bloguri din listă.' },
+  { key: 'shareSelection', group: 'article', title: 'Trimite o frază ca imagine', text: 'Atingi o propoziție din articol și apare butonul „Als Bild teilen”.' },
+  { key: 'protectText', group: 'article', title: 'Text protejat', text: 'Textul din articole nu se poate selecta sau copia (singura cale rămâne „Als Bild teilen” și PDF-ul). Oprit = text selectabil ca înainte.' },
+  { key: 'fontControls', group: 'article', title: 'Mărimea textului (A−/A+)', text: 'Butoanele de mărire și micșorare a textului din articole.' },
+  { key: 'eveningMode', group: 'article', title: 'Lectură de seară', text: 'Buton în articol: culori calde și blânde, fără animații, pentru citit seara.' },
+  { key: 'remainingTime', group: 'article', title: 'Timp de citire rămas', text: 'În bara de sus a articolului apare cât mai e de citit (ex. „~3 min”).' },
+  { key: 'scrollReveal', group: 'home', title: 'Secțiuni care curg la derulare', text: 'Titlul, textul și simbolul fiecărei secțiuni apar treptat când derulezi. Oprit = pagina arată ca înainte.' },
+  { key: 'todayCard', group: 'home', title: 'Cardul „Azi”', text: 'Versetul zilei, Andacht-ul zilei și „Weiterlesen”, într-un singur loc, sub primul ecran.' },
+  { key: 'listenPill', group: 'home', title: 'Butonul „PLAY” de pe carduri', text: 'Pe cardurile blogurilor dinamice, pastila PLAY pornește direct ascultarea.' },
+  { key: 'kidsParentMode', group: 'kids', title: 'Pagina pentru copii, gândită pentru părinți', text: 'Text pentru părinți, butonul „Citește cu copilul” (text mare) și fără comentarii pe textele pentru copii.' },
 ];
 
+const FEATURE_GROUPS: { id: FeatureGroup; title: string }[] = [
+  { id: 'article', title: 'Citire în articol' },
+  { id: 'home', title: 'Pagina principală' },
+  { id: 'kids', title: 'Pagina pentru copii' },
+];
+
+/** Grup care se deschide si se inchide, ca panoul sa ramana ordonat. */
+function AdminGroup({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  summary?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-xl border border-black/10 dark:border-white/10">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="btn-solid flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+      >
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-black dark:text-white">{title}</span>
+          {summary && <span className="mt-0.5 block text-xs text-black/55 dark:text-white/55">{summary}</span>}
+        </span>
+        <svg
+          className={`h-4 w-4 shrink-0 text-black/50 transition-transform duration-300 dark:text-white/50 ${open ? 'rotate-180' : ''}`}
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 8l5 5 5-5" />
+        </svg>
+      </button>
+      <div className={`grid transition-all duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+        <div className="overflow-hidden">
+          <div className="space-y-4 px-4 pb-4 pt-1">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 const LANG_NAMES: Record<PageLanguage, string> = {
   ro: 'Română',
   de: 'Deutsch',
@@ -335,6 +390,7 @@ export default function PageContentAdmin() {
 
   return (
     <div className="space-y-5">
+      <AdminGroup title="Acces vizitatori" summary={`Butonul vizitator: ${guestOn === false ? 'oprit' : 'activ'} · Citire: ${guestRead ? 'permisă' : 'cere cont'}`}>
       {/* --- Acces vizitatori (pasul 2210001) --- */}
       <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -391,33 +447,66 @@ export default function PageContentAdmin() {
         </div>
       </div>
 
-      {/* --- Funcții pentru cititori (pasul 231026a) --- */}
-      <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-black/50 dark:text-white/50">
-          Funcții pentru cititori
-        </p>
-        <div className="space-y-3">
-          {FEATURE_LIST.map((f) => (
-            <div key={f.key} className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-black dark:text-white">{f.title}</p>
-                <p className="mt-0.5 text-xs text-black/55 dark:text-white/55">{f.text}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void toggleFeature(f.key)}
-                className={`btn-solid shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 ${
-                  features[f.key]
-                    ? 'border border-black/15 text-black dark:border-white/15 dark:text-white'
-                    : 'bg-black text-white dark:bg-white dark:text-black'
-                }`}
-              >
-                {features[f.key] ? 'Pornit · Oprește' : 'Oprit · Pornește'}
-              </button>
+      </AdminGroup>
+
+      <AdminGroup
+        title="Funcții pentru cititori"
+        summary={`${FEATURE_LIST.filter((f) => features[f.key]).length} din ${FEATURE_LIST.length} pornite`}
+      >
+        {FEATURE_GROUPS.map((g) => (
+          <div key={g.id}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/50 dark:text-white/50">{g.title}</p>
+            <div className="space-y-3">
+              {FEATURE_LIST.filter((f) => f.group === g.id).map((f) => (
+                <div key={f.key} className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-black dark:text-white">{f.title}</p>
+                    <p className="mt-0.5 text-xs text-black/55 dark:text-white/55">{f.text}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void toggleFeature(f.key)}
+                    className={`btn-solid shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 ${
+                      features[f.key]
+                        ? 'border border-black/15 text-black dark:border-white/15 dark:text-white'
+                        : 'bg-black text-white dark:bg-white dark:text-black'
+                    }`}
+                  >
+                    {features[f.key] ? 'Pornit · Oprește' : 'Oprit · Pornește'}
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        ))}
+      </AdminGroup>
+
+      <AdminGroup title="Tutorial de la început" summary="Textul se schimbă mai jos, la Pagina → Tutorial">
+        <p className="text-xs text-black/60 dark:text-white/60">
+          Apare o singură dată pe dispozitiv, la prima intrare. Alege mai jos pagina „Tutorial” ca să-i schimbi textele, în toate limbile.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              localStorage.removeItem('radikalOnboardingDone');
+              setNote('Tutorialul va apărea din nou la următoarea deschidere a paginii principale, pe acest dispozitiv.');
+            } catch {
+              setError('Nu am putut reseta tutorialul.');
+            }
+          }}
+          className="btn-solid rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold text-black dark:border-white/15 dark:text-white"
+        >
+          Arată din nou tutorialul (acest dispozitiv)
+        </button>
+        <button
+          type="button"
+          onClick={() => setPageId('onboarding')}
+          className="btn-solid ml-2 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+        >
+          Editează textele tutorialului
+        </button>
+      </AdminGroup>
 
       {/* --- Ce pagină --- */}
       <div>

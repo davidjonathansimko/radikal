@@ -180,6 +180,10 @@ export function useVoiceSyncedText({
   const indexRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const cancelledRef = useRef(false);
+  // Cuvintele afisate nu sar niciodata: daca vocea a ajuns mai departe, ele ajung din urma treptat.
+  const shownRef = useRef(0);
+  const lastTsRef = useRef(0);
+  const endedRef = useRef(false);
 
   /** Toate cuvintele, in ordine, ca sa le poata desena componenta */
   const [allWords, setAllWords] = useState<string[]>([]);
@@ -250,6 +254,9 @@ export function useVoiceSyncedText({
     setSpokenCount(0);
     setElapsed(0);
     indexRef.current = 0;
+    shownRef.current = 0;
+    lastTsRef.current = 0;
+    endedRef.current = false;
 
     const pieces = splitIntoChunks(text);
     chunksRef.current = pieces.map((p) => ({
@@ -394,12 +401,31 @@ export function useVoiceSyncedText({
       else break;
     }
 
-    setSpokenCount(before + spokenInChunk);
+    // Cat de departe a ajuns vocea (in cuvinte). La sfarsitul audio-ului: toate cuvintele.
+    const totalWords = chunksRef.current.reduce((s, c) => s + c.words.length, 0);
+    const wanted = endedRef.current ? totalWords : before + spokenInChunk;
+
+    // Limitator: cuvintele curg, nu sar. Daca estimarea a ramas in urma si apoi ajunge din urma
+    // (schimbare de bucata, pauze in voce), recuperam cu maximum ~14 cuvinte pe secunda.
+    const now = performance.now();
+    const dt = lastTsRef.current ? Math.min((now - lastTsRef.current) / 1000, 0.1) : 0.016;
+    lastTsRef.current = now;
+    let shown = shownRef.current;
+    if (wanted < shown) shown = wanted;
+    else if (wanted - shown > 30) shown = wanted - 8; // cautare mare: nu asteptam sa „curga" tot
+    else shown = Math.min(wanted, shown + dt * 14);
+    shownRef.current = shown;
+    setSpokenCount(Math.floor(shown + 1e-6));
 
     let elapsedBefore = 0;
     for (let k = 0; k < i; k++) elapsedBefore += chunksRef.current[k].duration || 0;
     setElapsed(elapsedBefore + t);
 
+    // Dupa ultimul cuvant al audio-ului incheiat, bucla se opreste singura.
+    if (endedRef.current && shown >= totalWords) {
+      rafRef.current = null;
+      return;
+    }
     rafRef.current = requestAnimationFrame(tick);
   }, []);
 
@@ -436,6 +462,7 @@ export function useVoiceSyncedText({
       if (!audio) return;
 
       indexRef.current = i;
+      endedRef.current = false;
       audio.currentTime = offset;
 
       audio.onended = () => {
@@ -443,7 +470,9 @@ export function useVoiceSyncedText({
           void playFrom(i + 1, 0);
         } else {
           setIsPlaying(false);
-          stopLoop();
+          // Lasam bucla sa duca textul pana la ultimul cuvant, apoi se opreste singura.
+          endedRef.current = true;
+          if (!rafRef.current) rafRef.current = requestAnimationFrame(tick);
         }
       };
 
@@ -472,7 +501,7 @@ export function useVoiceSyncedText({
         setIsPlaying(false);
       }
     },
-    [fetchChunk, startLoop, stopLoop, playbackRate],
+    [fetchChunk, startLoop, stopLoop, playbackRate, tick],
   );
 
   const play = useCallback(() => {

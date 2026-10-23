@@ -453,8 +453,8 @@ export function ReelSlide({
         filter: 'blur(0px)',
         y: 0,
         x: 0,
-        duration: 0.8,
-        stagger: { each: 0.18, ease: 'power1.inOut' },
+        duration: 1.1,
+        stagger: { each: 0.2, ease: 'sine.inOut' },
         ease: 'power2.out',
       });
 
@@ -478,8 +478,8 @@ export function ReelSlide({
             opacity: 0,
             filter: 'blur(8px)',
             y: -6,
-            duration: 0.75,
-            stagger: { each: 0.045, ease: 'power1.inOut' },
+            duration: 0.9,
+            stagger: { each: 0.07, ease: 'sine.inOut' },
             ease: 'power2.inOut',
           });
 
@@ -558,7 +558,7 @@ export function ReelSlide({
     };
     // `pageIndex` face ca fiecare pagina de text sa fie animata din nou,
     // iar `loopCount` face ca bucla sa reporneasca si la reel-urile cu o singura pagina
-  }, [reel.id, onActive, pageIndex, loopCount, isLastPage, reduceMotion, forceActive]);
+  }, [reel.id, onActive, pageIndex, loopCount, isLastPage, reduceMotion, forceActive, currentText]);
 
   // Cand reel-ul iese din ecran, textul reincepe de la prima pagina
   useEffect(() => {
@@ -591,14 +591,14 @@ export function ReelSlide({
   return (
     <section
       ref={slideRef}
-      className="relative h-full w-full flex-shrink-0 snap-start snap-always flex items-center justify-center px-6 overflow-hidden"
+      className="reel-slide relative h-full w-full flex-shrink-0 snap-start snap-always flex items-center justify-center px-6 overflow-hidden"
       style={{ scrollSnapStop: 'always' }}
     >
       {/* --- Imagine de fundal optionala, cu opacitatea aleasa de admin --- */}
       {reel.background_image_url && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-cover bg-center"
+          className="reel-flow-bg pointer-events-none absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: `url(${reel.background_image_url})`,
             opacity: Math.min(100, Math.max(0, bgOpacityForTheme)) / 100,
@@ -655,7 +655,7 @@ export function ReelSlide({
           De aceea apasarea fix pe mijlocul lor nu raspundea, dar mai spre
           dreapta mergea. Textul nu se apasa oricum, deci lasa atingerea sa
           treaca mai departe. */}
-      <div className="pointer-events-none relative z-10 w-full max-w-2xl mx-auto text-center px-14 sm:px-20">
+      <div className="reel-flow pointer-events-none relative z-10 w-full max-w-2xl mx-auto text-center px-14 sm:px-20">
         <blockquote
           className="font-cinzel text-2xl md:text-3xl lg:text-4xl italic leading-relaxed flex items-center justify-center flex-wrap"
           style={{ color: textColor, borderLeft: 'none', paddingLeft: 0 }}

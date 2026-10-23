@@ -1478,7 +1478,9 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             scope=".blog-body-text"
             imageUrl={post.image_url}
             title={displayTitle || post.title}
-            enabled={featureFlags.shareSelection}
+            enabled={featureFlags.shareSelection || featureFlags.protectText}
+            canShare={featureFlags.shareSelection}
+            protect={featureFlags.protectText}
           />
           {/* Reading controls toolbar - all in one row on desktop */}
           {/* Desktop: FontSize + TTS + PDF + Focus in single row */}
@@ -1491,6 +1493,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
               <PrintButton variant="icon" showLabel />
               {/* BookmarkButton commented out - replaced by Liked Posts */}
               {/* <BookmarkButton postId={post.id} variant="button" size="sm" className="!px-3 !py-1.5 !text-xs !gap-1.5 sm:!px-4 sm:!py-2 sm:!text-sm sm:!gap-2" /> */}
+              {featureFlags.eveningMode && <EveningModeToggle />}
               <ReadingModeToggle />
             </div>
             
@@ -1501,16 +1504,16 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                 {featureFlags.fontControls ? <FontSizeControls /> : <span />}
                 <div className="flex items-center gap-1 flex-shrink-0 min-w-0">
                   <PrintButton variant="icon" showLabel />
+                  {featureFlags.eveningMode && <EveningModeToggle />}
                   <ReadingModeToggle />
                 </div>
               </div>
             </div>
 
             {/* Pasul 231026b: lectura de seara + citit cu copilul */}
-            {(featureFlags.eveningMode || (featureFlags.kidsParentMode && source.contentType === 'copii')) && (
+            {featureFlags.kidsParentMode && source.contentType === 'copii' && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {featureFlags.eveningMode && <EveningModeToggle />}
-                {featureFlags.kidsParentMode && source.contentType === 'copii' && <KidsReadToggle />}
+                <KidsReadToggle />
               </div>
             )}
 
@@ -2095,6 +2098,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           <RelatedPosts 
             currentPostId={post.id} 
             currentTags={Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : [])} 
+            currentCategoryIds={(post as unknown as { category_ids?: string[] | null }).category_ids ?? null}
             table={source.table}
             basePath={source.basePath}
           />

@@ -407,21 +407,38 @@ export default function HomePage() {
 
     const sections = Array.from(root.querySelectorAll<HTMLElement>('section:not(#hero)'));
     root.classList.add('scroll-reveal');
+
+    // Derulare rapida: sectiunea apare aproape imediat, ca sa nu treci pe langa ea cat timp „curge".
+    let lastY = window.scrollY;
+    let lastT = performance.now();
+    let fast = false;
+    const onScroll = () => {
+      const now = performance.now();
+      const dt = now - lastT;
+      if (dt > 0) fast = Math.abs(window.scrollY - lastY) / dt > 1.4; // px pe ms
+      lastY = window.scrollY;
+      lastT = now;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           const el = entry.target as HTMLElement;
           if (entry.isIntersecting) {
+            el.dataset.speed = fast ? 'fast' : '';
             el.dataset.reveal = 'visible';
           } else if (entry.boundingClientRect.top > 0) {
             // A ramas sub ecran (am derulat in sus): se retrage. Ce e deasupra ramane afisat.
             el.dataset.reveal = 'hidden';
           } else {
+            el.dataset.speed = 'fast';
             el.dataset.reveal = 'visible';
           }
         });
       },
-      { threshold: 0.25 },
+      // Incepe sa apara cand ~12% din sectiune e in ecran, putin inainte sa ajunga in mijloc.
+      { threshold: 0.06, rootMargin: '0px 0px 8% 0px' },
     );
     sections.forEach((el) => {
       el.dataset.reveal = 'hidden';
@@ -430,8 +447,12 @@ export default function HomePage() {
 
     return () => {
       observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
       root.classList.remove('scroll-reveal');
-      sections.forEach((el) => delete el.dataset.reveal);
+      sections.forEach((el) => {
+        delete el.dataset.reveal;
+        delete el.dataset.speed;
+      });
     };
   }, [featureFlags.scrollReveal, showModal, isCheckingSession, showSplash, enabledPages]);
 

@@ -48,6 +48,7 @@ export function ensurePageDefaultsLoaded(): Promise<void> {
         registerPageDefaults('andacht', m.ANDACHT_TEXTS);
         registerPageDefaults('copii', m.COPII_TEXTS);
       }),
+      import('@/lib/pageTexts/onboarding').then((m) => registerPageDefaults('onboarding', m.ONBOARDING_TEXTS)),
     ]).then(() => undefined);
   }
   return loaded;

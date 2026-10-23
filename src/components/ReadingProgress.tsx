@@ -1,4 +1,4 @@
-﻿// Reading Progress Bar Component / Lesefortschrittsbalken-Komponente / Componenta Bară Progres Citire
+// Reading Progress Bar Component / Lesefortschrittsbalken-Komponente / Componenta Bară Progres Citire
 // Shows reading progress while scrolling through blog posts
 // Zeigt den Lesefortschritt beim Scrollen durch Blog-Posts an
 // Arată progresul citirii la derularea prin postările de blog
@@ -302,7 +302,7 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
   return (
     <button
       onClick={scrollToTop}
-      className="fixed right-4 sm:right-6 z-[250] transition-all duration-300 cursor-pointer group shadow-lg hover:shadow-xl"
+      className="fixed right-4 sm:right-6 z-[250] rounded-full bg-transparent p-0 transition-all duration-300 cursor-pointer group shadow-lg hover:shadow-xl"
       style={{
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'scale(1)' : 'scale(0.8)',

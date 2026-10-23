@@ -16,6 +16,8 @@ import { BlogPost } from '@/types';
 interface RelatedPostsProps {
   currentPostId: string;
   currentTags: string | string[];
+  /** Rubricile articolului: se arata doar articole care au cel putin una in comun. */
+  currentCategoryIds?: string[] | null;
   limit?: number;
   /** Pasul 2708000 — de unde citim: bloguri sau marturii. */
   table?: string;
@@ -49,6 +51,7 @@ const translations = {
 export default function RelatedPosts({
   currentPostId,
   currentTags,
+  currentCategoryIds,
   limit = 3,
   table = 'blog_posts',
   basePath = '/blogs',
@@ -70,11 +73,17 @@ export default function RelatedPosts({
           : (currentTags ? currentTags.split(',').map(t => t.trim()) : []);
 
         // Fetch all published posts except current
+        // Doar articole din aceeasi rubrica: fara rubrica comuna nu sunt „similare".
+        if (!currentCategoryIds || currentCategoryIds.length === 0) {
+          setPosts([]);
+          return;
+        }
         const { data: allPosts, error } = await supabase
           .from(table)
           .select('*')
           .eq('published', true)
           .neq('id', currentPostId)
+          .overlaps('category_ids', currentCategoryIds)
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -90,16 +99,14 @@ export default function RelatedPosts({
             : (post.tags ? post.tags.split(',').map((t: string) => t.trim().toLowerCase()) : []);
           
           let score = 0;
+          // Mai multe rubrici comune = mai asemanator.
+          const shared = ((post.category_ids as string[] | null) ?? []).filter((id) => currentCategoryIds.includes(id)).length;
+          score += shared * 20;
           tagsArray.forEach(tag => {
             if (postTags.some((pt: string) => pt.toLowerCase().includes(tag.toLowerCase()))) {
               score += 10;
             }
           });
-
-          // Boost recent posts
-          const daysSincePublished = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60 * 24);
-          if (daysSincePublished < 7) score += 5;
-          if (daysSincePublished < 30) score += 2;
 
           return { ...post, relevanceScore: score };
         });
@@ -116,7 +123,7 @@ export default function RelatedPosts({
     };
 
     fetchRelatedPosts();
-  }, [currentPostId, currentTags, limit, supabase]);
+  }, [currentPostId, currentTags, currentCategoryIds, limit, supabase]);
 
   // Get title based on language
   const getTitle = (post: BlogPost) => {
@@ -167,6 +174,7 @@ export default function RelatedPosts({
   }, [language, posts, translate]);
 
   if (loading) {
+    if (!currentCategoryIds || currentCategoryIds.length === 0) return null;
     return (
       <div className="mt-16 pt-8 border-t border-gray-200 dark:border-white/10">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t.title}</h2>

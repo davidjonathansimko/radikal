@@ -15,6 +15,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
 import { fetchEnabledPages } from '@/lib/pageSettings';
 import { shareVerseImage, IMAGE_SAVED } from '@/lib/shareImage';
+import { stepsBackTo, goBackSteps } from '@/lib/navHistory';
 import ImageEffectLayers, { effectsFilter, type ImageEffectSettings } from '@/components/ImageEffectLayers';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -223,6 +224,17 @@ export default function DailyVersePage() {
 
   const handleClose = useCallback(() => {
     tapLight();
+    // Daca pagina principala e deja in istoric, ne intoarcem prin istoric: un push ar crea bucla
+    // (inapoi -> versetul -> X -> pagina principala -> inapoi ...).
+    const steps = stepsBackTo('/');
+    if (steps > 0) {
+      const before = window.location.pathname + window.location.search;
+      goBackSteps(steps);
+      window.setTimeout(() => {
+        if (window.location.pathname + window.location.search === before) router.push('/');
+      }, 700);
+      return;
+    }
     router.push('/');
   }, [router, tapLight]);
 

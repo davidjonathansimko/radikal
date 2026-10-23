@@ -60,6 +60,8 @@ const translations = {
     // Bible quotes
     bibleTitle: 'Verwendete Bibelübersetzungen',
     bibleText: 'Die auf dieser Website verwendeten Bibelzitate stammen aus verschiedenen Übersetzungen. Falls nicht anders angegeben, verwenden wir die Lutherbibel, Elberfelder (Deutsch), King James Version (Englisch), Dumitru Cornilescu (Rumänisch) und Synodal Translation (Russisch) sowie andere gemeinfreie Übersetzungen.',
+    originalTitle: 'Originalität der Texte',
+    originalText: 'Alle Texte auf dieser Website – Blogs, Zeugnisse, tägliche Andacht, Reels und Texte für Kinder – sind Originale. Sie wurden weder mit KI erstellt noch von anderen kopiert. Es sind Lehren, die ich vom Herrn Jesus Christus empfangen habe, die zuerst mir und meinem Haus zum Segen waren und hoffentlich auch anderen.',
     
     // Footer links
     privacy: 'Datenschutz',
@@ -103,6 +105,8 @@ const translations = {
     
     bibleTitle: 'Bible Translations Used',
     bibleText: 'The Bible quotes used on this website come from various translations. Unless otherwise stated, we use the Luther Bible, Elberfelder (German), King James Version (English), Dumitru Cornilescu (Romanian) and Russian Synodal Translation (Russian) as well as other public domain translations.',
+    originalTitle: 'Originality of the texts',
+    originalText: 'All texts on this website – blogs, testimonies, daily devotion, reels and texts for children – are original. They were neither created with AI nor copied from others. They are teachings received from the Lord Jesus Christ, which first blessed me and my household, and which I hope will bless others too.',
     
     privacy: 'Privacy Policy',
     contact: 'Contact',
@@ -145,6 +149,8 @@ const translations = {
     
     bibleTitle: 'Traduceri Biblice Folosite',
     bibleText: 'Citatele biblice folosite pe acest site provin din diverse traduceri. Dacă nu se specifică altfel, folosim Lutherbibel, Elberfelder (Germană), King James Version (Engleză), Dumitru Cornilescu (Română) și Traducerea Sinodală (Rusă) precum și alte traduceri din domeniul public.',
+    originalTitle: 'Originalitatea textelor',
+    originalText: 'Toate textele de pe acest site – bloguri, mărturii, Andacht zilnic, reels și texte pentru copii – sunt originale. Nu au fost create cu AI și nu au fost copiate. Sunt învățături primite de la Domnul Isus Hristos, care mai întâi mie și casei mele ne-au fost de folos și sper că vor fi și altora.',
     
     privacy: 'Politica de Confidențialitate',
     contact: 'Contact',
@@ -187,6 +193,8 @@ const translations = {
     
     bibleTitle: 'Используемые переводы Библии',
     bibleText: 'Библейские цитаты, используемые на этом сайте, взяты из различных переводов. Если не указано иное, мы используем Лютеранскую Библию, Эльберфельдер (немецкий), King James Version (английский), Думитру Корнилеску (румынский) и Синодальный перевод (русский), а также другие общедоступные переводы.',
+    originalTitle: 'Оригинальность текстов',
+    originalText: 'Все тексты на этом сайте – блоги, свидетельства, ежедневное размышление, рилсы и тексты для детей – оригинальны. Они не созданы с помощью ИИ и не скопированы. Это учения, полученные от Господа Иисуса Христа, которые прежде всего были во благо мне и моему дому, и я надеюсь, что будут и другим.',
     
     privacy: 'Политика конфиденциальности',
     contact: 'Контакт',
@@ -340,6 +348,13 @@ export default function ImpressumPage() {
             </p>
           </section>
 
+          {/* Originalitatea textelor */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">{t.originalTitle}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              {t.originalText}
+            </p>
+          </section>
           {/* Bibel-Zitate */}
           <section className="mb-12">
             <h2 className="text-2xl font-cinzel font-bold text-red-600 dark:text-red-500 mb-4">{t.bibleTitle}</h2>

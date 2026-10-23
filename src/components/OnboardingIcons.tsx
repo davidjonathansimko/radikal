@@ -20,7 +20,8 @@ export function WriteLetterIcon({ className = 'h-9 w-9' }: { className?: string 
   return (
     <svg
       className={className}
-      viewBox="800 150 2300 2300"
+      viewBox="476 350 2300 2300"
+      style={{ overflow: 'visible' }}
       fill="none"
       stroke="currentColor"
       strokeWidth={38}
