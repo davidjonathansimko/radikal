@@ -1449,7 +1449,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           </h1>
         </header>
 
-        <div className="mb-6 flex justify-center">
+        <div className="-mt-3 mb-3 flex justify-end">
           <ReadToggle href={`${source.basePath}/${originalSlugRef.current || post.slug}`} />
         </div>
 

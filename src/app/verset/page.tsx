@@ -300,7 +300,8 @@ export default function DailyVersePage() {
         </svg>
       </button>
 
-      {/* Trimite mai departe */}
+      {/* Trimite mai departe — doar cand exista un verset de trimis */}
+      {!loading && verse && text.trim() && (
       <div className="absolute bottom-24 right-3 z-20 flex flex-col items-center gap-1 sm:right-5">
         <button
           onClick={handleShare}
@@ -325,6 +326,7 @@ export default function DailyVersePage() {
           </span>
         )}
       </div>
+      )}
 
       <div className="pointer-events-none relative z-10 mx-auto w-full max-w-2xl px-14 text-center sm:px-20">
         {loading ? null : !verse || !text.trim() ? (

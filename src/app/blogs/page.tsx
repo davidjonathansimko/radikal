@@ -182,6 +182,16 @@ function BlogsPageContent() {
           </Suspense>
         </div>
 
+        {/* Arhiva: pentru cine vrea sa rasfoiasca dupa data, nu prin cautare. */}
+        <div className="mt-6 text-center">
+          <Link
+            href="/blogs/arhiva"
+            className="inline-block rounded-full border border-black/20 px-6 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
+          >
+            {language === 'de' ? 'Archiv' : language === 'en' ? 'Archive' : language === 'ro' ? 'Arhivă' : 'Архив'}
+          </Link>
+        </div>
+
         {/* Mobile: Back to home button below blog list / Mobil: Zurück-Button unter der Blogliste */}
         <BackToHome className="mt-8 flex lg:hidden justify-center" />
 

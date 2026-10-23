@@ -2151,3 +2151,11 @@ html.modal-open {
 @media (prefers-reduced-motion: reduce) {
   .play-draw { animation: none; stroke-dashoffset: 0; }
 }
+
+/* Pasul 2210012 - titlurile din elementele marcate .force-white-text raman albe si pe tema luminoasa. */
+.light .force-white-text h1,
+.light .force-white-text h2,
+.light .force-white-text h3,
+.light .force-white-text h4 {
+  color: #ffffff !important;
+}

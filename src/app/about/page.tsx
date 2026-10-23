@@ -45,6 +45,7 @@ const translations = {
     value4Text: 'Der Schlaf der Toten. „Wache auf, der du schläfst, und stehe auf aus den Toten, so wird Christus dich erleuchten!“ (Epheser 5,14)',
     authorTitle: 'Über den Autor',
     authorName: 'D. I. Simko',
+    discoverHint: 'Zum Entdecken tippen',
     appTitle: 'Auch als App',
     appText: 'RADIKAL gibt es auch im Google Play Store. Lade die App herunter und lies bequem auf deinem Telefon.',
     appButton: 'Im Google Play Store ansehen',
@@ -73,6 +74,7 @@ const translations = {
     value4Text: 'The sleep of the dead. “Awake, O sleeper, and arise from the dead, and Christ will shine on you!” (Ephesians 5:14)',
     authorTitle: 'About the Author',
     authorName: 'D. I. Simko',
+    discoverHint: 'Tap to discover',
     appTitle: 'Also as an app',
     appText: 'RADIKAL is also available on the Google Play Store. Download the app and read comfortably on your phone.',
     appButton: 'View on Google Play',
@@ -101,6 +103,7 @@ const translations = {
     value4Text: 'Somnul morților. „Trezește-te, tu care dormi, și scoală-te din morți, și Hristos te va lumina!” (Efeseni 5:14)',
     authorTitle: 'Despre Autor',
     authorName: 'D. I. Simko',
+    discoverHint: 'Apăsă pentru a descoperi',
     appTitle: 'Și ca aplicație',
     appText: 'RADIKAL poate fi descărcat și din Google Play Store. Instalează aplicația și citește comod pe telefon.',
     appButton: 'Vezi în Google Play Store',
@@ -129,6 +132,7 @@ const translations = {
     value4Text: 'Сон мертвых. «Проснись, спящий, и встань из мертвых, и Христос осветит тебя!» (Ефесянам 5:14)',
     authorTitle: 'Об авторе',
     authorName: 'D. I. Simko',
+    discoverHint: 'Нажмите, чтобы открыть',
     appTitle: 'Также как приложение',
     appText: 'RADIKAL доступен и в Google Play Store. Скачайте приложение и читайте удобно на телефоне.',
     appButton: 'Открыть в Google Play',
@@ -227,6 +231,9 @@ export default function AboutPage() {
             <span className="flex h-20 w-20 items-center justify-center transition-transform duration-300 hover:scale-110">
               <AnimatedPlayIcon className="h-16 w-16" />
             </span>
+            <span className="-mt-1 text-[10px] font-medium uppercase tracking-[0.3em] text-black/45 dark:text-white/45">
+              {t.discoverHint}
+            </span>
           </button>
         </header>
 
@@ -261,69 +268,69 @@ export default function AboutPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Value 1 / Wert 1 / Valoare 1 */}
-              <div className="glass-effect rounded-xl p-6 hover:bg-white/15 dark:hover:bg-white/15 hover:bg-black/15 transition-all duration-300">
-                <div className="flex items-center gap-4 mb-4">
+              <div className="rounded-xl border border-black/10 bg-black/[0.02] p-5 transition-colors duration-300 hover:bg-black/[0.04] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">
+                <div className="mb-3 flex items-center gap-3">
                   <div className="text-black/90 dark:text-white/90">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-8 h-8" fill="none">
                       <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" d="M39.25 26.53V7.47L24 4.53L8.75 7.47v19.06c0 3.17 1.621 6.174 3.813 8.747V10.426L24 8.22l11.438 2.205v24.85c-1.163 1.366-2.486 2.61-3.812 3.693V13.38L24 11.91l-7.625 1.47v25.588a36 36 0 0 0 3.816 2.718l-.003-25.35L24 15.602l3.813.735l-.003 25.35c-1.85 1.138-3.323 1.783-3.81 1.783V19.292" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-black dark:text-white">
+                  <h3 className="font-cinzel text-base font-semibold tracking-wide text-black dark:text-white">
                     {t.value1Title}
                   </h3>
                 </div>
-                <p className="text-black/80 dark:text-white/80 leading-relaxed">
+                <p className="text-[15px] leading-7 text-black/75 dark:text-white/75">
                   {t.value1Text}
                 </p>
               </div>
 
               {/* Value 2 / Wert 2 / Valoare 2 */}
-              <div className="glass-effect rounded-xl p-6 hover:bg-white/15 dark:hover:bg-white/15 hover:bg-black/15 transition-all duration-300">
-                <div className="flex items-center gap-4 mb-4">
+              <div className="rounded-xl border border-black/10 bg-black/[0.02] p-5 transition-colors duration-300 hover:bg-black/[0.04] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">
+                <div className="mb-3 flex items-center gap-3">
                   <div className="text-black/90 dark:text-white/90">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-8 h-8" fill="none">
                       <path fill="currentColor" d="M375.344 18.438c-1.137-.01-2.276.007-3.438.03c-13.273.27-28.187 2.787-45.562 8.126c-22.4 6.883-38.08 27.877-35.844 50.312c1.62 16.34 15.186 34.143 30.875 45.625c24.664 18.046 42.29 36.65 54.375 54.44l7.625 48.843l18.47-2.907l-5.064-32.437c-1.34-23-7.98-45.714-22.342-69.095c14.54 8.79 27.36 18.46 38.03 28.156l28.22 55.72l16.656-8.438l-26.53-52.406c-7.148-17.347-17.845-33.647-33.783-49.03c15.97 4.774 30.48 10.84 42.97 17.436l39.906 45.22l14-12.376l-40.5-45.875l-.094.095C441.37 85.048 426.1 72.19 406.063 61.687v-.093c-.278-.243-.558.187-.812.187c-25.3-1.83-47.73-.167-62.28 3.69c13.373-10.633 34.805-18.547 64.592-21.25l47.375 18.31l6.75-17.436l-41.375-16l-.093-.032c-13.467-6.492-27.824-10.464-44.876-10.625m-237.688.03c-16.838.232-31.037 4.164-44.375 10.595l-41.468 16.03l6.72 17.438l47.406-18.31c29.77 2.706 51.224 10.62 64.593 21.25c-14.55-3.857-36.98-5.52-62.28-3.69c-.254 0-.534-.43-.813-.186v.093C87.4 72.192 72.132 85.047 60.188 99.876l-.124-.094l-40.5 45.876l14.03 12.375l39.906-45.22c12.49-6.596 27-12.662 42.97-17.437c-15.94 15.384-26.668 31.684-33.814 49.03l-26.53 52.407l16.687 8.438L101 149.53c10.672-9.694 23.49-19.366 38.03-28.155c-14.36 23.38-21 46.095-22.343 69.094l-5.03 32.436l18.468 2.906l7.594-48.78c12.084-17.806 29.684-36.437 54.374-54.5c15.69-11.483 29.254-29.286 30.875-45.626c2.234-22.435-13.414-43.43-35.814-50.312c-19.113-5.873-35.252-8.32-49.5-8.125zM307.72 235.814c-11.41 0-24.272 4.91-40.22 22.718v130.814c19.24-13.898 38.485-19.628 56.563-19.844c22.987-.275 43.643 7.632 61.562 15.438c17.92 7.805 33.542 15.33 44.156 16.468c5.308.57 9.002-.088 12.564-2.312c3.187-1.99 6.62-5.816 10-12.53L431.688 256.81c-10.648 7.425-20.88 11.553-30.72 12.688c-13.806 1.592-26.063-2.53-36.75-7.97c-21.37-10.875-38.164-25.762-56.5-25.717zm-99.376 5c-18.118-.082-35.583 15.45-57.406 27.093c-10.912 5.822-23.348 10.394-37.407 9.156c-10.018-.88-20.423-4.782-31.186-12.156L62.906 393.47c13.616 13.096 25.344 15.566 38.594 13.842c14.267-1.855 30.332-9.854 47.406-18.093s35.31-16.776 55.438-17.22c14.575-.32 29.73 4.21 44.47 15.344V259.47c-16.255-18.45-24.774-18.62-40.47-18.658zM45.438 278.875l-24.782 158.22l194.906 13v19h83.563v-18.97l195.53-13.03l-24.78-158.22l-15.53 1.22l16.936 106.5l.44 2.78l-1.158 2.53c-4.76 10.555-10.745 18.306-18.312 23.033c-3.66 2.285-7.59 3.727-11.594 4.53l.03.188l-1.998.188l-.25.03c-.958.136-1.915.217-2.875.282h-.125L258.563 437.28l-.782.064l-.75-.063l-158.467-10.967h-.094c-4.606.203-9.278-.1-13.97-.97c-.03-.005-.063.006-.094 0c-13.02-2.434-26.164-9.29-38.25-22.124l-3.125-3.314l.69-4.5l17.405-115.312l-15.688-1.22zM324.28 388.188c-18.502.22-37.827 6.678-59.436 27.625l-2.344 2.28l124.563-12.03c-2.944-1.34-5.893-2.688-8.907-4c-17.257-7.518-35.372-14.096-53.875-13.875zm-119.53 2.5c-14.906.328-30.94 7.28-47.72 15.375c-3.318 1.6-6.69 3.246-10.06 4.875L254 418.344l-2.72-3.125c-17.09-19.683-31.624-24.86-46.53-24.533z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-black dark:text-white">
+                  <h3 className="font-cinzel text-base font-semibold tracking-wide text-black dark:text-white">
                     {t.value2Title}
                   </h3>
                 </div>
-                <p className="text-black/80 dark:text-white/80 leading-relaxed">
+                <p className="text-[15px] leading-7 text-black/75 dark:text-white/75">
                   {t.value2Text}
                 </p>
               </div>
 
               {/* Value 3 / Wert 3 / Valoare 3 */}
-              <div className="glass-effect rounded-xl p-6 hover:bg-white/15 dark:hover:bg-white/15 hover:bg-black/15 transition-all duration-300">
-                <div className="flex items-center gap-4 mb-4">
+              <div className="rounded-xl border border-black/10 bg-black/[0.02] p-5 transition-colors duration-300 hover:bg-black/[0.04] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">
+                <div className="mb-3 flex items-center gap-3">
                   <div className="text-black/90 dark:text-white/90">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-8 h-8" fill="none">
                       <path fill="currentColor" d="M6.29 19.923q-1.001 0-1.703-.701t-.702-1.703V9.577q0-.213.144-.356t.356-.144t.356.144t.144.356v7.942q0 .597.404 1q.404.404 1 .404t1-.403t.403-1V6.48q0-1 .701-1.702q.701-.701 1.702-.701t1.703.701t.702 1.703v11.038q0 .597.404 1q.404.404 1 .404q.598 0 1-.403q.404-.404.404-1V6.48q0-1 .7-1.702q.701-.701 1.702-.701t1.703.701t.702 1.703v7.942q0 .213-.144.356t-.356.144t-.356-.144t-.144-.356V6.481q0-.597-.403-1q-.404-.404-1.001-.404t-1 .404t-.403 1v11.038q0 1.002-.701 1.703t-1.702.701t-1.703-.701t-.702-1.703V6.481q0-.597-.404-1q-.404-.404-1-.404q-.598 0-1 .404q-.404.403-.404 1v11.038q0 1.002-.7 1.703q-.701.701-1.703.701" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-black dark:text-white">
+                  <h3 className="font-cinzel text-base font-semibold tracking-wide text-black dark:text-white">
                     {t.value3Title}
                   </h3>
                 </div>
-                <p className="text-black/80 dark:text-white/80 leading-relaxed">
+                <p className="text-[15px] leading-7 text-black/75 dark:text-white/75">
                   {t.value3Text}
                 </p>
               </div>
 
               {/* Value 4 / Wert 4 / Valoare 4 */}
-              <div className="glass-effect rounded-xl p-6 hover:bg-white/15 dark:hover:bg-white/15 hover:bg-black/15 transition-all duration-300">
-                <div className="flex items-center gap-4 mb-4">
+              <div className="rounded-xl border border-black/10 bg-black/[0.02] p-5 transition-colors duration-300 hover:bg-black/[0.04] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">
+                <div className="mb-3 flex items-center gap-3">
                   <div className="text-black/90 dark:text-white/90">
                     <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="currentColor">
                       <path d="M71 22.406v102.53h202.25v18.69h-73.22v36.968h-18.686v-36.97H79.156l43.375 53.782h180.44v18.688H180.905v36.97H162.22v-36.97h-39.407v163.562h58.53v-44.75H157.47V316.22h74.155V282.56H193.72v-18.687h97.218v18.688h-40.625v33.656h73.28v18.686h-32.437v44.75h26.313v18.688h-63.69l-2.686 74.03-18.688-.687 2.656-73.343H93.032V398h-.22l-28.687 92.844h79.844l9.81-70.688 18.5 2.563-9.468 68.124H453.25L424.562 398h-30.03V197.78l51.812-64.25V22.407h-64.406v52.438h-39.22V22.406h-65.124v52.438h-38.53V22.406h-65.126v52.438h-38.5V22.406H71zm129.03 312.5v44.75h72.44v-44.75h-72.44z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-black dark:text-white">
+                  <h3 className="font-cinzel text-base font-semibold tracking-wide text-black dark:text-white">
                     {t.value4Title}
                   </h3>
                 </div>
-                <p className="text-black/80 dark:text-white/80 leading-relaxed">
+                <p className="text-[15px] leading-7 text-black/75 dark:text-white/75">
                   {t.value4Text}
                 </p>
               </div>
@@ -350,14 +357,14 @@ export default function AboutPage() {
 
           {/* Play Store — textul, butonul și linkul se editează din Setări → Pagini → Despre */}
           {/^https?:\/\//i.test(t.appUrl) && (
-            <section className="glass-effect rounded-2xl p-8 text-center animate-fadeIn" style={{ animationDelay: '0.9s' }}>
-              <h2 className="text-2xl font-bold text-black dark:text-white mb-4">{t.appTitle}</h2>
-              <p className="text-black/80 dark:text-white/80 mb-6 max-w-2xl mx-auto">{t.appText}</p>
+            <section className="mx-auto w-full max-w-md rounded-2xl border border-black/10 px-6 py-5 text-center animate-fadeIn dark:border-white/10" style={{ animationDelay: '0.9s' }}>
+              <h2 className="mb-2 font-cinzel text-sm uppercase tracking-[0.2em] text-black/70 dark:text-white/70">{t.appTitle}</h2>
+              <p className="mx-auto mb-4 max-w-sm text-sm leading-relaxed text-black/65 dark:text-white/65">{t.appText}</p>
               <a
                 href={t.appUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-primary inline-block"
+                className="inline-flex min-h-0 items-center rounded-full border border-black/25 px-5 py-1.5 text-xs font-medium tracking-wide text-black/80 transition-colors hover:bg-black/5 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10"
               >
                 {t.appButton}
               </a>
@@ -366,18 +373,18 @@ export default function AboutPage() {
 
           {/* Call to action / Handlungsaufforderung */}
           <section className="text-center animate-fadeIn" style={{ animationDelay: '1s' }}>
-            <div className="glass-effect rounded-2xl p-8">
+            <div className="mx-auto w-full max-w-md rounded-2xl border border-black/10 px-6 py-5 dark:border-white/10">
               <h2 className="text-2xl font-bold text-black dark:text-white mb-4">
                 {t.ctaTitle}
               </h2>
               <p className="text-black/80 dark:text-white/80 mb-6 max-w-2xl mx-auto">
                 {t.ctaText}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/blogs" className="btn-primary">
+              <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+                <Link href="/blogs" className="inline-flex min-h-0 w-full items-center justify-center rounded-full bg-black px-5 py-1.5 text-xs font-medium tracking-wide text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-black sm:w-auto">
                   {t.ctaBlogs}
                 </Link>
-                <Link href="/contact" className="btn-secondary">
+                <Link href="/contact" className="inline-flex min-h-0 w-full items-center justify-center rounded-full border border-black/25 px-5 py-1.5 text-xs font-medium tracking-wide text-black/80 transition-colors hover:bg-black/5 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10 sm:w-auto">
                   {t.ctaContact}
                 </Link>
               </div>

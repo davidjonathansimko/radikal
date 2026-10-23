@@ -23,13 +23,13 @@ export function ReadToggle({ href, className = '' }: { href: string; className?:
       type="button"
       onClick={() => setRead(href, !read)}
       aria-pressed={read}
-      className={`btn-solid inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+      className={`btn-solid inline-flex h-6 min-h-0 min-w-0 items-center gap-1.5 rounded-full border px-2.5 text-[10px] font-medium tracking-wide transition-colors ${
         read
-          ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
-          : 'border-black/15 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
+          ? 'border-transparent bg-black/80 text-white dark:bg-white/85 dark:text-black'
+          : 'border-black/10 text-black/55 hover:bg-black/5 dark:border-white/15 dark:text-white/55 dark:hover:bg-white/10'
       } ${className}`}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <polyline points="20 6 9 17 4 12" />
       </svg>
       {read ? t.done : t.mark}
