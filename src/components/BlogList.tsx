@@ -464,7 +464,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" aria-hidden="true" />
 
                 {post.is_dynamic && (
-                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/40 px-2 py-[2px] text-[10px] font-medium tracking-wide text-white backdrop-blur-sm">
+                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/60 px-2 py-[2px] text-[10px] font-medium tracking-wide text-white backdrop-blur-sm">
                     <svg width="9" height="9" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
                       <path d="M3 1.5v11l9-5.5-9-5.5z" />
                     </svg>

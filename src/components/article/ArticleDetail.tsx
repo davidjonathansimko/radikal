@@ -7,6 +7,7 @@
 
 'use client';
 
+import TriangleLoader from '@/components/TriangleLoader';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
@@ -1352,25 +1353,13 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                   style={{ animationDelay: '0.9s' }}
                   aria-label="Play Blog"
                 >
-                  {/* Cercul mare, cu bataie de inima */}
-                  <span
-                    className="play-blog-heartbeat flex items-center justify-center rounded-full bg-black/50 shadow-2xl ring-1 ring-white/25 backdrop-blur-md transition-transform duration-300 group-hover:scale-105"
-                    style={{ width: 'clamp(88px, 22vw, 124px)', height: 'clamp(88px, 22vw, 124px)' }}
-                  >
-                    <svg
-                      viewBox="0 0 60 60"
-                      fill="none" stroke="currentColor" strokeWidth="2.6"
-                      strokeLinecap="round" strokeLinejoin="round"
-                      aria-hidden="true"
-                      style={{ width: 'clamp(52px, 13vw, 74px)', height: 'clamp(52px, 13vw, 74px)' }}
-                    >
-                      <circle cx="30" cy="30" r="27" />
-                      <path d="M24 19l18 11-18 11V19z" fill="currentColor" stroke="none" />
-                    </svg>
+                  {/* Triunghiul de play (cel din loader, intors spre dreapta), cu bataie de inima */}
+                  <span className="play-blog-heartbeat flex items-center justify-center transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_4px_14px_rgba(0,0,0,0.6)]">
+                    <TriangleLoader size={96} rotate={90} tone="light" />
                   </span>
 
                   <span
-                    className="rounded-full bg-black/55 px-4 py-1.5 font-semibold tracking-wide shadow-lg backdrop-blur-md"
+                    className="px-2 font-semibold tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
                     style={{ fontSize: 'clamp(13px, 3.4vw, 16px)' }}
                   >
                     {language === 'de' ? 'Blog abspielen' :

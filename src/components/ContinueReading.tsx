@@ -2,6 +2,7 @@
 
 // Pasul 2210007 — „Continua de unde ai ramas": un card mic cu ultimul articol
 // deschis. Se poate inchide cu ✕.
+// Pasul 231026: card subtire, text centrat, punct rosu care palpaie discret.
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -41,13 +42,14 @@ export default function ContinueReading({ className = '' }: { className?: string
 
   return (
     <div
-      className={`mx-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-black/10 px-4 py-3 dark:border-white/10 ${className}`}
+      className={`relative mx-auto w-full max-w-xs rounded-xl border border-black/10 bg-black/[0.03] px-9 py-1.5 text-center shadow-sm dark:border-white/15 dark:bg-white/[0.04] ${className}`}
     >
-      <Link href={item.href} className="min-w-0 flex-1">
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-black/45 dark:text-white/45">
+      <Link href={item.href} className="block min-w-0">
+        <span className="flex items-center justify-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
           {LABEL[language] ?? LABEL.de}
         </span>
-        <span className="block truncate font-cinzel text-sm font-semibold text-black dark:text-white">
+        <span className="mt-0.5 block truncate font-cinzel text-[13px] font-normal text-black dark:text-white">
           {item.title}
         </span>
       </Link>
@@ -62,7 +64,7 @@ export default function ContinueReading({ className = '' }: { className?: string
           }
           setItem(null);
         }}
-        className="btn-solid flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-black/50 hover:bg-black/10 dark:text-white/50 dark:hover:bg-white/10"
+        className="btn-solid absolute right-1.5 top-1/2 flex h-6 min-h-0 w-6 min-w-0 -translate-y-1/2 items-center justify-center rounded-full text-[11px] text-black/45 hover:bg-black/10 dark:text-white/45 dark:hover:bg-white/10"
       >
         ✕
       </button>

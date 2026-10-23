@@ -471,17 +471,7 @@ export default function HomePage() {
               <span className="text-base font-semibold">
                 {t.scrollDown}
               </span>
-              <svg 
-                className="w-8 h-8" 
-                fill="currentColor" 
-                viewBox="0 0 511.994 511.994"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M403.079,310.458c-3.627-7.232-11.008-11.797-19.093-11.797h-64v-85.333c0-11.776-9.536-21.333-21.333-21.333H213.32 c-11.776,0-21.333,9.557-21.333,21.333v85.333h-64c-8.064,0-15.445,4.565-19.072,11.797c-3.605,7.232-2.837,15.872,2.027,22.336 l128,170.667c4.011,5.376,10.347,8.533,17.045,8.533c6.72,0,13.056-3.157,17.067-8.533l128-170.667 C405.917,326.33,406.685,317.69,403.079,310.458z"/>
-                <path d="M298.663,128.001H213.33c-11.797,0-21.333,9.536-21.333,21.333c0,11.797,9.536,21.333,21.333,21.333h85.333 c11.797,0,21.333-9.536,21.333-21.333C319.996,137.537,310.46,128.001,298.663,128.001z"/>
-                <path d="M298.663,64.001H213.33c-11.797,0-21.333,9.536-21.333,21.333s9.536,21.333,21.333,21.333h85.333 c11.797,0,21.333-9.536,21.333-21.333S310.46,64.001,298.663,64.001z"/>
-                <path d="M298.664,0H213.33c-11.797,0-21.333,9.536-21.333,21.333c0,11.798,9.536,21.334,21.333,21.334h85.333 c11.797,0,21.333-9.536,21.333-21.333C319.997,9.536,310.461,0,298.664,0z"/>
-              </svg>
+              <TriangleLoader size={44} rotate={180} />
             </button>
           </div>
         )}
@@ -762,22 +752,16 @@ export default function HomePage() {
           <br></br>
 
           {/* Back to Top Button - positioned closer to footer with more spacing from clock */}
-          <div className="mt-8 mb-4 flex items-center justify-center gap-3">
-            <TriangleLoader size={30} className="md:hidden animate-fadeIn" />
+          <div className="mt-8 mb-4 flex items-center justify-center">
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="inline-flex items-center px-2 py-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white font-semibold text-lg rounded-xl transition-all duration-300 border border-black/20 dark:border-white/20 hover:scale-105 animate-fadeIn"
+              className="group flex flex-col items-center gap-2 rounded-xl px-4 py-2 text-black/70 transition-all duration-300 hover:text-black active:scale-95 dark:text-white/70 dark:hover:text-white animate-fadeIn"
               style={{ animationDelay: '0.7s' }}
             >
-              <svg 
-                className="mr-2 w-5 h-5" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-              </svg>
-              {language === 'de' ? 'Zurück nach oben' : language === 'en' ? 'Back to Top' : language === 'ro' ? 'Înapoi sus' : 'Вернуться наверх'}
+              <TriangleLoader size={56} className="transition-transform duration-300 group-hover:-translate-y-1" />
+              <span className="text-base font-semibold">
+                {language === 'de' ? 'Zurück nach oben' : language === 'en' ? 'Back to Top' : language === 'ro' ? 'Înapoi sus' : 'Вернуться наверх'}
+              </span>
             </button>
           </div>
         </div>
