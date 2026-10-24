@@ -258,7 +258,7 @@ async function translateMissing(
 // pagina de captura video (`/reel-capture/[id]`). Asa videoul descarcat este
 // garantat identic cu ce se vede pe site: e literalmente ACELASI cod.
 // ---------------------------------------------------------------------------
-export function ReelSlide({
+export const ReelSlide = React.memo(function ReelSlide({
   reel,
   isDark,
   language,
@@ -516,6 +516,7 @@ export function ReelSlide({
     // temporizare) ramane exact acelasi cod ca pe site.
     if (forceActive) {
       isActiveRef.current = true;
+      el.dataset.active = '1';
       onActive(reel);
       play();
       return () => {
@@ -536,11 +537,13 @@ export function ReelSlide({
             if (started) return;
             started = true;
             isActiveRef.current = true;
+            el.dataset.active = '1';
             onActive(reel);
             play();
           } else {
             started = false;
             isActiveRef.current = false;
+            delete el.dataset.active;
             reset();
             // Reel-ul a iesit din ecran -> textul reincepe de la prima pagina
             setPageIndex(0);
@@ -896,7 +899,7 @@ export function ReelSlide({
       )}
     </section>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Modalul principal
@@ -917,7 +920,6 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [userId, setUserId] = useState<string | null>(null);
-  const [, setActiveId] = useState<string | null>(null);
 
   // Pasul A12 — MOD CAPTURA (doar pentru admin).
   // `frozenId` = reel-ul pe care ai apasat „freeze". Cat timp este setat,
@@ -944,7 +946,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   // Daca reel-ul nu are muzica, oprim lin ce canta.
   const handleActive = useCallback(
     (reel: Reel) => {
-      setActiveId(reel.id);
+      // Fara setState aici: nu mai re-randam toate reels-urile la fiecare derulare.
       // Pasul A12 — ai derulat la alt reel => butoanele revin automat.
       // Asa poti face captura la fiecare reel pe rand, fara sa apesi altceva.
       setFrozenId((current) => (current === reel.id ? current : null));

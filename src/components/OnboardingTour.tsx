@@ -235,9 +235,7 @@ export default function OnboardingTour() {
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9998] flex justify-center bg-black/70 p-4 backdrop-blur-sm animate-fadeIn ${
-        kind === 'nav' ? 'items-start pt-10' : 'items-center'
-      }`}
+      className={`fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-fadeIn${kind === 'nav' ? ' tour-nav-pad' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -267,9 +265,9 @@ export default function OnboardingTour() {
       )}
 
       <div data-tour-card className="relative z-10 w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white animate-fadeIn">
-        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center text-black dark:text-white" aria-hidden="true">
+        <div className={`mx-auto flex items-center justify-center text-black dark:text-white ${kind === 'nav' ? 'mb-1 h-12 w-12' : 'mb-3 h-16 w-16'}`} aria-hidden="true">
           {kind === 'welcome' && <WriteLetterIcon key="w" className="h-14 w-14" />}
-          {kind === 'nav' && <ToggleIcon key="n" className="h-14 w-14" />}
+          {kind === 'nav' && <ToggleIcon key="n" className="h-11 w-11" />}
           {kind === 'listen' && <TriangleLoader key="l" size={46} rotate={90} />}
         </div>
 
@@ -277,7 +275,7 @@ export default function OnboardingTour() {
           {title}
         </h2>
 
-        <div className="mb-5 min-h-[9rem] text-sm leading-relaxed text-black/75 dark:text-white/75">
+        <div className={`text-sm leading-relaxed text-black/75 dark:text-white/75 ${kind === 'nav' ? 'mb-4' : 'mb-5 min-h-[9rem]'}`}>
           {kind === 'welcome' && (
             <div className="space-y-3">
               <p className="tour-text-in">{t.welcomeText}</p>

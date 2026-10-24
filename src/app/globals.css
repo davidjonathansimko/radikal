@@ -1,15 +1,15 @@
-/* Global styles for the Radikal blog application / Globale Stile fÃƒÂ¼r die Radikal-Blog-Anwendung */
+/* Global styles for the Radikal blog application / Globale Stile für die Radikal-Blog-Anwendung */
 /* This file contains all global CSS including Tailwind imports and custom styles */
-/* Diese Datei enthÃƒÂ¤lt alle globalen CSS einschlieÃƒÅ¸lich Tailwind-Importe und benutzerdefinierten Stilen */
+/* Diese Datei enthält alle globalen CSS einschließlich Tailwind-Importe und benutzerdefinierten Stilen */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ===== Pasul 1302000: PWA FULLSCREEN MODE ===== */
-/* When running as installed PWA app Ã¢â‚¬â€ disable zoom, use safe areas */
-/* Wenn als installierte PWA-App ausgefÃƒÂ¼hrt Ã¢â‚¬â€ Zoom deaktivieren, sichere Bereiche verwenden */
-/* CÃƒÂ¢nd ruleazÃ„Æ’ ca aplicaÃˆâ€ºie PWA instalatÃ„Æ’ Ã¢â‚¬â€ dezactiveazÃ„Æ’ zoom, foloseÃˆâ„¢te zone sigure */
+/* When running as installed PWA app — disable zoom, use safe areas */
+/* Wenn als installierte PWA-App ausgeführt — Zoom deaktivieren, sichere Bereiche verwenden */
+/* Când rulează ca aplicație PWA instalată — dezactivează zoom, folosește zone sigure */
 
 /* PWA mode: disable all zoom gestures */
 html.pwa-mode {
@@ -20,13 +20,13 @@ html.pwa-mode {
 html.pwa-mode body {
   touch-action: pan-x pan-y;
   -ms-touch-action: pan-x pan-y;
-  /* Pasul 2102000: Body must NOT add padding Ã¢â‚¬â€ fixed nav bars + main content handle their own safe-area offsets */
+  /* Pasul 2102000: Body must NOT add padding — fixed nav bars + main content handle their own safe-area offsets */
   /* Otherwise header/bottom bar get DOUBLE padding in PWA mode */
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Pasul 2102005: ALL browsers Ã¢â‚¬â€ extend header/bottom behind status bar & home indicator */
+/* Pasul 2102005: ALL browsers — extend header/bottom behind status bar & home indicator */
 /* viewport-fit: cover makes viewport extend behind system UI; safe-area-inset compensates */
 [data-mobile-nav="top"] {
   padding-top: env(safe-area-inset-top, 0px);
@@ -40,7 +40,7 @@ html.pwa-mode [data-mobile-nav="bottom"] {
   bottom: 0 !important;
 }
 
-/* Pasul 2102005: main content padding Ã¢â‚¬â€ accounts for safe-area in both browser and PWA */
+/* Pasul 2102005: main content padding — accounts for safe-area in both browser and PWA */
 main {
   padding-top: calc(env(safe-area-inset-top, 0px) + 3rem);
 }
@@ -59,8 +59,8 @@ html.pwa-mode main {
 
 /* ===== SEARCH MODAL BLUR EFFECT ===== */
 /* When search modal is open, blur the entire page content */
-/* Wenn das Such-Modal geÃƒÂ¶ffnet ist, wird der gesamte Seiteninhalt unscharf */
-/* CÃƒÂ¢nd modal-ul de cÃ„Æ’utare e deschis, aplica blur pe tot conÃˆâ€ºinutul paginii */
+/* Wenn das Such-Modal geöffnet ist, wird der gesamte Seiteninhalt unscharf */
+/* Când modal-ul de căutare e deschis, aplica blur pe tot conținutul paginii */
 body.search-modal-open main,
 body.search-modal-open nav,
 body.search-modal-open footer,
@@ -75,10 +75,10 @@ body.search-modal-open {
   overflow: hidden;
 }
 
-/* Import print styles / Druckstile importieren / ImportÃ„Æ’ stiluri imprimare */
+/* Import print styles / Druckstile importieren / Importă stiluri imprimare */
 @import '../styles/print.css';
 
-/* Custom CSS variables for consistent theming / Benutzerdefinierte CSS-Variablen fÃƒÂ¼r konsistente Themenerstellung */
+/* Custom CSS variables for consistent theming / Benutzerdefinierte CSS-Variablen für konsistente Themenerstellung */
 /* Dark theme (default) */
 :root {
   --primary-color: #ffffff;
@@ -119,8 +119,8 @@ body {
   overflow-x: hidden;
   scroll-behavior: smooth;
   /* Pasul 1302003: Prevent browser overscroll navigation (back/forward gestures) */
-  /* Verhindert Browser-Overscroll-Navigation (ZurÃƒÂ¼ck/VorwÃƒÂ¤rts-Gesten) */
-  /* Previne navigarea prin overscroll a browserului (gesturi ÃƒÂ®napoi/ÃƒÂ®nainte) */
+  /* Verhindert Browser-Overscroll-Navigation (Zurück/Vorwärts-Gesten) */
+  /* Previne navigarea prin overscroll a browserului (gesturi înapoi/înainte) */
   overscroll-behavior-x: none;
 }
 
@@ -140,7 +140,7 @@ body {
 
 /* ===== TYPOGRAPHY SYSTEM ===== */
 /* Cinzel ONLY for headings, Cormorant Garamond for everything else */
-/* Cinzel NUR fÃƒÂ¼r ÃƒÅ“berschriften, Cormorant Garamond fÃƒÂ¼r alles andere */
+/* Cinzel NUR für Überschriften, Cormorant Garamond für alles andere */
 /* Cinzel DOAR pentru titluri, Cormorant Garamond pentru restul */
 
 /* Body text uses EB Garamond (has proper lowercase) */
@@ -189,7 +189,7 @@ h5, h6 {
 }
 
 /* Body text - EB Garamond for proper lowercase letters */
-/* FlieÃƒÅ¸text - EB Garamond fÃƒÂ¼r richtige Kleinbuchstaben */
+/* Fließtext - EB Garamond für richtige Kleinbuchstaben */
 /* Text body - EB Garamond pentru litere mici normale */
 p, li, span, div {
   font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
@@ -198,8 +198,8 @@ p, li, span, div {
 }
 
 /* Prose content - Optimal reading experience with Montserrat for blogs */
-/* Blog-Inhalt - Optimale Leseerfahrung mit Montserrat fÃƒÂ¼r Blogs */
-/* ConÃˆâ€ºinut blog - ExperienÃˆâ€ºÃ„Æ’ de citire optimÃ„Æ’ cu Montserrat pentru bloguri */
+/* Blog-Inhalt - Optimale Leseerfahrung mit Montserrat für Blogs */
+/* Conținut blog - Experiență de citire optimă cu Montserrat pentru bloguri */
 .prose, article, .blog-content, .reading-mode-content {
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   font-size: clamp(1rem, 1.1vw, 1.125rem);
@@ -207,7 +207,7 @@ p, li, span, div {
   letter-spacing: 0.01em;
 }
 
-/* blog-body-text: font-size controlled by React inline style Ã¢â‚¬â€ do NOT set font-size here */
+/* blog-body-text: font-size controlled by React inline style — do NOT set font-size here */
 .blog-body-text {
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   line-height: 1.8;
@@ -221,22 +221,22 @@ p, li, span, div {
   text-wrap: pretty;
 }
 
-/* Ã°Å¸â€œâ€“ Pasul 2202000: Bible reference highlighting Ã¢â‚¬â€ white + bold (references like "Judas 1, Vers 3") */
-/* Bibelreferenz-Hervorhebung Ã¢â‚¬â€ weiÃƒÅ¸ + fett / EvidenÃˆâ€ºiere referinÃˆâ€ºe biblice Ã¢â‚¬â€ alb + bold */
+/* 📖 Pasul 2202000: Bible reference highlighting — white + bold (references like "Judas 1, Vers 3") */
+/* Bibelreferenz-Hervorhebung — weiß + fett / Evidențiere referințe biblice — alb + bold */
 .bible-ref {
   font-weight: 700;
   color: #ffffff;
   transition: color 0.2s ease;
 }
 
-/* Light mode: dark color for readability / Hell-Modus: dunkel fÃƒÂ¼r Lesbarkeit */
+/* Light mode: dark color for readability / Hell-Modus: dunkel für Lesbarkeit */
 /* Pasul 21082026: rosu inchis in loc de gri, contrast ~7.4:1 pe alb (WCAG AAA) */
 :root:not(.dark) .bible-ref,
 .light .bible-ref {
   color: #8f1414;
 }
 
-/* Ã°Å¸â€œâ€“ Pasul 2202000: Words of Jesus Ã¢â‚¬â€ always red / Worte Jesu Ã¢â‚¬â€ immer rot / Cuvintele lui Isus Ã¢â‚¬â€ mereu roÃˆâ„¢u */
+/* 📖 Pasul 2202000: Words of Jesus — always red / Worte Jesu — immer rot / Cuvintele lui Isus — mereu roșu */
 .jesus-words {
   color: #ef4444;
   font-weight: 400;
@@ -268,17 +268,17 @@ blockquote, .verse, .bible-verse {
 
 /* Welcome Modal blockquote - no left border, centered text */
 /* Welcome Modal Blockquote - keine linke Linie, zentrierter Text */
-/* Welcome Modal blockquote - fÃ„Æ’rÃ„Æ’ linie stÃƒÂ¢nga, text centrat */
+/* Welcome Modal blockquote - fără linie stânga, text centrat */
 .fixed blockquote {
   border-left: none;
   padding-left: 0;
   text-align: center;
 }
 
-/* ===== Pasul A06 Ã¢â‚¬â€ REELS: butoane mai discrete =====
-   Butoanele de like / share / articol erau prea Ã¢â‚¬Å¾tari" si furau ochiul de
+/* ===== Pasul A06 — REELS: butoane mai discrete =====
+   Butoanele de like / share / articol erau prea „tari" si furau ochiul de
    la text, stricand designul curat al reel-ului. Acum stau la 55% opacitate
-   si revin la 100% cand pui degetul sau mouse-ul pe ele Ã¢â‚¬â€ deci sunt la fel
+   si revin la 100% cand pui degetul sau mouse-ul pe ele — deci sunt la fel
    de usor de folosit, dar nu mai deranjeaza vizual.                        */
 .reel-actions {
   opacity: 0.55;
@@ -296,8 +296,8 @@ blockquote, .verse, .bible-verse {
   }
 }
 
-/* ===== Pasul 21082026 Ã¢â‚¬â€ REELS: efect NOISE / SAND GRAIN =====
-   Pasul 2308001 Ã¢â‚¬â€ CORECTARE Ã¢â‚¬Å¾margini pÃ„Æ’trÃ„Æ’Ãˆâ€ºoase":
+/* ===== Pasul 21082026 — REELS: efect NOISE / SAND GRAIN =====
+   Pasul 2308001 — CORECTARE „margini pătrățoase":
    Stratul era `inset: 0`, dar animatia il muta cu pana la 2%. La fiecare
    deplasare ramanea o dunga goala pe margine, iar ochiul o citea ca pe un
    dreptunghi taiat. Acum stratul este mai MARE decat imaginea (`inset: -25%`),
@@ -334,11 +334,11 @@ blockquote, .verse, .bible-verse {
   }
 }
 
-/* ===== Pasul 2208001 Ã¢â‚¬â€ DYNAMIC GRAIN NOISE =====
+/* ===== Pasul 2208001 — DYNAMIC GRAIN NOISE =====
    Efect separat de `.reel-noise`: boabe mai mari, miscare mai vie,
    ca la un film vechi proiectat pe perete.
    Se aplica peste IMAGINE si TEXT, dar NICIODATA peste butoane,
-   bara de progres sau share Ã¢â‚¬â€ de aceea elementul are `pointer-events: none`
+   bara de progres sau share — de aceea elementul are `pointer-events: none`
    si se pune pe un strat cu z-index sub butoane.
    Opacitatea se regleaza din admin prin `--grain-opacity`.            */
 .dynamic-grain {
@@ -369,7 +369,7 @@ blockquote, .verse, .bible-verse {
   }
 }
 
-/* ===== Pasul 2208001 Ã¢â‚¬â€ butonul Ã¢â‚¬Å¾Play Blog": batai de inima ===== */
+/* ===== Pasul 2208001 — butonul „Play Blog": batai de inima ===== */
 .play-blog-heartbeat {
   animation: playBlogHeartbeat 1.9s ease-in-out infinite;
 }
@@ -400,11 +400,11 @@ blockquote, .verse, .bible-verse {
   }
 }
 
-/* ===== Pasul 2308005 (E) Ã¢â‚¬â€ efecte cinematografice noi =====
+/* ===== Pasul 2308005 (E) — efecte cinematografice noi =====
    Toate sunt DISCRETE. Un efect care se vede clar e un efect prost:
    trebuie simtit, nu observat. */
 
-/* Halation Ã¢â‚¬â€ luminile calde se difuzeaza usor, ca pe pelicula.
+/* Halation — luminile calde se difuzeaza usor, ca pe pelicula.
    `screen` face ca stratul sa se vada doar unde imaginea e luminoasa. */
 .cine-bloom {
   position: absolute;
@@ -425,7 +425,7 @@ blockquote, .verse, .bible-verse {
   50%      { opacity: 1; }
 }
 
-/* Scurgere de lumina dintr-un colt Ã¢â‚¬â€ se misca foarte lent */
+/* Scurgere de lumina dintr-un colt — se misca foarte lent */
 .cine-light-leak {
   position: absolute;
   inset: -10%;
@@ -452,7 +452,7 @@ blockquote, .verse, .bible-verse {
   }
 }
 
-/* ===== Pasul 2308004 (A) Ã¢â‚¬â€ mesajul din modul Ã¢â‚¬Å¾ÃƒÂ®n lucru" =====
+/* ===== Pasul 2308004 (A) — mesajul din modul „în lucru" =====
    Apare DUPA logo, nu odata cu el, ca la modalul de intro. */
 .maintenance-message {
   animation: maintenanceFadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -467,7 +467,7 @@ blockquote, .verse, .bible-verse {
   .maintenance-message { animation: none; }
 }
 
-/* ===== Pasul 2308003 Ã¢â‚¬â€ Play Blog: schimbarea paginii de text =====
+/* ===== Pasul 2308003 — Play Blog: schimbarea paginii de text =====
    Fiecare pagina noua intra lin, cu un usor blur si o mica ridicare.
    Asa nu mai pare o derulare statica, ci o experienta, ca la reels. */
 .play-blog-page {
@@ -488,7 +488,7 @@ blockquote, .verse, .bible-verse {
 }
 
 /* ============================================================
-   Pasul 21082026 Ã¢â‚¬â€ Referinte biblice: rosu, adaptat la tema
+   Pasul 21082026 — Referinte biblice: rosu, adaptat la tema
    Tema deschisa este definita mai sus (#8f1414).
    Aici doar tema intunecata: rosu mai deschis, lizibil pe negru.
    Contrast ~8.1:1 pe negru (WCAG AAA).
@@ -498,8 +498,8 @@ blockquote, .verse, .bible-verse {
   font-weight: 700;
 }
 
-/* ===== DROP CAP / LITERÃ„â€š INIÃˆÅ¡IALÃ„â€š MARE ===== */
-/* Classic drop cap effect for blog content / Klassischer Drop Cap Effekt / Efect literÃ„Æ’ iniÃˆâ€ºialÃ„Æ’ decorativÃ„Æ’ */
+/* ===== DROP CAP / LITERĂ INIȚIALĂ MARE ===== */
+/* Classic drop cap effect for blog content / Klassischer Drop Cap Effekt / Efect literă inițială decorativă */
 
 /* Drop cap for first paragraph in blog content */
 .blog-drop-cap::first-letter,
@@ -522,7 +522,7 @@ blockquote, .verse, .bible-verse {
   margin-left: 0;
 }
 
-/* Paragraph indent for all paragraphs after the first one / Texteinzug fÃƒÂ¼r alle AbsÃƒÂ¤tze nach dem ersten / Aliniat pentru toate paragrafele dupÃ„Æ’ primul */
+/* Paragraph indent for all paragraphs after the first one / Texteinzug für alle Absätze nach dem ersten / Aliniat pentru toate paragrafele după primul */
 .paragraph-indent {
   text-indent: 2em;
 }
@@ -808,7 +808,7 @@ html.light body {
   animation: spin-slow 20s linear infinite;
 }
 
-/* Moon rocking animation Ã¢â‚¬â€ gentle swing / Mond-Schaukel-Animation / AnimaÃˆâ€ºie legÃ„Æ’nare lunÃ„Æ’ */
+/* Moon rocking animation — gentle swing / Mond-Schaukel-Animation / Animație legănare lună */
 @keyframes moon-rock {
   0%, 100% {
     transform: rotate(-8deg) scale(1);
@@ -833,7 +833,7 @@ html.light body {
   color: #94a3b8;
 }
 
-/* Search pulse animation Ã¢â‚¬â€ gentle scale beat / Such-Puls-Animation / AnimaÃˆâ€ºie pulsare cÃ„Æ’utare */
+/* Search pulse animation — gentle scale beat / Such-Puls-Animation / Animație pulsare căutare */
 @keyframes search-pulse {
   0%, 100% {
     transform: scale(1);
@@ -847,7 +847,7 @@ html.light body {
   animation: search-pulse 3s ease-in-out infinite;
 }
 
-/* Flag wave animation Ã¢â‚¬â€ gentle tilt / Flaggen-Wellen-Animation / AnimaÃˆâ€ºie fluturare steag */
+/* Flag wave animation — gentle tilt / Flaggen-Wellen-Animation / Animație fluturare steag */
 @keyframes flag-wave {
   0%, 100% {
     transform: rotate(0deg);
@@ -1013,7 +1013,7 @@ html.light body {
   color: black;
 }
 
-/* Focus styles for accessibility / Fokusstile fÃƒÂ¼r Barrierefreiheit */
+/* Focus styles for accessibility / Fokusstile für Barrierefreiheit */
 .focus-visible:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
@@ -1075,18 +1075,18 @@ html.light body {
   }
 
   /* Pasul 1302006: Slightly larger text on mobile for better readability */
-  /* Etwas grÃƒÂ¶ÃƒÅ¸erer Text auf MobilgerÃƒÂ¤ten fÃƒÂ¼r bessere Lesbarkeit */
-  /* Text puÃˆâ€ºin mai mare pe mobil pentru lizibilitate mai bunÃ„Æ’ */
+  /* Etwas größerer Text auf Mobilgeräten für bessere Lesbarkeit */
+  /* Text puțin mai mare pe mobil pentru lizibilitate mai bună */
   body {
     font-size: 16px;
   }
 
-  /* Blog content text on mobile Ã¢â‚¬â€ controlled by React inline style for blog-body-text */
+  /* Blog content text on mobile — controlled by React inline style for blog-body-text */
   .reading-mode-content, .prose {
     font-size: 17px !important;
     line-height: 1.85 !important;
   }
-  /* blog-body-text: DO NOT set font-size here Ã¢â‚¬â€ it's controlled by React inline style (fontSize %) */
+  /* blog-body-text: DO NOT set font-size here — it's controlled by React inline style (fontSize %) */
   .blog-body-text {
     line-height: 1.85 !important;
   }
@@ -1116,7 +1116,7 @@ html.light body {
   }
 }
 
-/* High contrast mode support / UnterstÃƒÂ¼tzung fÃƒÂ¼r hohen Kontrast */
+/* High contrast mode support / Unterstützung für hohen Kontrast */
 @media (prefers-contrast: high) {
   .glass-effect {
     background: rgba(0, 0, 0, 0.8);
@@ -1124,7 +1124,7 @@ html.light body {
   }
 }
 
-/* Reduced motion preferences / Einstellungen fÃƒÂ¼r reduzierte Bewegung */
+/* Reduced motion preferences / Einstellungen für reduzierte Bewegung */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1190,10 +1190,10 @@ body {
 }
 
 /* =====================================================================
-   Pasul 2608002 Ã¢â‚¬â€ REGULA CARE REZOLVA PROBLEMA O DATA PENTRU TOTDEAUNA
+   Pasul 2608002 — REGULA CARE REZOLVA PROBLEMA O DATA PENTRU TOTDEAUNA
    ---------------------------------------------------------------------
    Regulile de mai jos fac textul negru pe tema luminoasa. Sunt necesare,
-   pentru ca multe componente vechi au fost scrise Ã¢â‚¬Å¾gandind intunecat" si au
+   pentru ca multe componente vechi au fost scrise „gandind intunecat" si au
    doar `text-white`, fara varianta pentru lumina.
 
    PROBLEMA de pana acum: regula prindea si butoanele cu fundal inchis, iar
@@ -1238,10 +1238,10 @@ body {
 }
 
 /*
-  Pasul 2608006 Ã¢â‚¬â€ exceptie inauntrul zonelor Ã¢â‚¬Å¾mereu albe".
-  In modalul Ã¢â‚¬Å¾Play Blog" tot textul este alb, pentru ca sta peste o poza
-  intunecata. Dar butoanele ALBE de la final au textul negru Ã¢â‚¬â€ si acela
-  devenea tot alb, deci invizibil (butonul de langa Ã¢â‚¬Å¾Nochmal horen").
+  Pasul 2608006 — exceptie inauntrul zonelor „mereu albe".
+  In modalul „Play Blog" tot textul este alb, pentru ca sta peste o poza
+  intunecata. Dar butoanele ALBE de la final au textul negru — si acela
+  devenea tot alb, deci invizibil (butonul de langa „Nochmal horen").
   Regula: daca un element cere explicit `text-black`, i se respecta cererea.
 */
 .force-white-text .text-black,
@@ -1250,11 +1250,11 @@ body {
 }
 
 /*
-  Pasul 2508001 Ã¢â‚¬â€ `.btn-solid` NU mai primeste nicio culoare de aici.
+  Pasul 2508001 — `.btn-solid` NU mai primeste nicio culoare de aici.
 
   Greseala de la pasul 2508000: scrisesem `color: inherit`. Acesta bate
   `text-white` din Tailwind (are specificitate mai mare), deci butoanele
-  mosteneau culoarea inchisa a paginii Ã¢â€ â€™ text negru pe fundal negru.
+  mosteneau culoarea inchisa a paginii → text negru pe fundal negru.
   Acum clasa doar EXCLUDE butonul din regulile generale de mai sus, iar
   culoarea scrisa in componenta (`text-white`, `text-black`) ramane valabila.
 */
@@ -1271,9 +1271,9 @@ body {
 }
 
 /*
-  Pasul 2608002 Ã¢â‚¬â€ butonul plin (`.btn-primary`) are fundal negru pe tema
+  Pasul 2608002 — butonul plin (`.btn-primary`) are fundal negru pe tema
   luminoasa, deci TOT ce e in el (text, iconita SVG) trebuie sa fie alb.
-  Inainte lipsea partea Ã¢â‚¬Å¾* ", asa ca `<span>Neuen Post erstellen</span>` si
+  Inainte lipsea partea „* ", asa ca `<span>Neuen Post erstellen</span>` si
   sageata din butonul de Contact ramaneau negre pe negru.
 */
 .light .btn-primary,
@@ -1339,7 +1339,7 @@ body {
   box-shadow: 0 12px 40px 0 rgba(10, 15, 40, 0.2), 0 6px 20px 0 rgba(20, 30, 60, 0.12);
 }
 
-/* Black & White theme (high contrast minimal) / Schwarz-WeiÃƒÅ¸-Theme */
+/* Black & White theme (high contrast minimal) / Schwarz-Weiß-Theme */
 
 /* Global music player styles - Mobile-friendly with expandable controls */
 .global-music-player {
@@ -1465,7 +1465,7 @@ body {
   }
 }
 
-/* Pasul 2508001 Ã¢â‚¬â€ nimic nu are voie sa iasa in dreapta ecranului.
+/* Pasul 2508001 — nimic nu are voie sa iasa in dreapta ecranului.
    Pe telefoanele inguste, playerul de muzica si barele de reglaj puteau
    depasi latimea si ramaneau taiate la margine. */
 .global-music-player,
@@ -1478,7 +1478,7 @@ input[type='range'] {
   max-width: 100%;
 }
 
-/* Pasul 2608002 Ã¢â‚¬â€ acelasi lucru in panoul de admin: playerul de proba al
+/* Pasul 2608002 — acelasi lucru in panoul de admin: playerul de proba al
    muzicii de fundal are o latime minima proprie (~300px) si impingea tot
    formularul in afara ecranului pe telefon. */
 audio {
@@ -1502,7 +1502,7 @@ audio {
 }
 
 /* =====================================================================
-   Pasul 2508000 Ã¢â‚¬â€ BUTOANE IN STIL RADIKAL, pe ambele teme.
+   Pasul 2508000 — BUTOANE IN STIL RADIKAL, pe ambele teme.
    ---------------------------------------------------------------------
    Inainte, pe tema luminoasa butoanele deveneau albastre (#3b82f6) sau
    gri (#6b7280). Albastrul nu are ce cauta intr-un site alb-negru si, pe
@@ -1586,7 +1586,7 @@ audio {
 
 /* Hide Navigation and Footer when modal is active */
 /* Navigation und Footer ausblenden wenn Modal aktiv ist */
-/* Ascunde Navigarea Ãˆâ„¢i Footerul cÃƒÂ¢nd modalul este activ */
+/* Ascunde Navigarea și Footerul când modalul este activ */
 body.modal-active nav,
 body.modal-active footer,
 body.modal-active div[data-mobile-nav] {
@@ -1598,8 +1598,8 @@ body.modal-active div[data-mobile-nav] {
   overflow: hidden !important;
 }
 
-/* Pasul 0809004 Ã¢â‚¬â€ cÃƒÂ¢t timp ruleÃ„Æ’zÃ„Æ’ un verset pe tot ecranul, nimic nu are ce
-   pluti peste el: nici sÃ„Æ’geata de sus, nici barele de meniu. */
+/* Pasul 0809004 — cât timp ruleăză un verset pe tot ecranul, nimic nu are ce
+   pluti peste el: nici săgeata de sus, nici barele de meniu. */
 body.intro-active [data-back-to-top],
 body.intro-active nav,
 body.intro-active footer,
@@ -1608,7 +1608,7 @@ body.intro-active div[data-mobile-nav] {
 }
 
 /* ========================================
-   MOBILE OPTIMIZATIONS / MOBIL-OPTIMIERUNGEN / OPTIMIZÃ„â€šRI MOBIL
+   MOBILE OPTIMIZATIONS / MOBIL-OPTIMIERUNGEN / OPTIMIZĂRI MOBIL
    ======================================== */
 
 /* Touch-friendly button interactions */
@@ -1734,7 +1734,7 @@ body.intro-active div[data-mobile-nav] {
 
 /* ===== PARALLAX EFFECTS ===== */
 /* Parallax scrolling effects for backgrounds */
-/* Parallax-Scroll-Effekte fÃƒÂ¼r HintergrÃƒÂ¼nde */
+/* Parallax-Scroll-Effekte für Hintergründe */
 /* Efecte parallax pentru fundaluri */
 
 .parallax-container {
@@ -1841,7 +1841,7 @@ body.intro-active div[data-mobile-nav] {
 
 /* ===== HOVER MICRO-INTERACTIONS ===== */
 /* Subtle hover effects for interactive elements */
-/* Subtile Hover-Effekte fÃƒÂ¼r interaktive Elemente */
+/* Subtile Hover-Effekte für interaktive Elemente */
 /* Efecte subtile hover pentru elemente interactive */
 
 /* Card lift effect */
@@ -2001,9 +2001,9 @@ body.intro-active div[data-mobile-nav] {
 }
 
 /* ===== MODAL FULLSCREEN FIX ===== */
-/* ForÃˆâ€ºeazÃ„Æ’ modale sÃ„Æ’ fie fullscreen fÃ„Æ’rÃ„Æ’ grey bar */
+/* Forțează modale să fie fullscreen fără grey bar */
 /* Forces modals to be true fullscreen without grey bar */
-/* Erzwingt Vollbild fÃƒÂ¼r Modals ohne grauen Balken */
+/* Erzwingt Vollbild für Modals ohne grauen Balken */
 
 /* Fix for all fullscreen modals - z-index 9999 */
 .fixed.z-\[9999\] {
@@ -2033,7 +2033,7 @@ html.modal-open {
   overflow: hidden !important;
 }
 
-/* Pasul 12005: Share buttons closer together at Ã¢â€°Â¤320px / Teilen-Buttons nÃƒÂ¤her zusammen bei Ã¢â€°Â¤320px */
+/* Pasul 12005: Share buttons closer together at ≤320px / Teilen-Buttons näher zusammen bei ≤320px */
 @media (max-width: 320px) {
   .share-buttons-row {
     gap: 0.375rem !important;
@@ -2056,9 +2056,9 @@ html.modal-open {
   }
 }
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+/* ═══════════════════════════════════════════════════════════ */
 /* Pasul 121: UX/UI Mobile Experience Animations             */
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+/* ═══════════════════════════════════════════════════════════ */
 
 /* Pull-to-refresh bouncing dots animation / Pull-to-Refresh springende Punkte Animation */
 @keyframes pull-refresh-dot {
@@ -2099,13 +2099,13 @@ html.modal-open {
   }
 }
 
-/* Swipe hint pulse animation / Swipe-Hinweis-Puls-Animation / AnimaÃˆâ€ºie puls indiciu swipe */
+/* Swipe hint pulse animation / Swipe-Hinweis-Puls-Animation / Animație puls indiciu swipe */
 @keyframes swipe-hint-pulse {
   0%, 100% { opacity: 0; transform: translateX(0); }
   50% { opacity: 0.6; transform: translateX(-4px); }
 }
 
-/* Skeleton shimmer enhanced / Verbesserter Skeleton-Schimmer / Sclipire schelet ÃƒÂ®mbunÃ„Æ’tÃ„Æ’Ãˆâ€ºitÃ„Æ’ */
+/* Skeleton shimmer enhanced / Verbesserter Skeleton-Schimmer / Sclipire schelet îmbunătățită */
 @keyframes skeleton-wave {
   0% {
     background-position: -200% 0;
@@ -2258,7 +2258,7 @@ html.modal-open {
   .triangle-loader-stroke { animation: none; stroke-dasharray: 1 0; }
 }
 
-/* Pasul 231026a Ã¢â‚¬â€ sectiunile paginii principale curg in ecran si raman fixate; se retrag la derulare in sus.
+/* Pasul 231026a — sectiunile paginii principale curg in ecran si raman fixate; se retrag la derulare in sus.
    Se aplica doar cand JS pune `.scroll-reveal` pe pagina si `data-reveal` pe sectiuni (se opreste din admin). */
 .scroll-reveal section[data-reveal] > div > h2,
 .scroll-reveal section[data-reveal] > div > p,
@@ -2275,7 +2275,7 @@ html.modal-open {
 .scroll-reveal section[data-reveal="hidden"] > div > p  { opacity: 0; transform: translateY(24px); filter: blur(6px); }
 .scroll-reveal section[data-reveal="hidden"] > div > a  { opacity: 0; transform: translateY(18px); }
 
-/* Simbolul Ã¢â‚¬Å¾curge" de sus in jos, ca o cerneala care se asterne (masca moale care coboara). */
+/* Simbolul „curge" de sus in jos, ca o cerneala care se asterne (masca moale care coboara). */
 .scroll-reveal section[data-reveal] > div > div svg {
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 60%);
   mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 60%);
@@ -2351,7 +2351,7 @@ html.evening-mode *::after { animation-duration: 0.001ms !important; animation-i
 html.kids-read .blog-body-text { font-size: 150% !important; line-height: 2 !important; }
 html.kids-read .blog-body-text p { margin-bottom: 1.6em; }
 
-/* Pasul 231026b - pagina principala, curgere mai fina: titlul si textul Ã¢â‚¬Å¾curg" ca cerneala, simbolul creste usor. */
+/* Pasul 231026b - pagina principala, curgere mai fina: titlul si textul „curg" ca cerneala, simbolul creste usor. */
 .scroll-reveal section[data-reveal] > div > h2,
 .scroll-reveal section[data-reveal] > div > p {
   -webkit-mask-repeat: no-repeat;
@@ -2438,7 +2438,7 @@ html.kids-read .blog-body-text p { margin-bottom: 1.6em; }
   .tour-text-in, .tour-ghost-in, .tour-logo-in, .tour-burger-in, .tour-burger-in .tour-burger-bar { animation: none !important; }
 }
 
-/* Pasul 231026c - textul articolului nu se poate selecta/copia; ramane doar Ã¢â‚¬Å¾Als Bild teilen". */
+/* Pasul 231026c - textul articolului nu se poate selecta/copia; ramane doar „Als Bild teilen". */
 html.text-protect .blog-body-text,
 html.text-protect .blog-body-text * {
   -webkit-user-select: none;
@@ -2451,7 +2451,7 @@ html.text-protect .blog-body-text * {
   color: inherit;
 }
 
-/* Pasul 231026c - meniul de limba: licarire care il strabate, contur luminos si steaguri care Ã¢â‚¬Å¾sar". */
+/* Pasul 231026c - meniul de limba: licarire care il strabate, contur luminos si steaguri care „sar". */
 .animate-dropdown-up,
 .animate-dropdown-down { position: absolute; overflow: hidden; }
 .animate-dropdown-up::after,
@@ -2507,21 +2507,13 @@ html.text-protect .blog-body-text * {
     animation-range: cover 0% cover 100%;
   }
   .reel-flow-bg {
-    animation: reelFlowBg linear both;
-    animation-timeline: --reel;
-    animation-range: cover 0% cover 100%;
+    animation: none;
   }
   @keyframes reelFlowText {
-    0%   { opacity: 0; transform: translateY(16vh) scale(0.9); filter: blur(12px); }
-    30%  { opacity: 0.55; filter: blur(5px); }
-    50%  { opacity: 1; transform: none; filter: blur(0); }
-    70%  { opacity: 0.55; filter: blur(5px); }
-    100% { opacity: 0; transform: translateY(-16vh) scale(0.9); filter: blur(12px); }
-  }
-  @keyframes reelFlowBg {
-    0%   { transform: translateY(10vh) scale(1.12); }
-    50%  { transform: none; }
-    100% { transform: translateY(-10vh) scale(1.12); }
+    0%   { opacity: 0.35; }
+    45%  { opacity: 1; }
+    55%  { opacity: 1; }
+    100% { opacity: 0.35; }
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2582,36 +2574,13 @@ html.text-protect .blog-body-text * {
 .animate-dropdown-up > button:nth-child(4),
 .animate-dropdown-down > button:nth-child(4) { animation-delay: 560ms; }
 
-/* Pasul 231026d - reels: ceata care acopera ecranul intre doua reel-uri (se vede doar cand derulezi). */
-@supports (animation-timeline: view()) {
-  .reel-slide::after {
-    content: '';
-    position: absolute;
-    inset: -12%;
-    z-index: 15;
-    pointer-events: none;
-    background:
-      radial-gradient(60% 40% at 20% 30%, rgba(210, 210, 210, 0.55), transparent 70%),
-      radial-gradient(50% 45% at 80% 60%, rgba(170, 170, 170, 0.5), transparent 70%),
-      radial-gradient(70% 35% at 50% 85%, rgba(230, 230, 230, 0.45), transparent 70%),
-      radial-gradient(40% 30% at 65% 15%, rgba(190, 190, 190, 0.4), transparent 70%);
-    filter: blur(28px);
-    opacity: 0;
-    animation: reelFog linear both;
-    animation-timeline: --reel;
-    animation-range: cover 0% cover 100%;
-  }
-  @keyframes reelFog {
-    0%   { opacity: 0.95; transform: translateY(14vh) scale(1.25); }
-    42%  { opacity: 0.3; }
-    50%  { opacity: 0; transform: none; }
-    58%  { opacity: 0.3; }
-    100% { opacity: 0.95; transform: translateY(-14vh) scale(1.25); }
-  }
-}
+/* Reels: doar slide-ul vizibil isi misca granulatia; restul stau pe loc (derulare fluida). */
+.reel-slide:not([data-active]) .reel-noise,
+.reel-slide:not([data-active]) .dynamic-grain,
+.reel-slide:not([data-active]) .cine-bloom,
+.reel-slide:not([data-active]) .cine-light-leak { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
   .animate-dropdown-up, .animate-dropdown-down, .animate-dropdown-up > button, .animate-dropdown-down > button { animation: none; }
-  .reel-slide::after { display: none; }
 }
 
 /* Pasul 231026e - pagina principala: ceva mai rapid (aprox. 15%). */
@@ -2639,3 +2608,13 @@ html.text-protect .blog-body-text * {
 }
 .tour-pill[data-fly="1"] { transform: translate(-50%, -50%) scale(0.28); opacity: 0; filter: blur(3px); }
 @media (prefers-reduced-motion: reduce) { .tour-pill { animation: none; transition: none; } }
+
+/* Pasul 241026B - tutorial: cardul ramane in mijloc, cu loc liber sus (sageata antetului) si jos (pastila + sageata barei). */
+@media (min-height: 700px) {
+  .tour-nav-pad { padding-top: 124px; padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+}
+/* Ecrane scurte: cardul se micsoreaza putin, ca sageata si pastila sa incapa fara sa-l atinga. */
+@media (max-height: 699px) {
+  .tour-nav-pad { padding-top: 92px; padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
+  .tour-nav-pad [data-tour-card] { zoom: 0.86; }
+}

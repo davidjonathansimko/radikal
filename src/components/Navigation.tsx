@@ -14,7 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useStickyHeader } from '@/hooks/useStickyHeader';
 import { useFeatureFlags } from '@/lib/featureFlags';
-import { glitchSwap } from '@/lib/glitchEffects';
+import { scatterGlitch } from '@/lib/glitchEffects';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { fetchArchiveYears, type ArchiveYear } from '@/lib/archiveMonths';
@@ -531,17 +531,11 @@ export default function Navigation() {
 
   // Handle language change with persistence
   const handleLanguageChange = async (newLang: 'de' | 'en' | 'ro' | 'ru') => {
-    // La schimbarea limbii toate textele tremura, ca la schimbarea temei.
-    if (newLang === language) {
-      setShowLanguageDropdown(false);
-      setShowMobileLanguageDropdown(false);
-    } else {
-      glitchSwap(() => {
-        setLanguage(newLang);
-        setShowLanguageDropdown(false);
-        setShowMobileLanguageDropdown(false);
-      });
-    }
+    // Limba se schimba pe loc; textele tremura scurt, ca la tema.
+    setLanguage(newLang);
+    setShowLanguageDropdown(false);
+    setShowMobileLanguageDropdown(false);
+    if (newLang !== language) requestAnimationFrame(() => scatterGlitch(700));
     
     // Save language based on authentication status
     try {

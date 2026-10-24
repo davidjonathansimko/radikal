@@ -3,8 +3,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-import { glitchSwap } from '@/lib/glitchEffects';
+import { flushSync } from 'react-dom';
+import { glitchViewTransition, scatterGlitch } from '@/lib/glitchEffects';
 
 // Added 'bw' (black & white / Schwarz-Weiß / alb-negru) theme option
 export type Theme = 'dark' | 'light';
@@ -66,16 +66,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [theme, mounted]);
 
-  // Schimbarea temei: acelasi efect de glitch ca la limba (vezi glitchSwap).
+  // Schimbarea temei: felii de ecran nou cu culori „glitch" + cuvinte care tremura o clipa.
   const toggleTheme = () => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
-    glitchSwap(
-      () => setTheme(next),
-      () => {
-        document.documentElement.classList.remove('dark', 'light');
-        document.documentElement.classList.add(next);
-      },
-    );
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setTheme(next);
+      return;
+    }
+    if (!doc.startViewTransition) {
+      scatterGlitch();
+      setTheme(next);
+      return;
+    }
+    const transition = doc.startViewTransition(() => {
+      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.add(next);
+      flushSync(() => setTheme(next));
+    });
+    transition.ready
+      .then(() => {
+        glitchViewTransition();
+        scatterGlitch();
+      })
+      .catch(() => {});
   };
   const contextValue: ThemeContextType = {
     theme,
