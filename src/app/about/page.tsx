@@ -31,7 +31,7 @@ const translations = {
     title: 'Über uns',
     discover: 'Entdecke RADIKAL',
     missionTitle: '',
-    missionP1: 'Wenn du dich dafür entscheidest, Menschen zu gefallen, hörst du auf, ein Diener Christi zu sein. Die Menschenfurcht, die Angst, anzuecken, und der Wunsch nach Akzeptanz sind zur Normalität geworden. Sie haben zur Verwässerung der Wahrheit und zu Verwirrung geführt, sodass sie niemanden mehr stört, sondern gefällig ist. Eine verwässerte Wahrheit, eine versüßte Botschaft und ein Glaube, der niemanden mehr stört, aber auch niemanden mehr rettet, ist nicht mehr die Wahrheit, sondern eine Lüge.',
+    missionP1: 'So viele Fragen. So viele Antworten, die weit von der Wahrheit der Schrift entfernt sind. Aus diesem Schmerz wurde RADIKAL geboren. Wer auch immer du bist, ich sage es dir ganz direkt: Wenn du die Wahrheit des Wortes Gottes nicht liebst und sie dir nicht mehr als alles andere wünschst, dann geh.',
     missionP2: 'Jesus Christus ist derselbe gestern, heute und in Ewigkeit. Sein Wort ist die absolute Wahrheit, die heiligt, befreit und jede Versuchung durch die Kraft von „Es steht geschrieben!“ besiegt.',
     missionP3: 'Darum habe ich RADIKAL geschaffen. Denn „radikal“ bedeutet nicht Extremismus, sondern die Rückkehr zum Wesentlichen, zum lateinischen radix – der Wurzel. Es bedeutet, den Kompromiss zu verweigern und seinen Anker tief in der einzigen Wahrheit zu verankern, die sich niemals ändert: dem Wort Gottes.',
     valuesTitle: 'Unsere Werte',
@@ -60,7 +60,7 @@ const translations = {
     title: 'About Us',
     discover: 'Discover RADIKAL',
     missionTitle: '',
-    missionP1: 'When you choose to please men, you cease to be a servant of Christ. The fear of man, the dread of causing offense, and the desire to be accepted have become the norm, leading to the dilution of truth and to confusion, so that it no longer disturbs anyone but is pleasing instead. A diluted truth, a sugarcoated message, and a faith that no longer offends anyone, but also saves no one, is no longer the truth, but a lie.',
+    missionP1: 'So many questions. So many answers so far from the truth of Scripture. From this pain RADIKAL was born. Whoever you are, I will tell you very directly: if you do not love and do not desire the truth of God’s Word more than anything else, then leave.',
     missionP2: 'Jesus Christ is the same yesterday, today, and forever. His Word is the absolute truth that sanctifies, sets free, and defeats every temptation through the power of “It is written!”.',
     missionP3: 'That is why I created RADIKAL. Because “radical” does not mean extremism, but a return to the essence, to the Latin radix—meaning root. It means refusing compromise and anchoring oneself deeply in the only truth that never changes: the Word of God.',
     valuesTitle: 'Our Values',
@@ -89,7 +89,7 @@ const translations = {
     title: 'Despre Noi',
     discover: 'Descoperă RADIKAL',
     missionTitle: 'Cuvânt Înainte',
-    missionP1: 'Când alegi să placi oamenilor, încetezi să mai fii slujitorul lui Hristos. Frica de oameni, teama de a nu deranja și dorința de a fi acceptați au devenit normale și au condus la diluarea adevărului și la confuzie, astfel încât acesta să nu mai deranjeze pe nimeni, ci să fie plăcut. Un adevăr diluat, un mesaj îndulcit și o credință care nu mai deranjează pe nimeni, dar nici nu mai salvează pe nimeni, nu mai reprezintă adevărul, ci o minciună.',
+    missionP1: 'Atât de multe întrebări. Atâtea răspunsuri atât de departe de adevărul Scripturii. Din această durere s-a născut RADIKAL. Oricine ai fi, îți spun foarte direct: dacă nu iubești și nu-ți dorești adevărul Cuvântului lui Dumnezeu mai mult decât orice, atunci pleacă.',
     missionP2: 'Isus Hristos este Același ieri, azi și în veci. Cuvântul Său este adevărul absolut care sfințește, eliberează și învinge orice ispită prin puterea lui „Este scris!”.',
     missionP3: 'De aceea am creat RADIKAL. Pentru că „radical” nu înseamnă extremism, ci întoarcere la esență, la latinescul radix – rădăcină. Înseamnă să refuzi compromisul și să îți înfigi adânc ancora în singurul adevăr care nu se schimbă niciodată: Cuvântul lui Dumnezeu.',
     valuesTitle: 'Valorile Noastre',
@@ -118,7 +118,7 @@ const translations = {
     title: 'О нас',
     discover: 'Открой RADIKAL',
     missionTitle: '',
-    missionP1: 'Когда ты решаешь угождать людям, ты перестаешь быть слугой Христа. Страх перед людьми, боязнь кого-то задеть и желание быть принятыми стали нормой. Это привело к размыванию истины и к путанице, из-за чего она больше никого не беспокоит, а лишь ублажает слух. Размытая истина, подслащенное послание и вера, которая больше никого не задевает, но и никого не спасает, — это уже не истина, а ложь.',
+    missionP1: 'Так много вопросов. Так много ответов, далёких от истины Писания. Из этой боли родился RADIKAL. Кто бы ты ни был, скажу тебе прямо: если ты не любишь истину Слова Божьего и не желаешь её больше всего на свете, то уходи.',
     missionP2: 'Иисус Христос вчера, сегодня и вовеки тот же. Его Слово — это абсолютная истина, которая освящает, освобождает и побеждает любое искушение силой слов «Написано!».',
     missionP3: 'Поэтому я создал RADIKAL. Ведь «радикальный» означает не экстремизм, а возвращение к сути, к латинскому radix — корень. Это значит отказаться от компромиссов и глубоко укорениться в единственной истине, которая никогда не меняется: в Слове Божьем.',
     valuesTitle: 'Наши ценности',
@@ -338,20 +338,12 @@ export default function AboutPage() {
           </section>
 
           {/* Author section / Autor-Bereich / Secțiune autor */}
-          <section className="glass-effect rounded-2xl p-8 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-black dark:text-white mb-6">
-                {t.authorTitle}
-              </h2>
-              <div className="max-w-2xl mx-auto">
-                <div className="w-24 h-24 bg-black/20 dark:bg-white/20 rounded-full mx-auto mb-6 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-black dark:text-white">{t.authorName}</span>
-                </div>
-                
-                <div className="flex justify-center gap-4">
-                  
-                </div>
-              </div>
+          <section className="mx-auto w-full max-w-xs rounded-2xl border border-black/10 px-6 py-5 text-center animate-fadeIn dark:border-white/10" style={{ animationDelay: '0.8s' }}>
+            <h2 className="mb-3 font-cinzel text-xs uppercase tracking-[0.25em] text-black/60 dark:text-white/60">
+              {t.authorTitle}
+            </h2>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-black/15 dark:border-white/20">
+              <span className="text-sm font-semibold tracking-wide text-black/80 dark:text-white/80">{t.authorName}</span>
             </div>
           </section>
 

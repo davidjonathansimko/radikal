@@ -21,7 +21,7 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 //     In WelcomeModal linia ~213:  .to({}, { duration: 3.5 })
 //     Schimba DOAR acest numar daca vrei alta durata. Este in SECUNDE.
 // ===========================================================================
-const READING_PAUSE_S = 3.5;
+const READING_PAUSE_S = 1.4;
 
 // Pastrat pentru compatibilitate cu importurile existente (milisecunde).
 export const INTRO_DURATION_MS = READING_PAUSE_S * 1000;
@@ -103,9 +103,9 @@ export default function AboutIntroQuote({ onFinish }: AboutIntroQuoteProps) {
       filter: 'blur(0px)',
       y: 0,
       x: 0,
-      duration: 0.8,
+      duration: 0.65,
       stagger: {
-        each: 0.18,
+        each: 0.11,
         ease: 'power1.inOut',
       },
       ease: 'power2.out',
