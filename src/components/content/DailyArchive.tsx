@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useRowTitles } from '@/hooks/useRowTitles';
 import BackToTopButton from '@/components/BackToTopButton';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import { ReadTick } from '@/components/ReadMark';
@@ -28,6 +29,7 @@ export default function DailyArchive({ kind }: { kind: ContentKind }) {
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [rows, setRows] = useState<ContentItemRow[]>([]);
+  const titleOf = useRowTitles(rows, lang);
   const [loading, setLoading] = useState(true);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
@@ -125,7 +127,7 @@ export default function DailyArchive({ kind }: { kind: ContentKind }) {
                                 {new Date(row.created_at ?? 0).getDate()}
                               </span>
                               <span className="min-w-0 flex-1 truncate font-cinzel text-base font-semibold text-black dark:text-white">
-                                {pickContentText(row, 'title', lang)}
+                                {titleOf(row)}
                               </span>
                               <ReadTick href={`${def.itemPath}/${row.slug}`} />
                               <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">

@@ -159,11 +159,15 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     andacht: CONTENT_KINDS.andacht.title[language] ?? CONTENT_KINDS.andacht.title.de,
     copii: CONTENT_KINDS.copii.title[language] ?? CONTENT_KINDS.copii.title.de,
   };
-  const scopes: Scope[] = [
-    'blogs',
-    'marturii',
-    ...((['andacht', 'copii'] as const).filter((k) => enabledPages.has(k)) as Scope[]),
-  ];
+  // Pe paginile Blogs / Zeugnisse / Andacht / Copii cauti doar in ele; in rest, in toate.
+  const scopedPage = inMarturii || inAndacht || inCopii || Boolean(pathname?.startsWith('/blogs'));
+  const scopes: Scope[] = scopedPage
+    ? [homeScope]
+    : [
+        'blogs',
+        'marturii',
+        ...((['andacht', 'copii'] as const).filter((k) => enabledPages.has(k)) as Scope[]),
+      ];
 
   const placeholder =
     scope === 'marturii'
@@ -692,6 +696,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
             )}
 
             {/* Pasul 2608006 — UNDE cauți: în bloguri sau în mărturii. */}
+            {scopes.length > 1 && (
             <div className="mb-5 flex flex-wrap gap-2">
               {scopes.map((s) => (
                 <button
@@ -708,6 +713,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                 </button>
               ))}
             </div>
+            )}
 
             {/* Pasul A17 — CATEGORII.
                 Alegi întâi tema (familie, căsnicie, credință…), poți bifa

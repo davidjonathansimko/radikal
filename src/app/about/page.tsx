@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
 import AboutStoryModal from '@/components/AboutStoryModal';
-import AnimatedPlayIcon from '@/components/AnimatedPlayIcon';
+import TriangleLoader from '@/components/TriangleLoader';
 import AboutIntroQuote from '@/components/AboutIntroQuote';
 import { usePageText } from '@/lib/pageContent';
 import BackToTopButton from '@/components/BackToTopButton';
@@ -229,7 +229,7 @@ export default function AboutPage() {
 
             {/* Semnul Play animat (din play.json): pornește povestea. */}
             <span className="flex h-20 w-20 items-center justify-center transition-transform duration-300 hover:scale-110">
-              <AnimatedPlayIcon className="h-16 w-16" />
+              <TriangleLoader size={64} rotate={90} />
             </span>
             <span className="-mt-1 text-[10px] font-medium uppercase tracking-[0.3em] text-black/45 dark:text-white/45">
               {t.discoverHint}
@@ -255,9 +255,9 @@ export default function AboutPage() {
             </div>
             <div className="text-black/80 dark:text-white/80 leading-relaxed space-y-4">
               
-              <p>{t.missionP1}</p>
-              <p>{t.missionP2}</p>
-              <p>{t.missionP3}</p>
+              {t.missionP1?.trim() && <p>{t.missionP1}</p>}
+              {t.missionP2?.trim() && <p>{t.missionP2}</p>}
+              {t.missionP3?.trim() && <p>{t.missionP3}</p>}
             </div>
           </section>
 

@@ -12,6 +12,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import LegacyOnly from '@/components/LegacyOnly';
+import { useRowTitles } from '@/hooks/useRowTitles';
 import UpLink from '@/components/content/UpLink';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import { matchesSelectedCategories } from '@/lib/categories';
@@ -93,6 +95,7 @@ function MarturiiToateInner() {
   const [rows, setRows] = useState<TestimonyRow[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const titleOf = useRowTitles(rows, lang);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -125,7 +128,7 @@ function MarturiiToateInner() {
       .filter((r) => matchesSelectedCategories(r.category_ids as string[] | null, categoryIds))
       .map((r) => ({
       row: r,
-      title: pickTestimonyText(r, 'title', lang),
+      title: titleOf(r),
       excerpt: pickTestimonyText(r, 'excerpt', lang),
     }));
 
@@ -134,7 +137,7 @@ function MarturiiToateInner() {
       const db = new Date(b.row.created_at ?? 0).getTime();
       return db - da;
     });
-  }, [rows, lang, year, month, categoryIds]);
+  }, [rows, lang, year, month, categoryIds, titleOf]);
 
   return (
     <div className="min-h-screen py-12">
@@ -161,7 +164,7 @@ function MarturiiToateInner() {
         </header>
 
         {/* Pasul 0409b — o singură căutare, ținută la vedere cât cobori. */}
-        <div className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
+        <LegacyOnly className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
           <div className="flex justify-center">
             <BlogBrowse
               table="testimonies"
@@ -174,9 +177,9 @@ function MarturiiToateInner() {
               }}
             />
           </div>
-        </div>
+        </LegacyOnly>
 
-        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="testimonies" className="mb-5" />
+        <LegacyOnly className="mb-5"><CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="testimonies" /></LegacyOnly>
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

@@ -26,9 +26,10 @@ import { originalTextsFor, isPageEditable, ensurePageDefaultsLoaded } from '@/li
 import { fetchEnabledPages, setPageEnabled, fetchGuestAllowed, setGuestAllowed, fetchGuestReadAllowed, setGuestReadAllowed, type TogglablePage } from '@/lib/pageSettings';
 import { fetchFeatureFlags, setFeatureFlag, FEATURE_DEFAULTS, type FeatureKey } from '@/lib/featureFlags';
 
-type FeatureGroup = 'article' | 'home' | 'kids';
+type FeatureGroup = 'article' | 'home' | 'kids' | 'lists';
 
 const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text: string }[] = [
+  { key: 'legacyBrowse', group: 'lists', title: 'Căutare și categorii vechi pe telefon', text: 'Pe telefon și tabletă, în Blogs, Zeugnisse, Andacht și Pentru copii: butonul „… durchsuchen”, titlul „Kategorien”, bara „Kategorie suchen” și pastilele de sub ea. Oprit = se vede doar banda nouă cu pastile (Archiv + categorii). Pe desktop rămân mereu.' },
   { key: 'resume', group: 'article', title: 'Continuă lectura', text: 'Cardul „Weiterlesen” cu ultimul articol deschis (Blogs, Zeugnisse, Andacht, Copii).' },
   { key: 'swipe', group: 'article', title: 'Swipe între bloguri', text: 'Pe telefon, în articol, tragi stânga/dreapta între cele 6 bloguri din listă.' },
   { key: 'shareSelection', group: 'article', title: 'Trimite o frază ca imagine', text: 'Atingi o propoziție din articol și apare butonul „Als Bild teilen”.' },
@@ -43,6 +44,7 @@ const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text:
 ];
 
 const FEATURE_GROUPS: { id: FeatureGroup; title: string }[] = [
+  { id: 'lists', title: 'Liste (Blogs, Zeugnisse, Andacht)' },
   { id: 'article', title: 'Citire în articol' },
   { id: 'home', title: 'Pagina principală' },
   { id: 'kids', title: 'Pagina pentru copii' },
@@ -281,23 +283,30 @@ export default function PageContentAdmin() {
       });
       next[pageId]![lang] = mine;
 
-      // 2. Aceleasi campuri, traduse in celelalte limbi
+      // 2. Aceleasi campuri, traduse in celelalte limbi.
+      // Un text sters (gol) se sterge in TOATE limbile si nu se traduce.
+      const emptied = changedKeys.filter((k) => !(draft[k] ?? '').trim());
+      const filled = changedKeys.filter((k) => (draft[k] ?? '').trim());
       let translatedLangs = 0;
-      if (changedKeys.length > 0) {
-        const sourceTexts = changedKeys.map((k) => draft[k]);
-        for (const other of PAGE_LANGUAGES) {
-          if (other === lang) continue;
-          const results = await translateMany(sourceTexts, lang, other);
-          if (results.length !== changedKeys.length) continue;
-
-          const bucket: Record<string, string> = { ...(next[pageId]![other] ?? {}) };
-          changedKeys.forEach((k, i) => {
-            const value = (results[i] || '').trim();
-            if (value) bucket[k] = value;
-          });
-          next[pageId]![other] = bucket;
+      for (const other of PAGE_LANGUAGES) {
+        if (other === lang) continue;
+        const bucket: Record<string, string> = { ...(next[pageId]![other] ?? {}) };
+        emptied.forEach((k) => {
+          bucket[k] = '';
+        });
+        if (filled.length > 0) {
+          const results = await translateMany(filled.map((k) => draft[k]), lang, other);
+          if (results.length === filled.length) {
+            filled.forEach((k, i) => {
+              const value = (results[i] || '').trim();
+              if (value) bucket[k] = value;
+            });
+            translatedLangs += 1;
+          }
+        } else if (emptied.length > 0) {
           translatedLangs += 1;
         }
+        next[pageId]![other] = bucket;
       }
 
       await savePageOverrides(next);

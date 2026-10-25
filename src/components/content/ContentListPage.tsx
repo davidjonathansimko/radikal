@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useRowTitles } from '@/hooks/useRowTitles';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
@@ -117,6 +118,7 @@ export default function ContentListPage({
   const [trail, setTrail] = useState<PublicSection[]>([]);
   const [missing, setMissing] = useState(false);
   const [rows, setRows] = useState<ContentItemRow[]>([]);
+  const titleOf = useRowTitles(rows, lang);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -165,7 +167,7 @@ export default function ContentListPage({
       .filter((r) => matchesSelectedCategories(r.category_ids as string[] | null, categoryIds))
       .map((r) => ({
       row: r,
-      title: pickContentText(r, 'title', lang),
+      title: titleOf(r),
       excerpt: pickContentText(r, 'excerpt', lang),
     }));
     return withText.sort((a, b) => {
@@ -173,7 +175,7 @@ export default function ContentListPage({
       const db = new Date(b.row.created_at ?? 0).getTime();
       return db - da;
     });
-  }, [rows, lang, categoryIds]);
+  }, [rows, lang, categoryIds, titleOf]);
 
   if (allowed === null || allowed === false) return null;
 

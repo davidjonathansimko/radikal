@@ -8,7 +8,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import gsap from 'gsap';
-import AnimatedPlayIcon from '@/components/AnimatedPlayIcon';
+import TriangleLoader from '@/components/TriangleLoader';
 import { useGSAP } from '@gsap/react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTheme } from '@/hooks/useTheme';
@@ -808,8 +808,8 @@ export default function AboutStoryModal({ onComplete, onSkip }: AboutStoryModalP
               </div>
             )}
             {step.icon === 'start' && (
-              <div className={isDark ? 'text-white' : 'text-gray-800'}>
-                <AnimatedPlayIcon className="mx-auto h-24 w-24" />
+              <div className="flex justify-center">
+                <TriangleLoader size={96} rotate={90} />
               </div>
             )}
           </div>

@@ -132,9 +132,10 @@ export function usePageText<T extends Record<string, unknown>>(
   return useMemo(() => {
     if (!override) return base;
     // Doar campurile scrise de admin sunt inlocuite; restul raman din cod.
+    // Un camp salvat gol inseamna "sters": textul nu se mai afiseaza deloc.
     const merged: Record<string, unknown> = { ...base };
     Object.entries(override).forEach(([key, value]) => {
-      if (typeof value === 'string' && value.trim() !== '') merged[key] = value;
+      if (typeof value === 'string') merged[key] = value;
     });
     return merged as T;
   }, [base, override]);

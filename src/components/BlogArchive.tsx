@@ -10,6 +10,7 @@ import BackToTopButton from '@/components/BackToTopButton';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import { ReadTick } from '@/components/ReadMark';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useRowTitles } from '@/hooks/useRowTitles';
 import { getSupabaseClient } from '@/lib/supabase';
 import { matchesSelectedCategories } from '@/lib/categories';
 
@@ -78,10 +79,7 @@ export default function BlogArchive() {
 
   const monthName = (m: number) =>
     new Date(2000, m, 1).toLocaleDateString(LOCALES[lang], { month: 'long' });
-  const titleOf = (r: Row) => {
-    const mine = r[`title_${lang}`];
-    return typeof mine === 'string' && mine.trim() ? mine : r.title;
-  };
+  const titleOf = useRowTitles(rows, lang);
 
   return (
     <div className="min-h-screen py-10">

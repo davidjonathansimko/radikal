@@ -1499,14 +1499,16 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             
             {/* Mobile layout: responsive rows */}
             <div className="md:hidden flex flex-col gap-2 mb-2">
-              {/* Pasul 2102005: Row 1: FontSize + PDF + Focus — flex-wrap to prevent text cut-off */}
-              <div className="flex items-center justify-between gap-1 w-full">
-                {featureFlags.fontControls ? <FontSizeControls /> : <span />}
-                <div className="flex items-center gap-1 flex-shrink-0 min-w-0">
-                  <PrintButton variant="icon" showLabel />
-                  {featureFlags.eveningMode && <EveningModeToggle />}
-                  <ReadingModeToggle />
-                </div>
+              {/* Telefon: A-/A+ si trei butoane egale (icoana deasupra, textul dedesubt), mereu pe un rand. */}
+              <div className="reading-row-mobile">
+                {featureFlags.fontControls && (
+                  <div className="rr-font">
+                    <FontSizeControls />
+                  </div>
+                )}
+                <PrintButton variant="icon" showLabel />
+                {featureFlags.eveningMode && <EveningModeToggle />}
+                <ReadingModeToggle />
               </div>
             </div>
 

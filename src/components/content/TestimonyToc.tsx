@@ -6,7 +6,8 @@
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase';
-import { pickTestimonyText, type TestimonyRow } from '@/lib/testimonies';
+import { type TestimonyRow } from '@/lib/testimonies';
+import { useRowTitles } from '@/hooks/useRowTitles';
 import { ReadTick } from '@/components/ReadMark';
 
 type Lang = 'ro' | 'de' | 'en' | 'ru';
@@ -20,8 +21,10 @@ export interface TocSection {
 
 interface Loaded {
   children: TocSection[];
-  items: { id: string; slug: string; title: string }[];
+  items: TestimonyRow[];
 }
+
+const NO_ITEMS: TestimonyRow[] = [];
 
 const SECTION_COLS = 'id, slug, name_ro, name_de, name_en, name_ru';
 const ITEM_COLS = 'id, slug, title, title_de, title_en, title_ro, title_ru, created_at, section_ids';
@@ -30,6 +33,7 @@ function TocNode({ section, lang, depth }: { section: TocSection; lang: Lang; de
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<Loaded | null>(null);
   const [busy, setBusy] = useState(false);
+  const titleOf = useRowTitles(data?.items ?? NO_ITEMS, lang);
 
   const toggle = useCallback(async () => {
     const next = !open;
@@ -59,11 +63,7 @@ function TocNode({ section, lang, depth }: { section: TocSection; lang: Lang; de
         slug: r.slug as string,
         name: ((r[`name_${lang}`] as string) || (r.name_ro as string) || '').trim(),
       }));
-      const items = ((itemRes.data || []) as unknown as TestimonyRow[]).map((r) => ({
-        id: r.id,
-        slug: r.slug,
-        title: pickTestimonyText(r, 'title', lang),
-      }));
+      const items = (itemRes.data || []) as unknown as TestimonyRow[];
       setData({ children, items });
     } finally {
       setBusy(false);
@@ -147,7 +147,7 @@ function TocNode({ section, lang, depth }: { section: TocSection; lang: Lang; de
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
                   <path d="M14 2v6h6" />
                 </svg>
-                <span className="min-w-0 flex-1 truncate">{it.title}</span>
+                <span className="min-w-0 flex-1 truncate">{titleOf(it)}</span>
                 <ReadTick href={`/marturii/m/${it.slug}`} />
               </Link>
             </li>

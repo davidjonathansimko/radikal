@@ -57,8 +57,10 @@ export default function ContinueReading({ className = '' }: { className?: string
       </Link>
       <button
         type="button"
-        aria-label="✕"
-        onClick={() => {
+        aria-label="Close"
+        onPointerUp={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           try {
             localStorage.removeItem(LAST_READ_KEY);
           } catch {
@@ -66,7 +68,9 @@ export default function ContinueReading({ className = '' }: { className?: string
           }
           setItem(null);
         }}
-        className="btn-solid absolute right-1.5 top-1/2 flex h-6 min-h-0 w-6 min-w-0 -translate-y-1/2 items-center justify-center rounded-full text-[11px] text-black/45 hover:bg-black/10 dark:text-white/45 dark:hover:bg-white/10"
+        onClick={(e) => e.preventDefault()}
+        style={{ touchAction: 'manipulation', minHeight: 44, minWidth: 44 }}
+        className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[13px] text-black/50 hover:bg-black/10 dark:text-white/50 dark:hover:bg-white/10"
       >
         ✕
       </button>

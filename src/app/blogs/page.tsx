@@ -13,6 +13,8 @@ import { useRouteProtection } from '@/hooks/useRouteProtection';
 import BackToHome from '@/components/BackToHome';
 import BlogBrowse from '@/components/BlogBrowse';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
+import LegacyOnly from '@/components/LegacyOnly';
+import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
 import ContinueReading from '@/components/ContinueReading';
 import NewsletterSubscribe from '@/components/NewsletterSubscribe';
 import { CircularReadingProgress } from '@/components/ReadingProgress';
@@ -35,6 +37,8 @@ function BlogsPageContent() {
   // Check if user is authenticated for newsletter / Prüfen ob Benutzer für Newsletter authentifiziert ist / Verifică dacă utilizatorul este autentificat pentru newsletter
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  // Pe telefon: categoria aleasa din banda de pastile (atunci lista de 6 blocuri se ascunde).
+  const [mobileCategory, setMobileCategory] = useState<string | null>(null);
   const supabase = createClient();
   
   useEffect(() => {
@@ -145,11 +149,20 @@ function BlogsPageContent() {
           <BackToHome className="mt-6 hidden lg:flex justify-center" />
           
           {/* Blog browse - alphabetical & date-based filtering / Blog-Durchsuchen - Alphabetische & Datumsbasierte Filterung / Navigare bloguri - filtrare alfabetică & pe bază de dată */}
-          <div className="flex justify-center">
+          <LegacyOnly className="flex justify-center">
             <BlogBrowse />
-          </div>
+          </LegacyOnly>
+          <MobileCategoryBrowser
+            table="blog_posts"
+            itemPath="/blogs"
+            archiveHref="/blogs/arhiva"
+            onSelectedChange={setMobileCategory}
+            className="mt-1 text-left"
+          />
           <ContinueReading className="mt-4" />
-          <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="blog_posts" className="mt-4" />
+          <LegacyOnly className="mt-4">
+            <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="blog_posts" />
+          </LegacyOnly>
         </header>
 
         {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
@@ -163,7 +176,7 @@ function BlogsPageContent() {
         )}
 
         {/* Blog list component with Suspense / Blog-Listen-Komponente mit Suspense / Componentă listă blog cu Suspense */}
-        <div className="animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+        <div className={`animate-fadeIn${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
           <Suspense fallback={
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
@@ -183,7 +196,7 @@ function BlogsPageContent() {
         </div>
 
         {/* Arhiva: pentru cine vrea sa rasfoiasca dupa data, nu prin cautare. */}
-        <div className="mt-6 text-center">
+        <div className="mt-6 hidden text-center lg:block">
           <Link
             href="/blogs/arhiva"
             className="inline-block rounded-full border border-black/20 px-6 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10"

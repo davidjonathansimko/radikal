@@ -12,6 +12,9 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
+import LegacyOnly from '@/components/LegacyOnly';
+import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
+import { useRowTitles } from '@/hooks/useRowTitles';
 import ContinueReading from '@/components/ContinueReading';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { ReadTick } from '@/components/ReadMark';
@@ -105,6 +108,9 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
     [rows, todayRow, categoryIds],
   );
 
+  const titleRows = useMemo(() => (todayRow ? [todayRow, ...recent] : recent), [todayRow, recent]);
+  const titleOf = useRowTitles(titleRows, lang);
+
   if (allowed === null || allowed === false) return null;
 
   const heading = t.heading;
@@ -166,7 +172,7 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
                     {t.today}
                   </span>
                   <span className="block font-cinzel text-xl font-bold leading-snug text-black dark:text-white">
-                    {pickContentText(todayRow, 'title', lang)}
+                    {titleOf(todayRow)}
                   </span>
                   {pickContentText(todayRow, 'excerpt', lang) && (
                     <span className="mt-2 line-clamp-2 block text-sm text-black/60 dark:text-white/60">
@@ -186,7 +192,16 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
               </div>
             )}
 
-            <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="content_items" kind={kind} className="mb-6" />
+            <MobileCategoryBrowser
+              table="content_items"
+              kind={kind}
+              itemPath={def.itemPath}
+              archiveHref={`${def.basePath}/arhiva`}
+              className="mb-6"
+            />
+            <LegacyOnly className="mb-6">
+              <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="content_items" kind={kind} />
+            </LegacyOnly>
 
             {/* Ultimele 4 */}
             {recent.length > 0 && (
@@ -205,7 +220,7 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
                           {formatDay(row.created_at, lang, false)}
                         </span>
                         <span className="min-w-0 flex-1 truncate font-cinzel text-base font-semibold text-black dark:text-white">
-                          {pickContentText(row, 'title', lang)}
+                          {titleOf(row)}
                         </span>
                         <ReadTick href={`${def.itemPath}/${row.slug}`} />
                         <span aria-hidden="true" className="shrink-0 text-black/30 dark:text-white/30">
@@ -218,7 +233,7 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
               </section>
             )}
 
-            <div className="text-center">
+            <div className="hidden text-center lg:block">
               <Link
                 href={`${def.basePath}/arhiva`}
                 className="inline-block rounded-full border border-black/20 px-6 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10"

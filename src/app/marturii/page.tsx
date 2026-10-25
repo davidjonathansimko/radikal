@@ -20,6 +20,8 @@ import { registerPageDefaults } from '@/lib/pageDefaults';
 import { MARTURII_TEXTS } from '@/lib/pageTexts/marturii';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import LegacyOnly from '@/components/LegacyOnly';
+import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
 import TestimonyToc from '@/components/content/TestimonyToc';
 import ContinueReading from '@/components/ContinueReading';
 import MarturiiIntroQuote from '@/components/MarturiiIntroQuote';
@@ -206,7 +208,7 @@ export default function MarturiiPage() {
         <section className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
           {/* Pasul 2708002 — acelasi panou de rasfoire ca la bloguri.
               Pasul 0809001 — ramane la vedere cat timp cobori. */}
-          <div className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
+          <LegacyOnly className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
             <div className="flex justify-center">
               <BlogBrowse
                 table="testimonies"
@@ -219,7 +221,9 @@ export default function MarturiiPage() {
                 }}
               />
             </div>
-          </div>
+          </LegacyOnly>
+
+          <MobileCategoryBrowser table="testimonies" itemPath="/marturii/m" archiveHref="/marturii/toate" className="mb-5" />
 
           <h2 className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-black/45 dark:text-white/45">
             {t.sectionsTitle}

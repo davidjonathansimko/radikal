@@ -13,6 +13,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { getSupabaseClient } from '@/lib/supabase';
 import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
+import LegacyOnly from '@/components/LegacyOnly';
+import { useRowTitles } from '@/hooks/useRowTitles';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import AccordionCards from '@/components/content/AccordionCards';
 import { matchesSelectedCategories } from '@/lib/categories';
@@ -92,6 +94,7 @@ export default function SectionPage() {
   const [rows, setRows] = useState<TestimonyRow[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const titleOf = useRowTitles(rows, lang);
 
   /** Câte rubrici ai coborât până aici. 0 = prima rubrică din listă. */
   const depth = trail.length;
@@ -178,7 +181,7 @@ export default function SectionPage() {
       .filter((r) => matchesSelectedCategories(r.category_ids as string[] | null, categoryIds))
       .map((r) => ({
       row: r,
-      title: pickTestimonyText(r, 'title', lang),
+      title: titleOf(r),
       excerpt: pickTestimonyText(r, 'excerpt', lang),
     }));
     return withText.sort((a, b) => {
@@ -186,7 +189,7 @@ export default function SectionPage() {
       const db = new Date(b.row.created_at ?? 0).getTime();
       return db - da;
     });
-  }, [rows, lang, categoryIds]);
+  }, [rows, lang, categoryIds, titleOf]);
 
   if (sectionMissing) {
     return (
@@ -218,7 +221,7 @@ export default function SectionPage() {
 
         {/* Pasul 2708002 — rasfoire alfabetica / dupa data, prin toate marturiile.
             Ramane la vedere cat timp cobori prin lista. */}
-        <div className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
+        <LegacyOnly className="sticky top-14 z-20 -mx-4 mb-5 bg-white/85 px-4 py-2 backdrop-blur-md dark:bg-black/85 sm:-mx-6 sm:px-6 lg:top-20">
           <div className="flex justify-center">
             <BlogBrowse
               table="testimonies"
@@ -231,7 +234,7 @@ export default function SectionPage() {
               }}
             />
           </div>
-        </div>
+        </LegacyOnly>
 
         {/* Pasul 0809002 — rubricile dinăuntru, altfel la fiecare adâncime.
             Primul nivel: chipuri, două pe rând. Mai adânc: părți, ca un cuprins. */}
@@ -297,7 +300,7 @@ export default function SectionPage() {
           )
         )}
 
-        <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="testimonies" className="mb-5" />
+        <LegacyOnly className="mb-5"><CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="testimonies" /></LegacyOnly>
 
         {loading ? (
           <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>

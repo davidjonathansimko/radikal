@@ -276,22 +276,22 @@ export default function NewsletterSubscribe({ className = '', variant = 'card' }
 
   // Card variant (default) / Karten-Variante / Variantă card
   return (
-    <div className={`glass-effect rounded-2xl p-6 ${className}`}>
+    <div className={`glass-effect flex flex-wrap items-center gap-2.5 rounded-xl p-3 lg:block lg:rounded-2xl lg:p-6 ${className}`}>
       {/* Centered bell icon / Zentriertes Glocken-Icon / Iconiță clopoțel centrată */}
-      <div className="flex flex-col items-center text-center mb-4">
-        <div className="p-3 bg-black/10 dark:bg-white/10 rounded-full mb-3">
-          <FaBell className="w-6 h-6 text-black dark:text-white" />
+      <div className="flex items-center gap-2.5 lg:mb-4 lg:flex-col lg:gap-0 lg:text-center">
+        <div className="rounded-full bg-black/10 p-1.5 dark:bg-white/10 lg:mb-3 lg:p-3">
+          <FaBell className="h-3.5 w-3.5 text-black dark:text-white lg:h-6 lg:w-6" />
         </div>
-        <h3 className="text-sm font-bold tracking-widest text-black dark:text-white uppercase">
+        <h3 className="text-[11px] font-bold uppercase tracking-widest text-black dark:text-white lg:text-sm">
           {translations.title[language]}
         </h3>
       </div>
 
       {/* Settings toggle button — centered / Zentrierter Settings-Button */}
-      <div className="flex justify-center">
+      <div className="ml-auto flex lg:ml-0 lg:justify-center">
         <button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black/70 dark:text-white/70 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-black/10 px-2.5 py-1 text-xs text-black/70 transition-colors hover:bg-black/20 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20 lg:gap-2 lg:px-3 lg:py-1.5 lg:text-sm"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"/>
@@ -305,7 +305,7 @@ export default function NewsletterSubscribe({ className = '', variant = 'card' }
       </div>
 
       {isSettingsOpen && (
-      <>
+      <div className="w-full basis-full">
       {/* Description / Beschreibung / Descriere */}
       <p className="text-black/70 dark:text-white/70 text-sm mb-4 mt-4">
         {translations.description[language]}
@@ -382,7 +382,7 @@ export default function NewsletterSubscribe({ className = '', variant = 'card' }
           {message.text}
         </div>
       )}
-      </>
+      </div>
       )}
     </div>
   );

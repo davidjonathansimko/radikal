@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useTranslation } from '@/hooks/useTranslation';
 import { createClient } from '@/lib/supabase';
+import { fetchCategories, categoryName, type Category } from '@/lib/categories';
 import { FaRegHeart } from 'react-icons/fa';
 import { TfiComment } from 'react-icons/tfi';
 // Skeleton Loading / Skeleton-Laden / Încărcare Skeleton
@@ -49,6 +50,7 @@ const BLOG_LIST_COLUMNS = [
   // Il ceream degeaba, iar Postgres respingea INTREAGA cerere cu
   // „column blog_posts.views does not exist", deci nu se incarca niciun blog.
   'is_dynamic',
+  'category_ids',
 ].join(', ');
 
 // Pasul 2210010 — felul cardurilor. 'overlay' = titlul peste imaginea intunecata,
@@ -71,6 +73,14 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [categories, setCategories] = useState<Category[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void fetchCategories().then((c) => alive && setCategories(c));
+    return () => {
+      alive = false;
+    };
+  }, []);
   
   // Pasul 1123: Mobile carousel state
   const [isMobile, setIsMobile] = useState(false);
@@ -413,8 +423,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Message showing only last 6 blogs / Nachricht zeigt nur die letzten 6 Blogs / Mesaj arată doar ultimele 6 bloguri */}
-      <div className="mb-4 lg:mb-8 text-center">
-        <p className="text-gray-600 dark:text-white/60 text-sm lg:text-lg font-medium">
+      <div className="-mx-4 mb-3 px-4 text-left lg:mx-0 lg:mb-8 lg:px-0 lg:text-center">
+        <p className="text-base font-bold text-black dark:text-white lg:text-lg lg:font-medium lg:text-gray-600 lg:dark:text-white/60">
           {language === 'de' ? 'Angezeigt werden die letzten 6 Blogbeiträge' : 
            language === 'en' ? 'Showing the last 6 blog posts' : 
            language === 'ro' ? 'Sunt afișate ultimele 6 postări de blog' : 
@@ -437,16 +447,43 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
       {/* Pasul 1125: Mobile = single card with left/right arrows, Desktop = vertical stack */}
       <div className="relative">
 
-        {/* Dot indicators moved below carousel */}
+        {isMobile && (
+          <div
+            className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+          >
+            {posts.slice(0, 6).map((post) => {
+              const catIds = (post as unknown as { category_ids?: string[] | null }).category_ids ?? [];
+              const cat = categories.find((c) => catIds.includes(c.id));
+              const title = getTranslatedTitle(post);
+              return (
+                <Link
+                  key={post.id}
+                  href={`/blogs/${post.slug}`}
+                  className="block w-[42vw] min-w-[150px] max-w-[220px] shrink-0 snap-start sm:w-[28vw]"
+                >
+                  <div className="force-white-text relative aspect-square w-full overflow-hidden rounded-md bg-neutral-900">
+                    {post.image_url && (
+                      <Image src={post.image_url} alt="" fill sizes="220px" className="object-cover brightness-[0.65]" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-black/40" aria-hidden="true" />
+                    <div className="absolute inset-0 flex items-center justify-center p-3 text-center">
+                      <span className="line-clamp-4 font-cinzel text-[15px] font-bold leading-snug drop-shadow-lg" style={{ color: '#ffffff' }}>
+                        {title}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-2 truncate text-xs text-black/55 dark:text-white/55">{cat ? categoryName(cat, language) : 'Blog'}</p>
+                  <p className="mt-0.5 line-clamp-2 text-sm font-bold leading-snug text-black dark:text-white">{title}</p>
+                  <p className="mt-0.5 truncate text-xs text-black/55 dark:text-white/55">{formatDate(post.created_at)}</p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
-      <div 
-        ref={carouselRef}
-        className={isMobile 
-          ? "flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" 
-          : "grid gap-6 md:grid-cols-2 xl:grid-cols-3"
-        }
-        style={isMobile ? { scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' } : {}}
-      >
+      {!isMobile && (
+      <div ref={carouselRef} className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {posts.slice(0, 6).map((post, index) => (
           <React.Fragment key={post.id}>
             <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : "h-full"}>
@@ -643,47 +680,12 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         </React.Fragment>
         ))}
       </div>
-
-      {/* Pasul 2210011 — sagetile stau SUB card, nu peste el: un titlu lung nu mai
-          dispare sub ele. Doar pe telefon (pe desktop cardurile sunt in grila). */}
-      {isMobile && Math.min(posts.length, 6) > 1 && (
-        <div className="mt-3 flex items-center justify-center gap-5">
-          <button
-            type="button"
-            disabled={activeSlide === 0}
-            onClick={() => {
-              const carousel = carouselRef.current;
-              if (!carousel) return;
-              carousel.scrollTo({ left: (activeSlide - 1) * carousel.offsetWidth, behavior: 'smooth' });
-            }}
-            className="btn-solid flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-black transition-opacity disabled:opacity-30 dark:border-white/20 dark:text-white"
-            aria-label="Previous blog"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <span className="min-w-[3rem] text-center text-xs tabular-nums text-gray-600 dark:text-white/60">
-            {activeSlide + 1} / {Math.min(posts.length, 6)}
-          </span>
-          <button
-            type="button"
-            disabled={activeSlide >= Math.min(posts.length, 6) - 1}
-            onClick={() => {
-              const carousel = carouselRef.current;
-              if (!carousel) return;
-              carousel.scrollTo({ left: (activeSlide + 1) * carousel.offsetWidth, behavior: 'smooth' });
-            }}
-            className="btn-solid flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-black transition-opacity disabled:opacity-30 dark:border-white/20 dark:text-white"
-            aria-label="Next blog"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
       )}
 
       </div>
 
       {/* Load more button / Mehr laden-Button / Buton încarcă mai mult */}
-      {showOlderButton && hasMore && (
+      {showOlderButton && hasMore && !isMobile && (
         <div className="text-center mt-12">
           <button
             onClick={loadMorePosts}
