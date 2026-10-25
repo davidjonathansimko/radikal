@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
-export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls' | 'scrollReveal' | 'todayCard' | 'listenPill' | 'eveningMode' | 'remainingTime' | 'kidsParentMode' | 'protectText' | 'legacyBrowse';
+export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls' | 'scrollReveal' | 'todayCard' | 'listenPill' | 'eveningMode' | 'remainingTime' | 'kidsParentMode' | 'protectText' | 'legacyBrowse' | 'homeButton';
 
 const ROW_ID: Record<FeatureKey, string> = {
   resume: 'feat_resume',
@@ -19,6 +19,7 @@ const ROW_ID: Record<FeatureKey, string> = {
   kidsParentMode: 'feat_kids_parent_mode',
   protectText: 'feat_protect_text',
   legacyBrowse: 'feat_legacy_browse',
+  homeButton: 'feat_home_button',
 };
 
 export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
@@ -35,6 +36,7 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   protectText: true,
   // Porneste OPRITA: pe telefon se vede doar banda noua de pastile.
   legacyBrowse: false,
+  homeButton: false,
 };
 
 let cache: Promise<Record<FeatureKey, boolean>> | null = null;

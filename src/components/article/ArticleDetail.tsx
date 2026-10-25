@@ -8,6 +8,7 @@
 'use client';
 
 import TriangleLoader from '@/components/TriangleLoader';
+import { PLAY_LABELS } from '@/lib/playLabels';
 import ShareSelection from '@/components/ShareSelection';
 import { EveningModeToggle, KidsReadToggle } from '@/components/ArticleExtras';
 import { useFeatureFlags } from '@/lib/featureFlags';
@@ -805,21 +806,28 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   }, [displayTitle]);
 
   // Pasul 2210007 — tine minte ce ai citit ultima data, pentru „Continuă”.
+  // Daca ai ajuns pana jos, nu mai are rost sa fii intrebat: cardul se sterge.
   useEffect(() => {
     if (!post || !displayTitle) return;
     if (isGuest && source.requiresLogin && guestReadAllowed !== true) return;
+    const href = `${source.basePath}/${originalSlugRef.current || post.slug}`;
     try {
-      localStorage.setItem(
-        LAST_READ_KEY,
-        JSON.stringify({
-          href: `${source.basePath}/${originalSlugRef.current || post.slug}`,
-          title: displayTitle,
-          at: Date.now(),
-        }),
-      );
+      localStorage.setItem(LAST_READ_KEY, JSON.stringify({ href, title: displayTitle, at: Date.now() }));
     } catch {
       /* filă privată */
     }
+    const clearIfFinished = () => {
+      const bottom = window.scrollY + window.innerHeight;
+      if (bottom < document.documentElement.scrollHeight - 260) return;
+      try {
+        const raw = localStorage.getItem(LAST_READ_KEY);
+        if (raw && (JSON.parse(raw) as { href?: string }).href === href) localStorage.removeItem(LAST_READ_KEY);
+      } catch {
+        /* ignora */
+      }
+    };
+    window.addEventListener('scroll', clearIfFinished, { passive: true });
+    return () => window.removeEventListener('scroll', clearIfFinished);
   }, [post, displayTitle, isGuest, guestReadAllowed, source.basePath, source.requiresLogin]);
 
   // 🌐 Update URL slug to match translated title (cosmetic only — does NOT trigger navigation)
@@ -1285,30 +1293,6 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       <FloatingTableOfContents contentSelector="#blog-content" />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back button - hidden in print / Zurück-Button - versteckt beim Drucken / Buton înapoi - ascuns la printare */}
-        <Link 
-          href={source.listPath}
-          onClick={(e) => {
-            // Venit din lista: ne intoarcem prin istoric, nu adaugam o intrare noua.
-            const steps = stepsBackTo(listMatcher(source.listPath, source.basePath));
-            if (steps > 0) {
-              e.preventDefault();
-              e.currentTarget.setAttribute('data-history-nav', '1');
-              const before = window.location.pathname;
-              goBackSteps(steps);
-              // Daca harta istoricului a gresit si nu s-a intamplat nimic, mergem direct.
-              window.setTimeout(() => {
-                if (window.location.pathname === before) window.location.assign(source.listPath);
-              }, 700);
-            }
-          }}
-          className="back-button inline-flex items-center gap-2 text-gray-800 dark:text-white/80 hover:text-gray-600 dark:hover:text-white mb-4 sm:mb-8 transition-colors duration-200"
-        >
-          <FaArrowLeft />
-          <span>
-            {source.backLabel[language] ?? source.backLabel.de}
-          </span>
-        </Link>
 
         {/* Post header with theme-aware text colors / Post-Kopf mit themenabhängigen Textfarben / Antet postare cu culori text adaptate la temă */}
         <header className="mb-8">
@@ -1325,7 +1309,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           )}
 
           {/* 1. Featured image FIRST / Hauptbild ZUERST / Imagine principală PRIMA */}
-          {post.image_url && (
+          {post.image_url && !post.is_dynamic && (
             <div
               className="relative mb-6 rounded-2xl overflow-hidden animate-fadeIn"
               style={{
@@ -1584,18 +1568,42 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           </div>
         </div>
         
-        {/* Emoji Reactions / Emoji-Reaktionen / Reacții Emoji */}
-        <div className="emoji-reactions mb-8 animate-fadeIn" style={{ animationDelay: '0.65s' }}>
-          <EmojiReactions postId={post.id} />
-        </div>
-
+        {/* Banda subtire cu imaginea si butonul de redare (in locul reactiilor). */}
+        {post.is_dynamic && (
+          <div className="mb-8 animate-fadeIn" style={{ animationDelay: '0.65s' }}>
+            <button
+              type="button"
+              onClick={() => setIsPlayOpen(true)}
+              aria-label={(PLAY_LABELS[source.contentType] ?? PLAY_LABELS.blog)[language] ?? PLAY_LABELS.blog.de}
+              className="play-strip force-white-text bg-neutral-900"
+            >
+              {post.image_url && (
+                <Image
+                  src={post.image_url}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 100vw, 800px"
+                  className="object-cover"
+                  style={{ opacity: Math.max(0.35, ((post.post_image_opacity ?? 100) / 100) * 0.75) }}
+                />
+              )}
+              <span className="absolute inset-0 bg-black/45" aria-hidden="true" />
+              <span className="absolute inset-0 flex items-center justify-center gap-3">
+                <TriangleLoader size={44} rotate={90} tone="light" />
+                <span className="font-semibold tracking-wide drop-shadow-lg" style={{ color: '#ffffff' }}>
+                  {(PLAY_LABELS[source.contentType] ?? PLAY_LABELS.blog)[language] ?? PLAY_LABELS.blog.de}
+                </span>
+              </span>
+            </button>
+          </div>
+        )}
         {/* Post actions with share buttons / Post-Aktionen mit Teilen-Buttons / Acțiuni postare cu butoane distribuire */}
         <div className="post-actions flex flex-wrap items-center justify-between gap-4 py-6 border-t border-b border-gray-300 dark:border-white/20 mb-12 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
           {/* Like button with theme-aware colors / Like-Button mit themenabhängigen Farben / Buton like cu culori adaptate la temă */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-nowrap items-center gap-2">
           <button
             onClick={handleLike}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+            className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
               isLiked
                 ? 'bg-gray-300 dark:bg-white/20 text-gray-900 dark:text-white'
                 : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-300 dark:hover:bg-white/20 hover:text-gray-900 dark:hover:text-white'
@@ -1699,400 +1707,31 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           </div>
         </div>
 
-        {/* Pasul C2: Vizitatorii NU au acces la comentarii */}
-        {/* Guests have NO access to comments / Gäste haben KEINEN Zugriff auf Kommentare */}
-        {isGuest && !(featureFlags.kidsParentMode && source.contentType === 'copii') && (
-          <section className="comments-section animate-fadeIn" style={{ animationDelay: '1s' }}>
-            <div className="glass-effect rounded-xl p-6 text-center">
-              <p className="text-white/80">
-                {language === 'de' ? 'Kommentare sind nur für registrierte Benutzer sichtbar.' :
-                 language === 'en' ? 'Comments are only visible to registered users.' :
-                 language === 'ro' ? 'Comentariile sunt vizibile doar pentru utilizatorii înregistrați.' :
-                 'Комментарии видны только зарегистрированным пользователям.'}
-              </p>
-            </div>
-          </section>
-        )}
-
-        {/* Comments section / Kommentarbereich / Secțiune comentarii */}
-        <section
-          id="comments"
-          className="comments-section animate-fadeIn"
-          style={{ animationDelay: '1s', display: isGuest || (featureFlags.kidsParentMode && source.contentType === 'copii') ? 'none' : undefined }}
+        <div className="back-link-bottom mt-10 text-center animate-fadeIn" style={{ animationDelay: '1.05s' }}>
+          {/* Back button - hidden in print / Zurück-Button - versteckt beim Drucken / Buton înapoi - ascuns la printare */}
+        <Link 
+          href={source.listPath}
+          onClick={(e) => {
+            // Venit din lista: ne intoarcem prin istoric, nu adaugam o intrare noua.
+            const steps = stepsBackTo(listMatcher(source.listPath, source.basePath));
+            if (steps > 0) {
+              e.preventDefault();
+              e.currentTarget.setAttribute('data-history-nav', '1');
+              const before = window.location.pathname;
+              goBackSteps(steps);
+              // Daca harta istoricului a gresit si nu s-a intamplat nimic, mergem direct.
+              window.setTimeout(() => {
+                if (window.location.pathname === before) window.location.assign(source.listPath);
+              }, 700);
+            }
+          }}
+          className="back-button inline-flex items-center gap-2 text-gray-800 dark:text-white/80 hover:text-gray-600 dark:hover:text-white mb-4 sm:mb-8 transition-colors duration-200"
         >
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-            <TfiComment />
-            {language === 'de' ? 'Kommentare' : 
-             language === 'en' ? 'Comments' : 
-             language === 'ro' ? 'Comentarii' : 
-             'Комментарии'} ({comments.length})
-          </h2>
-
-          {/* Comment form / Kommentar-Formular / Formular comentariu */}
-          {user ? (
-            <form onSubmit={handleCommentSubmit} className="mb-8">
-              <div className="glass-effect rounded-xl p-4">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder={language === 'de' ? 'Schreibe einen Kommentar...' : 
-                              language === 'en' ? 'Write a comment...' : 
-                              language === 'ro' ? 'Scrie un comentariu...' : 
-                              'Напишите комментарий...'}
-                  className="w-full bg-transparent text-white placeholder-white/60 border-none resize-none focus:outline-none min-h-[100px]"
-                  maxLength={1000}
-                />
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-white/60 text-sm">
-                    {newComment.length}/1000
-                  </span>
-                  <button
-                    type="submit"
-                    disabled={!newComment.trim()}
-                    className="btn-primary dark:secondary disabled:opacity-50 disabled:cursor-not-allowed text-[11px] xs:text-sm"
-                  >
-                    {language === 'de' ? 'Kommentar veröffentlichen' : 
-                     language === 'en' ? 'Post Comment' : 
-                     language === 'ro' ? 'Publică Comentariul' : 
-                     'Опубликовать комментарий'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            <div className="glass-effect rounded-xl p-6 text-center mb-8">
-              <p className="text-white/80 mb-4">
-                {language === 'de' ? 'Melde dich an, um einen Kommentar zu schreiben' : 
-                 language === 'en' ? 'Login to comment' : 
-                 language === 'ro' ? 'Conectează-te pentru a comenta' : 
-                 'Войдите, чтобы комментировать'}
-              </p>
-              <Link href="/auth/login" className="btn-primary">
-                {language === 'de' ? 'Anmelden' : 
-                 language === 'en' ? 'Login' : 
-                 language === 'ro' ? 'Conectare' : 
-                 'Войти'}
-              </Link>
-            </div>
-          )}
-
-          {/* Comments list / Kommentarliste / Listă comentarii - YouTube Style with Threading */}
-          <div className="space-y-6">
-            {(() => {
-              // Separate top-level comments from replies / Trenne Top-Level-Kommentare von Antworten / Separă comentariile principale de răspunsuri
-              const topLevelComments = comments.filter(c => !c.parent_id);
-              const repliesMap = new Map<string, typeof comments>();
-              comments.forEach(c => {
-                if (c.parent_id) {
-                  const existing = repliesMap.get(c.parent_id) || [];
-                  existing.push(c);
-                  repliesMap.set(c.parent_id, existing);
-                }
-              });
-
-              // Helper function to render a single comment / Hilfsfunktion zum Rendern eines einzelnen Kommentars
-              const renderComment = (comment: typeof comments[0], isReply: boolean = false) => {
-              // Generate avatar color based on username - DARKER colors to match RADIKAL
-              // Avatar-Farbe basierend auf Benutzername generieren - DUNKLER Farben für RADIKAL
-              // Generează culoare avatar bazată pe username - culori MAI ÎNCHISE pentru RADIKAL
-              const userName = comment.author_name || comment.author_email?.split('@')[0] || 'Anonym';
-              const initial = userName.charAt(0).toUpperCase();
-              const avatarColors = [
-                'bg-red-700', 'bg-blue-700', 'bg-green-700', 'bg-purple-700', 
-                'bg-rose-700', 'bg-amber-700', 'bg-indigo-700', 'bg-teal-700',
-                'bg-emerald-700', 'bg-cyan-700', 'bg-violet-700', 'bg-fuchsia-700'
-              ];
-              const colorIndex = userName.charCodeAt(0) % avatarColors.length;
-              const avatarColor = avatarColors[colorIndex];
-              
-              // Get like/dislike data for this comment
-              const likeData = commentLikes.get(comment.id) || { likes: 0, dislikes: 0, userReaction: null };
-              
-              // Calculate relative time
-              const getRelativeTime = (dateString: string) => {
-                const date = new Date(dateString);
-                const now = new Date();
-                const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-                
-                if (diffInSeconds < 60) return language === 'de' ? 'gerade eben' : language === 'en' ? 'just now' : language === 'ro' ? 'chiar acum' : 'только что';
-                if (diffInSeconds < 3600) {
-                  const mins = Math.floor(diffInSeconds / 60);
-                  return language === 'de' ? `vor ${mins} Min.` : language === 'en' ? `${mins}m ago` : language === 'ro' ? `acum ${mins} min` : `${mins} мин. назад`;
-                }
-                if (diffInSeconds < 86400) {
-                  const hours = Math.floor(diffInSeconds / 3600);
-                  return language === 'de' ? `vor ${hours} Std.` : language === 'en' ? `${hours}h ago` : language === 'ro' ? `acum ${hours} ore` : `${hours} ч. назад`;
-                }
-                if (diffInSeconds < 604800) {
-                  const days = Math.floor(diffInSeconds / 86400);
-                  return language === 'de' ? `vor ${days} Tag${days > 1 ? 'en' : ''}` : language === 'en' ? `${days}d ago` : language === 'ro' ? `acum ${days} zi${days > 1 ? 'le' : ''}` : `${days} дн. назад`;
-                }
-                if (diffInSeconds < 2592000) {
-                  const weeks = Math.floor(diffInSeconds / 604800);
-                  return language === 'de' ? `vor ${weeks} Woche${weeks > 1 ? 'n' : ''}` : language === 'en' ? `${weeks}w ago` : language === 'ro' ? `acum ${weeks} săpt.` : `${weeks} нед. назад`;
-                }
-                if (diffInSeconds < 31536000) {
-                  const months = Math.floor(diffInSeconds / 2592000);
-                  return language === 'de' ? `vor ${months} Monat${months > 1 ? 'en' : ''}` : language === 'en' ? `${months}mo ago` : language === 'ro' ? `acum ${months} lun${months > 1 ? 'i' : 'ă'}` : `${months} мес. назад`;
-                }
-                const years = Math.floor(diffInSeconds / 31536000);
-                return language === 'de' ? `vor ${years} Jahr${years > 1 ? 'en' : ''}` : language === 'en' ? `${years}y ago` : language === 'ro' ? `acum ${years} an${years > 1 ? 'i' : ''}` : `${years} г. назад`;
-              };
-
-              return (
-                <div key={comment.id} className={`flex gap-3 ${isReply ? '' : ''}`}>
-                  {/* Avatar - YouTube Style with darker colors / Smaller for replies */}
-                  <div className={`flex-shrink-0 ${isReply ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold shadow-lg`}>
-                    {initial}
-                  </div>
-                  
-                  {/* Comment Content */}
-                  <div className="flex-1 min-w-0">
-                    {/* Username and Time */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-white text-sm hover:text-white/80 cursor-pointer">
-                        @{userName.toLowerCase().replace(/\s+/g, '')}
-                      </span>
-                      <span className="text-white/50 text-xs">
-                        {getRelativeTime(comment.created_at)}
-                      </span>
-                      {/* Translation indicator */}
-                      {showOriginalComment.has(comment.id) && (
-                        <span className="text-xs text-white/40 italic">
-                          ({language === 'de' ? 'Original' : language === 'ro' ? 'Original' : language === 'en' ? 'Original' : 'Оригинал'})
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Comment Text */}
-                    <p className="text-white/90 text-sm leading-relaxed mb-2">
-                      {getCommentText(comment)}
-                    </p>
-                    
-                    {/* Action Buttons - YouTube Style */}
-                    <div className="flex items-center gap-1 -ml-2 flex-wrap">
-                      {/* Like Button with count */}
-                      <button 
-                        onClick={() => handleCommentReaction(comment.id, true)}
-                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-200 group/like ${
-                          likeData.userReaction === 'like' 
-                            ? 'text-blue-400 bg-blue-500/10' 
-                            : 'text-white/60 hover:bg-white/10'
-                        }`}
-                        title={language === 'de' ? 'Gefällt mir' : language === 'en' ? 'Like' : language === 'ro' ? 'Îmi place' : 'Нравится'}
-                      >
-                        <svg className={`w-4 h-4 group-hover/like:scale-110 transition-transform ${likeData.userReaction === 'like' ? 'fill-current' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z" />
-                        </svg>
-                        {likeData.likes > 0 && <span className="text-xs">{likeData.likes}</span>}
-                      </button>
-                      
-                      {/* Dislike Button */}
-                      <button 
-                        onClick={() => handleCommentReaction(comment.id, false)}
-                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-200 group/dislike ${
-                          likeData.userReaction === 'dislike' 
-                            ? 'text-red-400 bg-red-500/10' 
-                            : 'text-white/60 hover:bg-white/10'
-                        }`}
-                        title={language === 'de' ? 'Gefällt mir nicht' : language === 'en' ? 'Dislike' : language === 'ro' ? 'Nu îmi place' : 'Не нравится'}
-                      >
-                        <svg className={`w-4 h-4 group-hover/dislike:scale-110 transition-transform ${likeData.userReaction === 'dislike' ? 'fill-current' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 15h2.25m8.024-9.75c.011.05.028.1.052.148.591 1.2.924 2.55.924 3.977a8.96 8.96 0 01-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96a8.95 8.95 0 00.303-.54m.023-8.25H16.48a4.5 4.5 0 01-1.423-.23l-3.114-1.04a4.5 4.5 0 00-1.423-.23H6.504c-.618 0-1.217.247-1.605.729A11.95 11.95 0 002.25 12c0 .434.023.863.068 1.285C2.427 14.306 3.346 15 4.372 15h3.126c.618 0 .991.724.725 1.282A7.471 7.471 0 007.5 19.5a2.25 2.25 0 002.25 2.25.75.75 0 00.75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 002.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384" />
-                        </svg>
-                      </button>
-                      
-                      {/* Reply Button */}
-                      <button 
-                        onClick={() => handleReply(comment.id)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                          replyingTo === comment.id 
-                            ? 'text-blue-400 bg-blue-500/10' 
-                            : 'text-white/60 hover:bg-white/10'
-                        }`}
-                      >
-                        {language === 'de' ? 'Antworten' : language === 'en' ? 'Reply' : language === 'ro' ? 'Răspunde' : 'Ответить'}
-                      </button>
-                      
-                      {/* Translation Toggle - YouTube Style */}
-                      {translatedComments.has(comment.id) && (
-                        <button
-                          onClick={() => toggleShowOriginal(comment.id)}
-                          className="px-3 py-1.5 rounded-full text-blue-400 hover:bg-blue-500/10 text-xs font-medium transition-all duration-200 flex items-center gap-1.5"
-                        >
-                          {showOriginalComment.has(comment.id) ? (
-                            <>
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                              </svg>
-                              {language === 'de' ? 'Übersetzung' : language === 'ro' ? 'Traducere' : language === 'en' ? 'Translation' : 'Перевод'}
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                              </svg>
-                              {language === 'de' ? 'Original' : language === 'ro' ? 'Original' : language === 'en' ? 'Original' : 'Оригинал'}
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Reply Form - appears when replying */}
-                    {replyingTo === comment.id && (
-                      <div className="mt-3 pl-4 border-l-2 border-white/20">
-                        <textarea
-                          value={replyContent}
-                          onChange={(e) => setReplyContent(e.target.value)}
-                          placeholder={language === 'de' ? 'Antwort schreiben...' : 
-                                      language === 'en' ? 'Write a reply...' : 
-                                      language === 'ro' ? 'Scrie un răspuns...' : 
-                                      'Написать ответ...'}
-                          className="w-full bg-white/5 text-white placeholder-white/40 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[80px]"
-                          maxLength={500}
-                        />
-                        <div className="flex justify-end gap-2 mt-2">
-                          <button
-                            onClick={() => setReplyingTo(null)}
-                            className="px-4 py-1.5 rounded-full text-white/60 hover:bg-white/10 text-xs font-medium transition-all"
-                          >
-                            {language === 'de' ? 'Abbrechen' : language === 'en' ? 'Cancel' : language === 'ro' ? 'Anulează' : 'Отмена'}
-                          </button>
-                          <button
-                            onClick={() => submitReply(comment.id)}
-                            disabled={!replyContent.trim()}
-                            className="px-4 py-1.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {language === 'de' ? 'Antworten' : language === 'en' ? 'Reply' : language === 'ro' ? 'Răspunde' : 'Ответить'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Three dots menu - Always visible / Immer sichtbar / Mereu vizibil */}
-                  <div className="relative flex-shrink-0">
-                    <button 
-                      onClick={() => setActiveMenu(activeMenu === comment.id ? null : comment.id)}
-                      className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white/60 transition-all duration-200"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                      </svg>
-                    </button>
-                    
-                    {/* Dropdown Menu — force-white-text keeps text white in light mode on dark bg-gray-900 */}
-                    {activeMenu === comment.id && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-gray-900 rounded-lg shadow-xl py-1 z-50 border border-white/10 force-white-text">
-                        <button
-                          onClick={() => {
-                            setActiveMenu(null);
-                            if (!user) {
-                              showLoginRequired('reply');
-                            } else {
-                              setShowReportModal(comment.id);
-                            }
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-red-400 transition-colors flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
-                          </svg>
-                          {language === 'de' ? 'Melden' : language === 'en' ? 'Report' : language === 'ro' ? 'Raportează' : 'Пожаловаться'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-              }; // End of renderComment helper function
-
-              // Render threaded comments: top-level first, then replies underneath
-              // Gewindete Kommentare rendern: Top-Level zuerst, dann Antworten darunter
-              // Redare comentarii cu fire: principale mai întâi, apoi răspunsuri dedesubt
-              return (
-                <>
-                  {topLevelComments.map((comment) => {
-                    const replies = repliesMap.get(comment.id) || [];
-                    const hasReplies = replies.length > 0;
-                    const isExpanded = expandedReplies.has(comment.id);
-
-                    return (
-                      <div key={comment.id} className="space-y-0">
-                        {/* Top-level comment / Hauptkommentar / Comentariu principal */}
-                        {renderComment(comment, false)}
-                        
-                        {/* Replies section - YouTube style / Antworten-Bereich - YouTube-Stil / Secțiune răspunsuri - stil YouTube */}
-                        {hasReplies && (
-                          <div className="ml-12 mt-2">
-                            {/* Toggle replies button / Antworten ein-/ausblenden / Arată/ascunde răspunsuri */}
-                            <button
-                              onClick={() => {
-                                setExpandedReplies(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(comment.id)) {
-                                    newSet.delete(comment.id);
-                                  } else {
-                                    newSet.add(comment.id);
-                                  }
-                                  return newSet;
-                                });
-                              }}
-                              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-blue-400 hover:bg-blue-500/10 text-xs font-semibold transition-all duration-200 mb-3"
-                            >
-                              <svg className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                              </svg>
-                              {replies.length} {language === 'de' 
-                                ? (replies.length === 1 ? 'Antwort' : 'Antworten') 
-                                : language === 'en' 
-                                  ? (replies.length === 1 ? 'reply' : 'replies') 
-                                  : language === 'ro' 
-                                    ? (replies.length === 1 ? 'răspuns' : 'răspunsuri') 
-                                    : (replies.length === 1 ? 'ответ' : replies.length < 5 ? 'ответа' : 'ответов')}
-                            </button>
-                            
-                            {/* Expanded replies / Erweiterte Antworten / Răspunsuri extinse */}
-                            {isExpanded && (
-                              <div className="space-y-4 border-l-2 border-white/10 pl-4">
-                                {replies.map((reply) => renderComment(reply, true))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </>
-              );
-            })()}
-            
-            {comments.length === 0 && (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                  </svg>
-                </div>
-                <p className="text-white/60 text-sm">
-                  {language === 'de' ? 'Noch keine Kommentare. Sei der Erste!' : 
-                   language === 'en' ? 'No comments yet. Be the first!' : 
-                   language === 'ro' ? 'Încă nu există comentarii. Fii primul!' : 
-                   'Пока нет комментариев. Будь первым!'}
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Article Navigation (Previous/Next) - ABOVE Related Posts / Artikelnavigation (Vorheriger/Nächster) - ÜBER Ähnliche Beiträge / Navigare Articol (Anterior/Următor) - DEASUPRA Postărilor Similare */}
-        <div className="article-navigation animate-fadeIn" style={{ animationDelay: '1.05s' }}>
-          <ArticleNavigation 
-            prevArticle={prevArticle}
-            nextArticle={nextArticle}
-            basePath={source.basePath}
-          />
+          <FaArrowLeft />
+          <span>
+            {source.backLabel[language] ?? source.backLabel.de}
+          </span>
+        </Link>
         </div>
 
         {/* Related Posts - after article navigation / Ähnliche Beiträge - nach Artikelnavigation / Postări similare - după navigare articol */}

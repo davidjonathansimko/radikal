@@ -13,6 +13,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import LegacyOnly from '@/components/LegacyOnly';
+import ArchiveButton from '@/components/ArchiveButton';
+import HomeButtonGate from '@/components/HomeButtonGate';
 import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
 import { useRowTitles } from '@/hooks/useRowTitles';
 import ContinueReading from '@/components/ContinueReading';
@@ -119,12 +121,14 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
   return (
     <div className="min-h-screen py-10">
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
-        <UpLink
-          href="/"
-          className="mb-4 inline-block text-sm text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
-        >
-          ← {t.home}
-        </UpLink>
+        <HomeButtonGate>
+          <UpLink
+            href="/"
+            className="mb-4 inline-block text-sm text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
+          >
+            ← {t.home}
+          </UpLink>
+        </HomeButtonGate>
 
         <h1
           className={`mb-3 text-center font-cinzel text-2xl font-bold text-black dark:text-white sm:text-3xl ${
@@ -136,8 +140,6 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
         <p className="mb-8 text-center text-sm capitalize text-black/55 dark:text-white/55">
           {formatDay(null, lang)}
         </p>
-
-        <ContinueReading className="mb-6" />
 
         {kind === 'copii' && flags.kidsParentMode && (
           <div className="mx-auto mb-6 max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-sm leading-relaxed text-black/75 dark:text-white/75">
@@ -196,7 +198,6 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
               table="content_items"
               kind={kind}
               itemPath={def.itemPath}
-              archiveHref={`${def.basePath}/arhiva`}
               className="mb-6"
             />
             <LegacyOnly className="mb-6">
@@ -233,13 +234,9 @@ export default function DailyPage({ kind }: { kind: ContentKind }) {
               </section>
             )}
 
-            <div className="hidden text-center lg:block">
-              <Link
-                href={`${def.basePath}/arhiva`}
-                className="inline-block rounded-full border border-black/20 px-6 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
-              >
-                {t.archive}
-              </Link>
+            <div className="mb-8">
+              <ContinueReading scope={`${def.itemPath}/`} className="mb-6" />
+              <ArchiveButton table="content_items" kind={kind} itemPath={def.itemPath} />
             </div>
           </>
         )}

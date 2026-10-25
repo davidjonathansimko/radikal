@@ -196,10 +196,10 @@ export default function PlayBlogModal({
     blogTitle: title,
     contentType,
     prebuiltUrl,
-    // Pasul 2308005: 0.9 (0.8 era prea încet și suna forțat).
-    // Nu este alta voce — este EXACT vocea Chirp3-HD aleasa de noi.
-    // Doar redarea in browser e putin mai lenta.
-    playbackRate: 0.95,
+    // Viteza normala (1x). Fisierele pregenerate sunt facute la 0.9, deci le redam putin
+    // mai repede, ca sa ajunga la ~1x; vocea nu isi schimba tonul (preservesPitch).
+    speakingRate: 1,
+    playbackRate: prebuiltUrl ? 1.1 : 1,
   });
 
   // ------------------------------------------------------------------

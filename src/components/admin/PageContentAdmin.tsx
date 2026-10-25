@@ -29,6 +29,7 @@ import { fetchFeatureFlags, setFeatureFlag, FEATURE_DEFAULTS, type FeatureKey } 
 type FeatureGroup = 'article' | 'home' | 'kids' | 'lists';
 
 const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text: string }[] = [
+  { key: 'homeButton', group: 'lists', title: 'Butonul „Zurück zur Startseite”', text: 'Butonul „înapoi la pagina principală” de pe paginile Blogs, Zeugnisse și Andacht. Oprit = ascuns (se ajunge acasă cu săgeata telefonului sau cu logoul).' },
   { key: 'legacyBrowse', group: 'lists', title: 'Căutare și categorii vechi pe telefon', text: 'Pe telefon și tabletă, în Blogs, Zeugnisse, Andacht și Pentru copii: butonul „… durchsuchen”, titlul „Kategorien”, bara „Kategorie suchen” și pastilele de sub ea. Oprit = se vede doar banda nouă cu pastile (Archiv + categorii). Pe desktop rămân mereu.' },
   { key: 'resume', group: 'article', title: 'Continuă lectura', text: 'Cardul „Weiterlesen” cu ultimul articol deschis (Blogs, Zeugnisse, Andacht, Copii).' },
   { key: 'swipe', group: 'article', title: 'Swipe între bloguri', text: 'Pe telefon, în articol, tragi stânga/dreapta între cele 6 bloguri din listă.' },
@@ -499,6 +500,7 @@ export default function PageContentAdmin() {
           onClick={() => {
             try {
               localStorage.removeItem('radikalOnboardingDone');
+              localStorage.removeItem('radikalTour:blogs');
               setNote('Tutorialul va apărea din nou la următoarea deschidere a paginii principale, pe acest dispozitiv.');
             } catch {
               setError('Nu am putut reseta tutorialul.');

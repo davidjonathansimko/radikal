@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useFeatureFlags } from '@/lib/featureFlags';
+import { useReadItems } from '@/lib/readState';
 
 export const LAST_READ_KEY = 'radikalLastRead';
 
@@ -24,9 +25,10 @@ const LABEL: Record<string, string> = {
   ru: 'Продолжить чтение',
 };
 
-export default function ContinueReading({ className = '' }: { className?: string }) {
+export default function ContinueReading({ className = '', scope }: { className?: string; scope?: string }) {
   const { language } = useLanguage();
   const flags = useFeatureFlags();
+  const { isRead } = useReadItems();
   const [item, setItem] = useState<LastRead | null>(null);
 
   useEffect(() => {
@@ -41,6 +43,9 @@ export default function ContinueReading({ className = '' }: { className?: string
   }, []);
 
   if (!item || !flags.resume) return null;
+  // Doar textul din sectiunea curenta si doar daca nu a fost citit pana la capat.
+  if (scope && !item.href.startsWith(scope)) return null;
+  if (isRead(item.href)) return null;
 
   return (
     <div

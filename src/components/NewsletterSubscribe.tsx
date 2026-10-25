@@ -276,13 +276,13 @@ export default function NewsletterSubscribe({ className = '', variant = 'card' }
 
   // Card variant (default) / Karten-Variante / Variantă card
   return (
-    <div className={`glass-effect flex flex-wrap items-center gap-2.5 rounded-xl p-3 lg:block lg:rounded-2xl lg:p-6 ${className}`}>
+    <div className={`glass-effect flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 lg:block lg:rounded-2xl lg:p-6 ${className}`}>
       {/* Centered bell icon / Zentriertes Glocken-Icon / Iconiță clopoțel centrată */}
       <div className="flex items-center gap-2.5 lg:mb-4 lg:flex-col lg:gap-0 lg:text-center">
-        <div className="rounded-full bg-black/10 p-1.5 dark:bg-white/10 lg:mb-3 lg:p-3">
-          <FaBell className="h-3.5 w-3.5 text-black dark:text-white lg:h-6 lg:w-6" />
+        <div className="rounded-full bg-black/10 p-1 dark:bg-white/10 lg:mb-3 lg:p-3">
+          <FaBell className="h-3 w-3 text-black dark:text-white lg:h-6 lg:w-6" />
         </div>
-        <h3 className="text-[11px] font-bold uppercase tracking-widest text-black dark:text-white lg:text-sm">
+        <h3 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-black/80 dark:text-white/80 lg:text-sm lg:font-bold lg:tracking-widest lg:text-black lg:dark:text-white">
           {translations.title[language]}
         </h3>
       </div>
@@ -291,7 +291,7 @@ export default function NewsletterSubscribe({ className = '', variant = 'card' }
       <div className="ml-auto flex lg:ml-0 lg:justify-center">
         <button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-black/10 px-2.5 py-1 text-xs text-black/70 transition-colors hover:bg-black/20 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20 lg:gap-2 lg:px-3 lg:py-1.5 lg:text-sm"
+          className="inline-flex items-center gap-1 rounded-md bg-black/[0.07] px-2 py-0.5 text-[11px] text-black/65 transition-colors hover:bg-black/15 dark:bg-white/[0.08] dark:text-white/65 dark:hover:bg-white/15 lg:gap-2 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-sm"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"/>

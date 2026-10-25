@@ -41,7 +41,7 @@ import dynamic from 'next/dynamic';
 // utilizatorul apasa pe butonul Reels, ca sa nu ingreunam prima incarcare.
 const ReelsModal = dynamic(() => import('@/components/ReelsModal'), { ssr: false });
 
-import { HeartIcon, FlagDE, FlagGB, FlagRO, FlagRU, LanguageFlag } from '@/components/NavigationIcons';
+import { FlagDE, FlagGB, FlagRO, FlagRU, LanguageFlag } from '@/components/NavigationIcons';
 
 
 export default function Navigation() {
@@ -1115,22 +1115,6 @@ export default function Navigation() {
 
           {/* Right side controls / Rechte Seitensteuerungen / Controale parte dreaptă */}
           <div className="flex flex-shrink-0 items-center gap-x-1 xl:gap-x-2">
-            {/* Back to Home button (only show when not on homepage) */}
-            {pathname !== '/' && (
-              <UpLink
-                href="/"
-                className="px-3 py-2 rounded-md text-sm font-medium text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-1"
-                title={language === 'de' ? 'Zurück zur Startseite' : language === 'en' ? 'Back to Home' : language === 'ro' ? 'Înapoi la Început' : 'На главную'}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="hidden xl:block">
-                  {language === 'de' ? 'Startseite' : language === 'en' ? 'Home' : language === 'ro' ? 'Acasă' : 'Главная'}
-                </span>
-              </UpLink>
-            )}
-
             {/* Language switcher with SVG flag icons / Sprachumschalter mit SVG-Flaggen / Comutator limbă cu icoane steaguri SVG */}
             <div className="relative language-dropdown">
               <button
@@ -1209,17 +1193,6 @@ export default function Navigation() {
                 <FaBookmark className="w-4 h-4" />
               </Link>
             )} */}
-
-            {/* Liked Posts link / Gelikte Posts Link / Link Postări Apreciate */}
-            {user && (
-              <Link
-                href="/bookmarks"
-                className="px-3 py-2 rounded-md text-sm font-medium text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-1"
-                title={language === 'de' ? 'Gelikte Beiträge' : language === 'en' ? 'Liked Posts' : language === 'ro' ? 'Postări Apreciate' : 'Понравившиеся'}
-              >
-                <HeartIcon className="w-4 h-4" />
-              </Link>
-            )}
 
             {/* Theme toggle button with animation / Themenumschalter mit Animation / Buton comutare temă cu animație */}
             <button
@@ -1560,27 +1533,11 @@ export default function Navigation() {
                 </Link>
               )}
 
-              {/* Liked Posts link - visible only when logged in / Gelikte Beiträge Link - nur sichtbar wenn angemeldet / Link Postări Apreciate - vizibil doar când ești autentificat */}
-              {user && (
-                <Link
-                  href="/bookmarks"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-2 text-[28px] sm:text-[34px] font-light py-2 transition-colors duration-200 ${
-                    pathname === '/bookmarks'
-                      ? 'text-red-500 dark:text-red-400'
-                      : 'text-black/90 dark:text-white/90 hover:text-red-500 dark:hover:text-red-400'
-                  }`}
-                >
-                  <HeartIcon className="w-6 h-6 flex-shrink-0" />
-                  <span>
-                    {language === 'de' ? 'Gelikte Beiträge' : 
-                     language === 'en' ? 'Liked Posts' : 
-                     language === 'ro' ? 'Postări Apreciate' : 
-                     'Понравившиеся'}
-                  </span>
-                </Link>
-              )}
-
+              {/* Versiunea aplicatiei (doar in meniul telefonului) */}
+              <p className="py-2 text-sm font-light tracking-wide text-black/45 dark:text-white/45">
+                {language === 'ro' ? 'Versiune' : language === 'ru' ? 'Ð’ÐµÑ€ÑÐ¸Ñ' : 'Version'} {process.env.NEXT_PUBLIC_APP_VERSION}
+                {process.env.NEXT_PUBLIC_APP_BUILD_DATE ? ` Â· ${process.env.NEXT_PUBLIC_APP_BUILD_DATE}` : ''}
+              </p>
               {/* Pasul 21082026 — Accesibilitate: reducerea animatiilor (optional, implicit "sistem") */}
               <button
                 type="button"

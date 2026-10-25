@@ -40,6 +40,11 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Versiunea afisata in meniul telefonului: numarul din package.json + data constructiei.
+  env: {
+    NEXT_PUBLIC_APP_VERSION: require('./package.json').version,
+    NEXT_PUBLIC_APP_BUILD_DATE: new Date().toISOString().slice(0, 10),
+  },
   // Image Optimization Configuration
   images: {
     // Modern image formats

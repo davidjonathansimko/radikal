@@ -164,7 +164,7 @@ export default function ArticleAudioDownload({
       <button
         onClick={handleDownload}
         disabled={busy}
-        className="flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-gray-700 transition-all duration-200 hover:bg-gray-300 hover:text-gray-900 disabled:opacity-50 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20 dark:hover:text-white"
+        className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-gray-200 px-3 py-2 text-sm text-gray-700 transition-all duration-200 hover:bg-gray-300 hover:text-gray-900 disabled:opacity-50 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20 dark:hover:text-white"
         title={`${t.download} (${language.toUpperCase()})`}
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">

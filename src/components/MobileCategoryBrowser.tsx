@@ -37,6 +37,12 @@ interface Props {
 }
 
 const ARCHIVE_LABEL: Record<string, string> = { de: 'Archiv', en: 'Archive', ro: 'Arhivă', ru: 'Архив' };
+const HINT: Record<string, string> = {
+  de: 'Kategorien durchstöbern',
+  en: 'Browse categories',
+  ro: 'Răsfoiește categoriile',
+  ru: 'Просмотр категорий',
+};
 
 const COLUMNS = 'id, slug, title, title_de, title_en, title_ro, title_ru, image_url, created_at, category_ids';
 const FALLBACK_COLUMNS = 'id, slug, title, image_url, created_at, category_ids';
@@ -102,7 +108,13 @@ export default function MobileCategoryBrowser({
 
   return (
     <div className={`lg:hidden ${className}`}>
+      {usable.length > 0 && (
+        <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-black/40 dark:text-white/40">
+          {HINT[lang]}
+        </p>
+      )}
       <div
+        data-tour="cats"
         className="scrollbar-hide -mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6"
         style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
       >

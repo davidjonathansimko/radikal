@@ -22,6 +22,8 @@ import BackToTopButton from '@/components/BackToTopButton';
 import BlogBrowse from '@/components/BlogBrowse';
 import LegacyOnly from '@/components/LegacyOnly';
 import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
+import ArchiveButton from '@/components/ArchiveButton';
+import HomeButtonGate from '@/components/HomeButtonGate';
 import TestimonyToc from '@/components/content/TestimonyToc';
 import ContinueReading from '@/components/ContinueReading';
 import MarturiiIntroQuote from '@/components/MarturiiIntroQuote';
@@ -223,13 +225,11 @@ export default function MarturiiPage() {
             </div>
           </LegacyOnly>
 
-          <MobileCategoryBrowser table="testimonies" itemPath="/marturii/m" archiveHref="/marturii/toate" className="mb-5" />
+          <MobileCategoryBrowser table="testimonies" itemPath="/marturii/m" className="mb-5" />
 
           <h2 className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-black/45 dark:text-white/45">
             {t.sectionsTitle}
           </h2>
-
-          <ContinueReading className="mb-5" />
 
           {loading ? (
             <p className="text-center text-black/50 dark:text-white/50">{t.loading}</p>
@@ -247,16 +247,21 @@ export default function MarturiiPage() {
           ) : (
             <TestimonyToc sections={sections} lang={lang} />
           )}
+
+          <ContinueReading scope="/marturii/m/" className="mt-6" />
+          <ArchiveButton table="testimonies" itemPath="/marturii/m" className="mt-6" />
         </section>
 
-        <div className="mt-10 text-center">
-          <UpLink
-            href="/"
-            className="text-sm text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
-          >
-            ← {t.back}
-          </UpLink>
-        </div>
+        <HomeButtonGate>
+          <div className="mt-10 text-center">
+            <UpLink
+              href="/"
+              className="text-sm text-black/50 transition-colors hover:text-black dark:text-white/50 dark:hover:text-white"
+            >
+              ← {t.back}
+            </UpLink>
+          </div>
+        </HomeButtonGate>
       </div>
 
       <BackToTopButton />

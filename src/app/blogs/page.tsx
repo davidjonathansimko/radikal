@@ -15,6 +15,10 @@ import BlogBrowse from '@/components/BlogBrowse';
 import CategoryFilterBar from '@/components/CategoryFilterBar';
 import LegacyOnly from '@/components/LegacyOnly';
 import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
+import ArchiveButton from '@/components/ArchiveButton';
+import HomeButtonGate from '@/components/HomeButtonGate';
+import PageTour from '@/components/PageTour';
+import { BLOGS_TOUR } from '@/lib/tours';
 import ContinueReading from '@/components/ContinueReading';
 import NewsletterSubscribe from '@/components/NewsletterSubscribe';
 import { CircularReadingProgress } from '@/components/ReadingProgress';
@@ -146,7 +150,9 @@ function BlogsPageContent() {
             </div>
           )}
           {/* Back to home button - hidden on mobile, shown on desktop (moved below BlogList on mobile) */}
-          <BackToHome className="mt-6 hidden lg:flex justify-center" />
+          <HomeButtonGate>
+            <BackToHome className="mt-6 hidden lg:flex justify-center" />
+          </HomeButtonGate>
           
           {/* Blog browse - alphabetical & date-based filtering / Blog-Durchsuchen - Alphabetische & Datumsbasierte Filterung / Navigare bloguri - filtrare alfabetică & pe bază de dată */}
           <LegacyOnly className="flex justify-center">
@@ -155,11 +161,12 @@ function BlogsPageContent() {
           <MobileCategoryBrowser
             table="blog_posts"
             itemPath="/blogs"
-            archiveHref="/blogs/arhiva"
             onSelectedChange={setMobileCategory}
             className="mt-1 text-left"
           />
-          <ContinueReading className="mt-4" />
+          <div className="hidden lg:block">
+            <ContinueReading scope="/blogs/" className="mt-4" />
+          </div>
           <LegacyOnly className="mt-4">
             <CategoryFilterBar value={categoryIds} onChange={setCategoryIds} table="blog_posts" />
           </LegacyOnly>
@@ -176,7 +183,7 @@ function BlogsPageContent() {
         )}
 
         {/* Blog list component with Suspense / Blog-Listen-Komponente mit Suspense / Componentă listă blog cu Suspense */}
-        <div className={`animate-fadeIn${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
+        <div className={`animate-fadeIn pt-6 sm:pt-12 lg:pt-0${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
           <Suspense fallback={
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
@@ -195,22 +202,17 @@ function BlogsPageContent() {
           </Suspense>
         </div>
 
-        {/* Arhiva: pentru cine vrea sa rasfoiasca dupa data, nu prin cautare. */}
-        <div className="mt-6 hidden text-center lg:block">
-          <Link
-            href="/blogs/arhiva"
-            className="inline-block rounded-full border border-black/20 px-6 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
-          >
-            {language === 'de' ? 'Archiv' : language === 'en' ? 'Archive' : language === 'ro' ? 'Arhivă' : 'Архив'}
-          </Link>
-        </div>
+        {/* Arhiva: se deschide intr-o fereastra (an -> luna -> texte). */}
+        <ArchiveButton table="blog_posts" itemPath="/blogs" className="mt-8" />
+        <PageTour id="blogs" steps={BLOGS_TOUR} />
 
-        {/* Mobile: Back to home button below blog list / Mobil: Zurück-Button unter der Blogliste */}
-        <BackToHome className="mt-8 flex lg:hidden justify-center" />
+        <HomeButtonGate>
+          <BackToHome className="mt-8 flex justify-center" />
+        </HomeButtonGate>
 
-        {/* Mobile: Newsletter subscription below blog list / Mobil: Newsletter-Abonnement unter der Blogliste */}
+        {/* Newsletter, sub lista (telefon) */}
         {isAuthenticated && (
-          <div className="lg:hidden max-w-md mx-auto mt-8 mb-12 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+          <div className="lg:hidden max-w-[17rem] mx-auto mt-8 mb-12 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <NewsletterSubscribe />
           </div>
         )}

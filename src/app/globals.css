@@ -2627,3 +2627,25 @@ html.text-protect .blog-body-text * {
 }
 .reading-row-mobile > button svg { width: 16px; height: 16px; flex-shrink: 0; }
 .reading-row-mobile > button span { display: block !important; font-size: 10px; line-height: 1.1; white-space: nowrap; }
+
+/* Pasul 251026 - pictograma Archiv: documentul urca din dosar, rotita se invarte (ciclu ~3,9 s). */
+@keyframes archiveDoc { 0%, 6% { transform: translateY(46px); } 26%, 70% { transform: translateY(0); } 90%, 100% { transform: translateY(46px); } }
+@keyframes archiveGear { 0% { transform: rotate(0deg); } 26%, 74% { transform: rotate(100deg); } 100% { transform: rotate(0deg); } }
+.archive-icon-anim .archive-doc { animation: archiveDoc 3.9s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.archive-icon-anim .archive-gear { animation: archiveGear 3.9s cubic-bezier(0.4, 0, 0.2, 1) infinite; transform-box: fill-box; transform-origin: center; }
+
+/* Pasul 251026 - articol, telefon: A-/A+ nu mai calca pe butonul PDF. */
+.reading-row-mobile > .rr-font { flex: 1.7 1 0; overflow: hidden; }
+.reading-row-mobile > .rr-font > div { min-width: 0; padding: 2px; }
+.reading-row-mobile > .rr-font button { min-width: 0 !important; min-height: 0 !important; width: auto !important; flex: 1 1 0; padding: 4px 2px; }
+.reading-row-mobile > .rr-font button:nth-child(2) { flex: 1.6 1 0; }
+
+/* Pasul 251026 - banda subtire cu imaginea si butonul de redare, in locul reactiilor. */
+.play-strip { position: relative; display: block; width: 100%; height: 6rem; overflow: hidden; border-radius: 1rem; }
+
+/* Pasul 251026 - prezentarea paginii: degetul care arata gestul. */
+@keyframes tourFingerSwipe { 0%, 10% { transform: translateX(-34px); opacity: 0; } 25% { opacity: 1; } 75% { opacity: 1; } 90%, 100% { transform: translateX(34px); opacity: 0; } }
+@keyframes tourFingerTap { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(0.7); opacity: 0.5; } }
+.tour-finger-swipe { animation: tourFingerSwipe 1.8s ease-in-out infinite; }
+.tour-finger-tap { animation: tourFingerTap 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .tour-finger-swipe, .tour-finger-tap { animation: none; } }

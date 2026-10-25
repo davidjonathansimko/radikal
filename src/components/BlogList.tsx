@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useTranslation } from '@/hooks/useTranslation';
 import { createClient } from '@/lib/supabase';
+import ContinueReading from '@/components/ContinueReading';
 import { fetchCategories, categoryName, type Category } from '@/lib/categories';
 import { FaRegHeart } from 'react-icons/fa';
 import { TfiComment } from 'react-icons/tfi';
@@ -431,6 +432,11 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
            'Показаны последние 6 публикаций в блоге'}
         </p>
       </div>
+
+      {/* Telefon: cardul „continua lectura" sta sub titlul listei, nu sus. */}
+      <div className="lg:hidden">
+        <ContinueReading scope="/blogs/" className="mb-4" />
+      </div>
       
       {/* 🌐 DeepL Translation indicator / DeepL Übersetzungsindikator / Indicator traducere DeepL */}
       {isTranslating && language !== 'ro' && (
@@ -449,6 +455,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
 
         {isMobile && (
           <div
+            data-tour="cards"
             className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
           >
