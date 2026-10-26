@@ -72,8 +72,8 @@ export default function BlogAudioGenerator({
   const [error, setError] = useState('');
 
   const charCount = text.trim().length;
-  // Aproximare pentru asteptare: ~1500 de caractere pe cerere
-  const requests = Math.max(1, Math.ceil(charCount / 1500));
+  // Aproximare: propozitii scurte, ~70 de caractere pe cerere (caracterele totale raman aceleasi)
+  const requests = Math.max(1, Math.ceil(charCount / 70));
 
   // --- Descarcare audio (doar admin) --------------------------------
   /** Limbile bifate pentru DESCARCARE (separate de cele pentru generare) */

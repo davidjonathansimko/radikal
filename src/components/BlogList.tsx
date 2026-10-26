@@ -67,6 +67,15 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   
   // DeepL Translation hook / DeepL Übersetzungs-Hook / Hook traducere DeepL
   const { translateBatch, isTranslating } = useTranslation();
+  const [showTranslating, setShowTranslating] = useState(false);
+  useEffect(() => {
+    if (!isTranslating) {
+      setShowTranslating(false);
+      return;
+    }
+    const id = window.setTimeout(() => setShowTranslating(true), 900);
+    return () => window.clearTimeout(id);
+  }, [isTranslating]);
   
   // Component state / Komponentenstatus / Stare componentă
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
@@ -489,8 +498,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         <ContinueReading scope="/blogs/" className="mb-4" />
       </div>
       
-      {/* 🌐 DeepL Translation indicator / DeepL Übersetzungsindikator / Indicator traducere DeepL */}
-      {isTranslating && language !== 'ro' && (
+      {/* Indicatorul apare doar daca traducerea dureaza (nu la raspunsurile instante din cache). */}
+      {showTranslating && language !== 'ro' && (
         <div className="fixed top-4 right-4 bg-blue-500/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-pulse">
           <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
           <span className="text-sm font-medium">

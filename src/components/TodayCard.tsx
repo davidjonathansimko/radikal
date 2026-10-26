@@ -1,6 +1,6 @@
 'use client';
 
-// Pasul 231026b — cardul „Azi" de pe pagina principala: versetul zilei, Andacht-ul zilei si „Weiterlesen".
+// Pasul 231026b — cardul „Azi” de pe pagina principala: Andacht-ul zilei si „Weiterlesen”.
 // Apare doar daca exista ceva de aratat si daca este pornit din admin.
 
 import React, { useEffect, useState } from 'react';
@@ -13,7 +13,6 @@ import ContinueReading from '@/components/ContinueReading';
 import { useFeatureFlags } from '@/lib/featureFlags';
 
 const TITLE: Record<string, string> = { de: 'Heute', en: 'Today', ro: 'Azi', ru: 'Сегодня' };
-const VERSE: Record<string, string> = { de: 'Vers des Tages', en: 'Verse of the Day', ro: 'Versetul zilei', ru: 'Стих дня' };
 const ANDACHT: Record<string, string> = { de: 'Tägliche Andacht', en: 'Daily devotion', ro: 'Andacht-ul zilei', ru: 'Размышление дня' };
 
 function isoToday(): string {
@@ -28,12 +27,10 @@ interface Props {
 export default function TodayCard({ enabledPages }: Props) {
   const { language } = useLanguage();
   const lang = ['de', 'en', 'ro', 'ru'].includes(language) ? language : 'de';
-  const [verse, setVerse] = useState<{ text: string; reference: string } | null>(null);
   const [andacht, setAndacht] = useState<{ href: string; title: string } | null>(null);
   const [hasRead, setHasRead] = useState(false);
   const flags = useFeatureFlags();
 
-  const showVerse = enabledPages.has('verset');
   const showAndacht = enabledPages.has('andacht');
 
   useEffect(() => {
@@ -43,36 +40,6 @@ export default function TodayCard({ enabledPages }: Props) {
       /* ignora */
     }
   }, []);
-
-  useEffect(() => {
-    if (!showVerse) {
-      setVerse(null);
-      return;
-    }
-    let alive = true;
-    (async () => {
-      try {
-        const { data } = await getSupabaseClient()
-          .from('daily_verses')
-          .select('*')
-          .eq('for_day', isoToday())
-          .eq('published', true)
-          .maybeSingle();
-        if (!alive || !data) return;
-        const row = data as unknown as Record<string, unknown>;
-        const mine = (row[`content_${lang}`] as string | null)?.trim();
-        const fallback = lang === 'ro' ? (row.content_ro as string | null)?.trim() : '';
-        const text = mine || fallback || '';
-        const refMine = (row[`reference_${lang}`] as string | null)?.trim() || (row.reference_ro as string | null)?.trim() || '';
-        setVerse({ text, reference: text ? refMine : '' });
-      } catch {
-        /* fara card pentru verset */
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [showVerse, lang]);
 
   useEffect(() => {
     if (!showAndacht) {
@@ -103,7 +70,7 @@ export default function TodayCard({ enabledPages }: Props) {
     };
   }, [showAndacht, lang]);
 
-  if (!verse?.text && !andacht && !(hasRead && flags.resume)) return null;
+  if (!andacht && !(hasRead && flags.resume)) return null;
 
   const rowClass =
     'block rounded-xl border border-black/10 bg-black/[0.03] px-4 py-3 text-left transition-colors hover:bg-black/[0.06] dark:border-white/15 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]';
@@ -113,13 +80,6 @@ export default function TodayCard({ enabledPages }: Props) {
       <p className="text-center font-cinzel text-xs font-semibold uppercase tracking-[0.3em] text-black/50 dark:text-white/50">
         {TITLE[lang]}
       </p>
-      {verse?.text && (
-        <Link href="/verset" className={rowClass}>
-          <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-black/50 dark:text-white/50">{VERSE[lang]}</span>
-          <span className="mt-1 line-clamp-3 block text-base italic leading-snug text-black dark:text-white">{`„${verse.text}“`}</span>
-          {verse.reference && <span className="mt-1 block text-xs text-black/60 dark:text-white/60">— {verse.reference}</span>}
-        </Link>
-      )}
       {andacht && (
         <Link href={andacht.href} className={rowClass}>
           <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-black/50 dark:text-white/50">{ANDACHT[lang]}</span>

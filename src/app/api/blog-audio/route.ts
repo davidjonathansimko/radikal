@@ -22,6 +22,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { splitUnits, pcmFromWav, trimClip, assemble, encodeMp3, type AudioTimings, type Clip } from '@/lib/audioTimings';
+import { synthesizeWav } from '@/lib/googleTts';
+
+// Generarea cere zeci de cereri scurte catre Google + codare MP3.
+export const maxDuration = 300;
 
 const BUCKET = 'blog-audio';
 
@@ -47,6 +52,7 @@ function internalHeaders(request: NextRequest): Record<string, string> {
   return headers;
 }
 const MAX_CHUNK_CHARS = 1500; // sub limita de 2000 a rutei /api/tts
+const TTS_PARALLEL = 5;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const serviceKey =
@@ -107,6 +113,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       audioUrl: data?.audio_url ?? null,
+      // Momentele cuvintelor stau langa mp3, in acelasi folder (`<slug>/<limba>.json`).
+      timingsUrl: data?.audio_url ? String(data.audio_url).replace('.mp3', '.json') : null,
       charCount: data?.char_count ?? 0,
       duration: data?.duration ?? null,
       generatedAt: data?.generated_at ?? null,
@@ -199,7 +207,15 @@ export async function POST(request: NextRequest) {
 
   const textHash = hashText(text, language);
   // ---- 3) Daca textul este NESCHIMBAT, nu regeneram nimic -----------
-  //      (asa nu platesti de doua ori din greseala)
+  //      (asa nu platesti de doua ori din greseala). Exceptie: audio vechi,
+  //      fara fisierul cu momentele cuvintelor — se regenereaza o data.
+  let hasTimings = false;
+  try {
+    const { data: files } = await db.storage.from(BUCKET).list(slug);
+    hasTimings = !!files?.some((f) => f.name === `${language}.json`);
+  } catch {
+    /* ramane fals */
+  }
   try {
     const { data: existing } = await db
       .from('blog_audio')
@@ -208,7 +224,7 @@ export async function POST(request: NextRequest) {
       .eq('language', language)
       .maybeSingle();
 
-    if (existing?.text_hash === textHash && existing?.audio_url) {
+    if (existing?.text_hash === textHash && existing?.audio_url && hasTimings && !body?.force) {
       return NextResponse.json({
         audioUrl: existing.audio_url,
         charCount: existing.char_count,
@@ -220,58 +236,46 @@ export async function POST(request: NextRequest) {
     /* tabelul poate lipsi — continuam */
   }
 
-  // ---- 4) Generam bucata cu bucata prin /api/tts (care are cache) ---
-  const chunks = splitIntoChunks(text);
-  if (!chunks.length) {
+  // ---- 4) Taiem textul in propozitii scurte si le transformam in voce, pe rand ----
+  //      Asa stim exact cand incepe si cand se termina fiecare, adica momentele cuvintelor.
+  const apiKey = process.env.GOOGLE_CLOUD_TTS_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: 'GOOGLE_CLOUD_TTS_API_KEY lipsește.' }, { status: 503 });
+  }
+  const { units } = splitUnits(text);
+  if (!units.length) {
     return NextResponse.json({ error: 'Textul este gol.' }, { status: 400 });
   }
 
-  // Refolosim `origin`, declarat mai sus (la traducere).
-  const parts: Buffer[] = [];
+  const clips: Clip[] = new Array(units.length);
+  let next = 0;
+  let failure = '';
+  await Promise.all(
+    Array.from({ length: Math.min(TTS_PARALLEL, units.length) }, async () => {
+      while (!failure) {
+        const i = next++;
+        if (i >= units.length) return;
+        try {
+          const wav = await synthesizeWav(units[i].text, language, speakingRate, apiKey);
+          clips[i] = trimClip(pcmFromWav(wav));
+        } catch (e) {
+          failure = `Generarea vocii a eșuat la fragmentul ${i + 1} din ${units.length}: ${e instanceof Error ? e.message : 'eroare'}`;
+        }
+      }
+    }),
+  );
+  if (failure) return NextResponse.json({ error: failure }, { status: 502 });
 
-  for (const chunk of chunks) {
-    const res = await fetch(`${origin}/api/tts`, {
-      method: 'POST',
-      headers: internalHeaders(request),
-      body: JSON.stringify({
-        text: chunk,
-        language,
-        speakingRate,
-        blogSlug: slug,
-        blogTitle: title,
-        contentType,
-        // Pasul 2608002 — fisierul asta se descarca si se asculta in casti,
-        // deci il cerem la cea mai buna calitate pe care o da Google.
-        hifi: true,
-      }),
-    });
+  const built = assemble(units, clips);
+  const merged = encodeMp3(built.pcm);
+  const timings: AudioTimings = {
+    v: 1,
+    duration: built.pcm.length / 24000,
+    words: built.words,
+    times: built.timings.map((t) => Math.round(t * 1000) / 1000),
+  };
 
-    if (!res.ok) {
-      const detail = await res.text().catch(() => '');
-      const blockedByVercel = detail.includes('vercel_auth_enabled') || detail.includes('sso-api');
-      return NextResponse.json(
-        {
-          error: blockedByVercel
-            ? 'Adresa de probă este protejată de Vercel, iar site-ul nu se poate chema pe sine. ' +
-              'Încearcă pe adresa adevărată (radikal.blog) sau oprește „Deployment Protection" în Vercel.'
-            : `Generarea vocii a eșuat la bucata ${parts.length + 1} din ${chunks.length}.`,
-          detail: blockedByVercel ? undefined : detail.slice(0, 300),
-        },
-        { status: 502 },
-      );
-    }
-
-    const data = await res.json();
-    if (!data?.audioContent) {
-      return NextResponse.json({ error: 'Google nu a returnat audio.' }, { status: 502 });
-    }
-    parts.push(Buffer.from(data.audioContent, 'base64'));
-  }
-
-  // Cadrele MP3 se pot lipi direct una dupa alta — rezulta un singur fisier.
-  const merged = Buffer.concat(parts);
-
-  // ---- 5) Urcam in Storage ------------------------------------------
+  // ---- 5) Urcam in Storage (mp3 + momentele cuvintelor) --------------
   const path = `${slug}/${language}.mp3`;
   const { error: uploadError } = await db.storage.from(BUCKET).upload(path, merged, {
     contentType: 'audio/mpeg',
@@ -282,6 +286,20 @@ export async function POST(request: NextRequest) {
   if (uploadError) {
     return NextResponse.json(
       { error: `Fișierul nu a putut fi salvat: ${uploadError.message}` },
+      { status: 500 },
+    );
+  }
+
+  const { error: timingsError } = await db.storage
+    .from(BUCKET)
+    .upload(`${slug}/${language}.json`, Buffer.from(JSON.stringify(timings)), {
+      contentType: 'application/json',
+      upsert: true,
+      cacheControl: '31536000',
+    });
+  if (timingsError) {
+    return NextResponse.json(
+      { error: `Momentele cuvintelor nu au putut fi salvate: ${timingsError.message}` },
       { status: 500 },
     );
   }
@@ -327,7 +345,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     audioUrl,
     charCount,
-    chunks: chunks.length,
+    chunks: units.length,
     reused: false,
   });
 }
@@ -351,7 +369,7 @@ export async function DELETE(request: NextRequest) {
   const language = request.nextUrl.searchParams.get('language') || 'de';
   if (!slug) return NextResponse.json({ error: 'Lipsește `slug`.' }, { status: 400 });
 
-  await db.storage.from(BUCKET).remove([`${slug}/${language}.mp3`]);
+  await db.storage.from(BUCKET).remove([`${slug}/${language}.mp3`, `${slug}/${language}.json`]);
   await db.from('blog_audio').delete().eq('slug', slug).eq('language', language);
 
   return NextResponse.json({ ok: true });

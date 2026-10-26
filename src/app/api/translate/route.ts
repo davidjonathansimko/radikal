@@ -62,7 +62,7 @@ async function cacheTranslation(originalText: string, translatedText: string, so
     // Store first 1000 chars of original for debugging
     const originalSnippet = originalText.substring(0, 1000);
     
-    await supabase
+    const { error } = await supabase
       .from('translation_cache')
       .upsert({
         original_text_hash: hash,
@@ -75,7 +75,8 @@ async function cacheTranslation(originalText: string, translatedText: string, so
         onConflict: 'original_text_hash,source_lang,target_lang'
       });
     
-    console.log('💾 Cache SAVED: Translation cached for future use');
+    if (error) console.warn('⚠️ Cache NOT saved (DeepL will be charged again next time):', error.message);
+    else console.log('💾 Cache SAVED: Translation cached for future use');
   } catch (error) {
     console.warn('Failed to cache translation:', error);
   }

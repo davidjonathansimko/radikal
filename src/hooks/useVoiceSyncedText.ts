@@ -22,6 +22,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { alignWordsToAudio } from '@/lib/speechAlign';
+import { fetchServerTimes } from '@/lib/mapTimings';
 
 const MAX_CHUNK_CHARS = 1500; // sub limita de 2000 a rutei /api/tts
 
@@ -41,6 +42,8 @@ interface Chunk {
   duration: number; // 0 = inca necunoscuta
   /** Momentul real (secunde audio) cand se rosteste fiecare cuvant, daca analiza audio a reusit. */
   times?: number[];
+  /** Momentele vin din fisierul generat odata cu audio-ul (nu dintr-o estimare). */
+  exact?: boolean;
 }
 
 /** Taie textul in bucati la capat de propozitie */
@@ -144,6 +147,8 @@ export interface UseVoiceSyncedTextOptions {
    * fisier, pornirea e instantanee si costul este zero.
    */
   prebuiltUrl?: string | null;
+  /** Fisierul .json cu momentele exacte ale cuvintelor (generat odata cu mp3). */
+  prebuiltTimingsUrl?: string | null;
   /** Nu incepe sa incarce nimic pana nu e `true` */
   enabled: boolean;
   /**
@@ -163,6 +168,7 @@ export function useVoiceSyncedText({
   blogTitle = null,
   contentType = null,
   prebuiltUrl = null,
+  prebuiltTimingsUrl = null,
   enabled,
   playbackRate = 1,
 }: UseVoiceSyncedTextOptions) {
@@ -287,14 +293,27 @@ export function useVoiceSyncedText({
       chunksRef.current = [single];
       setAllWords(words.map((w) => w.text));
 
-      const ready = () => {
+      const ready = async () => {
         if (cancelledRef.current) return;
         single.duration = isFinite(audio.duration) ? audio.duration : clean.length / 14;
         setTotal(single.duration);
+        // Cu momentele exacte din fisier pornim imediat; fara ele, analiza audio ruleaza in fundal.
+        const exact = prebuiltTimingsUrl
+          ? await Promise.race([
+              fetchServerTimes(prebuiltTimingsUrl, words.map((w) => w.text)),
+              new Promise<null>((r) => setTimeout(() => r(null), 3000)),
+            ])
+          : null;
+        if (cancelledRef.current) return;
+        if (exact) {
+          single.times = exact;
+          single.exact = true;
+        } else {
+          void alignWordsToAudio(prebuiltUrl, words).then((times) => {
+            if (times && !cancelledRef.current) single.times = times;
+          });
+        }
         setIsReady(true);
-        void alignWordsToAudio(prebuiltUrl, words).then((times) => {
-          if (times && !cancelledRef.current) single.times = times;
-        });
       };
 
       if (audio.readyState >= 1 && isFinite(audio.duration)) {
@@ -361,7 +380,7 @@ export function useVoiceSyncedText({
       chunksRef.current = [];
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [enabled, text, prebuiltUrl, fetchChunk]);
+  }, [enabled, text, prebuiltUrl, prebuiltTimingsUrl, fetchChunk]);
 
   // ------------------------------------------------------------------
   // Bucla de sincronizare: din `currentTime` aflam cuvantul curent
@@ -403,8 +422,8 @@ export function useVoiceSyncedText({
     const rate = playbackRateRef.current || 1;
     let spokenInChunk = 0;
     if (chunk.times) {
-      // Momentele sunt inceputul fiecarui cuvant; animatia (~0,5 s) porneste cu ~0,22 s inainte.
-      const limit = t + 0.22 * rate;
+      // Momentele sunt inceputul fiecarui cuvant; animatia (~0,5 s) porneste cu putin inainte.
+      const limit = t + (chunk.exact ? 0.12 : 0.22) * rate;
       const times = chunk.times;
       let lo = 0;
       let hi = times.length;

@@ -13,6 +13,7 @@
     "icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@gsap/react": "^2.1.2",
     "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/auth-ui-react": "^0.4.7",

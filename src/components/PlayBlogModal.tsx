@@ -99,6 +99,8 @@ export default function PlayBlogModal({
   // ------------------------------------------------------------------
   const [isAdmin, setIsAdmin] = useState(false);
   const [frozen, setFrozen] = useState(false);
+  // Admin: doar voce peste imagine, fara text. Textul reapare la a doua apasare.
+  const [textHidden, setTextHidden] = useState(false);
 
   useBodyScrollLock(isOpen);
   useFocusTrap(containerRef, isOpen);
@@ -136,12 +138,14 @@ export default function PlayBlogModal({
   // Daca nu, totul merge exact ca inainte (voce ceruta in direct).
   // ------------------------------------------------------------------
   const [prebuiltUrl, setPrebuiltUrl] = useState<string | null>(null);
+  const [prebuiltTimingsUrl, setPrebuiltTimingsUrl] = useState<string | null>(null);
   const [prebuiltChecked, setPrebuiltChecked] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setPrebuiltChecked(false);
       setPrebuiltUrl(null);
+      setPrebuiltTimingsUrl(null);
       return;
     }
     let cancelled = false;
@@ -163,7 +167,10 @@ export default function PlayBlogModal({
           `/api/blog-audio?slug=${encodeURIComponent(slug)}&language=${encodeURIComponent(language)}`,
         );
         const data = await res.json();
-        if (!cancelled) setPrebuiltUrl(data?.audioUrl || null);
+        if (!cancelled) {
+          setPrebuiltUrl(data?.audioUrl || null);
+          setPrebuiltTimingsUrl(data?.timingsUrl || null);
+        }
       } catch {
         if (!cancelled) setPrebuiltUrl(null);
       } finally {
@@ -196,6 +203,7 @@ export default function PlayBlogModal({
     blogTitle: title,
     contentType,
     prebuiltUrl,
+    prebuiltTimingsUrl,
     // Viteza normala (1x). Fisierele pregenerate sunt facute la 0.9, deci le redam putin
     // mai repede, ca sa ajunga la ~1x; vocea nu isi schimba tonul (preservesPitch).
     speakingRate: 1,
@@ -358,7 +366,7 @@ export default function PlayBlogModal({
 
   // Cand modalul se inchide, iesim automat din „freeze"
   useEffect(() => {
-    if (!isOpen) setFrozen(false);
+    if (!isOpen) { setFrozen(false); setTextHidden(false); }
   }, [isOpen]);
 
   // ------------------------------------------------------------------
@@ -583,6 +591,26 @@ export default function PlayBlogModal({
           </button>
         )}
 
+        {/* TEXT ON/OFF — doar admin, sub lacat. Vocea merge mai departe; se vede doar imaginea. */}
+        {isAdmin && (
+          <button
+            onClick={() => { tapLight(); setTextHidden((v) => !v); }}
+            aria-pressed={textHidden}
+            aria-label={textHidden ? 'Arată textul' : 'Ascunde textul (doar audio)'}
+            title={textHidden ? 'Arată textul' : 'Ascunde textul (doar audio)'}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform active:scale-90"
+          >
+            <svg
+              width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 7V5h16v2M9 19h6M12 5v14" />
+              {textHidden && <line x1="3" y1="3" x2="21" y2="21" />}
+            </svg>
+          </button>
+        )}
+
         {shareMsg && (
           <span className="rounded-full bg-black/60 px-2 py-1 text-[10px] whitespace-nowrap">
             {shareMsg}
@@ -598,7 +626,7 @@ export default function PlayBlogModal({
           `pr-20` tine textul departe de butoanele × / inima / share. */}
       <div
         className={`absolute inset-0 z-20 flex items-center justify-center overflow-hidden px-6 pb-36 pt-24 pr-20 transition-opacity duration-700 ${
-          uiVisible ? 'opacity-100' : 'opacity-0'
+          uiVisible && !textHidden ? 'opacity-100' : 'opacity-0'
         }`}
       >
         <div className="w-full max-w-2xl">
