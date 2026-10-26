@@ -21,6 +21,7 @@ import TriangleLoader from '@/components/TriangleLoader';
 import OnboardingTour from '@/components/OnboardingTour';
 import TodayCard from '@/components/TodayCard';
 import { useFeatureFlags } from '@/lib/featureFlags';
+import { useHeroDailyVerse } from '@/hooks/useHeroDailyVerse';
 
 // Dynamic import for WelcomeModal (includes GSAP, loaded only when needed)
 const WelcomeModal = dynamic(() => import('@/components/WelcomeModal'), { ssr: false });
@@ -399,6 +400,7 @@ export default function HomePage() {
   // Pasul 231026a: sectiunile curg in ecran la derulare in jos si se retrag la derulare in sus.
   // Se poate opri din admin (Setari -> Pagini -> Functii pentru cititori).
   const featureFlags = useFeatureFlags();
+  const dailyHero = useHeroDailyVerse(featureFlags.heroDailyVerse, language);
   const pageRootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const root = pageRootRef.current;
@@ -513,12 +515,12 @@ export default function HomePage() {
             <div className="font-cinzel text-black dark:text-white animate-fadeIn">
               {/* Verse text - Cinzel uppercase on all devices */}
               <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-medium leading-relaxed mb-8 ">
-                {t.heroVerse}
+                {dailyHero?.text ?? t.heroVerse}
               </p>
               
               {/* Bible reference */}
               <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-black/80 dark:text-white/80 font-bold">
-                {t.heroReference}
+                {dailyHero ? dailyHero.reference : t.heroReference}
               </p>
             </div>
           </div>

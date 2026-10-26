@@ -40,6 +40,7 @@ const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text:
   { key: 'fontControls', group: 'article', title: 'Mărimea textului (A−/A+)', text: 'Butoanele de mărire și micșorare a textului din articole.' },
   { key: 'eveningMode', group: 'article', title: 'Lectură de seară', text: 'Buton în articol: culori calde și blânde, fără animații, pentru citit seara.' },
   { key: 'remainingTime', group: 'article', title: 'Timp de citire rămas', text: 'În bara de sus a articolului apare cât mai e de citit (ex. „~3 min”).' },
+  { key: 'heroDailyVerse', group: 'home', title: 'Versetul zilei pe prima pagină', text: 'Pornit = în locul versetului Apocalipsa 3:16 apare versetul zilei publicat pentru azi (dacă nu e niciunul, rămâne Apocalipsa 3:16). Oprit = mereu Apocalipsa 3:16.' },
   { key: 'scrollReveal', group: 'home', title: 'Secțiuni care curg la derulare', text: 'Titlul, textul și simbolul fiecărei secțiuni apar treptat când derulezi. Oprit = pagina arată ca înainte.' },
   { key: 'todayCard', group: 'home', title: 'Cardul „Azi”', text: 'Versetul zilei, Andacht-ul zilei și „Weiterlesen”, într-un singur loc, sub primul ecran.' },
   { key: 'listenPill', group: 'home', title: 'Butonul „PLAY” de pe carduri', text: 'Pe cardurile blogurilor dinamice, pastila PLAY pornește direct ascultarea.' },

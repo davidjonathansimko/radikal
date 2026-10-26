@@ -117,7 +117,7 @@ function BlogsPageContent() {
   }
 
   return (
-    <div className="min-h-screen pt-4 lg:py-12">
+    <div className="pt-4 lg:min-h-screen lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page header with theme-aware text colors / Seitenkopf mit themenabhängigen Textfarben / Antet pagină cu culori text adaptate la temă */}
         {/* Pasul 0809001 — „Neueste Blogs" a plecat: numele paginii stă acum
@@ -176,10 +176,10 @@ function BlogsPageContent() {
         <CircularReadingProgress />
 
         {/* Blog list component with Suspense / Blog-Listen-Komponente mit Suspense / Componentă listă blog cu Suspense */}
-        <div className={`animate-fadeIn pt-6 sm:pt-12 lg:pt-0${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
+        <div className={`animate-fadeIn pt-3 sm:pt-6 lg:pt-0${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
           <Suspense fallback={
             <>
-              <div className="max-lg:flex max-lg:min-h-[48vh] max-lg:flex-col max-lg:justify-center lg:hidden">
+              <div className="max-lg:flex max-lg:min-h-[44dvh] max-lg:flex-col max-lg:justify-center lg:hidden">
                 <div className="mb-3 h-5 w-64 max-w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
                 <div className="flex gap-3 overflow-hidden">
                   {[...Array(3)].map((_, i) => (
@@ -210,7 +210,7 @@ function BlogsPageContent() {
         </div>
 
         {/* Arhiva: se deschide intr-o fereastra (an -> luna -> texte). */}
-        <ArchiveButton table="blog_posts" itemPath="/blogs" className="mt-8" />
+        <ArchiveButton table="blog_posts" itemPath="/blogs" className="mt-2 lg:mt-8" />
         <PageTour id="blogs" steps={BLOGS_TOUR} />
 
         <HomeButtonGate>

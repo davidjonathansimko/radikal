@@ -164,7 +164,7 @@ export function alignFromChannel(channel: Float32Array, sampleRate: number, word
     if (len <= 0) return null;
     let acc = 0;
     ws.forEach((w, k) => {
-      times[wordFrom + k] = segStart + ((acc + w / 2) / sum) * len;
+      times[wordFrom + k] = segStart + (acc / sum) * len;
       acc += w;
     });
     wordFrom = seg.lastWord + 1;

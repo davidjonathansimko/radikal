@@ -186,6 +186,7 @@ export function useVoiceSyncedText({
   // Cuvintele afisate nu sar niciodata: daca vocea a ajuns mai departe, ele ajung din urma treptat.
   const shownRef = useRef(0);
   const lastTsRef = useRef(0);
+  const lastElapsedTsRef = useRef(0);
   const endedRef = useRef(false);
 
   /** Toate cuvintele, in ordine, ca sa le poata desena componenta */
@@ -402,8 +403,8 @@ export function useVoiceSyncedText({
     const rate = playbackRateRef.current || 1;
     let spokenInChunk = 0;
     if (chunk.times) {
-      // Pauzele reale din audio: cuvantul apare cu ~0,4 s inainte sa fie rostit.
-      const limit = t + 0.4 * rate;
+      // Momentele sunt inceputul fiecarui cuvant; animatia (~0,5 s) porneste cu ~0,22 s inainte.
+      const limit = t + 0.22 * rate;
       const times = chunk.times;
       let lo = 0;
       let hi = times.length;
@@ -417,12 +418,12 @@ export function useVoiceSyncedText({
       // Estimare: vocea incepe dupa ~0,25 s de liniste si se sfarseste cu ~0,35 s inainte de capatul fisierului.
       const LEAD_SILENCE = 0.25;
       const span = Math.max(dur - 0.6, dur * 0.6);
-      const target = ((t + 0.45 * rate - LEAD_SILENCE) / span) * totalWeight;
+      const target = ((t + 0.35 * rate - LEAD_SILENCE) / span) * totalWeight;
       let acc = 0;
       for (const w of chunk.words) {
-        acc += w.weight;
-        if (acc - w.weight / 2 <= target) spokenInChunk++;
+        if (acc <= target) spokenInChunk++;
         else break;
+        acc += w.weight;
       }
     }
 
@@ -431,20 +432,24 @@ export function useVoiceSyncedText({
     const wanted = endedRef.current ? totalWords : before + spokenInChunk;
 
     // Limitator: cuvintele curg, nu sar. Daca estimarea a ramas in urma si apoi ajunge din urma
-    // (schimbare de bucata, pauze in voce), recuperam cu maximum ~14 cuvinte pe secunda.
+    // (schimbare de bucata, pauze in voce), recuperam repede, cu maximum ~40 de cuvinte pe secunda.
     const now = performance.now();
     const dt = lastTsRef.current ? Math.min((now - lastTsRef.current) / 1000, 0.1) : 0.016;
     lastTsRef.current = now;
     let shown = shownRef.current;
     if (wanted < shown) shown = wanted;
     else if (wanted - shown > 30) shown = wanted - 8; // cautare mare: nu asteptam sa „curga" tot
-    else shown = Math.min(wanted, shown + dt * 14);
+    else shown = Math.min(wanted, shown + dt * 40);
     shownRef.current = shown;
     setSpokenCount(Math.floor(shown + 1e-6));
 
-    let elapsedBefore = 0;
-    for (let k = 0; k < i; k++) elapsedBefore += chunksRef.current[k].duration || 0;
-    setElapsed(elapsedBefore + t);
+    // Bara de progres nu are nevoie de 60 de actualizari pe secunda.
+    if (now - lastElapsedTsRef.current > 200) {
+      lastElapsedTsRef.current = now;
+      let elapsedBefore = 0;
+      for (let k = 0; k < i; k++) elapsedBefore += chunksRef.current[k].duration || 0;
+      setElapsed(elapsedBefore + t);
+    }
 
     // Dupa ultimul cuvant al audio-ului incheiat, bucla se opreste singura.
     if (endedRef.current && shown >= totalWords) {

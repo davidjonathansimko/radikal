@@ -640,16 +640,11 @@ export default function PlayBlogModal({
               // tranzitie de 0,42 s — prea scurta si prea „seaca", asa ca
               // literele apareau brusc. Acum folosim exact aceleasi valori
               // ca la reels.
+              // Cuvintele care nu au fost rostite sunt complet invizibile (fara urma/sablon).
+              // Blur-ul de start se pregateste doar pentru cateva cuvinte din fata, ca sa nu incarce ecranul.
               const ahead = absolute - (spokenCount - 1);
-
-              // Cuvintele care urmeaza sunt deja putin vizibile, in trepte,
-              // ca ochiul sa le vada „venind" (val care se apropie).
-              const anticipation =
-                !spoken && ahead >= 1 && ahead <= 3 ? [0.34, 0.24, 0.18][ahead - 1] : 0.12;
-
-              const opacity = spoken ? 1 : anticipation;
-              // Aceleasi valori de start ca la reels: blur 10, y 8, x -15
-              const blurPx = spoken ? 0 : 10;
+              const opacity = spoken ? 1 : 0;
+              const blurPx = spoken ? 0 : ahead <= 8 ? 10 : 0;
               const liftPx = spoken ? 0 : 8;
               const shiftPx = spoken ? 0 : -15;
 
@@ -681,13 +676,9 @@ export default function PlayBlogModal({
                         transformOrigin: '0% 100%',
                         transition: reduceMotion
                           ? 'none'
-                          : // 800 ms + „power2.out" = exact ca timeline-ul GSAP din reels
-                            'opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), ' +
-                            'filter 700ms cubic-bezier(0.22, 1, 0.36, 1), ' +
-                            // Pentru miscare folosim o curba cu o urma de elan
-                            // („overshoot"), ca la varful unui condei ridicat
-                            // de pe hartie.
-                            'transform 820ms cubic-bezier(0.16, 1.02, 0.28, 1)',
+                          : 'opacity 460ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+                            'filter 420ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+                            'transform 520ms cubic-bezier(0.16, 1.02, 0.28, 1)',
                         // Pasul A03 — intarzierea literelor este PLAFONATA la
                         // 6 litere (max 132 ms). Asa „Gerechtigkeit" se scrie
                         // in acelasi ritm ca „und", iar textul nu ramane
@@ -696,7 +687,7 @@ export default function PlayBlogModal({
                         // insiruie putin mai vizibil, ca la scris.
                         transitionDelay: reduceMotion
                           ? '0ms'
-                          : `${Math.min(li, 6) * 26}ms`,
+                          : `${Math.min(li, 5) * 14}ms`,
                       }}
                     >
                       {ch}

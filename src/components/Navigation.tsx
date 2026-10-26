@@ -1462,22 +1462,6 @@ export default function Navigation() {
                 </button>
                 {showMobileRechtlichesDropdown && (
                   <div className="pl-4 pb-1 space-y-1">
-                    <button
-                      type="button"
-                      onClick={() => { setIsMobileMenuOpen(false); setShowMobileRechtlichesDropdown(false); setIsNotificationsOpen(true); }}
-                      className="flex w-full items-center gap-2 text-left text-[20px] sm:text-[24px] font-light py-1.5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors duration-200"
-                    >
-                      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 16V11a6 6 0 1 1 12 0v5l1.500 2h-15z" />
-                        <path d="M10 20.500a2 2 0 0 0 4 0" />
-                      </svg>
-                      <span>
-                        {language === 'de' ? 'Benachrichtigungen' :
-                         language === 'en' ? 'Notifications' :
-                         language === 'ro' ? 'Notificări' :
-                         'Уведомления'}
-                      </span>
-                    </button>
                     <Link
                       href="/datenschutz"
                       onClick={() => { setIsMobileMenuOpen(false); setShowMobileRechtlichesDropdown(false); }}
@@ -1547,6 +1531,18 @@ export default function Navigation() {
                   </div>
                 )}
               </div>
+
+              {/* Benachrichtigungen: eigener Punkt unter Rechtliches */}
+              <button
+                type="button"
+                onClick={() => { setIsMobileMenuOpen(false); setIsNotificationsOpen(true); }}
+                className="block w-full text-left text-[28px] sm:text-[34px] font-light text-black/90 dark:text-white/90 hover:text-black dark:hover:text-white py-2 transition-colors duration-200"
+              >
+                {language === 'de' ? 'Benachrichtigungen' :
+                 language === 'en' ? 'Notifications' :
+                 language === 'ro' ? 'Notificări' :
+                 'Уведомления'}
+              </button>
 
               {/* Admin link */}
               {user && isAdmin && (

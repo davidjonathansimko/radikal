@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHaptic } from '@/hooks/useHaptic';
+import { useTourLock } from '@/hooks/useTourLock';
 import { useTheme } from '@/hooks/useTheme';
 import { usePageText } from '@/lib/pageContent';
 import { ONBOARDING_TEXTS, type OnboardingTexts } from '@/lib/pageTexts/onboarding';
@@ -135,6 +136,15 @@ export default function OnboardingTour() {
   const [phase, setPhase] = useState(0);
   const [arrow, setArrow] = useState<{ x: number; y: number; up: boolean } | null>(null);
   const [pill, setPill] = useState<{ key: string; label: string; x: number; y: number; fly: boolean } | null>(null);
+  // „Weiter" se activeaza abia dupa ce animatia pasului s-a terminat.
+  const [textReady, setTextReady] = useState(false);
+  useTourLock(open);
+  useEffect(() => {
+    setTextReady(false);
+    if (!open || STEPS[step] === 'nav') return;
+    const id = window.setTimeout(() => setTextReady(true), 1600);
+    return () => window.clearTimeout(id);
+  }, [open, step]);
 
   useEffect(() => {
     try {
@@ -231,11 +241,12 @@ export default function OnboardingTour() {
 
   const kind = STEPS[step];
   const last = step === STEPS.length - 1;
+  const canNext = kind === 'nav' ? phase >= NAV_SCHEDULE.length : textReady;
   const title = kind === 'welcome' ? t.welcomeTitle : kind === 'nav' ? t.navTitle : t.listenTitle;
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fadeIn${kind === 'nav' ? ' tour-nav-pad' : ''}`}
+      className={`fixed inset-0 z-[9998] flex touch-none items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fadeIn${kind === 'nav' ? ' tour-nav-pad' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -337,12 +348,13 @@ export default function OnboardingTour() {
           </button>
           <button
             type="button"
+            disabled={!canNext}
             onClick={() => {
               tapLight();
               if (last) finish();
               else setStep((s) => s + 1);
             }}
-            className="min-h-0 min-w-0 rounded-xl bg-black px-5 py-2.5 text-sm font-semibold text-white transition-transform active:scale-95 dark:bg-white dark:text-black"
+            className="min-h-0 min-w-0 rounded-xl bg-black px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-35 dark:bg-white dark:text-black"
           >
             {last ? t.start : t.next}
           </button>

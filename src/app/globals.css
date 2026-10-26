@@ -471,19 +471,15 @@ blockquote, .verse, .bible-verse {
    Fiecare pagina noua intra lin, cu un usor blur si o mica ridicare.
    Asa nu mai pare o derulare statica, ci o experienta, ca la reels. */
 .play-blog-page {
-  animation: playBlogPageIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: playBlogPageIn 0.3s ease-out both;
 }
 
 @keyframes playBlogPageIn {
   from {
     opacity: 0;
-    filter: blur(10px);
-    transform: translateY(18px) scale(0.97);
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: translateY(0) scale(1);
   }
 }
 
@@ -520,6 +516,8 @@ blockquote, .verse, .bible-verse {
 .drop-cap {
   text-indent: 0;
   margin-left: 0;
+  /* Litera mare nu mai trece peste elementele de dupa paragraf (text scurt) */
+  display: flow-root;
 }
 
 /* Paragraph indent for all paragraphs after the first one / Texteinzug für alle Absätze nach dem ersten / Aliniat pentru toate paragrafele după primul */

@@ -437,7 +437,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     // Show skeleton while loading / Skeleton während des Ladens anzeigen / Afișează skeleton în timpul încărcării
     return (
       <>
-        <div className="max-lg:flex max-lg:min-h-[48vh] max-lg:flex-col max-lg:justify-center lg:hidden px-4 sm:px-6">
+        <div className="max-lg:flex max-lg:min-h-[44dvh] max-lg:flex-col max-lg:justify-center lg:hidden px-4 sm:px-6">
           <div className="mb-3 h-5 w-64 max-w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
           <div className="-mx-4 flex gap-3 overflow-hidden px-4 sm:-mx-6 sm:px-6">
             {[...Array(3)].map((_, i) => (
@@ -473,7 +473,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 max-lg:flex max-lg:min-h-[48vh] max-lg:flex-col max-lg:justify-center">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 max-lg:flex max-lg:min-h-[44dvh] max-lg:flex-col max-lg:justify-center">
       {/* Message showing only last 6 blogs / Nachricht zeigt nur die letzten 6 Blogs / Mesaj arată doar ultimele 6 bloguri */}
       <div className="-mx-4 mb-3 px-4 text-left lg:mx-0 lg:mb-8 lg:px-0 lg:text-center">
         <p className="text-base font-bold text-black dark:text-white lg:text-lg lg:font-medium lg:text-gray-600 lg:dark:text-white/60">

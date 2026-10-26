@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useTourLock } from '@/hooks/useTourLock';
 
 export interface TourStep {
   /** Selector CSS al elementului evidentiat. */
@@ -30,6 +31,15 @@ export default function PageTour({ id, steps }: { id: string; steps: TourStep[] 
   const key = `radikalTour:${id}`;
   const [index, setIndex] = useState(-1);
   const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  // „Weiter" se activeaza abia dupa ce animatia pasului a rulat o data.
+  const [ready, setReady] = useState(false);
+  useTourLock(index >= 0);
+  useEffect(() => {
+    setReady(false);
+    if (index < 0 || !rect) return;
+    const t = window.setTimeout(() => setReady(true), 1900);
+    return () => window.clearTimeout(t);
+  }, [index, rect]);
 
   // Porneste cand tutorialul de la inceput s-a terminat si elementele sunt pe ecran.
   useEffect(() => {
@@ -109,9 +119,13 @@ export default function PageTour({ id, steps }: { id: string; steps: TourStep[] 
   const cardTop = below ? Math.min(hl.bottom + 16, vh - 230) : Math.max(16, hl.top - 16 - 190);
   const panel = 'absolute bg-black/55 backdrop-blur-[5px]';
   const fingerSize = 64;
+  // Atingerea: degetul sta langa element, ca sa nu acopere pictograma.
+  const beside = step.gesture === 'tap';
+  const fingerLeft = beside ? Math.min(hl.right - 8, vw - fingerSize - 6) : (hl.left + hl.right) / 2 - fingerSize / 2;
+  const fingerTop = beside ? hl.top + hlH / 2 - 8 : hl.top + hlH / 2 - fingerSize / 2;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9995]" role="dialog" aria-modal="true" aria-label={step.title[lang]}>
+    <div className="fixed inset-0 z-[9995] touch-none" role="dialog" aria-modal="true" aria-label={step.title[lang]}>
       <div className="absolute inset-0" />
       {/* Totul din jur e incetosat; doar elementul evidentiat ramane clar. */}
       <div className={panel} style={{ top: 0, left: 0, width: vw, height: hl.top }} />
@@ -126,8 +140,8 @@ export default function PageTour({ id, steps }: { id: string; steps: TourStep[] 
         aria-hidden="true"
         className={`pointer-events-none absolute ${step.gesture === 'swipe' ? 'tour-finger-swipe' : ''}`}
         style={{
-          top: hl.top + hlH / 2 - fingerSize / 2,
-          left: (hl.left + hl.right) / 2 - fingerSize / 2,
+          top: fingerTop,
+          left: fingerLeft,
           width: fingerSize,
           height: fingerSize,
         }}
@@ -154,8 +168,9 @@ export default function PageTour({ id, steps }: { id: string; steps: TourStep[] 
           <button
             type="button"
             onClick={() => (last ? finish() : setIndex(index + 1))}
+            disabled={!ready}
             style={{ minHeight: 44 }}
-            className="rounded-full bg-white px-6 text-sm font-semibold text-black"
+            className="rounded-full bg-white px-6 text-sm font-semibold text-black transition-opacity disabled:opacity-35"
           >
             {last ? UI.done[lang] : UI.next[lang]}
           </button>
