@@ -11,6 +11,7 @@ import { ReadTick } from '@/components/ReadMark';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useRowTitles } from '@/hooks/useRowTitles';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFeatureFlags } from '@/lib/featureFlags';
 import { getSupabaseClient } from '@/lib/supabase';
 
 type Table = 'blog_posts' | 'testimonies' | 'content_items';
@@ -96,14 +97,14 @@ function ArchiveSheet({ table, kind, itemPath, onClose }: Omit<Props, 'className
   const monthName = (m: number) => new Date(2000, m, 1).toLocaleDateString(LOCALES[lang], { month: 'long' });
 
   return createPortal(
-    <div className="fixed inset-0 z-[9990] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={LABEL[lang]}>
+    <div className="fixed inset-0 z-[9990] flex items-end justify-center p-3 pb-[calc(env(safe-area-inset-bottom,0px)+22px)] sm:items-center sm:pb-3" role="dialog" aria-modal="true" aria-label={LABEL[lang]}>
       <button
         type="button"
         aria-label="Close"
         onClick={onClose}
         className="absolute inset-0 h-full w-full cursor-default bg-black/70 backdrop-blur-sm animate-fadeIn"
       />
-      <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-black/10 bg-white text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white sm:rounded-3xl animate-fadeIn">
+      <div className="relative flex max-h-[78vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-black/10 bg-white text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white animate-fadeIn">
         <div className="flex items-center justify-between gap-3 border-b border-black/10 px-5 py-3 dark:border-white/10">
           <div className="flex items-center gap-3">
             <ArchiveIcon size={34} />
@@ -172,17 +173,29 @@ export default function ArchiveButton({ table, kind, itemPath, className = '' }:
   const { language } = useLanguage();
   const lang = ['de', 'en', 'ro', 'ru'].includes(language) ? language : 'de';
   const [open, setOpen] = useState(false);
+  const flags = useFeatureFlags();
 
   return (
     <div className={`flex justify-center ${className}`} data-tour="archive">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-3 rounded-full border border-black/15 bg-black/[0.04] px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-black/10 dark:border-white/20 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/10"
-      >
-        <ArchiveIcon size={34} />
-        <span className="font-cinzel text-base tracking-wide">{LABEL[lang]}</span>
-      </button>
+      {flags.archiveStacked ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex flex-col items-center gap-1 rounded-2xl px-8 py-2 text-black transition-opacity hover:opacity-80 dark:text-white"
+        >
+          <ArchiveIcon size={58} />
+          <span className="font-cinzel text-sm font-semibold uppercase tracking-[0.25em]">{LABEL[lang]}</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-3 rounded-full border border-black/15 bg-black/[0.04] px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-black/10 dark:border-white/20 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/10"
+        >
+          <ArchiveIcon size={34} />
+          <span className="font-cinzel text-base tracking-wide">{LABEL[lang]}</span>
+        </button>
+      )}
       {open && <ArchiveSheet table={table} kind={kind} itemPath={itemPath} onClose={() => setOpen(false)} />}
     </div>
   );

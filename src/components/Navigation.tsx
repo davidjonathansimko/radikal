@@ -33,6 +33,7 @@ import UpLink from '@/components/content/UpLink';
 import { useGuestMode, clearGuestMode, isGuestMode } from '@/hooks/useGuestMode';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useVersionText } from '@/lib/appVersion';
 // Pasul 2308006-F — rubrica News apare doar cand e pornita si are continut
 import { useNewsMenu, newsMenuLabel } from '@/hooks/useNewsMenu';
 import dynamic from 'next/dynamic';
@@ -40,6 +41,7 @@ import dynamic from 'next/dynamic';
 // PERFORMANTA: ReelsModal aduce cu el GSAP. Il incarcam DOAR cand
 // utilizatorul apasa pe butonul Reels, ca sa nu ingreunam prima incarcare.
 const ReelsModal = dynamic(() => import('@/components/ReelsModal'), { ssr: false });
+const NotificationsModal = dynamic(() => import('@/components/NotificationsModal'), { ssr: false });
 
 import { FlagDE, FlagGB, FlagRO, FlagRU, LanguageFlag } from '@/components/NavigationIcons';
 
@@ -99,6 +101,14 @@ export default function Navigation() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // Reels — modal tip YouTube Shorts / Reels modal
   const [isReelsOpen, setIsReelsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const versionText = useVersionText(language);
+  // Pasul 261026: o notificare despre un reel deschide direct reels (?reels=1)
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get('reels') === '1') setIsReelsOpen(true);
+    } catch { /* ignorat */ }
+  }, []);
   // Modul vizitator / Guest mode / Gast-Modus
   const { isGuest } = useGuestMode();
   // Pasul 21082026 — preferinta pentru animatii reduse (implicit: nimic nu se schimba)
@@ -1452,6 +1462,22 @@ export default function Navigation() {
                 </button>
                 {showMobileRechtlichesDropdown && (
                   <div className="pl-4 pb-1 space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => { setIsMobileMenuOpen(false); setShowMobileRechtlichesDropdown(false); setIsNotificationsOpen(true); }}
+                      className="flex w-full items-center gap-2 text-left text-[20px] sm:text-[24px] font-light py-1.5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors duration-200"
+                    >
+                      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 16V11a6 6 0 1 1 12 0v5l1.500 2h-15z" />
+                        <path d="M10 20.500a2 2 0 0 0 4 0" />
+                      </svg>
+                      <span>
+                        {language === 'de' ? 'Benachrichtigungen' :
+                         language === 'en' ? 'Notifications' :
+                         language === 'ro' ? 'Notificări' :
+                         'Уведомления'}
+                      </span>
+                    </button>
                     <Link
                       href="/datenschutz"
                       onClick={() => { setIsMobileMenuOpen(false); setShowMobileRechtlichesDropdown(false); }}
@@ -1535,8 +1561,7 @@ export default function Navigation() {
 
               {/* Versiunea aplicatiei (doar in meniul telefonului) */}
               <p className="py-2 text-sm font-light tracking-wide text-black/45 dark:text-white/45">
-                {language === 'ro' ? 'Versiune' : language === 'ru' ? 'Ð’ÐµÑ€ÑÐ¸Ñ' : 'Version'} {process.env.NEXT_PUBLIC_APP_VERSION}
-                {process.env.NEXT_PUBLIC_APP_BUILD_DATE ? ` Â· ${process.env.NEXT_PUBLIC_APP_BUILD_DATE}` : ''}
+                {versionText}
               </p>
               {/* Pasul 21082026 — Accesibilitate: reducerea animatiilor (optional, implicit "sistem") */}
               <button
@@ -1627,6 +1652,7 @@ export default function Navigation() {
 
     <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     <ReelsModal isOpen={isReelsOpen} onClose={() => setIsReelsOpen(false)} />
+    {isNotificationsOpen && <NotificationsModal onClose={() => setIsNotificationsOpen(false)} />}
     </>
   );
 }

@@ -1308,84 +1308,6 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             </div>
           )}
 
-          {/* 1. Featured image FIRST / Hauptbild ZUERST / Imagine principală PRIMA */}
-          {post.image_url && !post.is_dynamic && (
-            <div
-              className="relative mb-6 rounded-2xl overflow-hidden animate-fadeIn"
-              style={{
-                // Pasul A15 — umbra imaginii, reglata la acest blog (0-100).
-                // 0 = fara umbra. Daca SQL-ul nu a fost rulat, ramane 30.
-                boxShadow:
-                  (post.post_image_shadow ?? 30) > 0
-                    ? `0 ${Math.round((post.post_image_shadow ?? 30) * 0.4)}px ${Math.round(
-                        (post.post_image_shadow ?? 30) * 0.9,
-                      )}px rgba(0,0,0,${((post.post_image_shadow ?? 30) / 100) * 0.75})`
-                    : 'none',
-              }}
-            >
-              <Image
-                src={post.image_url}
-                alt={displayTitle || post.title}
-                width={1200}
-                height={600}
-                priority
-                /* Pasul 21082026 — performanta: imaginea hero se serveste la dimensiunea reala */
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1200px"
-                placeholder="blur"
-                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABBEFITEGEjJBUf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AlgBDtv/Z"
-                className="w-full h-64 sm:h-96 object-cover"
-                /* Pasul A15 — cat de vizibila e imaginea acestui blog */
-                style={{ opacity: (post.post_image_opacity ?? 100) / 100 }}
-              />
-
-              {/* Pasul 2208001 — efectele imaginii alese la crearea articolului */}
-              <ImageEffectLayers settings={postEffects} zIndex={1} />
-
-              {/* Pasul 2308001 — BLOG DINAMIC: butonul „Play Blog".
-                  MULT mai mare si exact pe MIJLOCUL imaginii, ca sa fie
-                  imposibil de ratat. Pulseaza ca o inima, ca omul sa
-                  observe imediat ca poate asculta articolul. */}
-              {post.is_dynamic && (
-                <button
-                  onClick={() => setIsPlayOpen(true)}
-                  // Pasul 2508000: `force-white-text` — butonul sta pe o poza,
-                  // deci textul si sageata raman ALBE si pe tema luminoasa.
-                  // Fara asta, regula globala le facea negre si nu se vedeau.
-                  className="play-blog-enter force-white-text absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-white"
-                  style={{ animationDelay: '0.9s' }}
-                  aria-label="Play Blog"
-                >
-                  {/* Triunghiul de play (cel din loader, intors spre dreapta), cu bataie de inima */}
-                  <span className="play-blog-heartbeat flex items-center justify-center transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_4px_14px_rgba(0,0,0,0.6)]">
-                    <TriangleLoader size={96} rotate={90} tone="light" />
-                  </span>
-
-                  <span
-                    className="px-2 font-semibold tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
-                    style={{ fontSize: 'clamp(13px, 3.4vw, 16px)' }}
-                  >
-                    {language === 'de' ? 'Blog abspielen' :
-                     language === 'en' ? 'Play Blog' :
-                     language === 'ro' ? 'Redă blogul' :
-                     'Слушать блог'}
-                  </span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Pasul 231026a: puncte pentru swipe intre cele 6 bloguri din lista (doar mobil) */}
-          {swipe.index >= 0 && swipe.total > 1 && (
-            <div className="mb-3 flex items-center justify-center gap-1.5 md:hidden" aria-hidden="true" data-no-swipe>
-              {Array.from({ length: swipe.total }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-1 rounded-full transition-all duration-300 ${i === swipe.index ? 'w-5 bg-gray-700 dark:bg-white' : 'w-1.5 bg-gray-300 dark:bg-white/25'}`}
-                />
-              ))}
-            </div>
-          )}
-
           {/* 2. Post metadata UNDER image / Metadaten UNTER Bild / Metadate SUB imagine */}
           {/* Fluid flex-stretch layout - auto-adapts to screen size */}
           {/* Mobile: clamp 360→13px, 390→14px, 400→15px, bolder text. Desktop (sm+): original text-base */}
@@ -1707,44 +1629,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           </div>
         </div>
 
-        <div className="back-link-bottom mt-10 text-center animate-fadeIn" style={{ animationDelay: '1.05s' }}>
-          {/* Back button - hidden in print / Zurück-Button - versteckt beim Drucken / Buton înapoi - ascuns la printare */}
-        <Link 
-          href={source.listPath}
-          onClick={(e) => {
-            // Venit din lista: ne intoarcem prin istoric, nu adaugam o intrare noua.
-            const steps = stepsBackTo(listMatcher(source.listPath, source.basePath));
-            if (steps > 0) {
-              e.preventDefault();
-              e.currentTarget.setAttribute('data-history-nav', '1');
-              const before = window.location.pathname;
-              goBackSteps(steps);
-              // Daca harta istoricului a gresit si nu s-a intamplat nimic, mergem direct.
-              window.setTimeout(() => {
-                if (window.location.pathname === before) window.location.assign(source.listPath);
-              }, 700);
-            }
-          }}
-          className="back-button inline-flex items-center gap-2 text-gray-800 dark:text-white/80 hover:text-gray-600 dark:hover:text-white mb-4 sm:mb-8 transition-colors duration-200"
-        >
-          <FaArrowLeft />
-          <span>
-            {source.backLabel[language] ?? source.backLabel.de}
-          </span>
-        </Link>
         </div>
-
-        {/* Related Posts - after article navigation / Ähnliche Beiträge - nach Artikelnavigation / Postări similare - după navigare articol */}
-        <div className="related-posts mt-8 animate-fadeIn" style={{ animationDelay: '1.1s' }}>
-          <RelatedPosts 
-            currentPostId={post.id} 
-            currentTags={Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : [])} 
-            currentCategoryIds={(post as unknown as { category_ids?: string[] | null }).category_ids ?? null}
-            table={source.table}
-            basePath={source.basePath}
-          />
-        </div>
-      </div>
       
       {/* Login Required Popup / Login-erforderlich-Popup / Popup autentificare necesară */}
       {/* Centered on screen for both desktop and mobile */}

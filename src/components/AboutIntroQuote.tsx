@@ -147,6 +147,7 @@ export default function AboutIntroQuote({ onFinish }: AboutIntroQuoteProps) {
         },
         '-=0.3'
       );
+    tl.timeScale(1.8);
   }, { scope: verseContainerRef, dependencies: [lang] });
 
   return (

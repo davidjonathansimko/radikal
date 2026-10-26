@@ -84,9 +84,46 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   }, []);
   
   // Pasul 1123: Mobile carousel state
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const loopRef = useRef<HTMLDivElement>(null);
+
+  // Glisare circulara: dupa ultimul card vine primul, iar din primul se poate merge inapoi spre ultimul.
+  useEffect(() => {
+    const el = loopRef.current;
+    const n = Math.min(posts.length, 6);
+    if (!el || !isMobile || n < 2) return;
+    const cards = el.querySelectorAll<HTMLElement>('[data-loop-card]');
+    if (cards.length < n * 3) return;
+    const span = () => cards[n].offsetLeft - cards[0].offsetLeft;
+    const jump = (delta: number) => {
+      el.style.scrollSnapType = 'none';
+      el.scrollLeft += delta;
+      requestAnimationFrame(() => {
+        el.style.scrollSnapType = '';
+      });
+    };
+    el.style.scrollSnapType = 'none';
+    el.scrollLeft = span();
+    requestAnimationFrame(() => {
+      el.style.scrollSnapType = '';
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const w = span();
+        if (el.scrollLeft < w * 0.4) jump(w);
+        else if (el.scrollLeft > w * 1.6) jump(-w);
+      }, 90);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener('scroll', onScroll);
+    };
+  }, [isMobile, posts.length]);
 
   // Detect mobile for swipeable carousel
   useEffect(() => {
@@ -399,11 +436,25 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   if (posts.length === 0 && loading) {
     // Show skeleton while loading / Skeleton während des Ladens anzeigen / Afișează skeleton în timpul încărcării
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {[...Array(3)].map((_, i) =>
-          CARD_STYLE === 'overlay' ? <BlogOverlayCardSkeleton key={i} /> : <BlogCardSkeleton key={i} />,
-        )}
-      </div>
+      <>
+        <div className="max-lg:flex max-lg:min-h-[48vh] max-lg:flex-col max-lg:justify-center lg:hidden px-4 sm:px-6">
+          <div className="mb-3 h-5 w-64 max-w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
+          <div className="-mx-4 flex gap-3 overflow-hidden px-4 sm:-mx-6 sm:px-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="w-[42vw] min-w-[150px] max-w-[220px] shrink-0 sm:w-[28vw]">
+                <div className="aspect-square w-full animate-pulse rounded-md bg-black/10 dark:bg-white/10" />
+                <div className="mt-2 h-3 w-10 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="hidden max-w-4xl mx-auto px-4 sm:px-6 lg:block lg:px-8 space-y-8">
+          {[...Array(3)].map((_, i) =>
+            CARD_STYLE === 'overlay' ? <BlogOverlayCardSkeleton key={i} /> : <BlogCardSkeleton key={i} />,
+          )}
+        </div>
+      </>
     );
   }
 
@@ -422,7 +473,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 max-lg:flex max-lg:min-h-[48vh] max-lg:flex-col max-lg:justify-center">
       {/* Message showing only last 6 blogs / Nachricht zeigt nur die letzten 6 Blogs / Mesaj arată doar ultimele 6 bloguri */}
       <div className="-mx-4 mb-3 px-4 text-left lg:mx-0 lg:mb-8 lg:px-0 lg:text-center">
         <p className="text-base font-bold text-black dark:text-white lg:text-lg lg:font-medium lg:text-gray-600 lg:dark:text-white/60">
@@ -455,17 +506,19 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
 
         {isMobile && (
           <div
+            ref={loopRef}
             data-tour="cards"
             className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
           >
-            {posts.slice(0, 6).map((post) => {
+            {[0, 1, 2].slice(0, posts.slice(0, 6).length > 1 ? 3 : 1).flatMap((copy) => posts.slice(0, 6).map((post) => ({ post, copy }))).map(({ post, copy }) => {
               const catIds = (post as unknown as { category_ids?: string[] | null }).category_ids ?? [];
               const cat = categories.find((c) => catIds.includes(c.id));
               const title = getTranslatedTitle(post);
               return (
                 <Link
-                  key={post.id}
+                  key={`${copy}-${post.id}`}
+                  data-loop-card
                   href={`/blogs/${post.slug}`}
                   className="block w-[42vw] min-w-[150px] max-w-[220px] shrink-0 snap-start sm:w-[28vw]"
                 >

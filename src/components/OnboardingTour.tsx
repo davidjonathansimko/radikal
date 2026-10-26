@@ -235,7 +235,7 @@ export default function OnboardingTour() {
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-fadeIn${kind === 'nav' ? ' tour-nav-pad' : ''}`}
+      className={`fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fadeIn${kind === 'nav' ? ' tour-nav-pad' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label={title}

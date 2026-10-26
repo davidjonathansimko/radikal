@@ -35,7 +35,7 @@ const translations = {
     processingIntro: 'Die nachfolgende Übersicht fasst die Arten der verarbeiteten Daten und die Zwecke ihrer Verarbeitung zusammen:',
     processingItems: [
       'Bestandsdaten (z.B. Namen, Adressen)',
-      'Inhaltsdaten (z.B. Kommentare, Eingaben in Formularen)',
+      'Inhaltsdaten (z.B. Eingaben in Formularen)',
       'Kontaktdaten (z.B. E-Mail-Adressen)',
       'Nutzungsdaten (z.B. besuchte Seiten, Zugriffszeiten)',
       'Meta-/Kommunikationsdaten (z.B. IP-Adressen, Geräte-Informationen)',
@@ -85,9 +85,9 @@ const translations = {
     contactTitle: '9. Kontaktformular',
     contactText: 'Wenn Sie uns über ein Kontaktformular kontaktieren, speichern wir die von Ihnen angegebenen Daten (Name, E-Mail, Nachricht) zur Bearbeitung Ihrer Anfrage. Diese Daten werden nach Abschluss der Bearbeitung gelöscht, sofern keine gesetzlichen Aufbewahrungspflichten bestehen.',
     
-    // 10. Comments
-    commentsTitle: '10. Kommentare',
-    commentsText: 'Wenn Sie Kommentare auf unserem Blog hinterlassen, speichern wir die von Ihnen eingegebenen Daten sowie Ihre IP-Adresse und den Zeitpunkt der Erstellung. Dies dient der Sicherheit und der Möglichkeit, rechtswidrige Kommentare zu verfolgen.',
+    // 10. Push notifications
+    commentsTitle: '10. Benachrichtigungen (Push)',
+    commentsText: 'Wenn Sie Benachrichtigungen aktivieren, speichern wir die technische Adresse Ihres Geräts bei Ihrem Push-Dienst (Endpunkt und Schlüssel), Ihre Sprache und Ihre Auswahl (neue Blogs, Zeugnisse, Vers des Tages, Reels). Sind Sie angemeldet, wird die Auswahl Ihrem Konto zugeordnet. Die Daten dienen ausschließlich dem Versand der gewählten Benachrichtigungen. Sie können sie jederzeit im Menü unter „Rechtliches → Benachrichtigungen“ abschalten; dann werden sie gelöscht. Angemeldete Nutzer können außerdem ihr Konto samt aller Daten selbst löschen (siehe „Daten löschen“).',
     
     // 11. Newsletter
     newsletterTitle: '11. Newsletter',
@@ -128,7 +128,7 @@ const translations = {
     processingIntro: 'The following overview summarizes the types of data processed and the purposes of their processing:',
     processingItems: [
       'Inventory data (e.g., names, addresses)',
-      'Content data (e.g., comments, form entries)',
+      'Content data (e.g., form entries)',
       'Contact data (e.g., email addresses)',
       'Usage data (e.g., pages visited, access times)',
       'Meta/communication data (e.g., IP addresses, device information)',
@@ -172,8 +172,8 @@ const translations = {
     contactTitle: '9. Contact Form',
     contactText: 'When you contact us via a contact form, we store the data you provide (name, email, message) to process your request. This data will be deleted after processing is complete, unless there are legal retention obligations.',
     
-    commentsTitle: '10. Comments',
-    commentsText: 'When you leave comments on our blog, we store the data you enter as well as your IP address and the time of creation. This is for security and the ability to track illegal comments.',
+    commentsTitle: '10. Notifications (push)',
+    commentsText: 'If you enable notifications, we store the technical address of your device at your push service (endpoint and keys), your language and your choice (new blogs, testimonies, verse of the day, reels). If you are signed in, the choice is linked to your account. The data is used only to send the notifications you chose. You can switch them off at any time in the menu under "Legal → Notifications"; the data is then deleted. Signed-in users can also delete their account and all data themselves (see "Delete data").',
     
     newsletterTitle: '11. Newsletter',
     newsletterText: 'When you subscribe to our newsletter, we store your email address. You can unsubscribe from the newsletter at any time via the unsubscribe link in each email or directly in the application on the blogs page under "Newsletter Settings".',
@@ -210,7 +210,7 @@ const translations = {
     processingIntro: 'Următoarea prezentare generală rezumă tipurile de date procesate și scopurile procesării lor:',
     processingItems: [
       'Date de inventar (de ex., nume, adrese)',
-      'Date de conținut (de ex., comentarii, introduceri în formulare)',
+      'Date de conținut (de ex., introduceri în formulare)',
       'Date de contact (de ex., adrese de email)',
       'Date de utilizare (de ex., pagini vizitate, ore de acces)',
       'Date meta/comunicare (de ex., adrese IP, informații despre dispozitiv)',
@@ -254,8 +254,8 @@ const translations = {
     contactTitle: '9. Formular de Contact',
     contactText: 'Când ne contactați prin formularul de contact, stocăm datele pe care le furnizați (nume, email, mesaj) pentru a procesa cererea dvs. Aceste date vor fi șterse după finalizarea procesării, cu excepția cazului în care există obligații legale de păstrare.',
     
-    commentsTitle: '10. Comentarii',
-    commentsText: 'Când lăsați comentarii pe blogul nostru, stocăm datele pe care le introduceți, precum și adresa dvs. IP și ora creării. Acest lucru este pentru securitate și capacitatea de a urmări comentariile ilegale.',
+    commentsTitle: '10. Notificări (push)',
+    commentsText: 'Dacă activați notificările, stocăm adresa tehnică a dispozitivului dvs. la serviciul de push (endpoint și chei), limba dvs. și alegerea făcută (bloguri noi, mărturii, versetul zilei, reels). Dacă sunteți autentificat, alegerea este legată de contul dvs. Datele servesc exclusiv trimiterii notificărilor alese. Le puteți opri oricând din meniu, la „Legal → Notificări”; datele se șterg atunci. Utilizatorii autentificați își pot șterge singuri contul și toate datele (vedeți „Ștergerea datelor”).',
     
     newsletterTitle: '11. Newsletter',
     newsletterText: 'Când vă abonați la newsletter-ul nostru, stocăm adresa dvs. de email. Vă puteți dezabona de la newsletter în orice moment prin link-ul de dezabonare din fiecare email sau direct din aplicație pe pagina de bloguri sub „Setări Newsletter".',
@@ -292,7 +292,7 @@ const translations = {
     processingIntro: 'Следующий обзор обобщает типы обрабатываемых данных и цели их обработки:',
     processingItems: [
       'Инвентарные данные (например, имена, адреса)',
-      'Контентные данные (например, комментарии, записи в формах)',
+      'Контентные данные (например, записи в формах)',
       'Контактные данные (например, адреса электронной почты)',
       'Данные об использовании (например, посещённые страницы, время доступа)',
       'Мета/коммуникационные данные (например, IP-адреса, информация об устройстве)',
@@ -336,8 +336,8 @@ const translations = {
     contactTitle: '9. Контактная форма',
     contactText: 'Когда вы связываетесь с нами через контактную форму, мы сохраняем предоставленные вами данные (имя, email, сообщение) для обработки вашего запроса. Эти данные будут удалены после завершения обработки, если нет юридических обязательств по их хранению.',
     
-    commentsTitle: '10. Комментарии',
-    commentsText: 'Когда вы оставляете комментарии в нашем блоге, мы сохраняем введённые вами данные, а также ваш IP-адрес и время создания. Это делается для безопасности и возможности отслеживания незаконных комментариев.',
+    commentsTitle: '10. Уведомления (push)',
+    commentsText: 'Если вы включите уведомления, мы сохраним технический адрес вашего устройства у push-сервиса (endpoint и ключи), ваш язык и ваш выбор (новые статьи, свидетельства, стих дня, reels). Если вы авторизованы, выбор связывается с вашим аккаунтом. Данные используются только для отправки выбранных уведомлений. Вы можете отключить их в любой момент в меню «Правовая информация → Уведомления»; данные будут удалены. Авторизованные пользователи могут также сами удалить аккаунт со всеми данными (см. «Удаление данных»).',
     
     newsletterTitle: '11. Рассылка',
     newsletterText: 'Когда вы подписываетесь на нашу рассылку, мы сохраняем ваш адрес электронной почты. Вы можете отписаться от рассылки в любое время через ссылку отписки в каждом письме или непосредственно в приложении на странице блогов в разделе «Настройки рассылки».',

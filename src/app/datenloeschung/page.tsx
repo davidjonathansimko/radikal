@@ -9,6 +9,7 @@ import Link from 'next/link';
 import UpLink from '@/components/content/UpLink';
 import { useLanguage } from '@/hooks/useLanguage';
 import BackToTopButton from '@/components/BackToTopButton';
+import DeleteAccountSection from '@/components/DeleteAccountSection';
 
 const CONTACT_EMAIL = 'radikal@radikal.blog';
 
@@ -38,14 +39,14 @@ const T: Record<Lang, {
     steps: [
       `Schreibe eine E-Mail an ${CONTACT_EMAIL} mit dem Betreff „Löschung meiner Daten".`,
       'Gib die E-Mail-Adresse an, mit der du dich registriert hast.',
-      'Schreibe, ob du dein ganzes Konto löschen möchtest oder nur einzelne Daten (z. B. nur deine Kommentare).',
+      'Schreibe, ob du dein ganzes Konto löschen möchtest oder nur einzelne Daten (z. B. nur deine Likes).',
       'Alternativ kannst du das Kontaktformular benutzen — der Link steht unten.',
     ],
     deletedTitle: 'Was gelöscht wird',
     deleted: [
       'Dein Konto und deine E-Mail-Adresse',
-      'Deine Kommentare',
       'Deine Likes und gespeicherten Beiträge',
+      'Deine Benachrichtigungs-Einstellungen',
       'Deine Newsletter-Anmeldung',
     ],
     keptTitle: 'Was bleibt',
@@ -67,14 +68,14 @@ const T: Record<Lang, {
     steps: [
       `Send an email to ${CONTACT_EMAIL} with the subject "Delete my data".`,
       'Include the email address you registered with.',
-      'Tell us whether you want your whole account deleted, or only certain data (for example only your comments).',
+      'Tell us whether you want your whole account deleted, or only certain data (for example only your likes).',
       'You can also use the contact form — the link is below.',
     ],
     deletedTitle: 'What gets deleted',
     deleted: [
       'Your account and email address',
-      'Your comments',
       'Your likes and saved posts',
+      'Your notification settings',
       'Your newsletter subscription',
     ],
     keptTitle: 'What stays',
@@ -96,14 +97,14 @@ const T: Record<Lang, {
     steps: [
       `Trimite un email la ${CONTACT_EMAIL} cu subiectul „Ștergerea datelor mele".`,
       'Scrie adresa de email cu care te-ai înregistrat.',
-      'Spune dacă vrei să-ți ștergem tot contul sau doar anumite date (de exemplu doar comentariile).',
+      'Spune dacă vrei să-ți ștergem tot contul sau doar anumite date (de exemplu doar aprecierile).',
       'Poți folosi și formularul de contact — linkul e mai jos.',
     ],
     deletedTitle: 'Ce se șterge',
     deleted: [
       'Contul tău și adresa de email',
-      'Comentariile tale',
       'Aprecierile și articolele salvate',
+      'Setările de notificări',
       'Abonarea la newsletter',
     ],
     keptTitle: 'Ce rămâne',
@@ -125,14 +126,14 @@ const T: Record<Lang, {
     steps: [
       `Отправьте письмо на ${CONTACT_EMAIL} с темой «Удаление моих данных».`,
       'Укажите адрес электронной почты, с которым вы регистрировались.',
-      'Напишите, хотите ли вы удалить весь аккаунт или только часть данных (например, только комментарии).',
+      'Напишите, хотите ли вы удалить весь аккаунт или только часть данных (например, только отметки «нравится»).',
       'Также можно воспользоваться формой обратной связи — ссылка ниже.',
     ],
     deletedTitle: 'Что удаляется',
     deleted: [
       'Ваш аккаунт и адрес электронной почты',
-      'Ваши комментарии',
       'Ваши отметки «нравится» и сохранённые статьи',
+      'Ваши настройки уведомлений',
       'Подписка на рассылку',
     ],
     keptTitle: 'Что остаётся',
@@ -174,6 +175,8 @@ export default function DatenloeschungPage() {
         </header>
 
         <div className="grid gap-6">
+          <DeleteAccountSection cardClass={card} h2Class={h2} textClass={li} />
+
           <section className={card}>
             <h2 className={h2}>{t.howTitle}</h2>
             <ol className="list-decimal space-y-2 pl-5">

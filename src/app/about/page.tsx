@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
@@ -159,6 +159,17 @@ export default function AboutPage() {
   // Ecran scurt cu verset, afișat înainte de pagina propriu-zisă.
   // ⏱️ Durata se schimbă din INTRO_DURATION_MS în src/components/AboutIntroQuote.tsx
   const [showIntro, setShowIntro] = useState(true);
+  // Pasul 261026: versetul apare din nou abia după 20 de minute.
+  useEffect(() => {
+    try {
+      const last = Number(localStorage.getItem('radikalAboutIntroAt') || 0);
+      if (last && Date.now() - last < 20 * 60 * 1000) setShowIntro(false);
+    } catch { /* storage indisponibil */ }
+  }, []);
+  const finishIntro = () => {
+    try { localStorage.setItem('radikalAboutIntroAt', String(Date.now())); } catch { /* storage indisponibil */ }
+    setShowIntro(false);
+  };
 
   // The story is now OPTIONAL: it only starts when the user presses the
   // "Discover RADIKAL" button, never automatically.
@@ -197,7 +208,7 @@ export default function AboutPage() {
   return (
     <>
       {/* Verse intro — shown once per visit, then the page appears */}
-      {showIntro && <AboutIntroQuote onFinish={() => setShowIntro(false)} />}
+      {showIntro && <AboutIntroQuote onFinish={finishIntro} />}
 
       {/* Story Modal - now only opened via the "Discover RADIKAL" button */}
       {showStoryModal && (

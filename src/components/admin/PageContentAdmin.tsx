@@ -13,6 +13,7 @@
 // =====================================================================
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import VersionTextEditor from '@/components/admin/VersionTextEditor';
 import {
   EDITABLE_PAGES,
   PAGE_LANGUAGES,
@@ -29,6 +30,7 @@ import { fetchFeatureFlags, setFeatureFlag, FEATURE_DEFAULTS, type FeatureKey } 
 type FeatureGroup = 'article' | 'home' | 'kids' | 'lists';
 
 const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text: string }[] = [
+  { key: 'archiveStacked', group: 'lists', title: 'Butonul Arhiv: pictograma deasupra, textul dedesubt', text: 'Pornit = pictograma animată mare, cu cuvântul „Arhivă” dedesubt. Oprit = butonul rotunjit, cu pictograma și textul pe același rând.' },
   { key: 'homeButton', group: 'lists', title: 'Butonul „Zurück zur Startseite”', text: 'Butonul „înapoi la pagina principală” de pe paginile Blogs, Zeugnisse și Andacht. Oprit = ascuns (se ajunge acasă cu săgeata telefonului sau cu logoul).' },
   { key: 'legacyBrowse', group: 'lists', title: 'Căutare și categorii vechi pe telefon', text: 'Pe telefon și tabletă, în Blogs, Zeugnisse, Andacht și Pentru copii: butonul „… durchsuchen”, titlul „Kategorien”, bara „Kategorie suchen” și pastilele de sub ea. Oprit = se vede doar banda nouă cu pastile (Archiv + categorii). Pe desktop rămân mereu.' },
   { key: 'resume', group: 'article', title: 'Continuă lectura', text: 'Cardul „Weiterlesen” cu ultimul articol deschis (Blogs, Zeugnisse, Andacht, Copii).' },
@@ -489,6 +491,10 @@ export default function PageContentAdmin() {
             </div>
           </div>
         ))}
+      </AdminGroup>
+
+      <AdminGroup title="Text versiune (meniu)" summary="Textul de la sfârșitul meniului">
+        <VersionTextEditor />
       </AdminGroup>
 
       <AdminGroup title="Tutorial de la început" summary="Textul se schimbă mai jos, la Pagina → Tutorial">

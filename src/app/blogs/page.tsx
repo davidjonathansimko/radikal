@@ -175,17 +175,23 @@ function BlogsPageContent() {
         {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
         <CircularReadingProgress />
 
-        {/* Newsletter subscription - desktop position (hidden on mobile, moved below BlogList) */}
-        {isAuthenticated && (
-          <div className="hidden lg:block max-w-md mx-auto mb-12 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
-            <NewsletterSubscribe />
-          </div>
-        )}
-
         {/* Blog list component with Suspense / Blog-Listen-Komponente mit Suspense / Componentă listă blog cu Suspense */}
         <div className={`animate-fadeIn pt-6 sm:pt-12 lg:pt-0${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
           <Suspense fallback={
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <>
+              <div className="max-lg:flex max-lg:min-h-[48vh] max-lg:flex-col max-lg:justify-center lg:hidden">
+                <div className="mb-3 h-5 w-64 max-w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                <div className="flex gap-3 overflow-hidden">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="w-[42vw] min-w-[150px] max-w-[220px] shrink-0 sm:w-[28vw]">
+                      <div className="aspect-square w-full animate-pulse rounded-md bg-black/10 dark:bg-white/10" />
+                      <div className="mt-2 h-3 w-10 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                      <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            <div className="hidden grid-cols-1 gap-6 md:grid-cols-2 lg:grid lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-gray-200 dark:bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-gray-300 dark:border-white/10">
                   <div className="animate-pulse">
@@ -197,6 +203,7 @@ function BlogsPageContent() {
                 </div>
               ))}
             </div>
+            </>
           }>
             <BlogList filterYear={filterYear} filterMonth={filterMonth} categoryIds={categoryIds} />
           </Suspense>
@@ -209,13 +216,6 @@ function BlogsPageContent() {
         <HomeButtonGate>
           <BackToHome className="mt-8 flex justify-center" />
         </HomeButtonGate>
-
-        {/* Newsletter, sub lista (telefon) */}
-        {isAuthenticated && (
-          <div className="lg:hidden max-w-[17rem] mx-auto mt-8 mb-12 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
-            <NewsletterSubscribe />
-          </div>
-        )}
       </div>
     </div>
   );

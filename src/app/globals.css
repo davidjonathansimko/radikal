@@ -2649,3 +2649,38 @@ html.text-protect .blog-body-text * {
 .tour-finger-swipe { animation: tourFingerSwipe 1.8s ease-in-out infinite; }
 .tour-finger-tap { animation: tourFingerTap 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .tour-finger-swipe, .tour-finger-tap { animation: none; } }
+
+/* Pasul 261026: deget cu puls de bataie de inima */
+@keyframes tourFingerBeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.14); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+.tour-finger-beat { animation: tourFingerBeat 1.3s ease-in-out infinite; transform-origin: 50% 20%; }
+@media (prefers-reduced-motion: reduce) { .tour-finger-beat { animation: none; } }
+
+/* Pasul 261026: pictograme animate pentru fereastra de notificari */
+@keyframes notifBell {
+  0%, 60%, 100% { transform: rotate(0); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-12deg); }
+  30% { transform: rotate(9deg); }
+  40% { transform: rotate(-6deg); }
+  50% { transform: rotate(3deg); }
+}
+.notif-bell { transform-box: fill-box; transform-origin: 50% 8%; animation: notifBell 2.8s ease-in-out infinite; }
+@keyframes notifDraw {
+  0% { stroke-dashoffset: var(--len); }
+  55%, 100% { stroke-dashoffset: 0; }
+}
+.notif-draw { stroke-dasharray: var(--len); animation: notifDraw 2.8s ease-in-out infinite; }
+@keyframes notifBlink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+.notif-blink { animation: notifBlink 1.6s ease-in-out infinite; }
+@keyframes notifSway { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(2px); } }
+.notif-sway { transform-box: fill-box; animation: notifSway 2.4s ease-in-out infinite; }
+.notif-off .notif-bell, .notif-off .notif-draw, .notif-off .notif-blink, .notif-off .notif-sway { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .notif-bell, .notif-draw, .notif-blink, .notif-sway { animation: none; }
+}
