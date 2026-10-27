@@ -37,6 +37,8 @@ interface BlogAudioGeneratorProps {
    * In ele NU se mai genereaza TTS: butonul e blocat si scrie de ce.
    */
   customAudioLangs?: string[];
+  /** Dinamic = audio cu momentele exacte ale cuvintelor (pentru Play Blog). Static = fisier simplu, ca inainte. */
+  dynamic?: boolean;
 }
 
 /** Limbile site-ului */
@@ -60,6 +62,7 @@ export default function BlogAudioGenerator({
   language = 'ro',
   createdAt = null,
   customAudioLangs = [],
+  dynamic = false,
 }: BlogAudioGeneratorProps) {
   /** Ce audio exista, pentru fiecare limba */
   const [infoByLang, setInfoByLang] = useState<Record<string, AudioInfo | null>>({});
@@ -72,8 +75,8 @@ export default function BlogAudioGenerator({
   const [error, setError] = useState('');
 
   const charCount = text.trim().length;
-  // Aproximare: propozitii scurte, ~70 de caractere pe cerere (caracterele totale raman aceleasi)
-  const requests = Math.max(1, Math.ceil(charCount / 70));
+  // Dinamic: propozitii scurte (~70 de caractere pe cerere). Static: bucati de ~1500. Caracterele totale raman aceleasi.
+  const requests = Math.max(1, Math.ceil(charCount / (dynamic ? 70 : 1500)));
 
   // --- Descarcare audio (doar admin) --------------------------------
   /** Limbile bifate pentru DESCARCARE (separate de cele pentru generare) */
@@ -218,6 +221,7 @@ export default function BlogAudioGenerator({
               text,
               language: code,
               sourceLanguage: language,
+              dynamic,
             }),
           });
           const data = await res.json();
@@ -235,7 +239,7 @@ export default function BlogAudioGenerator({
       setBusy(false);
       setProgress('');
     }
-  }, [slug, title, text, language, charCount, requests, selected, getToken, refresh]);
+  }, [slug, title, text, language, charCount, requests, selected, getToken, refresh, dynamic]);
 
   // --- Stergere ------------------------------------------------------
   const remove = useCallback(
@@ -279,6 +283,12 @@ export default function BlogAudioGenerator({
         După aceea, toți cititorii ascultă fișierul salvat — fără niciun cost
         suplimentar, oricât de mulți ar fi. Dacă nu generezi nimic,
         „Play Blog&ldquo; funcționează exact ca până acum.
+      </p>
+
+      <p className="mb-3 rounded border border-white/15 bg-white/5 px-2 py-1.5 text-[11px] leading-relaxed text-white/70">
+        {dynamic
+          ? 'Articol DINAMIC: audio cu momentele exacte ale cuvintelor, pentru „Play Blog". Dac\u0103 l-ai f\u0103cut dinamic acum, genereaz\u0103 din nou \u00een toate limbile \u2014 \u00eenlocuie\u0219te fi\u0219ierele vechi.'
+          : 'Articol STATIC: fi\u0219ier audio simplu, pentru ascultare \u0219i desc\u0103rcare.'}
       </p>
 
       {/* --- Ce limbi generăm --- */}

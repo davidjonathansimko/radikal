@@ -1391,6 +1391,7 @@ export default function AdminPage() {
                     createdAt={editingPost?.created_at ?? null}
                     // Pasul A18 — limbile in care ai incarcat vocea ta
                     customAudioLangs={customAudioLangs}
+                    dynamic={isDynamic}
                   />
                 )}
 

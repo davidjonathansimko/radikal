@@ -423,7 +423,7 @@ export function useVoiceSyncedText({
     let spokenInChunk = 0;
     if (chunk.times) {
       // Momentele sunt inceputul fiecarui cuvant; animatia (~0,5 s) porneste cu putin inainte.
-      const limit = t + (chunk.exact ? 0.12 : 0.22) * rate;
+      const limit = t + (chunk.exact ? 0.15 : 0.22) * rate;
       const times = chunk.times;
       let lo = 0;
       let hi = times.length;

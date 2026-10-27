@@ -516,6 +516,7 @@ export default function ContentAdmin({ kind }: { kind: ContentKind }) {
                   language="ro"
                   createdAt={editingItem.created_at}
                   customAudioLangs={customAudioLangs}
+                  dynamic={isDynamic}
                 />
                 <div className="mt-4">
                   <CustomAudioManager blogId={editingItem.id} folder={storageFolder(kind, editingItem.title)} onLangsChange={setCustomAudioLangs} />

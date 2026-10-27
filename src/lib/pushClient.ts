@@ -71,6 +71,12 @@ export async function getPushStatus(): Promise<PushStatus> {
 
 export type PushResult = 'ok' | 'unsupported' | 'denied' | 'not_configured' | 'error';
 
+/** Ce lipseste pe server (doar nume de variabile), pentru mesajul din fereastra de notificari. */
+let lastDetail = '';
+export function getLastPushDetail(): string {
+  return lastDetail;
+}
+
 /** Porneste (sau actualizeaza) abonarea cu preferintele date. */
 export async function applyPrefs(prefs: PushPrefs, lang: string): Promise<PushResult> {
   if (!pushSupported()) return 'unsupported';
@@ -98,7 +104,11 @@ export async function applyPrefs(prefs: PushPrefs, lang: string): Promise<PushRe
       if (permission !== 'granted') return 'denied';
 
       const keyRes = await fetch('/api/push/subscribe');
-      if (!keyRes.ok) return 'not_configured';
+      if (!keyRes.ok) {
+        const info = (await keyRes.json().catch(() => ({}))) as { missing?: string[] };
+        lastDetail = (info.missing || []).join(', ');
+        return 'not_configured';
+      }
       const { publicKey } = (await keyRes.json()) as { publicKey: string };
 
       const reg = await navigator.serviceWorker.ready;

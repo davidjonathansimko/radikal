@@ -9,7 +9,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import ReelsIcon from '@/components/ReelsIcon';
 import { PhoneBellIcon, NewspaperIcon, ActivityIcon, VerseIcon } from '@/components/NotificationIcons';
-import { applyPrefs, getPushStatus, loadPrefs, PUSH_KINDS, type PushKind, type PushPrefs, type PushResult, type PushStatus } from '@/lib/pushClient';
+import { applyPrefs, getLastPushDetail, getPushStatus, loadPrefs, PUSH_KINDS, type PushKind, type PushPrefs, type PushResult, type PushStatus } from '@/lib/pushClient';
 
 type Lang = 'de' | 'en' | 'ro' | 'ru';
 
@@ -106,7 +106,7 @@ export default function NotificationsModal({ onClose }: { onClose: () => void })
       setStatus(PUSH_KINDS.some((k) => next[k]) ? 'on' : 'off');
       setNote(t.msg.saved);
     } else {
-      setNote(t.msg[result]);
+      setNote(result === 'not_configured' && getLastPushDetail() ? `${t.msg[result]} (${getLastPushDetail()})` : t.msg[result]);
       void getPushStatus().then(setStatus);
     }
     setBusy(false);

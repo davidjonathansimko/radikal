@@ -676,51 +676,28 @@ export default function PlayBlogModal({
               const liftPx = spoken ? 0 : 8;
               const shiftPx = spoken ? 0 : -15;
 
-              const letters = Array.from(w);
-
+              // Fiecare cuvant se formeaza dintr-o bucata (ca in intro si la povestea din About):
+              // aparitie lenta, cu blur si o mica alunecare, nu litera cu litera.
               return (
                 <span
                   key={`${absolute}-${w}`}
                   className="mx-1 inline-block whitespace-nowrap"
+                  style={{
+                    opacity,
+                    filter: reduceMotion ? 'none' : `blur(${blurPx}px)`,
+                    transform: reduceMotion
+                      ? 'none'
+                      : spoken
+                        ? 'translate(0px, 0px)'
+                        : `translate(${shiftPx}px, ${liftPx}px)`,
+                    transition: reduceMotion
+                      ? 'none'
+                      : 'opacity 900ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+                        'filter 850ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+                        'transform 900ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
                 >
-                  {letters.map((ch, li) => (
-                    <span
-                      key={li}
-                      className="inline-block"
-                      style={{
-                        opacity,
-                        filter: reduceMotion ? 'none' : `blur(${blurPx}px)`,
-                        // Pasul 2308010 — SENZATIA DE SCRIS DE MANA.
-                        // Pe langa deplasare adaugam o inclinare si o marire
-                        // foarte mici: litera pare ca este trasa pe hartie,
-                        // nu ca se aprinde dintr-odata. Valorile sunt
-                        // intentionat mici — la 3° si 4% ochiul simte miscarea,
-                        // dar nu o observa ca efect.
-                        transform: reduceMotion
-                          ? 'none'
-                          : spoken
-                            ? 'translate(0px, 0px) rotate(0deg) scale(1)'
-                            : `translate(${shiftPx}px, ${liftPx}px) rotate(-3deg) scale(0.96)`,
-                        transformOrigin: '0% 100%',
-                        transition: reduceMotion
-                          ? 'none'
-                          : 'opacity 460ms cubic-bezier(0.22, 1, 0.36, 1), ' +
-                            'filter 420ms cubic-bezier(0.22, 1, 0.36, 1), ' +
-                            'transform 520ms cubic-bezier(0.16, 1.02, 0.28, 1)',
-                        // Pasul A03 — intarzierea literelor este PLAFONATA la
-                        // 6 litere (max 132 ms). Asa „Gerechtigkeit" se scrie
-                        // in acelasi ritm ca „und", iar textul nu ramane
-                        // treptat in urma vocii.
-                        // Pasul 2308010: 26 ms in loc de 22 — literele se
-                        // insiruie putin mai vizibil, ca la scris.
-                        transitionDelay: reduceMotion
-                          ? '0ms'
-                          : `${Math.min(li, 5) * 14}ms`,
-                      }}
-                    >
-                      {ch}
-                    </span>
-                  ))}
+                  {w}
                 </span>
               );
             })}

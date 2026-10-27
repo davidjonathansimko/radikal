@@ -589,6 +589,7 @@ export default function MarturiiAdmin() {
               language="ro"
               createdAt={editingItem.created_at}
               customAudioLangs={customAudioLangs}
+              dynamic={isDynamic}
             />
             <div className="mt-4">
               <CustomAudioManager blogId={editingItem.id} folder={storageFolder('marturie', editingItem.title)} onLangsChange={setCustomAudioLangs} />

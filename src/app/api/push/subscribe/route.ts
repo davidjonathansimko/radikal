@@ -13,8 +13,13 @@ const KINDS = ['blogs', 'marturii', 'verse', 'reels'] as const;
 
 export async function GET() {
   const key = process.env.VAPID_PUBLIC_KEY;
-  if (!key || !process.env.VAPID_PRIVATE_KEY || !getAdminClient()) {
-    return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  const missing = [
+    !key && 'VAPID_PUBLIC_KEY',
+    !process.env.VAPID_PRIVATE_KEY && 'VAPID_PRIVATE_KEY',
+    !process.env.SUPABASE_SERVICE_ROLE_KEY && 'SUPABASE_SERVICE_ROLE_KEY',
+  ].filter(Boolean);
+  if (missing.length || !key || !getAdminClient()) {
+    return NextResponse.json({ error: 'not_configured', missing }, { status: 503 });
   }
   return NextResponse.json({ publicKey: key });
 }

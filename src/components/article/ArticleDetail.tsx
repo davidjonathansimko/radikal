@@ -1349,6 +1349,36 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             </div> */}
           </div>
 
+          {/* Banda subtire cu imaginea si butonul de redare: intre linia cu data si titlu (doar articole dinamice). */}
+          {post.is_dynamic && (
+            <div className="mb-5 animate-fadeIn" style={{ animationDelay: '0.25s' }}>
+              <button
+                type="button"
+                onClick={() => setIsPlayOpen(true)}
+                aria-label={(PLAY_LABELS[source.contentType] ?? PLAY_LABELS.blog)[language] ?? PLAY_LABELS.blog.de}
+                className="play-strip force-white-text bg-neutral-900"
+              >
+                {post.image_url && (
+                  <Image
+                    src={post.image_url}
+                    alt=""
+                    fill
+                    sizes="(max-width: 768px) 100vw, 800px"
+                    className="object-cover"
+                    style={{ opacity: Math.max(0.35, ((post.post_image_opacity ?? 100) / 100) * 0.75) }}
+                  />
+                )}
+                <span className="absolute inset-0 bg-black/45" aria-hidden="true" />
+                <span className="absolute inset-0 flex items-center justify-center gap-3">
+                  <TriangleLoader size={44} rotate={90} tone="light" />
+                  <span className="font-semibold tracking-wide drop-shadow-lg" style={{ color: '#ffffff' }}>
+                    {(PLAY_LABELS[source.contentType] ?? PLAY_LABELS.blog)[language] ?? PLAY_LABELS.blog.de}
+                  </span>
+                </span>
+              </button>
+            </div>
+          )}
+
           {/* Row 2 - Tags on separate line, bolder on mobile */}
           {post.tags && post.tags.length > 0 && (
             <div className="flex gap-2 flex-wrap mb-4 sm:mb-6 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
@@ -1490,35 +1520,6 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           </div>
         </div>
         
-        {/* Banda subtire cu imaginea si butonul de redare (in locul reactiilor). */}
-        {post.is_dynamic && (
-          <div className="mb-8 animate-fadeIn" style={{ animationDelay: '0.65s' }}>
-            <button
-              type="button"
-              onClick={() => setIsPlayOpen(true)}
-              aria-label={(PLAY_LABELS[source.contentType] ?? PLAY_LABELS.blog)[language] ?? PLAY_LABELS.blog.de}
-              className="play-strip force-white-text bg-neutral-900"
-            >
-              {post.image_url && (
-                <Image
-                  src={post.image_url}
-                  alt=""
-                  fill
-                  sizes="(max-width: 768px) 100vw, 800px"
-                  className="object-cover"
-                  style={{ opacity: Math.max(0.35, ((post.post_image_opacity ?? 100) / 100) * 0.75) }}
-                />
-              )}
-              <span className="absolute inset-0 bg-black/45" aria-hidden="true" />
-              <span className="absolute inset-0 flex items-center justify-center gap-3">
-                <TriangleLoader size={44} rotate={90} tone="light" />
-                <span className="font-semibold tracking-wide drop-shadow-lg" style={{ color: '#ffffff' }}>
-                  {(PLAY_LABELS[source.contentType] ?? PLAY_LABELS.blog)[language] ?? PLAY_LABELS.blog.de}
-                </span>
-              </span>
-            </button>
-          </div>
-        )}
         {/* Post actions with share buttons / Post-Aktionen mit Teilen-Buttons / Acțiuni postare cu butoane distribuire */}
         <div className="post-actions flex flex-wrap items-center justify-between gap-4 py-6 border-t border-b border-gray-300 dark:border-white/20 mb-12 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
           {/* Like button with theme-aware colors / Like-Button mit themenabhängigen Farben / Buton like cu culori adaptate la temă */}

@@ -691,13 +691,15 @@ export default function TextToSpeech({
   }, []);
 
   // Set up Media Session API for lock screen controls
+  const mediaTitleRef = useRef('');
+  mediaTitleRef.current = blogTitle || '';
   const updateMediaSession = useCallback((playing: boolean, paused: boolean) => {
     if (!('mediaSession' in navigator)) return;
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'RADIKAL Blog',
-        artist: 'Text-to-Speech',
-        album: 'RADIKAL.',
+        title: mediaTitleRef.current || 'RADIKAL Blog',
+        artist: 'RADIKAL.',
+        album: 'Radikale Bibellehre',
       });
       navigator.mediaSession.playbackState = playing ? (paused ? 'paused' : 'playing') : 'none';
     } catch (err) {
