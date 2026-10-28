@@ -16,10 +16,18 @@ export async function triggerPush(): Promise<Record<string, unknown> | null> {
   }
 }
 
-export async function pushAdminCall(method: 'GET' | 'POST', path: '/api/push/test' | '/api/push/cron'): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+export async function pushAdminCall(
+  method: 'GET' | 'POST',
+  path: '/api/push/test' | '/api/push/cron',
+  body?: Record<string, unknown>,
+): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
   const { data } = await getSupabaseClient().auth.getSession();
   const token = data.session?.access_token ?? '';
-  const res = await fetch(path, { method, headers: { Authorization: `Bearer ${token}` } });
-  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  return { ok: res.ok, status: res.status, data: body };
+  const res = await fetch(path, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  return { ok: res.ok, status: res.status, data: json };
 }

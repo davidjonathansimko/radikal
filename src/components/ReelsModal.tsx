@@ -275,6 +275,8 @@ export const ReelSlide = React.memo(function ReelSlide({
   onLoopComplete,
   isAdmin = false,
   onFreeze,
+  onCycleLang,
+  langCode,
 }: {
   reel: Reel;
   isDark: boolean;
@@ -308,6 +310,9 @@ export const ReelSlide = React.memo(function ReelSlide({
   isAdmin?: boolean;
   /** Pasul A12 — apasat butonul de freeze pe acest reel. */
   onFreeze?: (reel: Reel) => void;
+  /** Admin: schimba limba acestui reel (ro > de > en > ru), ca sa existe traducerea in toate. */
+  onCycleLang?: (reel: Reel) => void;
+  langCode?: string;
 }) {
   const slideRef = useRef<HTMLElement>(null);
   const wordsRef = useRef<(HTMLSpanElement | null)[]>([]);
@@ -896,6 +901,26 @@ export const ReelSlide = React.memo(function ReelSlide({
             </svg>
           </button>
         )}
+
+        {/* LIMBA — doar admin. Fiecare apasare arata reel-ul in urmatoarea limba (ro, de, en, ru); traducerea ramane salvata. */}
+        {isAdmin && onCycleLang && (
+          <button
+            onClick={() => {
+              tapLight();
+              onCycleLang(reel);
+            }}
+            aria-label="Schimbă limba reel-ului"
+            title="Schimbă limba (RO, DE, EN, RU)"
+            className="flex flex-col items-center gap-0.5 rounded-full p-2 transition-transform duration-200 active:scale-90 hover:scale-110"
+            style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.55))' }}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.500 5.600 12 3z" />
+            </svg>
+            <span className="text-[10px] font-semibold" style={{ color: textVeryLight }}>{langCode}</span>
+          </button>
+        )}
       </div>
       )}
     </section>
@@ -964,6 +989,37 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
   const handleFreeze = useCallback((reel: Reel) => {
     setFrozenId(reel.id);
   }, []);
+
+  // Admin: limba reel-ului ales (per reel), ca sa-l deschizi pe rand in toate limbile.
+  const [langOverride, setLangOverride] = useState<Record<string, { lang: string; content: string; reference: string | null; manual_pages: string[] | null }>>({});
+  useEffect(() => {
+    if (!isOpen) setLangOverride({});
+  }, [isOpen]);
+  const cycleReelLang = useCallback(async (reel: Reel) => {
+    const order = ['ro', 'de', 'en', 'ru'];
+    const next = order[(order.indexOf(langOverride[reel.id]?.lang ?? language) + 1) % order.length];
+    const { data } = await createClient().from('reels').select('*').eq('id', reel.id).maybeSingle();
+    if (!data) return;
+    const row = data as Record<string, unknown>;
+    const manualRo = manualPagesOf(row);
+    const apply = (content: string, reference: string | null, pages: string[] | null) =>
+      setLangOverride((p) => ({ ...p, [reel.id]: { lang: next, content, reference, manual_pages: pages } }));
+    if (next === 'ro') {
+      apply((row.content as string) ?? '', (row.reference as string) ?? null, manualRo.length ? manualRo : null);
+      return;
+    }
+    const saved = row[`content_${next}`] as string | null;
+    if (saved && (manualRo.length === 0 || splitPages(saved).length === manualRo.length)) {
+      apply(saved, (row[`reference_${next}`] as string | null) ?? null, manualRo.length ? splitPages(saved) : null);
+      return;
+    }
+    let done = false;
+    await translateMissing([row], next, (_id, content, reference, pages) => {
+      done = true;
+      apply(content, reference, pages);
+    });
+    if (!done) apply((row.content as string) ?? '', (row.reference as string) ?? null, manualRo.length ? manualRo : null);
+  }, [langOverride, language]);
 
   // La inchiderea modalului oprim muzica
   useEffect(() => {
@@ -1437,12 +1493,14 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
             className="flex-1 overflow-y-auto snap-y snap-mandatory overscroll-contain"
             style={{ scrollbarWidth: 'none' }}
           >
-            {reels.map((reel) => (
+            {reels.map((reel) => {
+              const ov = langOverride[reel.id];
+              return (
               <div key={reel.id} className="h-full w-full">
                 <ReelSlide
-                  reel={reel}
+                  reel={ov ? { ...reel, content: ov.content, reference: ov.reference, manual_pages: ov.manual_pages } : reel}
                   isDark={isDark}
-                  language={language}
+                  language={ov?.lang ?? language}
                   isLiked={likedIds.has(reel.id)}
                   likeCount={likeCounts[reel.id] ?? 0}
                   reduceMotion={reduceMotion}
@@ -1452,10 +1510,13 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
                   onActive={handleActive}
                   isAdmin={isAdmin}
                   onFreeze={handleFreeze}
+                  onCycleLang={cycleReelLang}
+                  langCode={(ov?.lang ?? language).toUpperCase()}
                   chromeless={frozenId === reel.id}
                 />
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Indiciu discret de derulare — ascuns in mod „freeze" (pasul A12) */}

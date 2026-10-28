@@ -25,7 +25,7 @@ const LABEL: Record<string, string> = {
   ru: 'Продолжить чтение',
 };
 
-export default function ContinueReading({ className = '', scope }: { className?: string; scope?: string }) {
+export default function ContinueReading({ className = '', scope, slim = false }: { className?: string; scope?: string; slim?: boolean }) {
   const { language } = useLanguage();
   const flags = useFeatureFlags();
   const { isRead } = useReadItems();
@@ -49,21 +49,22 @@ export default function ContinueReading({ className = '', scope }: { className?:
 
   return (
     <div
-      className={`relative mx-auto w-full max-w-xs rounded-xl border border-black/10 bg-black/[0.03] px-9 py-1.5 text-center shadow-sm dark:border-white/15 dark:bg-white/[0.04] ${className}`}
+      className={`relative mx-auto w-full max-w-xs rounded-xl border border-black/10 bg-black/[0.03] px-9 ${slim ? 'py-0' : 'py-1.5'} text-center shadow-sm dark:border-white/15 dark:bg-white/[0.04] ${className}`}
     >
-      <Link href={item.href} className="block min-w-0">
-        <span className="flex items-center justify-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+      <Link href={item.href} className={`min-w-0 ${slim ? 'flex items-center justify-center gap-2 py-1.5' : 'block'}`}>
+        <span className="flex shrink-0 items-center justify-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
           {LABEL[language] ?? LABEL.de}
         </span>
-        <span className="mt-0.5 block truncate font-cinzel text-[13px] font-normal text-black dark:text-white">
+        <span className={`block truncate font-cinzel text-[13px] font-normal text-black dark:text-white ${slim ? '' : 'mt-0.5'}`}>
           {item.title}
         </span>
       </Link>
       <button
         type="button"
         aria-label="Close"
-        onPointerUp={(e) => {
+        // Pe click, nu pe pointerup: daca cardul dispare la pointerup, click-ul ajunge pe cardul de blog de dedesubt si deschide articolul.
+        onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           try {
@@ -73,7 +74,6 @@ export default function ContinueReading({ className = '', scope }: { className?:
           }
           setItem(null);
         }}
-        onClick={(e) => e.preventDefault()}
         style={{ touchAction: 'manipulation', minHeight: 44, minWidth: 44 }}
         className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[13px] text-black/50 hover:bg-black/10 dark:text-white/50 dark:hover:bg-white/10"
       >

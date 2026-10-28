@@ -38,10 +38,10 @@ interface Props {
 
 const ARCHIVE_LABEL: Record<string, string> = { de: 'Archiv', en: 'Archive', ro: 'Arhivă', ru: 'Архив' };
 const HINT: Record<string, string> = {
-  de: 'Kategorien durchstöbern',
-  en: 'Browse categories',
-  ro: 'Răsfoiește categoriile',
-  ru: 'Просмотр категорий',
+  de: 'Kategorien',
+  en: 'Categories',
+  ro: 'Categorii',
+  ru: 'Категории',
 };
 
 const COLUMNS = 'id, slug, title, title_de, title_en, title_ro, title_ru, image_url, created_at, category_ids';
@@ -104,18 +104,19 @@ export default function MobileCategoryBrowser({
   if (!archiveHref && usable.length === 0) return null;
 
   const pill =
-    'inline-flex min-h-[40px] shrink-0 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors';
+    'inline-flex min-h-[30px] shrink-0 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold transition-colors';
 
   return (
     <div className={`lg:hidden ${className}`}>
-      {usable.length > 0 && (
-        <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-black/40 dark:text-white/40">
-          {HINT[lang]}
-        </p>
-      )}
+      <div className="flex items-center gap-2.5">
+        {usable.length > 0 && (
+          <span className="shrink-0 font-cinzel text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45 dark:text-white/45">
+            {HINT[lang]}
+          </span>
+        )}
       <div
         data-tour="cats"
-        className="scrollbar-hide -mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6"
+        className="scrollbar-hide -mr-4 flex min-w-0 flex-1 snap-x gap-1.5 overflow-x-auto pb-0.5 pr-4 sm:-mr-6 sm:pr-6"
         style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
       >
         {archiveHref && (
@@ -141,6 +142,7 @@ export default function MobileCategoryBrowser({
             {categoryName(c, lang)}
           </button>
         ))}
+      </div>
       </div>
 
       {selected && shown.length > 0 && (

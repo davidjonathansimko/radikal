@@ -100,6 +100,9 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
   const [pos, setPos] = useState<{ x: number; y: number; text: string } | null>(null);
   const [note, setNote] = useState('');
   const keepRef = useRef(false);
+  // Cu text protejat: mai multe propozitii alese una dupa alta (atingi din nou o propozitie ca s-o scoti).
+  const selRef = useRef<{ range: Range; text: string }[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
 
   const clearHighlight = () => {
     try {
@@ -159,6 +162,21 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
 
     let downX = 0;
     let downY = 0;
+    const refresh = () => {
+      const list = selRef.current;
+      try {
+        const hl = (CSS as unknown as HighlightApi).highlights;
+        if (list.length && typeof Highlight !== 'undefined') hl?.set(HIGHLIGHT, new Highlight(...list.map((s) => s.range)));
+        else hl?.delete(HIGHLIGHT);
+      } catch {
+        /* fara colorare, butonul ramane */
+      }
+      setPicked(list.map((s) => s.text));
+    };
+    const clearAll = () => {
+      selRef.current = [];
+      refresh();
+    };
     const onDown = (e: PointerEvent) => {
       downX = e.clientX;
       downY = e.clientY;
@@ -170,8 +188,7 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
       // Atingerea butonului „Als Bild teilen" nu trebuie sa stearga selectia: pointerup vine inaintea click-ului.
       if (target?.closest('[data-no-share]')) return;
       if (!target || !target.closest(scope)) {
-        clearHighlight();
-        setPos(null);
+        clearAll();
         return;
       }
       if (target.closest('a, button, .bible-ref, [data-no-share]')) return;
@@ -179,25 +196,18 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
       const scopeEl = target.closest(scope)!;
       const hit = sentenceRange(scopeEl, e.clientX, e.clientY);
       if (!hit) {
-        clearHighlight();
-        setPos(null);
+        clearAll();
         return;
       }
-      try {
-        if (typeof Highlight !== 'undefined') {
-          (CSS as unknown as HighlightApi).highlights?.set(HIGHLIGHT, new Highlight(hit.range));
-        }
-      } catch {
-        /* fara colorare, butonul ramane */
-      }
-      const rect = hit.range.getBoundingClientRect();
-      const x = Math.min(Math.max(rect.left + rect.width / 2, 90), window.innerWidth - 90);
-      const y = Math.min(rect.bottom + 14, window.innerHeight - 70);
-      setPos({ x, y, text: hit.text });
+      const same = selRef.current.findIndex(
+        (s) => s.range.compareBoundaryPoints(Range.START_TO_START, hit.range) === 0 && s.range.compareBoundaryPoints(Range.END_TO_END, hit.range) === 0,
+      );
+      if (same >= 0) selRef.current = selRef.current.filter((_, i) => i !== same);
+      else selRef.current = [...selRef.current, { range: hit.range, text: hit.text }];
+      refresh();
     };
     const onScroll = () => {
-      clearHighlight();
-      setPos(null);
+      /* selectia ramane la derulare: poti alege propozitii din tot articolul */
     };
 
     document.addEventListener('pointerdown', onDown, { passive: true });
@@ -209,6 +219,8 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
       document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('pointerup', onUp);
       window.removeEventListener('scroll', onScroll);
+      selRef.current = [];
+      setPicked([]);
       clearHighlight();
     };
   }, [scope, enabled, protect, canShare]);
@@ -216,16 +228,22 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
   if (!enabled || typeof document === 'undefined') return null;
 
   const share = async () => {
-    if (!pos) return;
+    // Propozitiile alese, in ordinea din articol.
+    const ordered = selRef.current.length
+      ? [...selRef.current].sort((a, b) => a.range.compareBoundaryPoints(Range.START_TO_START, b.range)).map((s) => s.text).join(' ')
+      : pos?.text;
+    if (!ordered) return;
     keepRef.current = true;
     const result = await shareVerseImage({
-      text: pos.text,
+      text: ordered,
       imageUrl,
       url: window.location.href,
       title: title ?? 'RADIKAL.',
     });
     keepRef.current = false;
     setPos(null);
+    selRef.current = [];
+    setPicked([]);
     clearHighlight();
     window.getSelection()?.removeAllRanges();
     if (result === 'downloaded') {
@@ -236,17 +254,18 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
 
   return createPortal(
     <>
-      {pos && (
+      {(pos || picked.length > 0) && (
         <button
           type="button"
           // Pastram selectia/colorarea cand se apasa butonul.
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => void share()}
           className="btn-solid fixed z-[9000] -translate-x-1/2 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white shadow-xl ring-1 ring-white/20 active:scale-95 dark:bg-white dark:text-black dark:ring-black/10"
-          style={{ left: pos.x, top: pos.y }}
+          style={picked.length > 0 ? { left: '50%', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' } : { left: pos!.x, top: pos!.y }}
           data-no-share
         >
           {LABEL[language] ?? LABEL.de}
+          {picked.length > 1 ? ` (${picked.length})` : ''}
         </button>
       )}
       {note && (

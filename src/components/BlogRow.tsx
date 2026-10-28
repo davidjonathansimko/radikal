@@ -16,8 +16,8 @@ interface Props {
   heading: string;
   /** Carduri putin mai mici, pentru doua benzi pe acelasi ecran. */
   compact?: boolean;
-  /** 'normal' = Blog / titlu / data; 'catdesc' = Categorie + descrierea blogului. */
-  subMode: 'normal' | 'catdesc';
+  /** 'normal' = Blog / titlu / data; 'meta' = doar categoria si data; 'catdesc' = Categorie + descrierea blogului. */
+  subMode: 'normal' | 'meta' | 'catdesc';
   tour?: boolean;
   language: string;
   categories: Category[];
@@ -91,7 +91,7 @@ export default function BlogRow({ posts, heading, compact = false, subMode, tour
   const label = CATEGORY_LABEL[language] ?? CATEGORY_LABEL.de;
 
   return (
-    <div className={compact ? 'mb-2' : ''}>
+    <div className={compact ? 'mb-4 last:mb-1' : ''}>
       <p className={`-mx-0 mb-2 text-left font-bold text-black dark:text-white ${compact ? 'text-[13px]' : 'text-base'}`}>{heading}</p>
       <div
         ref={loopRef}
@@ -132,6 +132,11 @@ export default function BlogRow({ posts, heading, compact = false, subMode, tour
                     {cat ? `${label}: ${categoryName(cat, language)}` : 'Blog'}
                   </p>
                   <p className={`mt-0.5 line-clamp-3 leading-snug text-black dark:text-white ${compact ? 'text-[10px]' : 'text-xs'}`}>{getExcerpt(post)}</p>
+                </>
+              ) : subMode === 'meta' ? (
+                <>
+                  <p className="mt-1.5 truncate text-[10px] text-black/55 dark:text-white/55">{cat ? categoryName(cat, language) : 'Blog'}</p>
+                  <p className="mt-0.5 truncate text-[10px] text-black/55 dark:text-white/55">{formatDate(post.created_at)}</p>
                 </>
               ) : (
                 <>

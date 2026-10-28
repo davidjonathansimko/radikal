@@ -811,12 +811,20 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
     if (!post || !displayTitle) return;
     if (isGuest && source.requiresLogin && guestReadAllowed !== true) return;
     const href = `${source.basePath}/${originalSlugRef.current || post.slug}`;
-    try {
-      localStorage.setItem(LAST_READ_KEY, JSON.stringify({ href, title: displayTitle, at: Date.now() }));
-    } catch {
-      /* filă privată */
-    }
+    // Se salveaza abia dupa ~8 s sau dupa ce ai derulat putin: o trecere rapida (swipe intre bloguri) nu inlocuieste ce citeai.
+    let saved = false;
+    const save = () => {
+      if (saved) return;
+      saved = true;
+      try {
+        localStorage.setItem(LAST_READ_KEY, JSON.stringify({ href, title: displayTitle, at: Date.now() }));
+      } catch {
+        /* filă privată */
+      }
+    };
+    const saveTimer = window.setTimeout(save, 8000);
     const clearIfFinished = () => {
+      if (window.scrollY > 250) save();
       const bottom = window.scrollY + window.innerHeight;
       if (bottom < document.documentElement.scrollHeight - 260) return;
       try {
@@ -827,7 +835,10 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       }
     };
     window.addEventListener('scroll', clearIfFinished, { passive: true });
-    return () => window.removeEventListener('scroll', clearIfFinished);
+    return () => {
+      window.clearTimeout(saveTimer);
+      window.removeEventListener('scroll', clearIfFinished);
+    };
   }, [post, displayTitle, isGuest, guestReadAllowed, source.basePath, source.requiresLogin]);
 
   // 🌐 Update URL slug to match translated title (cosmetic only — does NOT trigger navigation)

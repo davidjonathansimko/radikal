@@ -181,10 +181,10 @@ export default function ArchiveButton({ table, kind, itemPath, className = '' }:
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex flex-col items-center gap-1 rounded-2xl px-8 py-2 text-black transition-opacity hover:opacity-80 dark:text-white"
+          className="flex flex-col items-center gap-0.5 rounded-2xl px-8 py-1 text-black transition-opacity hover:opacity-80 dark:text-white"
         >
-          <ArchiveIcon size={58} />
-          <span className="font-cinzel text-sm font-semibold uppercase tracking-[0.25em]">{LABEL[lang]}</span>
+          <ArchiveIcon size={42} />
+          <span className="font-cinzel text-[11px] font-semibold uppercase tracking-[0.25em]">{LABEL[lang]}</span>
         </button>
       ) : (
         <button

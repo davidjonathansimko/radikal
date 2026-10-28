@@ -16,6 +16,7 @@ import CategoryFilterBar from '@/components/CategoryFilterBar';
 import LegacyOnly from '@/components/LegacyOnly';
 import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
 import ArchiveButton from '@/components/ArchiveButton';
+import BlogsBandsSkeleton from '@/components/BlogsBandsSkeleton';
 import HomeButtonGate from '@/components/HomeButtonGate';
 import PageTour from '@/components/PageTour';
 import { BLOGS_TOUR } from '@/lib/tours';
@@ -117,12 +118,12 @@ function BlogsPageContent() {
   }
 
   return (
-    <div className="pt-4 lg:min-h-screen lg:py-12">
+    <div className="pt-2 lg:min-h-screen lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page header with theme-aware text colors / Seitenkopf mit themenabhängigen Textfarben / Antet pagină cu culori text adaptate la temă */}
         {/* Pasul 0809001 — „Neueste Blogs" a plecat: numele paginii stă acum
             sus, în bara de meniu, cât timp ești aici. */}
-        <header className="text-center mb-4 lg:mb-12">
+        <header className="text-center mb-2 lg:mb-12">
           {monthLabel && (
             <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4 animate-fadeIn">
               {language === 'de' ? `Blogs - ${monthLabel}` : 
@@ -176,21 +177,10 @@ function BlogsPageContent() {
         <CircularReadingProgress />
 
         {/* Blog list component with Suspense / Blog-Listen-Komponente mit Suspense / Componentă listă blog cu Suspense */}
-        <div className={`animate-fadeIn pt-3 sm:pt-6 lg:pt-0${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
+        <div className={`animate-fadeIn pt-2 sm:pt-4 lg:pt-0${mobileCategory ? ' hidden lg:block' : ''}`} style={{ animationDelay: '0.4s' }}>
           <Suspense fallback={
             <>
-              <div className="max-lg:flex max-lg:min-h-[44dvh] max-lg:flex-col max-lg:justify-center lg:hidden">
-                <div className="mb-3 h-5 w-64 max-w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                <div className="flex gap-3 overflow-hidden">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-[42vw] min-w-[150px] max-w-[220px] shrink-0 sm:w-[28vw]">
-                      <div className="aspect-square w-full animate-pulse rounded-md bg-black/10 dark:bg-white/10" />
-                      <div className="mt-2 h-3 w-10 animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                      <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <BlogsBandsSkeleton />
             <div className="hidden grid-cols-1 gap-6 md:grid-cols-2 lg:grid lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-gray-200 dark:bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-gray-300 dark:border-white/10">

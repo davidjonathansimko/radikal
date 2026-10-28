@@ -16,6 +16,17 @@ export interface BlogsHomeConfig {
 }
 
 export const BLOGS_HOME_KEY = 'blogs_home';
+const CACHE_KEY = 'radikalBlogsHomeMode';
+
+/** Ultimul mod cunoscut (din vizita anterioara), ca scheletul sa aiba dintru inceput forma buna. */
+export function cachedBlogsHomeMode(): BlogsHomeMode {
+  try {
+    const m = Number(JSON.parse(localStorage.getItem(CACHE_KEY) || '{}').mode);
+    return ([1, 2, 3, 4] as number[]).includes(m) ? (m as BlogsHomeMode) : 1;
+  } catch {
+    return 1;
+  }
+}
 export const BLOGS_HOME_DEFAULT: BlogsHomeConfig = { mode: 1, recommended: [] };
 
 let cache: Promise<BlogsHomeConfig> | null = null;
@@ -27,9 +38,15 @@ export function fetchBlogsHome(force = false): Promise<BlogsHomeConfig> {
       const { data } = await getSupabaseClient().from('site_content').select('value').eq('key', BLOGS_HOME_KEY).maybeSingle();
       const v = (data?.value ?? {}) as Partial<BlogsHomeConfig>;
       const mode = ([1, 2, 3, 4] as number[]).includes(Number(v.mode)) ? (Number(v.mode) as BlogsHomeMode) : 1;
-      const recommended = Array.isArray(v.recommended) ? v.recommended.filter((x): x is string => typeof x === 'string').slice(0, 12) : [];
+      const recommended = Array.isArray(v.recommended) ? v.recommended.filter((x): x is string => typeof x === 'string') : [];
       // Fara nicio recomandare, ramane lista cu ultimele 6 (nu apare un rand gol).
-      return { mode: recommended.length === 0 ? 1 : mode, recommended };
+      const cfg: BlogsHomeConfig = { mode: recommended.length === 0 ? 1 : mode, recommended };
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ mode: cfg.mode }));
+      } catch {
+        /* ignorat */
+      }
+      return cfg;
     } catch {
       return BLOGS_HOME_DEFAULT;
     }

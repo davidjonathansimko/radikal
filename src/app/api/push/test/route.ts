@@ -57,5 +57,5 @@ export async function POST(req: NextRequest) {
     }
   }));
   if (dead.length) await admin.from('push_subscriptions').delete().in('id', dead);
-  return NextResponse.json({ sent, failed: subs.length - sent, errors: errors.slice(0, 3) });
+  return NextResponse.json({ sent, failed: subs.length - sent, dead: dead.length, errors: errors.slice(0, 3) });
 }

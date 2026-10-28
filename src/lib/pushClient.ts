@@ -128,3 +128,60 @@ export async function applyPrefs(prefs: PushPrefs, lang: string): Promise<PushRe
     return 'error';
   }
 }
+
+/** Reface abonarea de la zero (endpoint nou), ca un dispozitiv expirat sa primeasca din nou notificari. */
+export async function resubscribe(prefs: PushPrefs, lang: string): Promise<PushResult> {
+  if (!pushSupported() || Notification.permission !== 'granted') return 'error';
+  try {
+    const old = await currentSubscription();
+    if (old) {
+      const endpoint = old.endpoint;
+      await old.unsubscribe().catch(() => false);
+      await fetch('/api/push/subscribe', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint }),
+      }).catch(() => undefined);
+    }
+  } catch {
+    /* continuam cu o abonare noua */
+  }
+  return applyPrefs(prefs, lang);
+}
+
+/** Tine serverul la zi: limba curenta si contul (daca esti logat) pentru abonarea existenta. */
+export async function syncPush(lang: string): Promise<void> {
+  if (!pushSupported() || Notification.permission !== 'granted') return;
+  try {
+    const sub = await currentSubscription();
+    if (!sub) return;
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+      body: JSON.stringify({ subscription: sub.toJSON(), prefs: loadPrefs(), lang }),
+    });
+  } catch {
+    /* ignorat */
+  }
+}
+
+const ASKED_KEY = 'radikalPushAsked';
+const OPT_OUT_KEY = 'radikalPushOptOut';
+
+/** Aplicatia instalata: toate notificarile pornesc implicit (se cere permisiunea o singura data). */
+export async function autoEnablePush(lang: string): Promise<void> {
+  if (!pushSupported()) return;
+  try {
+    if (localStorage.getItem(OPT_OUT_KEY) === '1') return;
+    const sub = await currentSubscription();
+    if (sub) return;
+    if (Notification.permission === 'denied') return;
+    if (Notification.permission === 'default') {
+      if (localStorage.getItem(ASKED_KEY)) return;
+      localStorage.setItem(ASKED_KEY, '1');
+    }
+    await applyPrefs({ ...DEFAULT_PREFS }, lang);
+  } catch {
+    /* ignorat */
+  }
+}

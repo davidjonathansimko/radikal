@@ -10,10 +10,10 @@ interface Row {
 }
 
 const MODES: { id: BlogsHomeMode; title: string; text: string }[] = [
-  { id: 1, title: '1 · Ultimele 6 bloguri', text: 'Ca până acum: „Angezeigt werden die letzten 6 Blogbeiträge”.' },
+  { id: 1, title: '1 · Ultimele bloguri', text: 'Ca până acum: ultimele 6 bloguri, cu titlul „Letzte Blogbeiträge”.' },
   { id: 2, title: '2 · Bloguri recomandate', text: 'Același design, dar apar blogurile alese de tine, în ordinea aleasă, cu titlul „Bloguri recomandate”.' },
-  { id: 3, title: '3 · Recomandate + ultimele 6, cu descriere', text: 'Două benzi, carduri puțin mai mici. Sub card: „Categorie: …” și descrierea (extrasul blogului).' },
-  { id: 4, title: '4 · Recomandate + ultimele 6, text obișnuit', text: 'Două benzi, carduri puțin mai mici. Sub card rămâne textul de acum: Blog, titlu, cât timp a trecut.' },
+  { id: 3, title: '3 · Recomandate + ultimele 6, cu descriere', text: 'Două benzi. Sub card: „Categorie: …” și descrierea scrisă de tine la blog (câmpul „Descriere pentru card”; dacă lipsește, Auszug-ul).' },
+  { id: 4, title: '4 · Recomandate + ultimele 6, categorie și dată', text: 'Două benzi. Sub card rămâne doar categoria și cât timp a trecut (titlul e deja pe imagine).' },
 ];
 
 export default function BlogsHomeAdmin() {
@@ -93,7 +93,7 @@ export default function BlogsHomeAdmin() {
               </li>
             ))}
           </ol>
-          {ids.length < 6 && (
+          {(
             <div className="flex gap-2">
               <select value={pick} onChange={(e) => setPick(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-black/15 bg-transparent px-2 py-2 text-sm text-black dark:border-white/15 dark:text-white">
                 <option value="">Alege un blog…</option>
@@ -114,7 +114,7 @@ export default function BlogsHomeAdmin() {
               </button>
             </div>
           )}
-          <p className="text-xs text-black/50 dark:text-white/50">Maximum 6 bloguri recomandate.</p>
+          <p className="text-xs text-black/50 dark:text-white/50">Poți adăuga câte bloguri vrei.</p>
         </div>
       )}
 

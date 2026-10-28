@@ -9,7 +9,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import ReelsIcon from '@/components/ReelsIcon';
 import { PhoneBellIcon, NewspaperIcon, ActivityIcon, VerseIcon } from '@/components/NotificationIcons';
-import { applyPrefs, getLastPushDetail, getPushStatus, loadPrefs, PUSH_KINDS, type PushKind, type PushPrefs, type PushResult, type PushStatus } from '@/lib/pushClient';
+import { applyPrefs, getLastPushDetail, getPushStatus, loadPrefs, resubscribe, PUSH_KINDS, type PushKind, type PushPrefs, type PushResult, type PushStatus } from '@/lib/pushClient';
 
 type Lang = 'de' | 'en' | 'ro' | 'ru';
 
@@ -90,6 +90,13 @@ export default function NotificationsModal({ onClose }: { onClose: () => void })
     void (async () => {
       const st = await getPushStatus();
       setStatus(st);
+      // Abonare existenta: o refacem, ca un dispozitiv expirat (410) sa primeasca din nou notificari.
+      if (st === 'on') {
+        const current = loadPrefs();
+        const r = await resubscribe(current, lang);
+        if (r !== 'ok') void getPushStatus().then(setStatus);
+        return;
+      }
       let optedOut = false;
       try {
         optedOut = localStorage.getItem('radikalPushOptOut') === '1';

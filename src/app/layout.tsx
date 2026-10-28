@@ -27,6 +27,7 @@ const CookieConsent = dynamic(() => import('@/components/CookieConsent'));
 const ToastProvider = dynamic(() => import('@/components/ToastNotifications'));
 const InstallAppPrompt = dynamic(() => import('@/components/InstallAppPrompt'));
 const StandaloneGuard = dynamic(() => import('@/components/StandaloneGuard'));
+const PushSync = dynamic(() => import('@/components/PushSync'));
 
 // BackgroundAnimation commented out for restoration later / BackgroundAnimation auskommentiert für spätere Wiederherstellung / BackgroundAnimation comentat pentru restaurare ulterioară
 // import BackgroundAnimation from '@/components/BackgroundAnimation';
@@ -273,6 +274,7 @@ export default function RootLayout({
                   {/* Pasul 2308008: banner „instaleaza aplicatia" (PWA) */}
                   <InstallAppPrompt />
                   <StandaloneGuard />
+                  <PushSync />
                   
                   {/* Organization Schema for SEO / Organisations-Schema für SEO / Schema Organizație pentru SEO */}
                   <OrganizationSchema />

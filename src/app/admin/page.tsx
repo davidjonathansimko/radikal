@@ -141,6 +141,11 @@ export default function AdminPage() {
     modal_question_ro: '',
     modal_title_ru: '',
     modal_question_ru: '',
+    // Pasul 261028 — titlul pe limbi (gol = DeepL) si descrierea cardului din pagina Blogs
+    title_de: '',
+    title_en: '',
+    title_ru: '',
+    card_description: '',
   });
 
   // Pasul 2108002 — fragmente marcate manual ca referinte biblice
@@ -222,6 +227,24 @@ export default function AdminPage() {
     modal_title_ru: formData.modal_title_ru.trim() || null,
     modal_question_ru: formData.modal_question_ru.trim() || null,
   });
+
+  /**
+   * Titlul pe limbi si descrierea cardului. Se trimit doar cand au continut (sau cand le stergi), ca salvarea sa mearga
+   * si inainte sa rulezi STEP_281028A_BLOG_FIELDS.sql.
+   */
+  const blogExtraColumns = (editing: BlogPost | null) => {
+    const out: Record<string, string | null> = {};
+    const add = (key: 'title_de' | 'title_ru' | 'card_description', value: string) => {
+      const v = value.trim();
+      const had = editing ? Boolean((editing as unknown as Record<string, unknown>)[key]) : false;
+      if (v) out[key] = v;
+      else if (had) out[key] = null;
+    };
+    add('title_de', formData.title_de);
+    add('title_ru', formData.title_ru);
+    add('card_description', formData.card_description);
+    return out;
+  };
 
   /** Coloanele de efecte, gata de trimis la Supabase */
   const effectColumns = () => ({
@@ -408,7 +431,7 @@ export default function AdminPage() {
       // Optimized database insert
       const postData = {
         title: formData.title,
-        title_en: translations.title_en,
+        title_en: formData.title_en.trim() || translations.title_en,
         content: formData.content,
         content_en: translations.content_en,
         excerpt: formData.excerpt,
@@ -425,6 +448,7 @@ export default function AdminPage() {
         modal_title: formData.modal_title || null,
         modal_question: formData.modal_question || null,
         ...modalLangColumns(),
+        ...blogExtraColumns(null),
         // Pasul 2108002: fragmente marcate manual ca referinte biblice (apar cu rosu)
         bible_refs: bibleRefs,
         // Pasul 2208001: efecte de imagine + blog static/dinamic
@@ -479,7 +503,7 @@ export default function AdminPage() {
         .from('blog_posts')
         .update({
           title: formData.title,
-          title_en: translations.title_en,
+          title_en: formData.title_en.trim() || translations.title_en,
           content: formData.content,
           content_en: translations.content_en,
           excerpt: formData.excerpt,
@@ -493,6 +517,7 @@ export default function AdminPage() {
           modal_title: formData.modal_title || null,
           modal_question: formData.modal_question || null,
           ...modalLangColumns(),
+          ...blogExtraColumns(editingPost),
           // Pasul 2108002: referinte biblice marcate manual
           bible_refs: bibleRefs,
           // Pasul 2208001: efecte de imagine + blog static/dinamic
@@ -578,6 +603,10 @@ export default function AdminPage() {
       modal_question_ro: post.modal_question_ro || '',
       modal_title_ru: post.modal_title_ru || '',
       modal_question_ru: post.modal_question_ru || '',
+      title_de: ((post as unknown as Record<string, unknown>).title_de as string) || '',
+      title_en: ((post as unknown as Record<string, unknown>).title_en as string) || '',
+      title_ru: ((post as unknown as Record<string, unknown>).title_ru as string) || '',
+      card_description: ((post as unknown as Record<string, unknown>).card_description as string) || '',
     });
     // Pasul 2108002: incarcam si referintele marcate manual
     setBibleRefs(Array.isArray(post.bible_refs) ? post.bible_refs : []);
@@ -665,6 +694,10 @@ export default function AdminPage() {
       modal_question_ro: '',
       modal_title_ru: '',
       modal_question_ru: '',
+      title_de: '',
+      title_en: '',
+      title_ru: '',
+      card_description: '',
     });
     setBibleRefs([]);
     // Pasul 2208001
@@ -857,6 +890,33 @@ export default function AdminPage() {
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Titel des Blog-Posts"
                 />
+              </div>
+
+              {/* Titlul pe limbi (optional) + descrierea cardului din pagina Blogs */}
+              <div className="rounded-lg border border-white/15 bg-white/5 p-4 space-y-3">
+                <p className="text-sm font-medium text-white/80">Titlul în celelalte limbi (opțional — gol = DeepL)</p>
+                {([['title_de', 'Deutsch'], ['title_en', 'English'], ['title_ru', 'Русский']] as const).map(([name, label]) => (
+                  <input
+                    key={name}
+                    type="text"
+                    name={name}
+                    value={formData[name]}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={`Titel — ${label}`}
+                  />
+                ))}
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-1">Descriere pentru card (pagina Blogs, modul 3) — opțional</label>
+                  <textarea
+                    name="card_description"
+                    value={formData.card_description}
+                    onChange={handleInputChange}
+                    rows={2}
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Scrie în română; se traduce automat. Gol = se folosește Auszug-ul."
+                  />
+                </div>
               </div>
 
               {/* Info about automatic translation */}

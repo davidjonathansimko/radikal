@@ -24,6 +24,7 @@ import { TfiComment } from 'react-icons/tfi';
 import { BlogCardSkeleton, BlogOverlayCardSkeleton } from '@/components/Skeleton';
 import { ReadTick } from '@/components/ReadMark';
 import BlogRow from '@/components/BlogRow';
+import BlogsBandsSkeleton from '@/components/BlogsBandsSkeleton';
 import { useBlogsHome } from '@/lib/blogsHome';
 
 interface BlogListProps {
@@ -54,6 +55,10 @@ const BLOG_LIST_COLUMNS = [
   // „column blog_posts.views does not exist", deci nu se incarca niciun blog.
   'is_dynamic',
   'category_ids',
+  'card_description',
+  'title_de',
+  'title_en',
+  'title_ru',
 ].join(', ');
 
 // Pasul 2210010 — felul cardurilor. 'overlay' = titlul peste imaginea intunecata,
@@ -133,7 +138,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   }, [isMobile, posts.length]);
   
   // Translation state / Übersetzungsstatus / Stare traducere
-  const [translatedPosts, setTranslatedPosts] = useState<Map<string, { title: string; excerpt: string; tags: string[] }>>(new Map());
+  const [translatedPosts, setTranslatedPosts] = useState<Map<string, { title: string; excerpt: string; tags: string[]; desc: string }>>(new Map());
   
   // Supabase client / Supabase-Client / Client Supabase
   const supabase = createClient();
@@ -295,6 +300,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
       // Collect all texts to translate / Alle zu übersetzenden Texte sammeln / Colectează toate textele pentru traducere
       const titles = posts.map(post => post.title);
       const excerpts = posts.map(post => post.excerpt);
+      const descs = posts.map(post => (post as unknown as { card_description?: string | null }).card_description?.trim() || '');
       
       // Collect all unique tags / Alle einzigartigen Tags sammeln / Colectează toate tag-urile unice
       const allTags: string[] = [];
@@ -309,10 +315,11 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
 
       try {
         // Translate in batch for efficiency / Im Batch übersetzen für Effizienz / Traduce în lot pentru eficiență
-        const [translatedTitles, translatedExcerpts, translatedTags] = await Promise.all([
+        const [translatedTitles, translatedExcerpts, translatedTags, translatedDescs] = await Promise.all([
           translateBatch(titles, language),
           translateBatch(excerpts, language),
           allTags.length > 0 ? translateBatch(allTags, language) : Promise.resolve([]),
+          descs.some(Boolean) ? translateBatch(descs, language) : Promise.resolve(descs),
         ]);
 
         // Create tag translation map / Tag-Übersetzungs-Map erstellen / Creează maparea traducerilor tag-urilor
@@ -322,7 +329,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         });
 
         // Create translation map / Übersetzungs-Map erstellen / Creează maparea traducerilor
-        const newTranslations = new Map<string, { title: string; excerpt: string; tags: string[] }>();
+        const newTranslations = new Map<string, { title: string; excerpt: string; tags: string[]; desc: string }>();
         posts.forEach((post, index) => {
           const postTagsArray = post.tags ? (Array.isArray(post.tags) ? post.tags : [post.tags]) : [];
           const translatedPostTags = postTagsArray.map(tag => tagTranslationMap.get(tag) || tag);
@@ -330,6 +337,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
             title: translatedTitles[index] || post.title,
             excerpt: translatedExcerpts[index] || post.excerpt,
             tags: translatedPostTags,
+            desc: translatedDescs[index] || '',
           });
         });
 
@@ -357,6 +365,12 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const localized = (post: BlogPost, field: 'title' | 'excerpt'): string => {
     if (language === 'ro') return (post[field] as string) ?? '';
 
+    // Titlul scris de admin in aceasta limba are prioritate fata de DeepL.
+    if (field === 'title') {
+      const own = (post as unknown as Record<string, unknown>)[`title_${language}`];
+      if (typeof own === 'string' && own.trim()) return own.trim();
+    }
+
     const fresh = translatedPosts.get(post.id)?.[field];
     if (fresh) return fresh as string;
 
@@ -369,6 +383,14 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const getTranslatedTitle = (post: BlogPost) => localized(post, 'title');
 
   const getTranslatedExcerpt = (post: BlogPost) => localized(post, 'excerpt');
+
+  // Descrierea scrisa de admin (cardul din modul 3); daca lipseste, extrasul blogului.
+  const getCardDescription = (post: BlogPost): string => {
+    const own = (post as unknown as { card_description?: string | null }).card_description?.trim();
+    if (!own) return getTranslatedExcerpt(post);
+    if (language === 'ro') return own;
+    return translatedPosts.get(post.id)?.desc || '';
+  };
 
   const getTranslatedTags = (post: BlogPost): string[] => {
     if (language !== 'ro' && !translatedPosts.get(post.id)) return [];
@@ -448,17 +470,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     // Show skeleton while loading / Skeleton während des Ladens anzeigen / Afișează skeleton în timpul încărcării
     return (
       <>
-        <div className="max-lg:flex max-lg:min-h-[44dvh] max-lg:flex-col max-lg:justify-center lg:hidden px-4 sm:px-6">
-          <div className="mb-3 h-5 w-64 max-w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
-          <div className="-mx-4 flex gap-3 overflow-hidden px-4 sm:-mx-6 sm:px-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="w-[42vw] min-w-[150px] max-w-[220px] shrink-0 sm:w-[28vw]">
-                <div className="aspect-square w-full animate-pulse rounded-md bg-black/10 dark:bg-white/10" />
-                <div className="mt-2 h-3 w-10 animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-black/10 dark:bg-white/10" />
-              </div>
-            ))}
-          </div>
+        <div className="px-4 sm:px-6 lg:hidden">
+          <BlogsBandsSkeleton />
         </div>
         <div className="hidden max-w-4xl mx-auto px-4 sm:px-6 lg:block lg:px-8 space-y-8">
           {[...Array(3)].map((_, i) =>
@@ -488,10 +501,10 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const effectiveMode = configReady && unfiltered && recommended.length > 0 && blogsHome ? blogsHome.mode : 1;
   const last6 = posts.slice(0, 6);
   const lastHeading =
-    language === 'de' ? 'Angezeigt werden die letzten 6 Blogbeiträge' :
-    language === 'en' ? 'Showing the last 6 blog posts' :
-    language === 'ro' ? 'Sunt afișate ultimele 6 postări de blog' :
-    'Показаны последние 6 публикаций в блоге';
+    language === 'de' ? 'Letzte Blogbeiträge' :
+    language === 'en' ? 'Latest blog posts' :
+    language === 'ro' ? 'Ultimele postări' :
+    'Последние публикации';
   const recHeading =
     language === 'de' ? 'Empfohlene Blogs' :
     language === 'en' ? 'Recommended blogs' :
@@ -510,7 +523,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
 
       {/* Telefon: cardul „continua lectura" sta sub titlul listei, nu sus. */}
       <div className="lg:hidden">
-        <ContinueReading scope="/blogs/" className="mb-4" />
+        <ContinueReading scope="/blogs/" className="mb-2" slim={effectiveMode >= 3} />
       </div>
       
       {/* Indicatorul apare doar daca traducerea dureaza (nu la raspunsurile instante din cache). */}
@@ -528,7 +541,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
       {/* Pasul 1125: Mobile = single card with left/right arrows, Desktop = vertical stack */}
       <div className="relative">
 
-        {isMobile && !configReady && <div className="min-h-[38dvh]" aria-hidden="true" />}
+        {isMobile && !configReady && <BlogsBandsSkeleton />}
 
         {isMobile && configReady && (
           <div className="-mt-0">
@@ -541,7 +554,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 language={language}
                 categories={categories}
                 getTitle={getTranslatedTitle}
-                getExcerpt={getTranslatedExcerpt}
+                getExcerpt={getCardDescription}
                 formatDate={formatDate}
               />
             )}
@@ -554,7 +567,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 language={language}
                 categories={categories}
                 getTitle={getTranslatedTitle}
-                getExcerpt={getTranslatedExcerpt}
+                getExcerpt={getCardDescription}
                 formatDate={formatDate}
               />
             )}
@@ -564,23 +577,23 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                   posts={recommended}
                   heading={recHeading}
                   compact
-                  subMode={effectiveMode === 3 ? 'catdesc' : 'normal'}
+                  subMode={effectiveMode === 3 ? 'catdesc' : 'meta'}
                   tour
                   language={language}
                   categories={categories}
                   getTitle={getTranslatedTitle}
-                  getExcerpt={getTranslatedExcerpt}
+                  getExcerpt={getCardDescription}
                   formatDate={formatDate}
                 />
                 <BlogRow
                   posts={last6}
                   heading={lastHeading}
                   compact
-                  subMode={effectiveMode === 3 ? 'catdesc' : 'normal'}
+                  subMode={effectiveMode === 3 ? 'catdesc' : 'meta'}
                   language={language}
                   categories={categories}
                   getTitle={getTranslatedTitle}
-                  getExcerpt={getTranslatedExcerpt}
+                  getExcerpt={getCardDescription}
                   formatDate={formatDate}
                 />
               </>

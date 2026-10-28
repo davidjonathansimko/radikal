@@ -8,7 +8,7 @@
 // served OLD hashed /_next/static chunks while the new HTML asked for new ones.
 // React then failed to hydrate and the whole shell (logo, progress bar, menu,
 // language/theme/search buttons) silently disappeared — the exact bug users hit.
-const SW_VERSION = 'v12';
+const SW_VERSION = 'v13';
 const SHELL_CACHE = `radikal-shell-${SW_VERSION}`;   // HTML pages
 const ASSET_CACHE = `radikal-assets-${SW_VERSION}`;  // immutable hashed assets + images
 const CACHE_NAME = SHELL_CACHE; // kept for the CLEAR_CACHE message below
@@ -184,7 +184,8 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body,
     icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    // Bara de stare Android afiseaza doar silueta (canalul alfa): logoul monocrom, nu un patrat alb.
+    badge: '/icons/badge-96.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/',
