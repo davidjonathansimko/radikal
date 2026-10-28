@@ -15,6 +15,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import VersionTextEditor from '@/components/admin/VersionTextEditor';
 import PushAdminPanel from '@/components/admin/PushAdminPanel';
+import BlogsHomeAdmin from '@/components/admin/BlogsHomeAdmin';
+import SignatureAdmin from '@/components/admin/SignatureAdmin';
 import {
   EDITABLE_PAGES,
   PAGE_LANGUAGES,
@@ -493,6 +495,14 @@ export default function PageContentAdmin() {
             </div>
           </div>
         ))}
+      </AdminGroup>
+
+      <AdminGroup title="Pagina Blogs: banda cu carduri" summary="Ultimele 6 sau recomandate">
+        <BlogsHomeAdmin />
+      </AdminGroup>
+
+      <AdminGroup title="Semnătura RADIKAL." summary="Reels și Play Blog">
+        <SignatureAdmin />
       </AdminGroup>
 
       <AdminGroup title="Notificări push" summary="Test și trimitere manuală">

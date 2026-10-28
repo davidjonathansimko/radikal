@@ -28,6 +28,8 @@ import AnimatedPlayIcon from '@/components/AnimatedPlayIcon';
 import { paginateWords, pageIndexForWord } from '@/lib/paginateText';
 import { getSupabaseClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
+import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
+import RadikalSignature from '@/components/RadikalSignature';
 import { fetchCustomAudioForLang } from '@/lib/customAudio';
 import ImageEffectLayers, {
   effectsFilter,
@@ -103,6 +105,9 @@ export default function PlayBlogModal({
   const [textHidden, setTextHidden] = useState(false);
 
   useBodyScrollLock(isOpen);
+  // Ecran complet in aplicatie, ca la Reels.
+  useAppFullscreen(isOpen);
+  useCleanScreen(isOpen);
   useFocusTrap(containerRef, isOpen);
 
   // Pasul 2210013 — butonul „inapoi" al telefonului inchide modalul (ca la Reels).
@@ -516,7 +521,7 @@ export default function PlayBlogModal({
       <button
         onClick={() => { tapLight(); requestClose(); }}
         aria-label={uiLang === 'de' ? 'Schließen' : uiLang === 'ro' ? 'Închide' : 'Close'}
-        className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-opacity hover:opacity-100"
+        className="absolute right-3 top-[calc(env(safe-area-inset-top,0px)+12px)] z-30 flex h-11 w-11 items-center justify-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] transition-opacity hover:opacity-100"
         style={{ opacity: 0.75 }}
       >
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -529,7 +534,7 @@ export default function PlayBlogModal({
           Pasul 2308010: butoanele erau prea inghesuite; sub ele e loc destul. */}
       {!frozen && (
       <div
-        className={`absolute right-4 top-[86px] z-30 flex flex-col items-center gap-5 transition-opacity duration-700 ${
+        className={`absolute right-3 bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] z-30 flex flex-col items-center gap-5 transition-opacity duration-700 sm:right-5 ${
           uiVisible ? 'opacity-70' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -537,7 +542,7 @@ export default function PlayBlogModal({
           onClick={() => { tapLight(); onToggleLike(); }}
           aria-pressed={isLiked}
           aria-label="Like"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform active:scale-90"
+          className="flex h-11 w-11 items-center justify-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] transition-transform active:scale-90"
         >
           <svg
             width="22" height="22" viewBox="0 0 24 24"
@@ -554,7 +559,7 @@ export default function PlayBlogModal({
         <button
           onClick={handleShare}
           aria-label={uiLang === 'de' ? 'Teilen' : uiLang === 'ro' ? 'Distribuie' : 'Share'}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform active:scale-90"
+          className="flex h-11 w-11 items-center justify-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] transition-transform active:scale-90"
         >
           <svg
             width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -577,7 +582,7 @@ export default function PlayBlogModal({
             onClick={() => { tapLight(); setFrozen(true); }}
             aria-label="Freeze — ascunde butoanele pentru captură"
             title="Ascunde butoanele (Escape / back / trage în jos pentru a reveni)"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform active:scale-90"
+            className="flex h-11 w-11 items-center justify-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] transition-transform active:scale-90"
           >
             <svg
               width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -598,7 +603,7 @@ export default function PlayBlogModal({
             aria-pressed={textHidden}
             aria-label={textHidden ? 'Arată textul' : 'Ascunde textul (doar audio)'}
             title={textHidden ? 'Arată textul' : 'Ascunde textul (doar audio)'}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform active:scale-90"
+            className="flex h-11 w-11 items-center justify-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] transition-transform active:scale-90"
           >
             <svg
               width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -618,6 +623,13 @@ export default function PlayBlogModal({
         )}
       </div>
       )}
+
+      {/* Semnatura fina, deasupra barei de progres (se alege din admin). */}
+      <RadikalSignature
+        where="playBlog"
+        className="absolute inset-x-0 z-20 text-white"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}
+      />
 
       {/* ---------- TEXTUL sincronizat cu vocea ----------
           Pasul 2308003: NU mai este un text lung cu scroll.

@@ -25,12 +25,16 @@ interface TranslationCache {
 // se mai face nici macar cererea catre server.
 // ---------------------------------------------------------------------------
 const STORE_KEY = 'radikal-translation-cache';
-const MAX_ENTRIES = 500;
+const MAX_ENTRIES = 800;
+// Doar textele scurte (titluri, descrieri, etichete) raman salvate pe dispozitiv; articolele intregi nu incap in localStorage.
+const MAX_PERSISTED_TEXT = 600;
 
 const sharedCache: TranslationCache = (() => {
   if (typeof window === 'undefined') return {};
   try {
-    return JSON.parse(sessionStorage.getItem(STORE_KEY) || '{}') as TranslationCache;
+    const fromLocal = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as TranslationCache;
+    const fromSession = JSON.parse(sessionStorage.getItem(STORE_KEY) || '{}') as TranslationCache;
+    return { ...fromLocal, ...fromSession };
   } catch {
     return {};
   }
@@ -43,13 +47,18 @@ function persistCache() {
   persistTimer = setTimeout(() => {
     try {
       const keys = Object.keys(sharedCache);
-      // Nu lasam cache-ul sa creasca la nesfarsit — sessionStorage are limita.
+      // Nu lasam cache-ul sa creasca la nesfarsit — storage-ul are limita.
       if (keys.length > MAX_ENTRIES) {
         keys.slice(0, keys.length - MAX_ENTRIES).forEach((k) => delete sharedCache[k]);
       }
-      sessionStorage.setItem(STORE_KEY, JSON.stringify(sharedCache));
+      const short: TranslationCache = {};
+      for (const k of Object.keys(sharedCache)) {
+        const m = /^[^-]+-[^-]+-(\d+)-/.exec(k);
+        if (m && Number(m[1]) <= MAX_PERSISTED_TEXT) short[k] = sharedCache[k];
+      }
+      localStorage.setItem(STORE_KEY, JSON.stringify(short));
     } catch {
-      /* sessionStorage plin sau blocat — mergem mai departe fara persistenta */
+      /* storage plin sau blocat — mergem mai departe fara persistenta */
     }
   }, 400);
 }

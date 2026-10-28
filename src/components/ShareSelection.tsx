@@ -167,6 +167,8 @@ export default function ShareSelection({ scope, imageUrl, title, enabled = true,
       if (keepRef.current) return;
       if (Math.abs(e.clientX - downX) > 8 || Math.abs(e.clientY - downY) > 8) return;
       const target = e.target as Element | null;
+      // Atingerea butonului „Als Bild teilen" nu trebuie sa stearga selectia: pointerup vine inaintea click-ului.
+      if (target?.closest('[data-no-share]')) return;
       if (!target || !target.closest(scope)) {
         clearHighlight();
         setPos(null);

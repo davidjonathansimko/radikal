@@ -28,6 +28,7 @@ import { shareVerseImage, IMAGE_SAVED } from '@/lib/shareImage';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
+import RadikalSignature from '@/components/RadikalSignature';
 import ImageEffectLayers, { DEFAULT_IMAGE_EFFECTS } from '@/components/ImageEffectLayers';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -1459,7 +1460,7 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
 
           {/* Indiciu discret de derulare — ascuns in mod „freeze" (pasul A12) */}
           {!isFrozen && (
-          <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+          <div className="pointer-events-none absolute bottom-11 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
             <svg className="w-5 h-5 animate-bounce" viewBox="0 0 24 24" fill="none" stroke={textVeryLight} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -1467,6 +1468,9 @@ export default function ReelsModal({ isOpen, onClose }: ReelsModalProps) {
           )}
         </>
       )}
+
+      {/* Semnatura fina, jos la mijloc (se alege din admin). */}
+      <RadikalSignature where="reels" className="absolute inset-x-0 z-10" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)' }} />
 
       {/* Ascundem scrollbar-ul fara sa afectam alte componente */}
       <style jsx>{`

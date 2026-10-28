@@ -23,6 +23,8 @@ import { TfiComment } from 'react-icons/tfi';
 // Skeleton Loading / Skeleton-Laden / Încărcare Skeleton
 import { BlogCardSkeleton, BlogOverlayCardSkeleton } from '@/components/Skeleton';
 import { ReadTick } from '@/components/ReadMark';
+import BlogRow from '@/components/BlogRow';
+import { useBlogsHome } from '@/lib/blogsHome';
 
 interface BlogListProps {
   initialPosts?: BlogPost[];
@@ -96,43 +98,6 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const loopRef = useRef<HTMLDivElement>(null);
-
-  // Glisare circulara: dupa ultimul card vine primul, iar din primul se poate merge inapoi spre ultimul.
-  useEffect(() => {
-    const el = loopRef.current;
-    const n = Math.min(posts.length, 6);
-    if (!el || !isMobile || n < 2) return;
-    const cards = el.querySelectorAll<HTMLElement>('[data-loop-card]');
-    if (cards.length < n * 3) return;
-    const span = () => cards[n].offsetLeft - cards[0].offsetLeft;
-    const jump = (delta: number) => {
-      el.style.scrollSnapType = 'none';
-      el.scrollLeft += delta;
-      requestAnimationFrame(() => {
-        el.style.scrollSnapType = '';
-      });
-    };
-    el.style.scrollSnapType = 'none';
-    el.scrollLeft = span();
-    requestAnimationFrame(() => {
-      el.style.scrollSnapType = '';
-    });
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const onScroll = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        const w = span();
-        if (el.scrollLeft < w * 0.4) jump(w);
-        else if (el.scrollLeft > w * 1.6) jump(-w);
-      }, 90);
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      clearTimeout(timer);
-      el.removeEventListener('scroll', onScroll);
-    };
-  }, [isMobile, posts.length]);
 
   // Detect mobile for swipeable carousel
   useEffect(() => {
@@ -172,6 +137,42 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   
   // Supabase client / Supabase-Client / Client Supabase
   const supabase = createClient();
+
+  // Banda „Bloguri recomandate": blogurile alese in admin (doar in lista nefiltrata).
+  const blogsHome = useBlogsHome();
+  const unfiltered = filterYear === null && filterMonth === null && categoryIds.length === 0;
+  const [recommended, setRecommended] = useState<BlogPost[]>([]);
+  const [recLoaded, setRecLoaded] = useState(false);
+  useEffect(() => {
+    if (!blogsHome) return;
+    const ids = blogsHome.mode > 1 && unfiltered ? blogsHome.recommended : [];
+    if (ids.length === 0) {
+      setRecommended([]);
+      setRecLoaded(true);
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      let { data, error } = await supabase.from('blog_posts').select(BLOG_LIST_COLUMNS).in('id', ids).eq('published', true);
+      if (error && (error as { code?: string }).code === '42703') {
+        ({ data, error } = await supabase.from('blog_posts').select('*').in('id', ids).eq('published', true));
+      }
+      if (!alive) return;
+      const rows = (error ? [] : (data ?? [])) as unknown as BlogPost[];
+      setRecommended(ids.map((id) => rows.find((r) => r.id === id)).filter((r): r is BlogPost => Boolean(r)));
+      setRecLoaded(true);
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blogsHome, unfiltered]);
+
+  // Traducem si blogurile recomandate, nu doar lista.
+  const pool = React.useMemo(() => {
+    const seen = new Set(posts.map((p) => p.id));
+    return [...posts, ...recommended.filter((p) => !seen.has(p.id))];
+  }, [posts, recommended]);
 
   // Load blog posts from Supabase with optimized performance / Blog-Posts aus Supabase laden mit optimierter Performance / Încărcă postările de blog din Supabase cu performanță optimizată
   const loadPosts = async (pageNum: number = 1, reset: boolean = false) => {
@@ -282,6 +283,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   // 🌐 DeepL TRADUCERE AUTOMATĂ: Traduce postările când limba se schimbă
   useEffect(() => {
     const translatePosts = async () => {
+      const posts = pool;
       // Skip if Romanian (original language) or no posts / Überspringen wenn Rumänisch oder keine Posts / Sari peste dacă este Română sau nu sunt postări
       if (language === 'ro' || posts.length === 0) {
         setTranslatedPosts(new Map());
@@ -339,7 +341,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     };
 
     translatePosts();
-  }, [language, posts, translateBatch]);
+  }, [language, pool, translateBatch]);
 
   // Pasul 2308001 — GATA CU SCLIPIREA ÎN ROMÂNĂ.
   //
@@ -481,15 +483,28 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     );
   }
 
+  const configReady = blogsHome !== null && recLoaded;
+  // Fara nicio recomandare (sau cu filtre active) ramane lista cu ultimele 6, ca pana acum.
+  const effectiveMode = configReady && unfiltered && recommended.length > 0 && blogsHome ? blogsHome.mode : 1;
+  const last6 = posts.slice(0, 6);
+  const lastHeading =
+    language === 'de' ? 'Angezeigt werden die letzten 6 Blogbeiträge' :
+    language === 'en' ? 'Showing the last 6 blog posts' :
+    language === 'ro' ? 'Sunt afișate ultimele 6 postări de blog' :
+    'Показаны последние 6 публикаций в блоге';
+  const recHeading =
+    language === 'de' ? 'Empfohlene Blogs' :
+    language === 'en' ? 'Recommended blogs' :
+    language === 'ro' ? 'Bloguri recomandate' :
+    'Рекомендуемые блоги';
+  const desktopList = effectiveMode === 2 ? recommended : last6;
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 max-lg:flex max-lg:min-h-[44dvh] max-lg:flex-col max-lg:justify-center">
-      {/* Message showing only last 6 blogs / Nachricht zeigt nur die letzten 6 Blogs / Mesaj arată doar ultimele 6 bloguri */}
-      <div className="-mx-4 mb-3 px-4 text-left lg:mx-0 lg:mb-8 lg:px-0 lg:text-center">
-        <p className="text-base font-bold text-black dark:text-white lg:text-lg lg:font-medium lg:text-gray-600 lg:dark:text-white/60">
-          {language === 'de' ? 'Angezeigt werden die letzten 6 Blogbeiträge' : 
-           language === 'en' ? 'Showing the last 6 blog posts' : 
-           language === 'ro' ? 'Sunt afișate ultimele 6 postări de blog' : 
-           'Показаны последние 6 публикаций в блоге'}
+    <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 max-lg:flex max-lg:flex-col max-lg:justify-center ${effectiveMode >= 3 ? 'max-lg:min-h-0' : 'max-lg:min-h-[44dvh]'}`}>
+      {/* Titlul listei pe desktop; pe telefon fiecare bandă are propriul titlu. */}
+      <div className="mb-8 text-center max-lg:hidden">
+        <p className="text-lg font-medium text-gray-600 dark:text-white/60">
+          {configReady ? (effectiveMode === 2 ? recHeading : lastHeading) : '\u00a0'}
         </p>
       </div>
 
@@ -513,47 +528,69 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
       {/* Pasul 1125: Mobile = single card with left/right arrows, Desktop = vertical stack */}
       <div className="relative">
 
-        {isMobile && (
-          <div
-            ref={loopRef}
-            data-tour="cards"
-            className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-          >
-            {[0, 1, 2].slice(0, posts.slice(0, 6).length > 1 ? 3 : 1).flatMap((copy) => posts.slice(0, 6).map((post) => ({ post, copy }))).map(({ post, copy }) => {
-              const catIds = (post as unknown as { category_ids?: string[] | null }).category_ids ?? [];
-              const cat = categories.find((c) => catIds.includes(c.id));
-              const title = getTranslatedTitle(post);
-              return (
-                <Link
-                  key={`${copy}-${post.id}`}
-                  data-loop-card
-                  href={`/blogs/${post.slug}`}
-                  className="block w-[42vw] min-w-[150px] max-w-[220px] shrink-0 snap-start sm:w-[28vw]"
-                >
-                  <div className="force-white-text relative aspect-square w-full overflow-hidden rounded-md bg-neutral-900">
-                    {post.image_url && (
-                      <Image src={post.image_url} alt="" fill sizes="220px" className="object-cover brightness-[0.65]" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-black/40" aria-hidden="true" />
-                    <div className="absolute inset-0 flex items-center justify-center p-3 text-center">
-                      <span className="line-clamp-4 font-cinzel text-[15px] font-bold leading-snug drop-shadow-lg" style={{ color: '#ffffff' }}>
-                        {title}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mt-2 truncate text-xs text-black/55 dark:text-white/55">{cat ? categoryName(cat, language) : 'Blog'}</p>
-                  <p className="mt-0.5 line-clamp-2 text-sm font-bold leading-snug text-black dark:text-white">{title}</p>
-                  <p className="mt-0.5 truncate text-xs text-black/55 dark:text-white/55">{formatDate(post.created_at)}</p>
-                </Link>
-              );
-            })}
+        {isMobile && !configReady && <div className="min-h-[38dvh]" aria-hidden="true" />}
+
+        {isMobile && configReady && (
+          <div className="-mt-0">
+            {effectiveMode === 1 && (
+              <BlogRow
+                posts={last6}
+                heading={lastHeading}
+                subMode="normal"
+                tour
+                language={language}
+                categories={categories}
+                getTitle={getTranslatedTitle}
+                getExcerpt={getTranslatedExcerpt}
+                formatDate={formatDate}
+              />
+            )}
+            {effectiveMode === 2 && (
+              <BlogRow
+                posts={recommended}
+                heading={recHeading}
+                subMode="normal"
+                tour
+                language={language}
+                categories={categories}
+                getTitle={getTranslatedTitle}
+                getExcerpt={getTranslatedExcerpt}
+                formatDate={formatDate}
+              />
+            )}
+            {effectiveMode >= 3 && (
+              <>
+                <BlogRow
+                  posts={recommended}
+                  heading={recHeading}
+                  compact
+                  subMode={effectiveMode === 3 ? 'catdesc' : 'normal'}
+                  tour
+                  language={language}
+                  categories={categories}
+                  getTitle={getTranslatedTitle}
+                  getExcerpt={getTranslatedExcerpt}
+                  formatDate={formatDate}
+                />
+                <BlogRow
+                  posts={last6}
+                  heading={lastHeading}
+                  compact
+                  subMode={effectiveMode === 3 ? 'catdesc' : 'normal'}
+                  language={language}
+                  categories={categories}
+                  getTitle={getTranslatedTitle}
+                  getExcerpt={getTranslatedExcerpt}
+                  formatDate={formatDate}
+                />
+              </>
+            )}
           </div>
         )}
 
       {!isMobile && (
       <div ref={carouselRef} className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {posts.slice(0, 6).map((post, index) => (
+        {desktopList.map((post, index) => (
           <React.Fragment key={post.id}>
             <div className={isMobile ? "snap-center flex-shrink-0 w-full px-1" : "h-full"}>
             <Link href={`/blogs/${post.slug}`} className="block h-full">

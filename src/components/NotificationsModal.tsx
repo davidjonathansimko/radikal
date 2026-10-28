@@ -85,7 +85,29 @@ export default function NotificationsModal({ onClose }: { onClose: () => void })
 
   useEffect(() => {
     setMounted(true);
-    void getPushStatus().then(setStatus);
+    // Implicit toate cele 4 sunt pornite: la prima deschidere ne abonam singuri (browserul cere permisiunea),
+    // cu exceptia celor care le-au oprit deliberat.
+    void (async () => {
+      const st = await getPushStatus();
+      setStatus(st);
+      let optedOut = false;
+      try {
+        optedOut = localStorage.getItem('radikalPushOptOut') === '1';
+      } catch {
+        /* ignorat */
+      }
+      if (st !== 'off' || optedOut) return;
+      const all: PushPrefs = { blogs: true, marturii: true, verse: true, reels: true };
+      const r = await applyPrefs(all, lang);
+      if (r === 'ok') {
+        setPrefs(all);
+        setStatus('on');
+      } else {
+        setNote(r === 'not_configured' && getLastPushDetail() ? `${t.msg[r]} (${getLastPushDetail()})` : t.msg[r]);
+        void getPushStatus().then(setStatus);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -103,7 +125,14 @@ export default function NotificationsModal({ onClose }: { onClose: () => void })
     const result: PushResult = await applyPrefs(next, lang);
     if (result === 'ok') {
       setPrefs(next);
-      setStatus(PUSH_KINDS.some((k) => next[k]) ? 'on' : 'off');
+      const anyOn = PUSH_KINDS.some((k) => next[k]);
+      setStatus(anyOn ? 'on' : 'off');
+      try {
+        if (anyOn) localStorage.removeItem('radikalPushOptOut');
+        else localStorage.setItem('radikalPushOptOut', '1');
+      } catch {
+        /* ignorat */
+      }
       setNote(t.msg.saved);
     } else {
       setNote(result === 'not_configured' && getLastPushDetail() ? `${t.msg[result]} (${getLastPushDetail()})` : t.msg[result]);
