@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase';
+import { triggerPush } from '@/lib/pushTrigger';
 import { isAdminUser } from '@/lib/isAdmin';
 import { BlogPost } from '@/types';
 import { autoTranslateBlogPost } from '@/utils/translation';
@@ -443,6 +444,7 @@ export default function AdminPage() {
       // Reset form and reload posts / Formular zurücksetzen und Posts neu laden
       resetForm();
       setShowCreateForm(false);
+      void triggerPush();
       
       // Optimized reload - only fetch new posts
       await loadPosts();
@@ -507,6 +509,7 @@ export default function AdminPage() {
       // Reset form and reload posts / Formular zurücksetzen und Posts neu laden
       // Poza veche, inlocuita acum, se sterge din Storage (daca nu o mai foloseste nimeni).
       void cleanupReplaced(editingPost.image_url, formData.image_url);
+      void triggerPush();
       resetForm();
       setEditingPost(null);
       await loadPosts();

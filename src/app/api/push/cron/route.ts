@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import webpush from 'web-push';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getAdminClient } from '@/lib/serverSupabase';
+import { getAdminClient, getUserFromRequest } from '@/lib/serverSupabase';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -124,13 +124,14 @@ async function collect(admin: SupabaseClient): Promise<Item[]> {
   return items;
 }
 
-async function sendItem(admin: SupabaseClient, item: Item): Promise<{ sent: number; removed: number }> {
+async function sendItem(admin: SupabaseClient, item: Item): Promise<{ sent: number; removed: number; errors: string[] }> {
   const { data: subs } = await admin
     .from('push_subscriptions').select('id, endpoint, p256dh, auth, lang')
     .contains('prefs', { [item.kind]: true });
 
   let sent = 0;
   const dead: string[] = [];
+  const errors: string[] = [];
   const list = subs || [];
   for (let i = 0; i < list.length; i += 25) {
     await Promise.all(list.slice(i, i + 25).map(async (s) => {
@@ -147,17 +148,34 @@ async function sendItem(admin: SupabaseClient, item: Item): Promise<{ sent: numb
       } catch (e) {
         const code = (e as { statusCode?: number }).statusCode;
         if (code === 404 || code === 410) dead.push(s.id);
+        else errors.push(`${code ?? '?'} ${(e as Error).message?.slice(0, 120) ?? ''}`.trim());
       }
     }));
   }
   if (dead.length) await admin.from('push_subscriptions').delete().in('id', dead);
-  await admin.from('push_sent').upsert({ kind: item.kind, item_id: item.id }, { onConflict: 'kind,item_id' });
-  return { sent, removed: dead.length };
+  // Daca toate trimiterile au esuat din alt motiv decat abonari expirate, ramane de retrimis.
+  if (list.length === 0 || sent > 0 || dead.length === list.length) {
+    await admin.from('push_sent').upsert({ kind: item.kind, item_id: item.id }, { onConflict: 'kind,item_id' });
+  }
+  return { sent, removed: dead.length, errors: errors.slice(0, 3) };
 }
 
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  return run();
+}
 
+// Dupa ce adminul publica ceva, panoul apeleaza asta ca notificarea sa plece imediat.
+export async function POST(req: NextRequest) {
+  if (!authorized(req)) {
+    const admin = getAdminClient();
+    const user = admin ? await getUserFromRequest(admin, req) : null;
+    if (!user?.isAdmin) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+  return run();
+}
+
+async function run() {
   const admin = getAdminClient();
   const pub = process.env.VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
@@ -167,7 +185,7 @@ export async function GET(req: NextRequest) {
 
   const items = await collect(admin).catch(() => null);
   if (!items) return NextResponse.json({ error: 'run STEP_261026A_PUSH.sql' }, { status: 503 });
-  const report: Record<string, { sent: number; removed: number }> = {};
+  const report: Record<string, { sent: number; removed: number; errors: string[] }> = {};
   for (const item of items) {
     report[`${item.kind}:${item.id}`] = await sendItem(admin, item);
   }

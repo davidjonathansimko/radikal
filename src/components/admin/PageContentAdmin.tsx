@@ -14,6 +14,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import VersionTextEditor from '@/components/admin/VersionTextEditor';
+import PushAdminPanel from '@/components/admin/PushAdminPanel';
 import {
   EDITABLE_PAGES,
   PAGE_LANGUAGES,
@@ -492,6 +493,10 @@ export default function PageContentAdmin() {
             </div>
           </div>
         ))}
+      </AdminGroup>
+
+      <AdminGroup title="Notificări push" summary="Test și trimitere manuală">
+        <PushAdminPanel />
       </AdminGroup>
 
       <AdminGroup title="Text versiune (meniu)" summary="Textul de la sfârșitul meniului">

@@ -14,6 +14,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
+import { triggerPush } from '@/lib/pushTrigger';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import MediaUpload from './MediaUpload';
 import { cleanupReplaced, cleanupDeleted, storageFolder } from '@/lib/storageCleanup';
@@ -401,6 +402,7 @@ export default function ReelsAdmin() {
         notify('err', `Eroare la salvare: ${error.message}`);
       } else {
         notify('ok', editingId ? 'Reel actualizat.' : 'Reel creat cu succes.');
+        void triggerPush();
         void cleanupReplaced(originalMedia.current.audio, audioUrl.trim() || null);
         void cleanupReplaced(originalMedia.current.image, backgroundImageUrl.trim() || null);
         draft.clear();

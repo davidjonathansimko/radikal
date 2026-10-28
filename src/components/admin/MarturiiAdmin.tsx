@@ -17,6 +17,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
+import { triggerPush } from '@/lib/pushTrigger';
 import ImageEffectsEditor from '@/components/admin/ImageEffectsEditor';
 import ImageUpload from '@/components/ImageUpload';
 import { cleanupReplaced, cleanupDeleted, storageFolder } from '@/lib/storageCleanup';
@@ -268,6 +269,7 @@ export default function MarturiiAdmin() {
         }
 
         say('ok', editingId ? 'Mărturie actualizată.' : 'Mărturie creată.');
+        void triggerPush();
         void cleanupReplaced(originalImage.current, imageUrl.trim() || null);
         resetForm();
         await load();
