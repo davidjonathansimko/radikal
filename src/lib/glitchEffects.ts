@@ -1,9 +1,6 @@
 // Schimbarea temei: ecranul nou se formeaza din fum (pete moi din colturi si din mijloc), in alb-negru
 // care capata incet culoare, iar cuvintele si butoanele tremura si se imprastie o clipa.
 
-const LIGHT = 'rgba(255,255,255,0.75)';
-const GRAY = 'rgba(120,120,120,0.85)';
-
 function rand(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
@@ -15,6 +12,10 @@ function inViewport(el: HTMLElement): boolean {
 
 /** Cuvintele si butoanele vizibile tremura. Nu atinge `transform`, deci nu strica alte animatii. */
 export function scatterGlitch(duration = 1000): void {
+  // Culorile urmeaza tema curenta: pe fundal luminos umbra e inchisa, pe fundal intunecat e deschisa.
+  const lightTheme = document.documentElement.classList.contains('light');
+  const LIGHT = lightTheme ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.75)';
+  const GRAY = lightTheme ? 'rgba(90,90,90,0.7)' : 'rgba(120,120,120,0.85)';
   const nodes = Array.from(
     document.querySelectorAll<HTMLElement>('h1, h2, h3, button, a, p, label, [role="button"]'),
   )
@@ -58,6 +59,47 @@ export function themeCrossfade(duration = 560): void {
     );
   } catch {
     /* fara suport pentru pseudoElement: schimbarea ramane simpla */
+  }
+}
+
+/** Efectul ales in admin pentru schimbarea temei; `origin` = unde a apasat cititorul (pentru cerc). */
+export function runThemeFx(fx: string, origin: { x: number; y: number }): void {
+  const root = document.documentElement;
+  const ease = 'cubic-bezier(0.4, 0, 0.2, 1)';
+  const anim = (target: 'new' | 'old', frames: Keyframe[], duration: number) => {
+    try {
+      root.animate(frames, { duration, easing: ease, fill: 'both', pseudoElement: `::view-transition-${target}(root)` });
+    } catch {
+      /* fara suport: schimbarea ramane simpla */
+    }
+  };
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  switch (fx) {
+    case 'circle': {
+      const r = Math.hypot(Math.max(origin.x, w - origin.x), Math.max(origin.y, h - origin.y));
+      anim('new', [{ clipPath: `circle(0px at ${origin.x}px ${origin.y}px)` }, { clipPath: `circle(${r}px at ${origin.x}px ${origin.y}px)` }], 720);
+      break;
+    }
+    case 'wipe':
+      anim('new', [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], 650);
+      break;
+    case 'curtain':
+      anim('new', [{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], 650);
+      break;
+    case 'shake':
+      themeCrossfade(520);
+      scatterGlitch(900);
+      break;
+    case 'dissolve':
+      anim('new', [{ opacity: 0, filter: 'blur(16px)' }, { opacity: 1, filter: 'blur(0px)' }], 760);
+      break;
+    case 'zoom':
+      anim('new', [{ opacity: 0, transform: 'scale(1.06)' }, { opacity: 1, transform: 'scale(1)' }], 640);
+      anim('old', [{ transform: 'scale(1)' }, { transform: 'scale(0.97)' }], 640);
+      break;
+    default:
+      themeCrossfade();
   }
 }
 

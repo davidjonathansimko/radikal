@@ -49,7 +49,7 @@ function pauseFor(lastWord: string, paragraphEnd: boolean): number {
 const MIN_WORDS = 3;
 const MAX_WORDS = 22;
 
-export function splitUnits(text: string): { units: Unit[]; words: string[] } {
+export function splitUnits(text: string, minWords = MIN_WORDS): { units: Unit[]; words: string[] } {
   const paragraphs = text
     .split(/\n\s*\n/)
     .map((p) => p.replace(/\s+/g, ' ').trim())
@@ -75,7 +75,7 @@ export function splitUnits(text: string): { units: Unit[]; words: string[] } {
       all.push(tok);
       cur.push(tok);
       const isLast = i === tokens.length - 1;
-      const boundary = END.test(tok) || ((SEMI.test(tok) || COMMA.test(tok)) && cur.length >= MIN_WORDS);
+      const boundary = END.test(tok) || ((SEMI.test(tok) || COMMA.test(tok)) && cur.length >= minWords);
       if (isLast) flush(true);
       else if (boundary || cur.length >= MAX_WORDS) flush(false);
     });
@@ -250,4 +250,26 @@ export function encodeMp3(pcm: Int16Array, kbps = 128): Buffer {
   const tail = enc.flush();
   if (tail.length) out.push(bytes(tail));
   return Buffer.concat(out);
+}
+
+/** Lipeste clipurile (PCM) cu pauzele dintre ele, fara sa mai calculeze momentele cuvintelor. */
+export function joinClips(clips: Clip[], pausesMs: number[]): Int16Array {
+  const pieces: Int16Array[] = [];
+  let total = 0;
+  clips.forEach((clip, i) => {
+    pieces.push(clip.pcm);
+    total += clip.pcm.length;
+    if (i < clips.length - 1) {
+      const gap = new Int16Array(Math.round(((pausesMs[i] ?? 0) / 1000) * SAMPLE_RATE));
+      pieces.push(gap);
+      total += gap.length;
+    }
+  });
+  const pcm = new Int16Array(total);
+  let p = 0;
+  for (const piece of pieces) {
+    pcm.set(piece, p);
+    p += piece.length;
+  }
+  return pcm;
 }

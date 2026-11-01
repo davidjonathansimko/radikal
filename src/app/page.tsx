@@ -800,6 +800,7 @@ export default function HomePage() {
       {/* ========================================================================== */}
       {/* SECTION 5 - THANK YOU MESSAGE */}
       {/* ========================================================================== */}
+      {featureFlags.homeThankyouSection && (
       <section id="thankyou" className="min-h-screen flex flex-col justify-end items-center px-4 sm:px-6 lg:px-8 py-20 sm:py-24 md:py-32 pb-8">
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Thank You Message */}
@@ -813,9 +814,16 @@ export default function HomePage() {
             {t.thanksText}
           </p>
 
-          {/* Heart and Cross */}
-          <div className="text-6xl sm:text-8xl mb-16 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
-            ⏱
+          {/* Cronometru: SVG cu marime fixa, la fel ca iconitele celorlalte sectiuni (emoji-ul se micsora pe unele telefoane). */}
+          <div className="mb-16 flex justify-center animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+            <svg viewBox="0 0 48 48" className="h-20 w-20 text-black dark:text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="24" cy="27" r="15" />
+              <path d="M24 27V17" />
+              <path d="M24 27l7 4" />
+              <path d="M19 6h10" />
+              <path d="M24 6v6" />
+              <path d="M37 12l3-3" />
+            </svg>
           </div>
           <br></br>
 
@@ -834,6 +842,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
       <OnboardingTour />
     </div>
   );

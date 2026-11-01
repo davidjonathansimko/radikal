@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
-export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls' | 'scrollReveal' | 'todayCard' | 'listenPill' | 'eveningMode' | 'remainingTime' | 'kidsParentMode' | 'protectText' | 'legacyBrowse' | 'homeButton' | 'archiveStacked' | 'heroDailyVerse' | 'homeVerseSection' | 'bottomBarAutoHide';
+export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls' | 'scrollReveal' | 'todayCard' | 'listenPill' | 'eveningMode' | 'remainingTime' | 'kidsParentMode' | 'protectText' | 'legacyBrowse' | 'homeButton' | 'archiveStacked' | 'heroDailyVerse' | 'homeVerseSection' | 'bottomBarAutoHide' | 'homeThankyouSection';
 
 const ROW_ID: Record<FeatureKey, string> = {
   resume: 'feat_resume',
@@ -24,6 +24,7 @@ const ROW_ID: Record<FeatureKey, string> = {
   heroDailyVerse: 'feat_hero_daily_verse',
   homeVerseSection: 'feat_home_verse_section',
   bottomBarAutoHide: 'feat_bottom_bar_autohide',
+  homeThankyouSection: 'feat_home_thankyou_section',
 };
 
 export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
@@ -48,6 +49,7 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   homeVerseSection: true,
   // Oprit = bara de jos ramane mereu vizibila.
   bottomBarAutoHide: false,
+  homeThankyouSection: true,
 };
 
 let cache: Promise<Record<FeatureKey, boolean>> | null = null;

@@ -24,6 +24,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { splitUnits, pcmFromWav, trimClip, assemble, encodeMp3, type AudioTimings, type Clip } from '@/lib/audioTimings';
 import { synthesizeWav } from '@/lib/googleTts';
+import { speechText } from '@/lib/speechText';
 
 // Generarea cere zeci de cereri scurte catre Google + codare MP3.
 export const maxDuration = 300;
@@ -263,7 +264,7 @@ export async function POST(request: NextRequest) {
           const i = next++;
           if (i >= units.length) return;
           try {
-            const wav = await synthesizeWav(units[i].text, language, speakingRate, apiKey);
+            const wav = await synthesizeWav(speechText(units[i].text, language), language, speakingRate, apiKey);
             clips[i] = trimClip(pcmFromWav(wav));
           } catch (e) {
             failure = `Generarea vocii a eșuat la fragmentul ${i + 1} din ${units.length}: ${e instanceof Error ? e.message : 'eroare'}`;

@@ -7,6 +7,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { synthesizeWav } from '@/lib/googleTts';
+import { splitUnits, trimClip, pcmFromWav, joinClips, encodeMp3 } from '@/lib/audioTimings';
+import { speechText } from '@/lib/speechText';
+import { getAdminClient, getUserFromRequest } from '@/lib/serverSupabase';
+
+// Propozitiile se rostesc pe rand, cu pauze reale intre ele (ca in Play Blog); poate dura cateva secunde per bucata.
+export const maxDuration = 120;
+// Ritmul de baza la ascultarea simpla: putin sub 1x, ca sa nu se grabeasca vocea.
+const SIMPLE_PLAY_PACE = 0.92;
 
 // ===== Supabase server-side client for TTS cache =====
 // Uses anon key — the tts_cache table should have RLS policies allowing inserts/selects
@@ -15,9 +24,9 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 // ===== In-memory LRU cache as fast first layer (survives within same server instance) =====
-const memoryCache = new Map<string, { audioContent: string; timestamp: number }>();
+const memoryCache = new Map<string, { audioContent: string; timestamp: number; slug?: string | null }>();
 const MAX_MEMORY_CACHE = 200; // Max entries in memory
-const MEMORY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const MEMORY_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
 
 function getFromMemoryCache(key: string): string | null {
   const entry = memoryCache.get(key);
@@ -29,13 +38,13 @@ function getFromMemoryCache(key: string): string | null {
   return entry.audioContent;
 }
 
-function setMemoryCache(key: string, audioContent: string) {
+function setMemoryCache(key: string, audioContent: string, slug?: string | null) {
   // Evict oldest entries if cache is full
   if (memoryCache.size >= MAX_MEMORY_CACHE) {
     const firstKey = memoryCache.keys().next().value;
     if (firstKey) memoryCache.delete(firstKey);
   }
-  memoryCache.set(key, { audioContent, timestamp: Date.now() });
+  memoryCache.set(key, { audioContent, timestamp: Date.now(), slug });
 }
 
 // ===== Generate a stable cache key from text + params =====
@@ -43,7 +52,7 @@ function setMemoryCache(key: string, audioContent: string) {
 // (WaveNet -> Neural2) automatically invalidates old cached audio.
 function generateCacheKey(text: string, language: string, voiceGender: string, speakingRate: number, voiceName = '', hifi = false): string {
   // `q2`: audio nou (64 kbps, fara corectia de difuzor) — vechiul cache de 32 kbps suna ascutit si nu se mai foloseste.
-  const input = `${text}|${language}|${voiceGender}|${speakingRate}|${voiceName}|q2`;
+  const input = `${text}|${language}|${voiceGender}|${speakingRate}|${voiceName}|q3`;
   return crypto.createHash('sha256').update(input).digest('hex');
 }
 
@@ -237,6 +246,25 @@ function buildSSML(text: string): string {
   return ssml;
 }
 
+// Fiecare propozitie se transforma separat in voce si se lipeste cu pauze reale (punct, virgula, paragraf).
+async function synthesizeWithPauses(text: string, language: string, speakingRate: number, apiKey: string): Promise<string> {
+  const { units } = splitUnits(speechText(text, language), 7);
+  if (units.length === 0) throw new Error('empty');
+  const clips = new Array(units.length) as ReturnType<typeof trimClip>[];
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(6, units.length) }, async () => {
+      for (;;) {
+        const i = next++;
+        if (i >= units.length) return;
+        const wav = await synthesizeWav(units[i].text, language, speakingRate, apiKey);
+        clips[i] = trimClip(pcmFromWav(wav));
+      }
+    }),
+  );
+  return encodeMp3(joinClips(clips, units.map((u) => u.pauseMs))).toString('base64');
+}
+
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.GOOGLE_CLOUD_TTS_API_KEY;
@@ -283,7 +311,7 @@ export async function POST(request: NextRequest) {
     if (dbCached) {
       console.log('[TTS Cache] ✅ HIT (supabase) — saved Google API call');
       // Also populate memory cache for next request
-      setMemoryCache(cacheKey, dbCached);
+      setMemoryCache(cacheKey, dbCached, blogSlug);
       return NextResponse.json({
         audioContent: dbCached,
         voiceName: voiceConfig.name,
@@ -344,6 +372,16 @@ export async function POST(request: NextRequest) {
         }
       ).finally(() => clearTimeout(timer));
     };
+
+    // Pasul 011126: intai incercam varianta cu pauze reale; daca esueaza, cadem pe cererea simpla de mai jos.
+    try {
+      const piped = await synthesizeWithPauses(truncatedText, language, Math.max(0.5, speakingRate * SIMPLE_PLAY_PACE), apiKey);
+      setMemoryCache(cacheKey, piped, blogSlug);
+      saveToSupabaseCache(cacheKey, piped, language, voiceGender, blogSlug, blogTitle, contentType).catch(() => {});
+      return NextResponse.json({ audioContent: piped, voiceName: voiceConfig.name, languageCode: voiceConfig.languageCode, cached: false });
+    } catch (e) {
+      console.warn('[TTS] pauses pipeline failed, using single request:', e instanceof Error ? e.message : e);
+    }
 
     let response = await synthesize(voiceConfig, hifi);
 
@@ -412,7 +450,7 @@ export async function POST(request: NextRequest) {
     
     // ===== SAVE TO CACHE: Store audio for future requests =====
     // Layer 1: Memory cache
-    setMemoryCache(cacheKey, audioContent);
+    setMemoryCache(cacheKey, audioContent, blogSlug);
     // Layer 2: Supabase DB (async — don't wait for it to return response faster)
     saveToSupabaseCache(cacheKey, audioContent, language, voiceGender, blogSlug, blogTitle, contentType).catch(() => {});
 
@@ -434,6 +472,29 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// DELETE (doar admin): sterge audio-ul de la ascultarea simpla al unui articol, ca la urmatoarea apasare pe Play sa se genereze din nou.
+//   /api/tts?slug=...[&language=de]
+export async function DELETE(request: NextRequest) {
+  const db = getAdminClient();
+  if (!db) return NextResponse.json({ error: 'Supabase nu este configurat.' }, { status: 500 });
+  const user = await getUserFromRequest(db, request);
+  if (!user?.isAdmin) return NextResponse.json({ error: 'Doar administratorul.' }, { status: 403 });
+
+  const slug = request.nextUrl.searchParams.get('slug');
+  const language = request.nextUrl.searchParams.get('language');
+  if (!slug) return NextResponse.json({ error: 'Lipseste `slug`.' }, { status: 400 });
+
+  let q = db.from('tts_cache').delete({ count: 'exact' }).eq('blog_slug', slug);
+  if (language) q = q.eq('language', language);
+  const { error, count } = await q;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  for (const [key, entry] of memoryCache) {
+    if (entry.slug === slug) memoryCache.delete(key);
+  }
+  return NextResponse.json({ ok: true, deleted: count ?? 0 });
 }
 
 // GET endpoint to check if Google Cloud TTS is available

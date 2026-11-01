@@ -4,7 +4,11 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
-import { themeCrossfade } from '@/lib/glitchEffects';
+import { runThemeFx } from '@/lib/glitchEffects';
+import { getUiSettingsSync } from '@/lib/uiSettings';
+
+// Unde a atins cititorul ultima data: de acolo porneste efectul „cerc".
+const lastPoint = { x: 0, y: 0 };
 
 // Added 'bw' (black & white / Schwarz-Weiß / alb-negru) theme option
 export type Theme = 'dark' | 'light';
@@ -20,6 +24,15 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      lastPoint.x = e.clientX;
+      lastPoint.y = e.clientY;
+    };
+    window.addEventListener('pointerdown', onDown, { passive: true, capture: true });
+    return () => window.removeEventListener('pointerdown', onDown, true);
+  }, []);
 
   // Load saved theme from localStorage immediately / Gespeichertes Theme sofort aus localStorage laden / Încărcă tema salvată din localStorage imediat
   useEffect(() => {
@@ -80,7 +93,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.add(next);
       flushSync(() => setTheme(next));
     });
-    transition.ready.then(() => themeCrossfade()).catch(() => {});
+    transition.ready.then(() => runThemeFx(getUiSettingsSync().themeFx, lastPoint.x || lastPoint.y ? lastPoint : { x: window.innerWidth / 2, y: window.innerHeight - 60 })).catch(() => {});
   };
   const contextValue: ThemeContextType = {
     theme,

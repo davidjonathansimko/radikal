@@ -2702,3 +2702,69 @@ html.text-protect .blog-body-text * {
 }
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
+
+/* Pasul 011126D - bara de jos: stiluri alese din admin (data-bar-style) si stari la derulare (data-bar-state). */
+[data-mobile-nav="bottom"][data-bar-state="shrunk"] .bar-label { display: none; }
+[data-mobile-nav="bottom"][data-bar-style="dock"] .bar-label { display: none; }
+
+/* Lipita de margini, solida */
+[data-mobile-nav="bottom"][data-bar-style="edge"],
+[data-mobile-nav="bottom"][data-bar-style="edgeglass"] { padding: 0; }
+[data-bar-style="edge"] > .bar-inner,
+[data-bar-style="edgeglass"] > .bar-inner {
+  width: 100%;
+  min-width: 100% !important;
+  max-width: none !important;
+  border-radius: 0 !important;
+  border-width: 1px 0 0 0 !important;
+  box-shadow: none !important;
+  padding: 6px 12px calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
+}
+[data-bar-style="edge"] > .bar-inner { background-color: rgba(255, 255, 255, 0.98) !important; backdrop-filter: none !important; }
+html.dark [data-bar-style="edge"] > .bar-inner { background-color: #0a0a0a !important; }
+
+/* Lipita de margini, sticla mata */
+[data-bar-style="edgeglass"] > .bar-inner {
+  background-color: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(24px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
+}
+html.dark [data-bar-style="edgeglass"] > .bar-inner { background-color: rgba(10, 10, 10, 0.5) !important; }
+
+/* Pastila lata, sticla mata (ca la Telegram) */
+[data-bar-style="glass"] > .bar-inner {
+  min-width: min(92vw, 400px) !important;
+  max-width: min(92vw, 400px) !important;
+  border-radius: 26px !important;
+  padding: 4px 8px !important;
+  background-color: rgba(255, 255, 255, 0.38) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: blur(30px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.6) !important;
+}
+html.dark [data-bar-style="glass"] > .bar-inner {
+  background-color: rgba(30, 30, 30, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Minimala: doar iconitele */
+[data-bar-style="minimal"] > .bar-inner {
+  min-width: min(92vw, 320px) !important;
+  max-width: min(92vw, 320px) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0 1px 4px rgba(255, 255, 255, 0.85)); }
+html.dark [data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.8)); }
+
+/* Doc compact: doar iconite */
+[data-bar-style="dock"] > .bar-inner {
+  min-width: 0 !important;
+  max-width: none !important;
+  border-radius: 999px !important;
+  padding: 6px 8px !important;
+  gap: 4px !important;
+}

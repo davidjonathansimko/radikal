@@ -15,6 +15,7 @@ import { useHaptic } from '@/hooks/useHaptic';
 import { useStickyHeader } from '@/hooks/useStickyHeader';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { scatterGlitch } from '@/lib/glitchEffects';
+import { useUiSettings } from '@/lib/uiSettings';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
 import { fetchArchiveYears, type ArchiveYear } from '@/lib/archiveMonths';
@@ -86,25 +87,9 @@ export default function Navigation() {
     language
   );
 
-  // Bara de jos (telefon): se ascunde la derulare in jos, reapare la derulare in sus.
-  const [barHidden, setBarHidden] = useState(false);
-  useEffect(() => {
-    if (!featureFlags.bottomBarAutoHide) {
-      setBarHidden(false);
-      return;
-    }
-    let last = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      const d = y - last;
-      if (y < 80) setBarHidden(false);
-      else if (d > 10) setBarHidden(true);
-      else if (d < -10) setBarHidden(false);
-      if (Math.abs(d) > 10) last = y;
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [featureFlags.bottomBarAutoHide]);
+  // Bara de jos (telefon): comportamentul la derulare vine din admin (vezi efectul de dupa `isArticlePage`).
+  const uiSettings = useUiSettings();
+  const [barState, setBarState] = useState<'shown' | 'hidden' | 'shrunk' | 'faded'>('shown');
   
   // User authentication state / Benutzer-Authentifizierungsstatus / Stare autentificare utilizator
   const [user, setUser] = useState<User | null>(null);
@@ -559,13 +544,64 @@ export default function Navigation() {
     };
   }, [isArticlePage, isMobileMenuOpen]);
 
+  // Bara de jos: comportamentul ales in admin.
+  useEffect(() => {
+    const mode = uiSettings.barBehavior;
+    const active = mode === 'articles' ? isArticlePage : mode !== 'always';
+    if (!active) {
+      setBarState('shown');
+      return;
+    }
+    const kind = mode === 'shrink' ? 'shrunk' : mode === 'fade' ? 'faded' : 'hidden';
+    const transient = mode === 'idle' || mode === 'fade';
+    let last = window.scrollY;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const d = y - last;
+      if (transient) {
+        if (y < 80) {
+          setBarState('shown');
+        } else if (Math.abs(d) > 4) {
+          setBarState(kind);
+        }
+        last = y;
+        clearTimeout(timer);
+        timer = setTimeout(() => setBarState('shown'), 280);
+        return;
+      }
+      if (y < 80) setBarState('shown');
+      else if (d > 10) setBarState(kind);
+      else if (d < -10) setBarState('shown');
+      if (Math.abs(d) > 10) last = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', onScroll);
+      setBarState('shown');
+    };
+  }, [uiSettings.barBehavior, isArticlePage]);
+
   // Handle language change with persistence
   const handleLanguageChange = async (newLang: 'de' | 'en' | 'ro' | 'ru') => {
     // Limba se schimba pe loc; textele tremura scurt, ca la tema.
     setLanguage(newLang);
     setShowLanguageDropdown(false);
     setShowMobileLanguageDropdown(false);
-    if (newLang !== language) requestAnimationFrame(() => scatterGlitch(700));
+    if (newLang !== language) {
+      const fx = uiSettings.langFx;
+      if (fx === 'shake') requestAnimationFrame(() => scatterGlitch(700));
+      else if (fx === 'fade') {
+        requestAnimationFrame(() => {
+          try {
+            document.getElementById('main-content')?.animate([{ opacity: 1 }, { opacity: 0.1, offset: 0.35 }, { opacity: 1 }], { duration: 520, easing: 'ease-in-out' });
+          } catch {
+            /* fara Web Animations: limba se schimba simplu */
+          }
+        });
+      }
+    }
     
     // Save language based on authentication status
     try {
@@ -779,8 +815,17 @@ export default function Navigation() {
     {/* Visible for logged-in users AND guests / Sichtbar für eingeloggte Benutzer UND Gäste */}
     {/* Pasul 21022026: Bottom bar — higher padding so native phone nav buttons (home/back/recent) stay visible */}
     {canSeeNav && !isMobileMenuOpen && (
-      <div className="fixed bottom-0 left-0 right-0 z-[210] lg:hidden flex justify-center pb-[calc(env(safe-area-inset-bottom,0px)+18px)] px-4 pointer-events-none transition-transform duration-300 ease-out" style={{ transform: barHidden && !showMobileLanguageDropdown ? 'translateY(150%)' : undefined }} data-mobile-nav="bottom">
-        <div className="pointer-events-auto flex items-end justify-evenly gap-1 bg-white/80 dark:bg-black/70 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 shadow-lg px-3 py-0.5" style={{ minWidth: '200px', maxWidth: '260px' }}>
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[210] lg:hidden flex justify-center pb-[calc(env(safe-area-inset-bottom,0px)+18px)] px-4 pointer-events-none transition-[transform,opacity] duration-300 ease-out"
+        style={{
+          transform: barState === 'hidden' && !showMobileLanguageDropdown ? 'translateY(150%)' : undefined,
+          opacity: barState === 'faded' && !showMobileLanguageDropdown ? 0.22 : undefined,
+        }}
+        data-mobile-nav="bottom"
+        data-bar-style={uiSettings.barStyle}
+        data-bar-state={barState}
+      >
+        <div className="bar-inner pointer-events-auto flex items-end justify-evenly gap-1 bg-white/80 dark:bg-black/70 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 shadow-lg px-3 py-0.5" style={{ minWidth: '200px', maxWidth: '260px' }}>
           {/* Language selector */}
           <div className="relative language-dropdown flex flex-col items-center">
             <button
@@ -788,10 +833,10 @@ export default function Navigation() {
               className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-200"
               title={language === 'de' ? 'Sprache' : language === 'en' ? 'Language' : language === 'ro' ? 'Limbă' : 'Язык'}
             >
-              <span className="animate-flag-wave" style={{ width: '22px', height: '15px' }}>
+              <span className={uiSettings.barAnimated ? 'animate-flag-wave' : ''} style={{ width: '22px', height: '15px' }}>
                 <LanguageFlag lang={language} className="w-full h-full rounded-sm shadow-sm" />
               </span>
-              <span className="text-[10px] font-semibold opacity-70">
+              <span className="bar-label text-[10px] font-semibold opacity-70">
                 {language === 'de' ? 'Sprache' : language === 'en' ? 'Lang' : language === 'ro' ? 'Limbă' : 'Язык'}
               </span>
             </button>
@@ -819,10 +864,10 @@ export default function Navigation() {
             className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-200"
             title={language === 'de' ? 'Suchen' : language === 'en' ? 'Search' : language === 'ro' ? 'Căutare' : 'Поиск'}
           >
-            <svg className="w-[22px] h-[22px] animate-search-pulse" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className={`w-[22px] h-[22px] ${uiSettings.barAnimated ? 'animate-search-pulse' : ''}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M11 6C13.7614 6 16 8.23858 16 11M16.6588 16.6549L21 21M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="text-[10px] font-semibold opacity-70">
+            <span className="bar-label text-[10px] font-semibold opacity-70">
               {language === 'de' ? 'Suche' : language === 'en' ? 'Search' : language === 'ro' ? 'Căutare' : 'Поиск'}
             </span>
           </button>
@@ -835,7 +880,7 @@ export default function Navigation() {
           >
             <span key={theme} className="theme-icon-swap relative block w-[22px] h-[22px]">
               {theme === 'dark' ? (
-                <svg className="w-full h-full animate-spin-slow" style={{ animationDuration: '20s' }} viewBox="0 0 64 64" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <svg className={`w-full h-full ${uiSettings.barAnimated ? 'animate-spin-slow' : ''}`} style={{ animationDuration: '20s' }} viewBox="0 0 64 64" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path fillRule="evenodd" clipRule="evenodd" d="M31.998,14.002c-9.941,0-18,8.059-18,18s8.059,18,18,18 s18-8.059,18-18S41.939,14.002,31.998,14.002z M42.998,33.002c-0.553,0-1-0.447-1-1c0-5.523-4.478-10-10-10c-0.553,0-1-0.447-1-1 s0.447-1,1-1c6.627,0,12,5.373,12,12C43.998,32.555,43.551,33.002,42.998,33.002z"/>
                   <path fillRule="evenodd" clipRule="evenodd" d="M63,31H53c-0.553,0-1,0.447-1,1s0.447,1,1,1h10 c0.553,0,1-0.447,1-1S63.553,31,63,31z"/>
                   <path fillRule="evenodd" clipRule="evenodd" d="M11.457,36.47l-3.863,1.035c-0.534,0.144-0.851,0.692-0.707,1.226 c0.143,0.533,0.69,0.85,1.225,0.706l3.863-1.035c0.533-0.143,0.85-0.69,0.707-1.225C12.539,36.644,11.99,36.327,11.457,36.47z"/>
@@ -863,12 +908,12 @@ export default function Navigation() {
                   <path fillRule="evenodd" clipRule="evenodd" d="M11.974,25.599L8.11,24.563c-0.536-0.144-1.083,0.175-1.225,0.708 c-0.144,0.531,0.171,1.08,0.707,1.225l3.863,1.034c0.531,0.146,1.081-0.175,1.225-0.707C12.825,26.293,12.505,25.746,11.974,25.599z"/>
                 </svg>
               ) : (
-                <svg className="w-full h-full animate-moon-rock" viewBox="0 0 384 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <svg className={`w-full h-full ${uiSettings.barAnimated ? 'animate-moon-rock' : ''}`} style={uiSettings.barAnimated ? undefined : { color: '#94a3b8' }} viewBox="0 0 384 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4c5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6c-96.9 0-175.5-78.8-175.5-176c0-65.8 36-123.1 89.3-153.3c6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/>
                 </svg>
               )}
             </span>
-            <span className="text-[10px] font-semibold opacity-70">
+            <span className="bar-label text-[10px] font-semibold opacity-70">
               {language === 'de' ? 'Thema' : language === 'en' ? 'Theme' : language === 'ro' ? 'Temă' : 'Тема'}
             </span>
           </button>
@@ -880,8 +925,8 @@ export default function Navigation() {
             className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-200 group"
             title="Reels"
           >
-            <ReelsIcon className="w-[22px] h-[22px] animate-heartbeat transition-transform duration-300 group-hover:scale-110" />
-            <span className="text-[10px] font-semibold opacity-70">Reels</span>
+            <ReelsIcon className={`w-[22px] h-[22px] ${uiSettings.barAnimated ? 'animate-heartbeat' : ''} transition-transform duration-300 group-hover:scale-110`} />
+            <span className="bar-label text-[10px] font-semibold opacity-70">Reels</span>
           </button>
         </div>
       </div>

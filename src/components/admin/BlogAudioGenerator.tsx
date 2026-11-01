@@ -271,6 +271,47 @@ export default function BlogAudioGenerator({
     [slug, getToken, refresh],
   );
 
+  // Sterge fisierele pregenerate din toate limbile (Play Blog).
+  const removeAllPregenerated = useCallback(async () => {
+    const codes = LANGS.filter((l) => infoByLang[l.code]?.audioUrl).map((l) => l.code);
+    if (!codes.length) return;
+    if (!window.confirm(`Ștergi audio-ul pregenerat din toate limbile (${codes.join(', ')})? Va trebui să-l generezi din nou.`)) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const token = await getToken();
+      for (const code of codes) {
+        await fetch(`/api/blog-audio?slug=${encodeURIComponent(slug)}&language=${code}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+      setMessage('Audio-ul pregenerat a fost șters din toate limbile.');
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  }, [infoByLang, slug, getToken, refresh]);
+
+  // Sterge audio-ul de la ascultarea simpla (butonul Play), pastrat in cache; se regenereaza la urmatoarea apasare.
+  const removeSimple = useCallback(async () => {
+    if (!slug) return;
+    if (!window.confirm('Ștergi audio-ul de la ascultarea simplă (Play) pentru acest blog, în toate limbile? La următoarea apăsare pe Play se generează din nou.')) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/tts?slug=${encodeURIComponent(slug)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) setError(d?.error || 'Ștergerea a eșuat.');
+      else setMessage(`Audio-ul simplu a fost șters (${d.deleted ?? 0} bucăți).`);
+    } finally {
+      setBusy(false);
+    }
+  }, [slug, getToken]);
+
   const openInfo = infoByLang[openLang];
 
   return (
@@ -367,6 +408,27 @@ export default function BlogAudioGenerator({
           </button>
         </div>
       )}
+
+      <div className="mb-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
+        {availableForDownload.length > 0 && (
+          <button
+            type="button"
+            onClick={() => void removeAllPregenerated()}
+            disabled={busy}
+            className="rounded-lg border border-red-400/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            Șterge audio-ul pregenerat (toate limbile)
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => void removeSimple()}
+          disabled={busy || !slug}
+          className="rounded-lg border border-red-400/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+        >
+          Șterge audio-ul simplu (butonul Play)
+        </button>
+      </div>
 
       <button
         type="button"
