@@ -801,7 +801,7 @@ export default function HomePage() {
       {/* SECTION 5 - THANK YOU MESSAGE */}
       {/* ========================================================================== */}
       {featureFlags.homeThankyouSection && (
-      <section id="thankyou" className="flex min-h-[100svh] flex-col items-center justify-center px-4 pb-28 pt-36 sm:px-6 lg:px-8 lg:pb-16">
+      <section id="thankyou" className="flex min-h-[100svh] flex-col items-center justify-end px-4 pb-28 pt-36 sm:px-6 lg:px-8 lg:pb-16">
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Thank You Message */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-6 animate-fadeIn leading-tight">
@@ -814,7 +814,7 @@ export default function HomePage() {
           </p>
 
           {/* Cronometru: SVG cu marime fixa, la fel ca iconitele celorlalte sectiuni (emoji-ul se micsora pe unele telefoane). */}
-          <div className="mb-14 flex justify-center animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+          <div className="mb-24 flex justify-center animate-fadeIn" style={{ animationDelay: '0.5s' }}>
             <svg viewBox="0 0 48 48" className="h-20 w-20 text-black dark:text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="24" cy="27" r="15" />
               <path d="M24 27V17" />
@@ -826,7 +826,7 @@ export default function HomePage() {
           </div>
 
           {/* Back to Top Button - positioned closer to footer with more spacing from clock */}
-          <div className="mt-10 flex items-center justify-center">
+          <div className="flex items-center justify-center">
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="group flex flex-col items-center gap-2 rounded-xl px-4 py-2 text-black/70 transition-all duration-300 hover:text-black active:scale-95 dark:text-white/70 dark:hover:text-white animate-fadeIn"
