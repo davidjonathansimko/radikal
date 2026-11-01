@@ -729,13 +729,6 @@ export default function Navigation() {
                 ~{remainingMin} {language === 'de' ? 'Min.' : language === 'ru' ? 'мин' : 'min'}
               </span>
             )}
-            {/* Mini progress bar / Mini-Fortschrittsleiste / Bară de progres mini */}
-            <div className="w-10 h-[3px] bg-black/10 dark:bg-white/10 rounded-full overflow-hidden flex-shrink-0">
-              <div 
-                className="h-full bg-black/50 dark:bg-white/50 rounded-full transition-all duration-200 ease-out"
-                style={{ width: `${blogReadProgress}%` }}
-              />
-            </div>
           </div>
         </div>
       )}
@@ -783,18 +776,18 @@ export default function Navigation() {
               </span>
             </button>
             {showMobileLanguageDropdown && (
-              <div className="animate-dropdown-up absolute bottom-full mb-2 min-w-[120px] bg-white dark:bg-black rounded-xl shadow-xl py-1 z-[100] border border-black/15 dark:border-white/15">
+              <div className="animate-dropdown-up absolute bottom-full mb-3 min-w-[148px] overflow-hidden rounded-2xl border border-black/10 bg-white/95 py-1 shadow-2xl backdrop-blur-xl z-[100] dark:border-white/15 dark:bg-black/90">
                 <button onClick={() => handleLanguageChange('de')} className={`w-full text-left px-3 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2 ${language === 'de' ? 'bg-black/10 dark:bg-white/10' : ''}`}>
-                  <FlagDE className="w-5 h-4 rounded-sm flex-shrink-0" /><span>Deutsch</span>
+                  <FlagDE className="w-5 h-4 rounded-sm flex-shrink-0" /><span>Deutsch</span>{language === 'de' && <span aria-hidden="true" className="ml-auto pl-3 text-xs opacity-60">✓</span>}
                 </button>
                 <button onClick={() => handleLanguageChange('en')} className={`w-full text-left px-3 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2 ${language === 'en' ? 'bg-black/10 dark:bg-white/10' : ''}`}>
-                  <FlagGB className="w-5 h-4 rounded-sm flex-shrink-0" /><span>English</span>
+                  <FlagGB className="w-5 h-4 rounded-sm flex-shrink-0" /><span>English</span>{language === 'en' && <span aria-hidden="true" className="ml-auto pl-3 text-xs opacity-60">✓</span>}
                 </button>
                 <button onClick={() => handleLanguageChange('ro')} className={`w-full text-left px-3 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2 ${language === 'ro' ? 'bg-black/10 dark:bg-white/10' : ''}`}>
-                  <FlagRO className="w-5 h-4 rounded-sm flex-shrink-0" /><span>Română</span>
+                  <FlagRO className="w-5 h-4 rounded-sm flex-shrink-0" /><span>Română</span>{language === 'ro' && <span aria-hidden="true" className="ml-auto pl-3 text-xs opacity-60">✓</span>}
                 </button>
                 <button onClick={() => handleLanguageChange('ru')} className={`w-full text-left px-3 py-2 text-sm text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2 ${language === 'ru' ? 'bg-black/10 dark:bg-white/10' : ''}`}>
-                  <FlagRU className="w-5 h-4 rounded-sm flex-shrink-0" /><span>Русский</span>
+                  <FlagRU className="w-5 h-4 rounded-sm flex-shrink-0" /><span>Русский</span>{language === 'ru' && <span aria-hidden="true" className="ml-auto pl-3 text-xs opacity-60">✓</span>}
                 </button>
               </div>
             )}
@@ -820,7 +813,7 @@ export default function Navigation() {
             className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 group"
             title={theme === 'dark' ? (language === 'de' ? 'Helles Thema' : 'Light Theme') : (language === 'de' ? 'Dunkles Thema' : 'Dark Theme')}
           >
-            <span className="relative block w-[22px] h-[22px] transition-transform duration-500 ease-out group-active:scale-125">
+            <span key={theme} className="theme-icon-swap relative block w-[22px] h-[22px]">
               {theme === 'dark' ? (
                 <svg className="w-full h-full animate-spin-slow" style={{ animationDuration: '20s' }} viewBox="0 0 64 64" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path fillRule="evenodd" clipRule="evenodd" d="M31.998,14.002c-9.941,0-18,8.059-18,18s8.059,18,18,18 s18-8.059,18-18S41.939,14.002,31.998,14.002z M42.998,33.002c-0.553,0-1-0.447-1-1c0-5.523-4.478-10-10-10c-0.553,0-1-0.447-1-1 s0.447-1,1-1c6.627,0,12,5.373,12,12C43.998,32.555,43.551,33.002,42.998,33.002z"/>

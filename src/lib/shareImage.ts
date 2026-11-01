@@ -9,6 +9,8 @@ export interface ShareImageOptions {
   /** Linkul care insoteste imaginea. */
   url?: string;
   title?: string;
+  /** Textul versetului cu litere mari de tipar, in Cinzel (folosit la reels). */
+  uppercaseText?: boolean;
 }
 
 export type ShareImageResult = 'shared' | 'cancelled' | 'downloaded' | 'unsupported';
@@ -95,15 +97,23 @@ async function draw(opts: ShareImageOptions, withImage: boolean): Promise<Blob |
   const raw = opts.text.trim();
   // Daca textul are deja ghilimele (la inceput sau la sfarsit), nu le dublam.
   const quoted = /^[\u201E\u201C\u201D"\u00AB]/.test(raw) || /[\u201C\u201D"\u00BB]$/.test(raw);
-  const text = quoted ? raw : `\u201E${raw}\u201C`;
+  const base = quoted ? raw : `\u201E${raw}\u201C`;
+  const text = opts.uppercaseText ? base.toLocaleUpperCase() : base;
   const len = text.length;
-  const size = len < 90 ? 68 : len < 170 ? 58 : len < 300 ? 48 : len < 480 ? 40 : 34;
+  let size = len < 90 ? 68 : len < 170 ? 58 : len < 300 ? 48 : len < 480 ? 40 : 34;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#ffffff';
-  ctx.font = `italic 400 ${size}px "EB Garamond", Georgia, serif`;
+  if (opts.uppercaseText) {
+    // Cinzel cu majuscule e mult mai lat decat EB Garamond: micsoram corpul literei.
+    size = Math.round(size * 0.7);
+    ctx.font = `600 ${size}px Cinzel, Georgia, serif`;
+    (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '2px';
+  } else {
+    ctx.font = `italic 400 ${size}px "EB Garamond", Georgia, serif`;
+  }
   const lines = wrap(ctx, text, W - 220);
-  const lineHeight = size * 1.38;
+  const lineHeight = size * (opts.uppercaseText ? 1.55 : 1.38);
   const blockHeight = lines.length * lineHeight;
   const refHeight = opts.reference ? 90 : 0;
   let y = (H - (blockHeight + refHeight)) / 2 + size;
@@ -114,11 +124,13 @@ async function draw(opts: ShareImageOptions, withImage: boolean): Promise<Blob |
 
   if (opts.reference) {
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px';
     ctx.font = '600 34px Cinzel, Georgia, serif';
     ctx.fillText(`\u2014 ${opts.reference}`, W / 2, y + 40);
   }
 
   // Semnatura
+  (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px';
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = '600 30px Cinzel, Georgia, serif';
   ctx.fillText('RADIKAL.', W / 2, H - 80);

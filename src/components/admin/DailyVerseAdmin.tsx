@@ -397,14 +397,35 @@ export default function DailyVerseAdmin() {
       <form onSubmit={save} className="mb-10 grid gap-4">
         <div>
           <label className={labelClass}>Pentru ziua</label>
-          <input
-            type="date"
-            value={forDay}
-            onChange={(e) => setForDay(e.target.value)}
-            className={inputClass}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={forDay}
+              onChange={(e) => setForDay(e.target.value)}
+              className={`${inputClass} !w-auto`}
+            />
+            {[0, 1, 2].map((n) => {
+              const d = new Date();
+              d.setDate(d.getDate() + n);
+              const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setForDay(iso)}
+                  className={`btn-solid rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                    forDay === iso
+                      ? 'border-transparent bg-black text-white dark:bg-white dark:text-black'
+                      : 'border-black/15 text-black/70 dark:border-white/15 dark:text-white/70'
+                  }`}
+                >
+                  {n === 0 ? 'Azi' : n === 1 ? 'Mâine' : 'Poimâine'}
+                </button>
+              );
+            })}
+          </div>
           <p className="mt-1 text-[11px] text-black/45 dark:text-white/45">
-            Un verset pe zi. Dacă ziua are deja unul, îl vezi mai jos și îl poți schimba.
+            Poți pregăti versetul din timp: alege „Mâine” (sau orice zi viitoare). Se afișează singur la ora 00:00, iar notificarea pleacă după ora 07:00 (Berlin).
             Dacă pentru ziua de azi nu există niciunul, cititorul vede „Se actualizează&ldquo;.
           </p>
         </div>

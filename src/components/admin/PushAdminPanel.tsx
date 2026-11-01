@@ -16,6 +16,7 @@ const KIND: Record<string, string> = { blogs: 'Blog', marturii: 'Mărturie', ree
 
 export default function PushAdminPanel() {
   const [stats, setStats] = useState<{ total: number; mine: number } | null>(null);
+  const [recent, setRecent] = useState<{ host: string; lang: string; account: string; at: string }[]>([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<ItemView[]>([]);
@@ -24,7 +25,10 @@ export default function PushAdminPanel() {
   const refreshStats = useCallback(async () => {
     try {
       const r = await pushAdminCall('GET', '/api/push/test');
-      if (r.ok) setStats({ total: Number(r.data.total) || 0, mine: Number(r.data.mine) || 0 });
+      if (r.ok) {
+        setStats({ total: Number(r.data.total) || 0, mine: Number(r.data.mine) || 0 });
+        setRecent((r.data.recent as typeof recent) ?? []);
+      }
     } catch {
       /* ignorat */
     }
@@ -54,14 +58,35 @@ export default function PushAdminPanel() {
     setMsg('');
     try {
       const r = await pushAdminCall('POST', '/api/push/test');
-      const d = r.data as { sent?: number; failed?: number; dead?: number; note?: string; errors?: string[]; error?: string };
+      const d = r.data as { sent?: number; failed?: number; dead?: number; note?: string; errors?: string[]; error?: string; devices?: { host: string; status: string }[] };
+      const detail = d.devices?.length ? ` Rezultat pe dispozitiv: ${d.devices.map((x) => `${x.host.replace(/\..*$/, '')} ${x.status}`).join(', ')}.` : '';
       if (!r.ok) setMsg(`Eroare ${r.status}: ${d.error ?? ''}`);
       else if (d.note === 'no_device') setMsg('Contul tău nu are niciun dispozitiv abonat. Intră logat pe telefon, Meniu → Benachrichtigungen.');
-      else if (d.dead) setMsg(`Trimis: ${d.sent}. ${d.dead} dispozitiv(e) nu mai sunt valide (aplicația reinstalată sau permisiunea retrasă) și au fost șterse. Deschide Meniu → Benachrichtigungen pe telefon ca să te abonezi din nou.`);
-      else setMsg(`Trimis: ${d.sent}, eșuat: ${d.failed}${d.errors?.length ? ` — ${d.errors.join(' | ')}` : ''}`);
+      else if (d.dead) setMsg(`Trimis: ${d.sent}. ${d.dead} dispozitiv(e) nu mai sunt valide (aplicația reinstalată sau permisiunea retrasă) și au fost șterse. Deschide Meniu → Benachrichtigungen pe telefon ca să te abonezi din nou.${detail}`);
+      else setMsg(`Trimis: ${d.sent}, eșuat: ${d.failed}${d.errors?.length ? ` — ${d.errors.join(' | ')}` : ''}.${detail} Dacă scrie 201 și tot nu apare nimic, notificările sunt blocate în telefon (Setări → Aplicații → RADIKAL → Notificări, Nu deranja, economisire baterie) — folosește „Test local” ca să verifici.`);
       await refreshStats();
     } finally {
       setBusy(false);
+    }
+  };
+
+  const localTest = async () => {
+    setMsg('');
+    try {
+      if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
+        setMsg('Acest browser nu suportă notificări.');
+        return;
+      }
+      if (Notification.permission !== 'granted') {
+        setMsg(`Permisiunea pentru notificări este „${Notification.permission}”. Activează-le din setările browserului/telefonului pentru radikal.blog.`);
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      await reg.showNotification('RADIKAL.', { body: 'Test local: telefonul poate afișa notificări.', icon: '/icons/icon-192.png', tag: 'radikal-local-test' });
+      setMsg(`Test local trimis. Abonare push pe acest dispozitiv: ${sub ? 'DA' : 'NU (deschide Meniu → Benachrichtigungen ca să te abonezi)'}. Dacă nu vezi nimic acum, problema este în setările telefonului, nu pe server.`);
+    } catch (e) {
+      setMsg(`Test local eșuat: ${(e as Error).message}`);
     }
   };
 
@@ -118,9 +143,22 @@ export default function PushAdminPanel() {
         Versetul zilei se traduce singur și pleacă după ora 07:00 (Berlin).
       </p>
 
+      {recent.length > 0 && (
+        <ul className="space-y-0.5 text-[11px] text-black/55 dark:text-white/55">
+          {recent.map((r, i) => (
+            <li key={i}>
+              {r.host.replace(/\..*$/, '')} · {r.lang.toUpperCase()} · {r.account} · {new Date(r.at).toLocaleString()}
+            </li>
+          ))}
+        </ul>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <button type="button" disabled={busy} onClick={() => void test()} className={`${btn} bg-black text-white dark:bg-white dark:text-black`}>
           Notificare de test (telefoanele mele)
+        </button>
+        <button type="button" disabled={busy} onClick={() => void localTest()} className={`${btn} border border-black/15 text-black dark:border-white/15 dark:text-white`}>
+          Test local (acest dispozitiv)
         </button>
         <button type="button" disabled={busy} onClick={() => void check()} className={`${btn} border border-black/15 text-black dark:border-white/15 dark:text-white`}>
           Verifică conținutul nou

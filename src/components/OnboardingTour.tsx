@@ -152,6 +152,8 @@ export default function OnboardingTour() {
     } catch {
       return;
     }
+    // Tutorialul e gandit pentru telefon (meniu hamburger, bara de jos); pe desktop nu apare.
+    if (window.innerWidth >= 1024) return;
     // Asteptam sa se rezolve bannerul de cookie-uri, ca sa nu se suprapuna, apoi o mica pauza.
     let openTimer: ReturnType<typeof setTimeout> | undefined;
     const poll = setInterval(() => {

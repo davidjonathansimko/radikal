@@ -350,6 +350,7 @@ export const ReelSlide = React.memo(function ReelSlide({
       imageUrl: reel.background_image_url,
       url,
       title,
+      uppercaseText: true,
     });
     if (shared === 'shared' || shared === 'cancelled') return;
     if (shared === 'downloaded') {

@@ -59,6 +59,7 @@ import { CiHeart } from 'react-icons/ci';
 const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ssr: false });
 import GuestLoginGate from '@/components/GuestLoginGate';
 import { ReadToggle } from '@/components/ReadMark';
+import { useBlogSeries, seriesName } from '@/lib/blogSeries';
 import { fetchGuestReadAllowed } from '@/lib/pageSettings';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
@@ -96,6 +97,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   // Get route parameters, language and theme context / Route-Parameter, Sprach- und Themenkontext abrufen / Obține parametrii rutei, contextul limbii și temei
   const { slug } = useParams();
   const { language } = useLanguage();
+  const blogSeries = useBlogSeries();
   const { theme } = useTheme();
   
   // 🔒 Store the ORIGINAL Romanian slug from the database — NEVER changes after first load
@@ -1274,6 +1276,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       <ReadingProgress 
         targetId="blog-content"
         height={3}
+        position="bottom"
       />
       
       {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
@@ -1415,7 +1418,18 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           </h1>
         </header>
 
-        <div className="-mt-3 mb-3 flex justify-end">
+        <div className="-mt-3 mb-3 flex items-center justify-between gap-3">
+          {(() => {
+            const s = source.table === 'blog_posts' ? blogSeries?.find((x) => x.ids.includes(post.id)) : undefined;
+            if (!s) return <span />;
+            const label = language === 'de' ? 'Serie' : language === 'ro' ? 'Serie' : language === 'ru' ? 'Серия' : 'Series';
+            const pos = s.ids.indexOf(post.id) + 1;
+            return (
+              <p className="min-w-0 truncate text-xs font-semibold tracking-wide text-black/60 dark:text-white/60">
+                {label}: {seriesName(s, language)} <span className="font-normal text-black/40 dark:text-white/40">({pos}/{s.ids.length})</span>
+              </p>
+            );
+          })()}
           <ReadToggle href={`${source.basePath}/${originalSlugRef.current || post.slug}`} />
         </div>
 

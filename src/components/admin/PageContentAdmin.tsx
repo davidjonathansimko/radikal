@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import VersionTextEditor from '@/components/admin/VersionTextEditor';
 import PushAdminPanel from '@/components/admin/PushAdminPanel';
 import BlogsHomeAdmin from '@/components/admin/BlogsHomeAdmin';
+import BlogSeriesAdmin from '@/components/admin/BlogSeriesAdmin';
 import SignatureAdmin from '@/components/admin/SignatureAdmin';
 import {
   EDITABLE_PAGES,
@@ -499,6 +500,10 @@ export default function PageContentAdmin() {
 
       <AdminGroup title="Pagina Blogs: banda cu carduri" summary="Ultimele 6 sau recomandate">
         <BlogsHomeAdmin />
+      </AdminGroup>
+
+      <AdminGroup title="Serii de bloguri" summary="Păcate mici, Drumul credinței…">
+        <BlogSeriesAdmin />
       </AdminGroup>
 
       <AdminGroup title="Semnătura RADIKAL." summary="Reels și Play Blog">

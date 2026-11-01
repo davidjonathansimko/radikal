@@ -26,6 +26,7 @@ import { ReadTick } from '@/components/ReadMark';
 import BlogRow from '@/components/BlogRow';
 import BlogsBandsSkeleton from '@/components/BlogsBandsSkeleton';
 import { useBlogsHome } from '@/lib/blogsHome';
+import { useBlogSeries, seriesName } from '@/lib/blogSeries';
 
 interface BlogListProps {
   initialPosts?: BlogPost[];
@@ -174,10 +175,37 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   }, [blogsHome, unfiltered]);
 
   // Traducem si blogurile recomandate, nu doar lista.
+  // Serii: benzi suplimentare sub Recomandate / Ultimele (doar in lista nefiltrata).
+  const allSeries = useBlogSeries();
+  const [seriesPosts, setSeriesPosts] = useState<Map<string, BlogPost>>(new Map());
+  useEffect(() => {
+    if (!allSeries || !unfiltered) return;
+    const ids = Array.from(new Set(allSeries.flatMap((s) => s.ids)));
+    if (ids.length === 0) return;
+    let alive = true;
+    void (async () => {
+      let { data, error } = await supabase.from('blog_posts').select(BLOG_LIST_COLUMNS).in('id', ids).eq('published', true);
+      if (error && (error as { code?: string }).code === '42703') {
+        ({ data, error } = await supabase.from('blog_posts').select('*').in('id', ids).eq('published', true));
+      }
+      if (!alive || error) return;
+      setSeriesPosts(new Map(((data ?? []) as unknown as BlogPost[]).map((p) => [p.id, p])));
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSeries, unfiltered]);
+
   const pool = React.useMemo(() => {
     const seen = new Set(posts.map((p) => p.id));
-    return [...posts, ...recommended.filter((p) => !seen.has(p.id))];
-  }, [posts, recommended]);
+    const extra = [...recommended, ...Array.from(seriesPosts.values())].filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+    return [...posts, ...extra];
+  }, [posts, recommended, seriesPosts]);
 
   // Load blog posts from Supabase with optimized performance / Blog-Posts aus Supabase laden mit optimierter Performance / Încărcă postările de blog din Supabase cu performanță optimizată
   const loadPosts = async (pageNum: number = 1, reset: boolean = false) => {
@@ -368,7 +396,8 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
     // Titlul scris de admin in aceasta limba are prioritate fata de DeepL.
     if (field === 'title') {
       const own = (post as unknown as Record<string, unknown>)[`title_${language}`];
-      if (typeof own === 'string' && own.trim()) return own.trim();
+      // title_en salvat de vechiul traducator automat putea fi chiar titlul romanesc: nu il folosim.
+      if (typeof own === 'string' && own.trim() && own.trim() !== post.title.trim()) return own.trim();
     }
 
     const fresh = translatedPosts.get(post.id)?.[field];
@@ -598,6 +627,24 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 />
               </>
             )}
+            {unfiltered && allSeries?.map((s) => {
+              const list = s.ids.map((id) => seriesPosts.get(id)).filter((p): p is BlogPost => Boolean(p));
+              if (list.length === 0) return null;
+              return (
+                <BlogRow
+                  key={s.id}
+                  posts={list}
+                  heading={seriesName(s, language)}
+                  compact
+                  subMode="meta"
+                  language={language}
+                  categories={categories}
+                  getTitle={getTranslatedTitle}
+                  getExcerpt={getCardDescription}
+                  formatDate={formatDate}
+                />
+              );
+            })}
           </div>
         )}
 

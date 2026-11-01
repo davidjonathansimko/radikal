@@ -341,11 +341,12 @@ export default function DailyVersePage() {
       )}
 
       <div className="pointer-events-none relative z-10 mx-auto w-full max-w-2xl px-14 text-center sm:px-20">
-        {loading ? null : !verse || !text.trim() ? (
+        {/* „Wird aktualisiert" doar daca azi nu exista niciun verset; cat se traduce, ecranul ramane liniștit. */}
+        {loading ? null : !verse ? (
           <p className="font-cinzel text-2xl italic md:text-3xl" style={{ color: textColor }}>
             {t.updating}
           </p>
-        ) : (
+        ) : !text.trim() ? null : (
           <>
             <blockquote
               className="flex flex-wrap items-center justify-center font-cinzel text-2xl italic leading-relaxed md:text-3xl lg:text-4xl"

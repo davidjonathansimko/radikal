@@ -16,6 +16,7 @@ import CategoryFilterBar from '@/components/CategoryFilterBar';
 import LegacyOnly from '@/components/LegacyOnly';
 import MobileCategoryBrowser from '@/components/MobileCategoryBrowser';
 import ArchiveButton from '@/components/ArchiveButton';
+import SeriesButton from '@/components/SeriesButton';
 import BlogsBandsSkeleton from '@/components/BlogsBandsSkeleton';
 import HomeButtonGate from '@/components/HomeButtonGate';
 import PageTour from '@/components/PageTour';
@@ -200,7 +201,10 @@ function BlogsPageContent() {
         </div>
 
         {/* Arhiva: se deschide intr-o fereastra (an -> luna -> texte). */}
-        <ArchiveButton table="blog_posts" itemPath="/blogs" className="mt-2 lg:mt-8" />
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 lg:mt-8">
+          <ArchiveButton table="blog_posts" itemPath="/blogs" />
+          <SeriesButton />
+        </div>
         <PageTour id="blogs" steps={BLOGS_TOUR} />
 
         <HomeButtonGate>

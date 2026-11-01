@@ -69,11 +69,12 @@ export function berlinNow(): { date: string; hour: number } {
   return { date: `${get('year')}-${get('month')}-${get('day')}`, hour: Number(get('hour')) };
 }
 
-function manualFrom(row: Record<string, unknown>, field: string): Partial<Record<PLang, string[]>> {
+function manualFrom(row: Record<string, unknown>, field: string, ro: string): Partial<Record<PLang, string[]>> {
   const out: Partial<Record<PLang, string[]>> = {};
   for (const l of PLANGS) {
     const v = str(row[`${field}_${l}`]);
-    if (v && l !== 'ro') out[l] = [v];
+    // O „traducere" identica cu originalul romanesc nu e o traducere (salvarea automata veche).
+    if (v && l !== 'ro' && v !== ro) out[l] = [v];
   }
   return out;
 }
@@ -89,7 +90,7 @@ export async function collectItems(admin: SupabaseClient): Promise<PushItem[]> {
     if (bDone.has(String(b.id)) || !b.slug) continue;
     items.push({
       kind: 'blogs', id: String(b.id), key: `blogs:${b.id}`, url: `/blogs/${b.slug}`, label: str(b.title),
-      src: [str(b.title)], manual: manualFrom(b, 'title'), compose: (p) => clip(p[0]),
+      src: [str(b.title)], manual: manualFrom(b, 'title', str(b.title)), compose: (p) => clip(p[0]),
     });
   }
 
@@ -100,7 +101,7 @@ export async function collectItems(admin: SupabaseClient): Promise<PushItem[]> {
     if (tDone.has(String(b.id)) || !b.slug) continue;
     items.push({
       kind: 'marturii', id: String(b.id), key: `marturii:${b.id}`, url: `/marturii/${b.slug}`, label: str(b.title),
-      src: [str(b.title)], manual: manualFrom(b, 'title'), compose: (p) => clip(p[0]),
+      src: [str(b.title)], manual: manualFrom(b, 'title', str(b.title)), compose: (p) => clip(p[0]),
     });
   }
 
@@ -111,7 +112,7 @@ export async function collectItems(admin: SupabaseClient): Promise<PushItem[]> {
     if (rDone.has(String(r.id))) continue;
     items.push({
       kind: 'reels', id: String(r.id), key: `reels:${r.id}`, url: '/blogs?reels=1', label: clip(str(r.content), 60),
-      src: [str(r.content)], manual: manualFrom(r, 'content'), compose: (p) => clip(p[0]),
+      src: [str(r.content)], manual: manualFrom(r, 'content', str(r.content)), compose: (p) => clip(p[0]),
     });
   }
 
@@ -124,7 +125,7 @@ export async function collectItems(admin: SupabaseClient): Promise<PushItem[]> {
     if ((kind === 'andacht' ? dAndacht : dCopii).has(String(d.id)) || !d.slug) continue;
     items.push({
       kind, id: String(d.id), key: `${kind}:${d.id}`, url: `/${kind}/a/${d.slug}`, label: str(d.title),
-      src: [str(d.title)], manual: manualFrom(d, 'title'), compose: (p) => clip(p[0]),
+      src: [str(d.title)], manual: manualFrom(d, 'title', str(d.title)), compose: (p) => clip(p[0]),
     });
   }
 

@@ -103,7 +103,7 @@ const ReadingProgress: React.FC<ReadingProgressProps> = ({
     <>
       {/* Progress bar container / Fortschrittsbalken-Container */}
       <div 
-        className={`fixed left-0 right-0 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+        className={`fixed left-0 right-0 flex justify-center transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
         style={{ 
           ...positionStyles, 
           zIndex,
@@ -111,7 +111,7 @@ const ReadingProgress: React.FC<ReadingProgressProps> = ({
           backgroundColor: 'rgba(128, 128, 128, 0.2)'
         }}
       >
-        {/* Progress fill - white in dark mode, black in light mode / Fortschrittsfüllung */}
+        {/* Se umple din mijloc spre ambele margini */}
         <div 
           className="h-full transition-all duration-150 ease-out bg-black dark:bg-white"
           style={{ 

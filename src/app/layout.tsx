@@ -106,8 +106,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="de" translate="no" className="scroll-smooth notranslate" suppressHydrationWarning>
       <head>
+        {/* Textele sunt deja in DE/EN/RO/RU (cod sau DeepL): Chrome nu trebuie sa ofere traducere. */}
+        <meta name="google" content="notranslate" />
         {/* Pasul 2102005: Initialize theme + language before page loads */}
         {/* Set lang attribute from localStorage for SEO / Setze lang-Attribut aus localStorage für SEO */}
         <script
