@@ -736,7 +736,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {enabledPages.has('verset') && (
+      {enabledPages.has('verset') && featureFlags.homeVerseSection && (
         <section id="verset" className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-4xl mx-auto w-full text-center">
             <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-8 animate-fadeIn">

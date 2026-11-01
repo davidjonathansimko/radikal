@@ -361,12 +361,7 @@ export default function BlogBrowse({
                   </div>
                   
                   {/* Translation indicator */}
-                  {translating && (
-                    <div className="flex items-center gap-2 mb-3 text-sm text-gray-500 dark:text-white/50">
-                      <div className="animate-spin w-4 h-4 border-2 border-gray-300 dark:border-white/30 border-t-gray-900 dark:border-t-white rounded-full"></div>
-                      <span>{language === 'de' ? 'Titel werden übersetzt...' : language === 'en' ? 'Translating titles...' : language === 'ro' ? 'Se traduc titlurile...' : 'Перевод заголовков...'}</span>
-                    </div>
-                  )}
+                  {translating && <div className="mb-3 h-4 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10" aria-hidden="true" />}
                   
                   {/* Filtered blog list */}
                   {selectedLetter && (
@@ -450,12 +445,7 @@ export default function BlogBrowse({
                   )}
                   
                   {/* Translation indicator */}
-                  {translating && (
-                    <div className="flex items-center gap-2 mb-3 text-sm text-gray-500 dark:text-white/50">
-                      <div className="animate-spin w-4 h-4 border-2 border-gray-300 dark:border-white/30 border-t-gray-900 dark:border-t-white rounded-full"></div>
-                      <span>{language === 'de' ? 'Titel werden übersetzt...' : language === 'en' ? 'Translating titles...' : language === 'ro' ? 'Se traduc titlurile...' : 'Перевод заголовков...'}</span>
-                    </div>
-                  )}
+                  {translating && <div className="mb-3 h-4 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10" aria-hidden="true" />}
                   
                   {/* Blog list for selected month */}
                   {selectedMonth !== null && (

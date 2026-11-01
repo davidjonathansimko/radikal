@@ -17,12 +17,12 @@ export const BLOGS_TOUR: TourStep[] = [
   {
     target: '[data-tour="cards"]',
     gesture: 'swipe',
-    title: { de: 'Die letzten Blogs', en: 'Latest blogs', ro: 'Ultimele bloguri', ru: 'Последние блоги' },
+    title: { de: 'Blogs zum Durchwischen', en: 'Blogs to swipe through', ro: 'Bloguri de glisat', ru: 'Блоги для просмотра' },
     text: {
-      de: 'Wische seitlich durch die letzten 6 Blogs. Tippe auf ein Bild, um zu lesen.',
-      en: 'Swipe sideways through the last 6 blogs. Tap a picture to read.',
-      ro: 'Glisează lateral prin ultimele 6 bloguri. Atinge o imagine ca să citești.',
-      ru: 'Листайте вбок последние 6 блогов. Нажмите на картинку, чтобы читать.',
+      de: 'Wische seitlich durch jede Reihe: empfohlene Blogs, die neuesten und, weiter unten, die Serien. Tippe auf ein Bild, um zu lesen.',
+      en: 'Swipe sideways through each row: recommended blogs, the latest ones and, further down, the series. Tap a picture to read.',
+      ro: 'Glisează lateral prin fiecare rând: bloguri recomandate, cele mai noi și, mai jos, serii. Atinge o imagine ca să citești.',
+      ru: 'Листайте каждый ряд вбок: рекомендуемые, новые и ниже — серии. Нажмите на картинку, чтобы читать.',
     },
   },
   {
@@ -34,6 +34,18 @@ export const BLOGS_TOUR: TourStep[] = [
       en: 'Here you find all blogs, sorted by year and month.',
       ro: 'Aici găsești toate blogurile, aranjate pe ani și luni.',
       ru: 'Здесь все блоги, по годам и месяцам.',
+    },
+  },
+  {
+    target: '[data-tour="series"]',
+    gesture: 'tap',
+    optional: true,
+    title: { de: 'Serien', en: 'Series', ro: 'Serii', ru: 'Серии' },
+    text: {
+      de: 'Zusammengehörige Blogs, in der Reihenfolge gelesen, in der sie gedacht sind.',
+      en: 'Blogs that belong together, to be read in the order they were meant to be.',
+      ro: 'Bloguri care merg împreună, de citit în ordinea gândită.',
+      ru: 'Связанные между собой блоги — читайте в задуманном порядке.',
     },
   },
 ];

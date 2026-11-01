@@ -26,7 +26,7 @@ import { ReadTick } from '@/components/ReadMark';
 import BlogRow from '@/components/BlogRow';
 import BlogsBandsSkeleton from '@/components/BlogsBandsSkeleton';
 import { useBlogsHome } from '@/lib/blogsHome';
-import { useBlogSeries, seriesName } from '@/lib/blogSeries';
+import { useBlogSeries, useSeriesTitle } from '@/lib/blogSeries';
 
 interface BlogListProps {
   initialPosts?: BlogPost[];
@@ -74,16 +74,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   const featureFlags = useFeatureFlags();
   
   // DeepL Translation hook / DeepL Übersetzungs-Hook / Hook traducere DeepL
-  const { translateBatch, isTranslating } = useTranslation();
-  const [showTranslating, setShowTranslating] = useState(false);
-  useEffect(() => {
-    if (!isTranslating) {
-      setShowTranslating(false);
-      return;
-    }
-    const id = window.setTimeout(() => setShowTranslating(true), 900);
-    return () => window.clearTimeout(id);
-  }, [isTranslating]);
+  const { translateBatch } = useTranslation();
   
   // Component state / Komponentenstatus / Stare componentă
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
@@ -177,6 +168,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
   // Traducem si blogurile recomandate, nu doar lista.
   // Serii: benzi suplimentare sub Recomandate / Ultimele (doar in lista nefiltrata).
   const allSeries = useBlogSeries();
+  const seriesTitle = useSeriesTitle(allSeries, language);
   const [seriesPosts, setSeriesPosts] = useState<Map<string, BlogPost>>(new Map());
   useEffect(() => {
     if (!allSeries || !unfiltered) return;
@@ -555,17 +547,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
         <ContinueReading scope="/blogs/" className="mb-2" slim={effectiveMode >= 3} />
       </div>
       
-      {/* Indicatorul apare doar daca traducerea dureaza (nu la raspunsurile instante din cache). */}
-      {showTranslating && language !== 'ro' && (
-        <div className="fixed top-4 right-4 bg-blue-500/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-pulse">
-          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-          <span className="text-sm font-medium">
-            {language === 'de' ? 'Übersetze Blogs...' : 
-             language === 'en' ? 'Translating blogs...' : 
-             'Перевод блогов...'}
-          </span>
-        </div>
-      )}
+      {/* Pasul 011126: fara indicator de traducere; cardurile asteapta linistit. */}
 
       {/* Pasul 1125: Mobile = single card with left/right arrows, Desktop = vertical stack */}
       <div className="relative">
@@ -634,7 +616,7 @@ export default function BlogList({ initialPosts = [], showOlderButton = true, fi
                 <BlogRow
                   key={s.id}
                   posts={list}
-                  heading={seriesName(s, language)}
+                  heading={seriesTitle(s) || '\u00a0'}
                   compact
                   subMode="meta"
                   language={language}

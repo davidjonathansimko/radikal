@@ -83,7 +83,7 @@ export default function PushAdminPanel() {
       }
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
-      await reg.showNotification('RADIKAL.', { body: 'Test local: telefonul poate afișa notificări.', icon: '/icons/icon-192.png', tag: 'radikal-local-test' });
+      await reg.showNotification('RADIKAL.', { body: 'Test local: telefonul poate afișa notificări.', icon: '/icons/icon-192.png', badge: '/icons/badge-r.png', tag: 'radikal-local-test' });
       setMsg(`Test local trimis. Abonare push pe acest dispozitiv: ${sub ? 'DA' : 'NU (deschide Meniu → Benachrichtigungen ca să te abonezi)'}. Dacă nu vezi nimic acum, problema este în setările telefonului, nu pe server.`);
     } catch (e) {
       setMsg(`Test local eșuat: ${(e as Error).message}`);

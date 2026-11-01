@@ -85,6 +85,26 @@ export default function Navigation() {
     isHomePage ? homeSections : [],
     language
   );
+
+  // Bara de jos (telefon): se ascunde la derulare in jos, reapare la derulare in sus.
+  const [barHidden, setBarHidden] = useState(false);
+  useEffect(() => {
+    if (!featureFlags.bottomBarAutoHide) {
+      setBarHidden(false);
+      return;
+    }
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const d = y - last;
+      if (y < 80) setBarHidden(false);
+      else if (d > 10) setBarHidden(true);
+      else if (d < -10) setBarHidden(false);
+      if (Math.abs(d) > 10) last = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [featureFlags.bottomBarAutoHide]);
   
   // User authentication state / Benutzer-Authentifizierungsstatus / Stare autentificare utilizator
   const [user, setUser] = useState<User | null>(null);
@@ -759,7 +779,7 @@ export default function Navigation() {
     {/* Visible for logged-in users AND guests / Sichtbar für eingeloggte Benutzer UND Gäste */}
     {/* Pasul 21022026: Bottom bar — higher padding so native phone nav buttons (home/back/recent) stay visible */}
     {canSeeNav && !isMobileMenuOpen && (
-      <div className="fixed bottom-0 left-0 right-0 z-[210] lg:hidden flex justify-center pb-[calc(env(safe-area-inset-bottom,0px)+18px)] px-4 pointer-events-none" data-mobile-nav="bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-[210] lg:hidden flex justify-center pb-[calc(env(safe-area-inset-bottom,0px)+18px)] px-4 pointer-events-none transition-transform duration-300 ease-out" style={{ transform: barHidden && !showMobileLanguageDropdown ? 'translateY(150%)' : undefined }} data-mobile-nav="bottom">
         <div className="pointer-events-auto flex items-end justify-evenly gap-1 bg-white/80 dark:bg-black/70 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 shadow-lg px-3 py-0.5" style={{ minWidth: '200px', maxWidth: '260px' }}>
           {/* Language selector */}
           <div className="relative language-dropdown flex flex-col items-center">

@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
-export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls' | 'scrollReveal' | 'todayCard' | 'listenPill' | 'eveningMode' | 'remainingTime' | 'kidsParentMode' | 'protectText' | 'legacyBrowse' | 'homeButton' | 'archiveStacked' | 'heroDailyVerse';
+export type FeatureKey = 'resume' | 'swipe' | 'shareSelection' | 'fontControls' | 'scrollReveal' | 'todayCard' | 'listenPill' | 'eveningMode' | 'remainingTime' | 'kidsParentMode' | 'protectText' | 'legacyBrowse' | 'homeButton' | 'archiveStacked' | 'heroDailyVerse' | 'homeVerseSection' | 'bottomBarAutoHide';
 
 const ROW_ID: Record<FeatureKey, string> = {
   resume: 'feat_resume',
@@ -22,6 +22,8 @@ const ROW_ID: Record<FeatureKey, string> = {
   homeButton: 'feat_home_button',
   archiveStacked: 'feat_archive_stacked',
   heroDailyVerse: 'feat_hero_daily_verse',
+  homeVerseSection: 'feat_home_verse_section',
+  bottomBarAutoHide: 'feat_bottom_bar_autohide',
 };
 
 export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
@@ -42,6 +44,10 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   archiveStacked: true,
   // Oprit = ramane Apocalipsa 3:16, ca pana acum.
   heroDailyVerse: false,
+  // Pornit = sectiunea „Vers des Tages” ramane pe pagina principala (pagina /verset exista oricum).
+  homeVerseSection: true,
+  // Oprit = bara de jos ramane mereu vizibila.
+  bottomBarAutoHide: false,
 };
 
 let cache: Promise<Record<FeatureKey, boolean>> | null = null;

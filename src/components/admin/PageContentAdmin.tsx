@@ -31,7 +31,7 @@ import { originalTextsFor, isPageEditable, ensurePageDefaultsLoaded } from '@/li
 import { fetchEnabledPages, setPageEnabled, fetchGuestAllowed, setGuestAllowed, fetchGuestReadAllowed, setGuestReadAllowed, type TogglablePage } from '@/lib/pageSettings';
 import { fetchFeatureFlags, setFeatureFlag, FEATURE_DEFAULTS, type FeatureKey } from '@/lib/featureFlags';
 
-type FeatureGroup = 'article' | 'home' | 'kids' | 'lists';
+type FeatureGroup = 'article' | 'home' | 'kids' | 'lists' | 'nav';
 
 const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text: string }[] = [
   { key: 'archiveStacked', group: 'lists', title: 'Butonul Arhiv: pictograma deasupra, textul dedesubt', text: 'Pornit = pictograma animată mare, cu cuvântul „Arhivă” dedesubt. Oprit = butonul rotunjit, cu pictograma și textul pe același rând.' },
@@ -45,6 +45,8 @@ const FEATURE_LIST: { key: FeatureKey; group: FeatureGroup; title: string; text:
   { key: 'eveningMode', group: 'article', title: 'Lectură de seară', text: 'Buton în articol: culori calde și blânde, fără animații, pentru citit seara.' },
   { key: 'remainingTime', group: 'article', title: 'Timp de citire rămas', text: 'În bara de sus a articolului apare cât mai e de citit (ex. „~3 min”).' },
   { key: 'heroDailyVerse', group: 'home', title: 'Versetul zilei pe prima pagină', text: 'Pornit = în locul versetului Apocalipsa 3:16 apare versetul zilei publicat pentru azi (dacă nu e niciunul, rămâne Apocalipsa 3:16). Oprit = mereu Apocalipsa 3:16.' },
+  { key: 'homeVerseSection', group: 'home', title: 'Secțiunea „Vers des Tages” pe prima pagină', text: 'Oprit = secțiunea dispare de pe pagina principală (de exemplu când versetul zilei apare deja în primul ecran). Pagina „Vers des Tages” rămâne accesibilă din meniu; ca să o oprești cu totul, folosește pornirea/oprirea paginilor.' },
+  { key: 'bottomBarAutoHide', group: 'nav', title: 'Bara de jos se ascunde la derulare', text: 'Pe telefon: bara cu Limbă, Căutare, Temă și Reels se ascunde când derulezi în jos și reapare când derulezi în sus. Oprit = bara rămâne mereu pe loc.' },
   { key: 'scrollReveal', group: 'home', title: 'Secțiuni care curg la derulare', text: 'Titlul, textul și simbolul fiecărei secțiuni apar treptat când derulezi. Oprit = pagina arată ca înainte.' },
   { key: 'todayCard', group: 'home', title: 'Cardul „Azi”', text: 'Versetul zilei, Andacht-ul zilei și „Weiterlesen”, într-un singur loc, sub primul ecran.' },
   { key: 'listenPill', group: 'home', title: 'Butonul „PLAY” de pe carduri', text: 'Pe cardurile blogurilor dinamice, pastila PLAY pornește direct ascultarea.' },
@@ -56,6 +58,7 @@ const FEATURE_GROUPS: { id: FeatureGroup; title: string }[] = [
   { id: 'article', title: 'Citire în articol' },
   { id: 'home', title: 'Pagina principală' },
   { id: 'kids', title: 'Pagina pentru copii' },
+  { id: 'nav', title: 'Navigare' },
 ];
 
 /** Grup care se deschide si se inchide, ca panoul sa ramana ordonat. */

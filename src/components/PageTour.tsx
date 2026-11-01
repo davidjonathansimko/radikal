@@ -14,6 +14,8 @@ export interface TourStep {
   title: Record<string, string>;
   text: Record<string, string>;
   gesture: 'swipe' | 'tap';
+  /** Pasul se arata doar daca elementul exista (de pilda butonul Serii, care apare doar daca exista serii). */
+  optional?: boolean;
 }
 
 const UI = {
@@ -25,10 +27,11 @@ const UI = {
 const HAND =
   'M373.961,177.868h-11.99c-10.98,0-20.882,4.706-27.793,12.208c-6.91-7.502-16.811-12.208-27.791-12.208h-11.992 c-10.979,0-20.88,4.706-27.791,12.208c-6.911-7.502-16.811-12.208-27.791-12.208H226.82c-6.428,0-12.486,1.613-17.791,4.456 v-20.098c26.825-15.561,43.237-43.833,43.237-75.219C252.267,39.031,213.235,0,165.26,0c-47.978,0-87.01,39.031-87.01,87.008 c0.002,31.367,16.402,59.632,43.205,75.197v290.003c0,20.839,16.953,37.792,37.792,37.792h214.714 c20.837,0,37.789-16.953,37.789-37.792V215.659C411.75,194.821,394.798,177.868,373.961,177.868z M98.25,87.008 C98.25,50.06,128.311,20,165.26,20c36.947,0,67.007,30.06,67.007,67.008c0,19.949-8.615,38.261-23.237,50.79V93.592 c0-20.838-16.953-37.791-37.792-37.791h-11.99c-20.839,0-37.792,16.953-37.792,37.791v44.175 C106.854,125.236,98.252,106.938,98.25,87.008z M391.75,452.208c0,9.81-7.98,17.792-17.789,17.792H159.247 c-9.811,0-17.792-7.982-17.792-17.792V93.592c0-9.811,7.981-17.791,17.792-17.791h11.99c9.811,0,17.792,7.98,17.792,17.791 l0.033,143.88c0,5.522,4.478,10,10,10c5.522,0,10-4.478,10-10v-22.468c0.349-9.505,8.17-17.136,17.758-17.136h11.992 c9.81,0,17.791,7.981,17.791,17.791v26.451c0,5.522,4.478,10,10,10c5.523,0,10-4.478,10-10v-26.451 c0-9.81,7.981-17.791,17.791-17.791h11.992c9.81,0,17.791,7.981,17.791,17.791v26.451c0,5.522,4.478,10,10,10 c5.522,0,10-4.478,10-10v-26.451c0-9.81,7.982-17.791,17.793-17.791h11.99c9.809,0,17.789,7.981,17.789,17.791V452.208z';
 
-export default function PageTour({ id, steps }: { id: string; steps: TourStep[] }) {
+export default function PageTour({ id, steps: allSteps }: { id: string; steps: TourStep[] }) {
   const { language } = useLanguage();
   const lang = ['de', 'en', 'ro', 'ru'].includes(language) ? language : 'de';
   const key = `radikalTour:${id}`;
+  const [steps, setSteps] = useState<TourStep[]>(allSteps);
   const [index, setIndex] = useState(-1);
   const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   // „Weiter" se activeaza abia dupa ce animatia pasului a rulat o data.
@@ -63,13 +66,14 @@ export default function PageTour({ id, steps }: { id: string; steps: TourStep[] 
         /* ignora */
       }
       if (!onboardingDone || document.querySelector('[role="dialog"]')) return;
-      if (steps.every((s) => document.querySelector(s.target))) {
+      if (allSteps.filter((s) => !s.optional).every((s) => document.querySelector(s.target))) {
         window.clearInterval(timer);
+        setSteps(allSteps.filter((s) => !s.optional || document.querySelector(s.target)));
         window.setTimeout(() => setIndex(0), 600);
       }
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [key, steps]);
+  }, [key, allSteps]);
 
   const measure = useCallback(() => {
     const step = steps[index];

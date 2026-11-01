@@ -23,7 +23,7 @@ export function ReadToggle({ href, className = '' }: { href: string; className?:
       type="button"
       onClick={() => setRead(href, !read)}
       aria-pressed={read}
-      className={`btn-solid inline-flex h-6 min-h-0 min-w-0 items-center gap-1.5 rounded-full border px-2.5 text-[10px] font-medium tracking-wide transition-colors ${
+      className={`btn-solid inline-flex h-6 min-h-0 min-w-0 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-[10px] font-medium tracking-wide transition-colors ${
         read
           ? 'border-transparent bg-black/80 text-white dark:bg-white/85 dark:text-black'
           : 'border-black/10 text-black/55 hover:bg-black/5 dark:border-white/15 dark:text-white/55 dark:hover:bg-white/10'

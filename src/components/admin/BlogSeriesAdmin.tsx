@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { fetchBlogSeries, saveBlogSeries, type BlogSeries } from '@/lib/blogSeries';
+import { useTranslation } from '@/hooks/useTranslation';
+import { fetchBlogSeriesConfig, saveBlogSeries, type BlogSeries, type SeriesLabelStyle } from '@/lib/blogSeries';
 
 interface Row {
   id: string;
@@ -15,8 +16,16 @@ const LANG_FIELDS: { key: 'de' | 'en' | 'ru'; label: string }[] = [
   { key: 'ru', label: 'Nume RU' },
 ];
 
+const STYLE_OPTIONS: { id: SeriesLabelStyle; title: string; text: string }[] = [
+  { id: 'plain', title: 'Doar „Serie: nume”', text: 'Text mic, fără număr.' },
+  { id: 'numbered', title: '„Serie: nume · 2/5”', text: 'Text mic, cu poziția blogului în serie.' },
+  { id: 'stamp', title: 'Ștampilă mică', text: 'Chenar fin, litere mari, ca o ștampilă.' },
+];
+
 export default function BlogSeriesAdmin() {
+  const { translateBatch } = useTranslation();
   const [series, setSeries] = useState<BlogSeries[]>([]);
+  const [style, setStyle] = useState<SeriesLabelStyle>('numbered');
   const [rows, setRows] = useState<Row[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
@@ -24,30 +33,56 @@ export default function BlogSeriesAdmin() {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Completeaza DE/EN/RU din romana; `force` rescrie si numele deja existente.
+  const translateNames = async (s: BlogSeries, force = false): Promise<BlogSeries> => {
+    const names: NonNullable<BlogSeries['names']> = { ...s.names };
+    await Promise.all(
+      LANG_FIELDS.map(async ({ key }) => {
+        if (!force && names[key]?.trim()) return;
+        try {
+          const out = await translateBatch([s.name], key, 'ro');
+          const t = (out[0] || '').trim();
+          if (t) names[key] = t;
+        } catch {
+          /* ramane gol; se traduce la afisare */
+        }
+      }),
+    );
+    return { ...s, names };
+  };
+
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const cfg = await fetchBlogSeries(true);
+      const cfg = await fetchBlogSeriesConfig(true);
       const { data } = await createClient().from('blog_posts').select('id, title').eq('published', true).order('created_at', { ascending: false });
       if (!alive) return;
-      setSeries(cfg);
+      setSeries(cfg.series);
+      setStyle(cfg.style);
       setRows((data ?? []) as Row[]);
+      // Seriile mai vechi, fara nume traduse, se completeaza (se salveaza la „Salvează”).
+      const filled = await Promise.all(cfg.series.map((s) => (LANG_FIELDS.every((f) => s.names?.[f.key]?.trim()) ? s : translateNames(s))));
+      if (alive) setSeries(filled);
     })();
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
   const patch = (id: string, fn: (s: BlogSeries) => BlogSeries) => setSeries((all) => all.map((s) => (s.id === id ? fn(s) : s)));
 
-  const add = () => {
+  const add = async () => {
     const name = newName.trim();
     if (!name) return;
     const id = `s${Date.now().toString(36)}`;
-    setSeries([...series, { id, name, ids: [] }]);
+    const base: BlogSeries = { id, name, ids: [] };
+    setSeries((all) => [...all, base]);
     setOpenId(id);
     setNewName('');
+    const withNames = await translateNames(base);
+    patch(id, (x) => ({ ...x, names: withNames.names }));
   };
 
   const move = (s: BlogSeries, i: number, d: -1 | 1) => {
@@ -62,7 +97,7 @@ export default function BlogSeriesAdmin() {
     setBusy(true);
     setMsg('');
     try {
-      await saveBlogSeries(series);
+      await saveBlogSeries(series, style);
       setMsg('Salvat.');
     } catch {
       setMsg('Nu am putut salva.');
@@ -81,9 +116,22 @@ export default function BlogSeriesAdmin() {
         O serie grupează blogurile într-o ordine aleasă de tine. Cititorii o văd ca bandă sub „Recomandate / Ultimele”, ca etichetă „Serie: …” deasupra titlului și în fereastra „Serii”. Un blog poate fi în mai multe serii; eticheta arată prima serie în care apare.
       </p>
 
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-black dark:text-white">Eticheta din articol</p>
+        {STYLE_OPTIONS.map((o) => (
+          <label key={o.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-black/10 p-2.5 dark:border-white/15">
+            <input type="radio" name="series-label-style" checked={style === o.id} onChange={() => setStyle(o.id)} className="mt-1" />
+            <span>
+              <span className="block text-sm font-semibold text-black dark:text-white">{o.title}</span>
+              <span className="block text-xs text-black/55 dark:text-white/55">{o.text}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
       <div className="flex gap-2">
         <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nume serie nouă (ex. Păcate mici)" className={input} />
-        <button type="button" onClick={add} disabled={!newName.trim()} className={`${btn} bg-black text-white disabled:opacity-40 dark:bg-white dark:text-black`}>
+        <button type="button" onClick={() => void add()} disabled={!newName.trim()} className={`${btn} bg-black text-white disabled:opacity-40 dark:bg-white dark:text-black`}>
           Creează
         </button>
       </div>
@@ -115,7 +163,7 @@ export default function BlogSeriesAdmin() {
                     </label>
                     {LANG_FIELDS.map((f) => (
                       <label key={f.key} className="text-xs text-black/60 dark:text-white/60">
-                        {f.label} (opțional)
+                        {f.label}
                         <input
                           value={s.names?.[f.key] ?? ''}
                           onChange={(e) => patch(s.id, (x) => ({ ...x, names: { ...x.names, [f.key]: e.target.value } }))}
@@ -124,6 +172,17 @@ export default function BlogSeriesAdmin() {
                       </label>
                     ))}
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const t = await translateNames(s, true);
+                      patch(s.id, (x) => ({ ...x, names: t.names }));
+                    }}
+                    className={ghost}
+                  >
+                    Retraduce numele din română
+                  </button>
 
                   <ol className="space-y-1">
                     {s.ids.map((id, i) => (

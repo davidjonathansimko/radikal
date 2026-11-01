@@ -205,7 +205,7 @@ function BlogsPageContent() {
           <ArchiveButton table="blog_posts" itemPath="/blogs" />
           <SeriesButton />
         </div>
-        <PageTour id="blogs" steps={BLOGS_TOUR} />
+        <PageTour id="blogs-2" steps={BLOGS_TOUR} />
 
         <HomeButtonGate>
           <BackToHome className="mt-8 flex justify-center" />

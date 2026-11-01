@@ -59,7 +59,7 @@ import { CiHeart } from 'react-icons/ci';
 const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ssr: false });
 import GuestLoginGate from '@/components/GuestLoginGate';
 import { ReadToggle } from '@/components/ReadMark';
-import { useBlogSeries, seriesName } from '@/lib/blogSeries';
+import { useBlogSeriesConfig, useSeriesTitle } from '@/lib/blogSeries';
 import { fetchGuestReadAllowed } from '@/lib/pageSettings';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
@@ -97,7 +97,9 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   // Get route parameters, language and theme context / Route-Parameter, Sprach- und Themenkontext abrufen / Obține parametrii rutei, contextul limbii și temei
   const { slug } = useParams();
   const { language } = useLanguage();
-  const blogSeries = useBlogSeries();
+  const seriesConfig = useBlogSeriesConfig();
+  const blogSeries = seriesConfig?.series ?? null;
+  const seriesTitle = useSeriesTitle(blogSeries, language);
   const { theme } = useTheme();
   
   // 🔒 Store the ORIGINAL Romanian slug from the database — NEVER changes after first load
@@ -204,7 +206,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   const [introModalCompleted, setIntroModalCompleted] = useState(false);
   
   // 🌐 DeepL Translation hook and state / DeepL Übersetzungs-Hook und Status / Hook și stare traducere DeepL
-  const { translate, translateBatch, isTranslating } = useTranslation();
+  const { translate, translateBatch } = useTranslation();
   const [translatedTitle, setTranslatedTitle] = useState<string>('');
   const [translatedContent, setTranslatedContent] = useState<string>('');
   const [translatedExcerpt, setTranslatedExcerpt] = useState<string>('');
@@ -1310,19 +1312,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
 
         {/* Post header with theme-aware text colors / Post-Kopf mit themenabhängigen Textfarben / Antet postare cu culori text adaptate la temă */}
         <header className="mb-8">
-          {/* 🌐 DeepL Translation indicator / DeepL Übersetzungsindikator / Indicator traducere DeepL */}
-          {isTranslating && language !== 'ro' && (
-            <div className="fixed top-20 right-4 bg-blue-500/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-pulse">
-              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-              <span className="text-sm font-medium">
-                {language === 'de' ? 'Übersetze Inhalt...' : 
-                 language === 'en' ? 'Translating content...' : 
-                 'Перевод содержимого...'}
-              </span>
-            </div>
-          )}
-
-          {/* 2. Post metadata UNDER image / Metadaten UNTER Bild / Metadate SUB imagine */}
+          {/* 2. Post metadata UNDER image */}
           {/* Fluid flex-stretch layout - auto-adapts to screen size */}
           {/* Mobile: clamp 360→13px, 390→14px, 400→15px, bolder text. Desktop (sm+): original text-base */}
           <div className="flex items-center justify-between text-gray-600 dark:text-white/60 mb-3 animate-fadeIn text-[clamp(0.85rem,calc(-0.15rem+5vw),0.9375rem)] sm:text-base font-semibold xs:font-medium sm:font-normal" style={{ animationDelay: '0.2s' }}>
@@ -1421,12 +1411,23 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
         <div className="-mt-3 mb-3 flex items-center justify-between gap-3">
           {(() => {
             const s = source.table === 'blog_posts' ? blogSeries?.find((x) => x.ids.includes(post.id)) : undefined;
-            if (!s) return <span />;
+            const name = s ? seriesTitle(s) : '';
+            if (!s || !name) return <span />;
             const label = language === 'de' ? 'Serie' : language === 'ro' ? 'Serie' : language === 'ru' ? 'Серия' : 'Series';
             const pos = s.ids.indexOf(post.id) + 1;
+            const style = seriesConfig?.style ?? 'numbered';
+            if (style === 'stamp') {
+              return (
+                <p className="min-w-0 flex-1 truncate">
+                  <span className="inline-block max-w-full truncate rounded-[3px] border border-black/25 px-1.5 py-[1px] align-middle font-cinzel text-[8.5px] font-semibold uppercase tracking-[0.16em] text-black/55 dark:border-white/30 dark:text-white/55">
+                    {label} · {name}
+                  </span>
+                </p>
+              );
+            }
             return (
-              <p className="min-w-0 truncate text-xs font-semibold tracking-wide text-black/60 dark:text-white/60">
-                {label}: {seriesName(s, language)} <span className="font-normal text-black/40 dark:text-white/40">({pos}/{s.ids.length})</span>
+              <p className="min-w-0 flex-1 truncate text-[10px] font-medium tracking-wide text-black/55 dark:text-white/55">
+                {label}: {name}{style === 'numbered' ? ` · ${pos}/${s.ids.length}` : ''}
               </p>
             );
           })()}

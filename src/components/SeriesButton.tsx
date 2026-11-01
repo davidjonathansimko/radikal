@@ -11,7 +11,7 @@ import { useRowTitles } from '@/hooks/useRowTitles';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { getSupabaseClient } from '@/lib/supabase';
-import { useBlogSeries, seriesName, type BlogSeries } from '@/lib/blogSeries';
+import { useBlogSeries, useSeriesTitle, type BlogSeries } from '@/lib/blogSeries';
 
 interface Row {
   id: string;
@@ -65,6 +65,7 @@ function SeriesSheet({ series, onClose }: { series: BlogSeries[]; onClose: () =>
   }, [onClose]);
 
   const titleOf = useRowTitles(rows, lang);
+  const seriesTitle = useSeriesTitle(series, lang);
   const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   return createPortal(
@@ -98,7 +99,7 @@ function SeriesSheet({ series, onClose }: { series: BlogSeries[]; onClose: () =>
                 return (
                   <details key={s.id} open={si === 0} className="rounded-2xl border border-black/10 dark:border-white/10">
                     <summary className="cursor-pointer select-none px-4 py-3 font-cinzel text-lg font-bold">
-                      {seriesName(s, lang)} <span className="text-sm font-normal text-black/40 dark:text-white/40">({list.length})</span>
+                      {seriesTitle(s) || '\u00a0'} <span className="text-sm font-normal text-black/40 dark:text-white/40">({list.length})</span>
                     </summary>
                     <ol className="divide-y divide-black/10 px-2 pb-2 dark:divide-white/10">
                       {list.map((r, i) => (
@@ -139,7 +140,7 @@ export default function SeriesButton() {
   if (usable.length === 0) return null;
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center" data-tour="series">
       {flags.archiveStacked ? (
         <button
           type="button"
