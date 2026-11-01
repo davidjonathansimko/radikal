@@ -98,9 +98,58 @@ export function runThemeFx(fx: string, origin: { x: number; y: number }): void {
       anim('new', [{ opacity: 0, transform: 'scale(1.06)' }, { opacity: 1, transform: 'scale(1)' }], 640);
       anim('old', [{ transform: 'scale(1)' }, { transform: 'scale(0.97)' }], 640);
       break;
+    case 'iris': {
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = Math.hypot(cx, cy);
+      anim('new', [{ clipPath: `circle(0px at ${cx}px ${cy}px)` }, { clipPath: `circle(${r}px at ${cx}px ${cy}px)` }], 760);
+      break;
+    }
+    case 'wipeR':
+      anim('new', [{ clipPath: 'inset(0 0 0 100%)' }, { clipPath: 'inset(0 0 0 0)' }], 650);
+      break;
+    case 'rise':
+      anim('new', [{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], 650);
+      break;
+    case 'split':
+      anim('new', [{ clipPath: 'inset(0 50% 0 50%)' }, { clipPath: 'inset(0 0 0 0)' }], 700);
+      break;
+    case 'vsplit':
+      anim('new', [{ clipPath: 'inset(50% 0 50% 0)' }, { clipPath: 'inset(0 0 0 0)' }], 700);
+      break;
+    case 'diagonal':
+      anim('new', [{ clipPath: 'polygon(0 0, 0 0, 0 0)' }, { clipPath: 'polygon(0 0, 250% 0, 0 250%)' }], 760);
+      break;
+    case 'slide':
+      anim('new', [{ transform: 'translateX(-100%)' }, { transform: 'translateX(0)' }], 650);
+      anim('old', [{ transform: 'translateX(0)' }, { transform: 'translateX(28%)' }], 650);
+      break;
+    case 'flash':
+      anim('new', [{ opacity: 0, filter: 'brightness(2.4)' }, { opacity: 1, filter: 'brightness(1)' }], 720);
+      break;
     default:
       themeCrossfade();
   }
+}
+
+/** Efectul ales in admin pentru schimbarea limbii. */
+export function runLangFx(fx: string): void {
+  if (fx === 'none') return;
+  if (fx === 'shake') {
+    requestAnimationFrame(() => scatterGlitch(700));
+    return;
+  }
+  requestAnimationFrame(() => {
+    const el = document.getElementById('main-content');
+    if (!el) return;
+    try {
+      if (fx === 'blur') el.animate([{ filter: 'blur(0px)' }, { filter: 'blur(9px)', offset: 0.4 }, { filter: 'blur(0px)' }], { duration: 620, easing: 'ease-in-out' });
+      else if (fx === 'rise') el.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0.15, transform: 'translateY(14px)', offset: 0.4 }, { opacity: 1, transform: 'translateY(0)' }], { duration: 600, easing: 'ease-in-out' });
+      else el.animate([{ opacity: 1 }, { opacity: 0.1, offset: 0.35 }, { opacity: 1 }], { duration: 520, easing: 'ease-in-out' });
+    } catch {
+      /* fara Web Animations: limba se schimba simplu */
+    }
+  });
 }
 
 /** Ecranul NOU creste din fum; la inceput e alb-negru si tremura, apoi capata culoare. */

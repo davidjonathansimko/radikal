@@ -7,9 +7,9 @@ import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export type BarBehavior = 'always' | 'slide' | 'idle' | 'shrink' | 'fade' | 'articles';
-export type BarStyle = 'pill' | 'edge' | 'edgeglass' | 'glass' | 'minimal' | 'dock';
-export type ThemeFx = 'fade' | 'circle' | 'wipe' | 'curtain' | 'shake' | 'dissolve' | 'zoom';
-export type LangFx = 'shake' | 'fade' | 'none';
+export type BarStyle = 'pill' | 'pillglass' | 'edge' | 'edgeglass' | 'glass' | 'floatbar' | 'invert' | 'minimal' | 'dock' | 'dockglass';
+export type ThemeFx = 'fade' | 'circle' | 'iris' | 'wipe' | 'wipeR' | 'curtain' | 'rise' | 'split' | 'vsplit' | 'diagonal' | 'slide' | 'shake' | 'dissolve' | 'zoom' | 'flash';
+export type LangFx = 'shake' | 'fade' | 'blur' | 'rise' | 'none';
 
 export interface UiSettings {
   barBehavior: BarBehavior;
@@ -34,18 +34,30 @@ export const BAR_BEHAVIORS: { id: BarBehavior; title: string; text: string }[] =
 
 export const BAR_STYLES: { id: BarStyle; title: string; text: string }[] = [
   { id: 'pill', title: 'Pastilă plutitoare (actuală)', text: 'Bară mică, rotunjită, centrată deasupra marginii de jos.' },
+  { id: 'pillglass', title: 'Pastilă plutitoare, sticlă mată', text: 'Aceeași pastilă, dar cu fundal transparent și blur.' },
   { id: 'edge', title: 'Bară lipită de margini', text: 'Pe toată lățimea, lipită de stânga, dreapta și jos, cu linie fină deasupra (ca la YouTube Music).' },
   { id: 'edgeglass', title: 'Bară lipită de margini, sticlă mată', text: 'Pe toată lățimea, cu fundal semi-transparent și blur.' },
   { id: 'glass', title: 'Pastilă lată, sticlă mată', text: 'Plutitoare, mai lată, cu blur puternic și fundal transparent (ca la Telegram).' },
+  { id: 'floatbar', title: 'Bară lată plutitoare, solidă', text: 'Aproape pe toată lățimea, rotunjită, cu margine de jur împrejur.' },
+  { id: 'invert', title: 'Contrast inversat', text: 'Pastilă închisă pe tema luminoasă și deschisă pe tema întunecată.' },
   { id: 'minimal', title: 'Minimală', text: 'Fără chenar și fără fundal: doar iconițele, cu o umbră fină.' },
   { id: 'dock', title: 'Doc compact', text: 'Doar iconițe, într-o pastilă mică, fără texte.' },
+  { id: 'dockglass', title: 'Doc compact, sticlă mată', text: 'Doar iconițe, pastilă mică transparentă cu blur.' },
 ];
 
 export const THEME_FX: { id: ThemeFx; title: string; text: string }[] = [
   { id: 'fade', title: 'Trecere lină', text: 'Ecranul nou apare treptat peste cel vechi.' },
   { id: 'circle', title: 'Cerc din buton', text: 'Un cerc crește din butonul apăsat și acoperă tot ecranul.' },
-  { id: 'wipe', title: 'Perdea laterală', text: 'Noua temă „glisează" de la stânga la dreapta.' },
+  { id: 'iris', title: 'Cerc din centru', text: 'Un cerc crește din mijlocul ecranului (ca un diafragm).' },
+  { id: 'wipe', title: 'Perdea laterală (stânga → dreapta)', text: 'Noua temă „glisează” de la stânga la dreapta.' },
+  { id: 'wipeR', title: 'Perdea laterală (dreapta → stânga)', text: 'Noua temă „glisează” de la dreapta la stânga.' },
   { id: 'curtain', title: 'Perdea de sus în jos', text: 'Noua temă coboară de sus, ca o perdea.' },
+  { id: 'rise', title: 'Perdea de jos în sus', text: 'Noua temă urcă de jos, ca o cortină care se ridică.' },
+  { id: 'split', title: 'Deschidere din mijloc (orizontal)', text: 'Noua temă se deschide din mijloc spre stânga și dreapta.' },
+  { id: 'vsplit', title: 'Deschidere din mijloc (vertical)', text: 'Noua temă se deschide din mijloc spre sus și jos.' },
+  { id: 'diagonal', title: 'Diagonală', text: 'Noua temă crește dintr-un colț, pe diagonală.' },
+  { id: 'slide', title: 'Glisare', text: 'Ecranul nou intră „împingând” ușor ecranul vechi.' },
+  { id: 'flash', title: 'Sclipire', text: 'Trecere lină, cu o scurtă sclipire de lumină.' },
   { id: 'shake', title: 'Tremur de iconițe', text: 'Trecere lină, iar iconițele, butoanele și textele tremură o clipă.' },
   { id: 'dissolve', title: 'Estompare', text: 'Ecranul vechi se încețoșează, iar cel nou se limpezește.' },
   { id: 'zoom', title: 'Zoom blând', text: 'Ecranul nou apare ușor mărit și se așază la loc.' },
@@ -54,6 +66,8 @@ export const THEME_FX: { id: ThemeFx; title: string; text: string }[] = [
 export const LANG_FX: { id: LangFx; title: string; text: string }[] = [
   { id: 'shake', title: 'Tremur scurt', text: 'Textele și butoanele tremură o clipă, în culorile temei curente.' },
   { id: 'fade', title: 'Estompare', text: 'Conținutul se estompează și revine în noua limbă.' },
+  { id: 'blur', title: 'Încețoșare', text: 'Conținutul se încețoșează o clipă și se limpezește.' },
+  { id: 'rise', title: 'Urcare ușoară', text: 'Conținutul coboară puțin și urcă la loc, estompat.' },
   { id: 'none', title: 'Fără efect', text: 'Limba se schimbă pe loc.' },
 ];
 
@@ -71,17 +85,25 @@ function normalize(v: Partial<UiSettings> | null | undefined): UiSettings {
   };
 }
 
-let current: UiSettings = UI_DEFAULTS;
+let saved: UiSettings = UI_DEFAULTS;
+// Previzualizare din admin: se vede imediat, dar nu se salveaza pana nu apesi „Salveaza".
+let preview: UiSettings | null = null;
 let cache: Promise<UiSettings> | null = null;
 let lastForceAt = 0;
 
-/** Ultimele setari cunoscute, fara sa astepti reteaua (folosit la schimbarea temei). */
+/** Setarile in vigoare acum (previzualizarea, daca exista), fara sa astepti reteaua. */
 export function getUiSettingsSync(): UiSettings {
-  return current;
+  return preview ?? saved;
+}
+
+/** Previzualizeaza setarile (`null` = revine la cele salvate). */
+export function setUiPreview(next: UiSettings | null) {
+  preview = next;
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('radikal-ui-preview'));
 }
 
 function remember(s: UiSettings) {
-  current = s;
+  saved = s;
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(s));
   } catch {
@@ -94,12 +116,12 @@ export function fetchUiSettings(force = false): Promise<UiSettings> {
   cache = (async () => {
     try {
       const { data, error } = await getSupabaseClient().from('site_content').select('value').eq('key', UI_SETTINGS_KEY).maybeSingle();
-      if (error) return current;
+      if (error) return saved;
       const s = normalize(data?.value as Partial<UiSettings> | undefined);
       remember(s);
       return s;
     } catch {
-      return current;
+      return saved;
     }
   })();
   return cache;
@@ -110,6 +132,7 @@ export async function saveUiSettings(next: UiSettings): Promise<void> {
   if (error) throw error;
   cache = null;
   remember(next);
+  preview = null;
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('radikal-ui'));
 }
 
@@ -119,34 +142,34 @@ export function useUiSettings(): UiSettings {
     let alive = true;
     // Mai intai ce stiam de la ultima vizita, ca bara sa nu „sara" la incarcare.
     try {
-      const saved = localStorage.getItem(LS_KEY);
-      if (saved) {
-        const parsed = normalize(JSON.parse(saved));
-        current = parsed;
-        setS(parsed);
-      }
+      const cached = localStorage.getItem(LS_KEY);
+      if (cached) saved = normalize(JSON.parse(cached));
     } catch {
       /* ignorat */
     }
+    setS(getUiSettingsSync());
     const load = (force: boolean) => {
       if (force) {
         if (Date.now() - lastForceAt < 4000) {
-          void fetchUiSettings().then((v) => alive && setS(v));
+          void fetchUiSettings().then(() => alive && setS(getUiSettingsSync()));
           return;
         }
         lastForceAt = Date.now();
       }
-      void fetchUiSettings(force).then((v) => alive && setS(v));
+      void fetchUiSettings(force).then(() => alive && setS(getUiSettingsSync()));
     };
     load(false);
     const onVisible = () => document.visibilityState === 'visible' && load(true);
     const onChange = () => load(true);
+    const onPreview = () => setS(getUiSettingsSync());
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('radikal-ui', onChange);
+    window.addEventListener('radikal-ui-preview', onPreview);
     return () => {
       alive = false;
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('radikal-ui', onChange);
+      window.removeEventListener('radikal-ui-preview', onPreview);
     };
   }, []);
   return s;

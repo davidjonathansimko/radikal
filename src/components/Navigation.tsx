@@ -14,7 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useStickyHeader } from '@/hooks/useStickyHeader';
 import { useFeatureFlags } from '@/lib/featureFlags';
-import { scatterGlitch } from '@/lib/glitchEffects';
+import { runLangFx } from '@/lib/glitchEffects';
 import { useUiSettings } from '@/lib/uiSettings';
 import { createClient } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/isAdmin';
@@ -589,19 +589,7 @@ export default function Navigation() {
     setLanguage(newLang);
     setShowLanguageDropdown(false);
     setShowMobileLanguageDropdown(false);
-    if (newLang !== language) {
-      const fx = uiSettings.langFx;
-      if (fx === 'shake') requestAnimationFrame(() => scatterGlitch(700));
-      else if (fx === 'fade') {
-        requestAnimationFrame(() => {
-          try {
-            document.getElementById('main-content')?.animate([{ opacity: 1 }, { opacity: 0.1, offset: 0.35 }, { opacity: 1 }], { duration: 520, easing: 'ease-in-out' });
-          } catch {
-            /* fara Web Animations: limba se schimba simplu */
-          }
-        });
-      }
-    }
+    if (newLang !== language) runLangFx(uiSettings.langFx);
     
     // Save language based on authentication status
     try {

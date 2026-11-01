@@ -2768,3 +2768,69 @@ html.dark [data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0
   padding: 6px 8px !important;
   gap: 4px !important;
 }
+
+/* Pasul 011126E - inca stiluri pentru bara de jos + meniul de limba nu mai atinge marginea ecranului. */
+[data-mobile-nav="bottom"][data-bar-style="dockglass"] .bar-label { display: none; }
+
+/* Pastila plutitoare, sticla mata (marimea pastr ata de pastila actuala) */
+[data-bar-style="pillglass"] > .bar-inner {
+  background-color: rgba(255, 255, 255, 0.35) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: blur(26px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.6) !important;
+}
+html.dark [data-bar-style="pillglass"] > .bar-inner {
+  background-color: rgba(20, 20, 20, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Bara lata plutitoare, solida */
+[data-bar-style="floatbar"] > .bar-inner {
+  width: 100%;
+  min-width: 100% !important;
+  max-width: none !important;
+  border-radius: 22px !important;
+  padding: 4px 10px !important;
+}
+
+/* Contrast inversat */
+[data-bar-style="invert"] > .bar-inner {
+  background-color: rgba(12, 12, 12, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+[data-bar-style="invert"] > .bar-inner > button,
+[data-bar-style="invert"] > .bar-inner .language-dropdown > button { color: rgba(255, 255, 255, 0.82) !important; }
+html.dark [data-bar-style="invert"] > .bar-inner {
+  background-color: rgba(244, 244, 244, 0.94) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+html.dark [data-bar-style="invert"] > .bar-inner > button,
+html.dark [data-bar-style="invert"] > .bar-inner .language-dropdown > button { color: rgba(0, 0, 0, 0.82) !important; }
+
+/* Doc compact, sticla mata */
+[data-bar-style="dockglass"] > .bar-inner {
+  min-width: 0 !important;
+  max-width: none !important;
+  border-radius: 999px !important;
+  padding: 6px 8px !important;
+  gap: 4px !important;
+  background-color: rgba(255, 255, 255, 0.35) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: blur(26px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.6) !important;
+}
+html.dark [data-bar-style="dockglass"] > .bar-inner {
+  background-color: rgba(20, 20, 20, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Meniul de limba: porneste de la marginea butonului, cu spatiu fata de marginea ecranului, ca sa nu iasa din ecran. */
+[data-bar-style="edge"] .language-dropdown > .animate-dropdown-up,
+[data-bar-style="edgeglass"] .language-dropdown > .animate-dropdown-up,
+[data-bar-style="glass"] .language-dropdown > .animate-dropdown-up,
+[data-bar-style="minimal"] .language-dropdown > .animate-dropdown-up,
+[data-bar-style="floatbar"] .language-dropdown > .animate-dropdown-up {
+  left: 0;
+  margin-left: 6px;
+  transform-origin: bottom left;
+}

@@ -801,21 +801,20 @@ export default function HomePage() {
       {/* SECTION 5 - THANK YOU MESSAGE */}
       {/* ========================================================================== */}
       {featureFlags.homeThankyouSection && (
-      <section id="thankyou" className="min-h-screen flex flex-col justify-end items-center px-4 sm:px-6 lg:px-8 py-20 sm:py-24 md:py-32 pb-8">
+      <section id="thankyou" className="flex min-h-[100svh] flex-col items-center justify-center px-4 pb-32 pt-24 sm:px-6 lg:px-8 lg:pb-16">
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Thank You Message */}
-          <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-8 animate-fadeIn leading-tight">
+          <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-6 animate-fadeIn leading-tight">
             {t.thanksTitle}
           </h2>
           
           {/* Blessing Message */}
-          <br></br>
           <p className="text-2xl sm:text-3xl text-black/80 dark:text-white/80 mb-8 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             {t.thanksText}
           </p>
 
           {/* Cronometru: SVG cu marime fixa, la fel ca iconitele celorlalte sectiuni (emoji-ul se micsora pe unele telefoane). */}
-          <div className="mb-16 flex justify-center animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+          <div className="mb-10 flex justify-center animate-fadeIn" style={{ animationDelay: '0.5s' }}>
             <svg viewBox="0 0 48 48" className="h-20 w-20 text-black dark:text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="24" cy="27" r="15" />
               <path d="M24 27V17" />
@@ -825,10 +824,9 @@ export default function HomePage() {
               <path d="M37 12l3-3" />
             </svg>
           </div>
-          <br></br>
 
           {/* Back to Top Button - positioned closer to footer with more spacing from clock */}
-          <div className="mt-8 mb-4 flex items-center justify-center">
+          <div className="mt-4 flex items-center justify-center">
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="group flex flex-col items-center gap-2 rounded-xl px-4 py-2 text-black/70 transition-all duration-300 hover:text-black active:scale-95 dark:text-white/70 dark:hover:text-white animate-fadeIn"
