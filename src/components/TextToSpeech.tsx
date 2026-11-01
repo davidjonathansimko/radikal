@@ -223,6 +223,13 @@ async function mp3PartsToWav(parts: Uint8Array[]): Promise<Blob | null> {
 
       const trim = Math.min(MP3_ENCODER_DELAY, length);
       const slice = mono.subarray(trim);
+      // Intrare/iesire de ~6 ms: lipirea bucatilor nu mai pocneste.
+      const fade = Math.min(Math.round(buffer.sampleRate * 0.006), Math.floor(slice.length / 4));
+      for (let i = 0; i < fade; i++) {
+        const g = i / fade;
+        slice[i] *= g;
+        slice[slice.length - 1 - i] *= g;
+      }
       decoded.push(slice);
       totalSamples += slice.length;
     }
@@ -251,9 +258,15 @@ async function mp3PartsToWav(parts: Uint8Array[]): Promise<Blob | null> {
     view.setUint32(40, totalSamples * 2, true);
 
     let offset = 44;
+    // Limitator moale: varfurile peste 0,95 nu mai sunt taiate brusc (taierea dura suna ca un pocnet digital).
+    const soft = (v: number) => {
+      const a = Math.abs(v);
+      if (a <= 0.95) return v;
+      return Math.sign(v) * (0.95 + 0.05 * Math.tanh((a - 0.95) / 0.05));
+    };
     for (const chunk of decoded) {
       for (let i = 0; i < chunk.length; i++) {
-        const s = Math.max(-1, Math.min(1, chunk[i]));
+        const s = soft(chunk[i]);
         view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
         offset += 2;
       }

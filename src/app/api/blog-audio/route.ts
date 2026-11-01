@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
   // 'blog' sau 'marturie' — ca sa se vada in Supabase de unde vine fiecare rand.
   const contentType: string = body?.contentType === 'marturie' ? 'marturie' : 'blog';
   const rawText: string = (body?.text || '').trim();
-  const speakingRate: number = typeof body?.speakingRate === 'number' ? body.speakingRate : 0.9;
+  const speakingRate: number = typeof body?.speakingRate === 'number' ? body.speakingRate : 1.0;
 
   if (!slug || !rawText) {
     return NextResponse.json({ error: 'Lipsesc `slug` sau `text`.' }, { status: 400 });

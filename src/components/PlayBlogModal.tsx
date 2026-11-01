@@ -209,10 +209,10 @@ export default function PlayBlogModal({
     contentType,
     prebuiltUrl,
     prebuiltTimingsUrl,
-    // Viteza normala (1x). Fisierele pregenerate sunt facute la 0.9, deci le redam putin
-    // mai repede, ca sa ajunga la ~1x; vocea nu isi schimba tonul (preservesPitch).
+    // Fisierul pregenerat se reda la viteza lui reala: accelerarea in browser (time-stretch) facea
+    // sunetele „s” si cuvintele scurte sa sune metalic.
     speakingRate: 1,
-    playbackRate: prebuiltUrl ? 1.1 : 1,
+    playbackRate: 1,
   });
 
   // ------------------------------------------------------------------

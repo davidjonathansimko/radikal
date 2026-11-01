@@ -49,6 +49,18 @@ export function scatterGlitch(duration = 1000): void {
   });
 }
 
+/** Schimbarea temei: ecranul nou apare lin peste cel vechi (fara tremur si fara decupaje). */
+export function themeCrossfade(duration = 560): void {
+  try {
+    document.documentElement.animate(
+      [{ opacity: 0 }, { opacity: 1 }],
+      { duration, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both', pseudoElement: '::view-transition-new(root)' },
+    );
+  } catch {
+    /* fara suport pentru pseudoElement: schimbarea ramane simpla */
+  }
+}
+
 /** Ecranul NOU creste din fum; la inceput e alb-negru si tremura, apoi capata culoare. */
 export function glitchViewTransition(duration = 1300): void {
   try {

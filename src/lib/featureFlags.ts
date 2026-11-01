@@ -51,6 +51,7 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
 };
 
 let cache: Promise<Record<FeatureKey, boolean>> | null = null;
+let lastForceAt = 0;
 
 export function fetchFeatureFlags(force = false): Promise<Record<FeatureKey, boolean>> {
   if (cache && !force) return cache;
@@ -80,6 +81,7 @@ export async function setFeatureFlag(key: FeatureKey, enabled: boolean): Promise
       .from('page_settings')
       .upsert({ page_id: ROW_ID[key], enabled, updated_at: new Date().toISOString() }, { onConflict: 'page_id' });
     cache = null;
+    if (!error && typeof window !== 'undefined') window.dispatchEvent(new Event('radikal-flags'));
     return error ? { ok: false, error: error.message } : { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'eroare' };
@@ -90,9 +92,26 @@ export function useFeatureFlags(): Record<FeatureKey, boolean> {
   const [flags, setFlags] = useState(FEATURE_DEFAULTS);
   useEffect(() => {
     let alive = true;
-    fetchFeatureFlags().then((f) => alive && setFlags(f));
+    const load = (force: boolean) => {
+      // Setarile din admin se vad si fara sa redeschizi aplicatia: la revenirea in aplicatie si dupa o schimbare.
+      if (force) {
+        if (Date.now() - lastForceAt < 4000) {
+          void fetchFeatureFlags().then((f) => alive && setFlags(f));
+          return;
+        }
+        lastForceAt = Date.now();
+      }
+      void fetchFeatureFlags(force).then((f) => alive && setFlags(f));
+    };
+    load(false);
+    const onVisible = () => document.visibilityState === 'visible' && load(true);
+    const onChange = () => load(true);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('radikal-flags', onChange);
     return () => {
       alive = false;
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('radikal-flags', onChange);
     };
   }, []);
   return flags;

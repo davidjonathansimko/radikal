@@ -238,7 +238,7 @@ export function assemble(units: Unit[], clips: Clip[]): { pcm: Int16Array; timin
   return { pcm, timings: times, words };
 }
 
-export function encodeMp3(pcm: Int16Array, kbps = 96): Buffer {
+export function encodeMp3(pcm: Int16Array, kbps = 128): Buffer {
   const enc = new Mp3Encoder(1, SAMPLE_RATE, kbps);
   const block = 1152 * 10;
   const out: Uint8Array[] = [];

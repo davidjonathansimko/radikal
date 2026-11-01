@@ -42,7 +42,8 @@ function setMemoryCache(key: string, audioContent: string) {
 // `voiceName` is part of the key so that changing the voice generation
 // (WaveNet -> Neural2) automatically invalidates old cached audio.
 function generateCacheKey(text: string, language: string, voiceGender: string, speakingRate: number, voiceName = '', hifi = false): string {
-  const input = `${text}|${language}|${voiceGender}|${speakingRate}|${voiceName}`;
+  // `q2`: audio nou (64 kbps, fara corectia de difuzor) — vechiul cache de 32 kbps suna ascutit si nu se mai foloseste.
+  const input = `${text}|${language}|${voiceGender}|${speakingRate}|${voiceName}|q2`;
   return crypto.createHash('sha256').update(input).digest('hex');
 }
 
@@ -301,12 +302,12 @@ export async function POST(request: NextRequest) {
     // NOTE: Chirp3-HD requests occasionally hang indefinitely. Without an abort
     // signal the serverless function would block until the platform timeout and
     // the player would freeze mid-article. Always bound the request.
-    const synthesize = (voice: VoiceProfile, useHifi: boolean) => {
+    const synthesize = (voice: VoiceProfile, useHifi: boolean, plain = false) => {
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), 20000);
       // `MP3_64_KBPS` exista DOAR pe adresa v1beta1 a Google. Ceruta pe v1,
       // este respinsa si cererea cade cu totul.
-      const api = useHifi ? 'v1beta1' : 'v1';
+      const api = plain ? 'v1' : 'v1beta1';
       return fetch(
         `https://texttospeech.googleapis.com/${api}/text:synthesize?key=${apiKey}`,
         {
@@ -327,17 +328,17 @@ export async function POST(request: NextRequest) {
               // se incarca repede si e destul pentru difuzorul telefonului.
               // Pentru DESCARCARE trecem pe `MP3_64_KBPS` la 44,1 kHz — cea mai
               // buna calitate MP3 pe care o ofera Google, dublul celei de pana acum.
-              audioEncoding: useHifi ? 'MP3_64_KBPS' : 'MP3',
+              // Pasul 011126: si la ascultare folosim 64 kbps; la 32 kbps sunetele „s” si „ș”
+              // ieseau metalice. Daca Google refuza, cadem pe MP3 simplu (vezi mai jos).
+              audioEncoding: plain ? 'MP3' : 'MP3_64_KBPS',
               speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
               // `pitch` is not supported by Chirp3-HD -> only send it for SSML-capable voices.
               // 0.0 = natural. Lowering it artificially made the voice sound "processed"/robotic.
               ...(voice.ssml && { pitch: 0.0 }),
               volumeGainDb: 0.0, // No gain — avoids clipping the peaks
-              sampleRateHertz: useHifi ? 44100 : 24000,
-              // La descarcare NU mai aplicam corectia pentru difuzor de telefon:
-              // ea taie din inalte si din josuri, adica exact ce vrei sa pastrezi
-              // cand asculti in casti sau in masina.
-              effectsProfileId: useHifi ? ['headphone-class-device'] : ['handset-class-device'],
+              sampleRateHertz: plain && !useHifi ? 24000 : 44100,
+              // Corectia „difuzor de telefon” accentua inaltele (sunet ascutit); o folosim doar la MP3-ul simplu de rezerva.
+              effectsProfileId: plain ? ['handset-class-device'] : ['headphone-class-device'],
             },
           }),
         }
@@ -356,9 +357,9 @@ export async function POST(request: NextRequest) {
 
     // Calitatea inalta e un bonus, nu o conditie: daca e refuzata, luam MP3-ul
     // obisnuit, ca sa nu ramai fara audio deloc.
-    if (!response.ok && hifi) {
-      console.warn(`[Google TTS] hi-fi rejected (${response.status}) — retrying as plain MP3`);
-      response = await synthesize(voiceConfig, false);
+    if (!response.ok) {
+      console.warn(`[Google TTS] 64 kbps rejected (${response.status}) — retrying as plain MP3`);
+      response = await synthesize(voiceConfig, hifi, true);
     }
 
     if (!response.ok) {

@@ -378,7 +378,7 @@ export function ReadingModeOverlay() {
           {/* Pasul 2202000: Use rem-based font scaling that produces visible changes per step */}
           <div 
             className="max-w-none text-gray-800 dark:text-white/90 leading-relaxed reading-mode-content text-justify"
-            style={{ fontSize: `${fontSize / 62.5}rem`, lineHeight: '2' }}
+            style={{ fontSize: `${fontSize / 62.5}rem`, lineHeight: '2', ['--reading-scale' as string]: fontSize / 100 }}
           >
             {blogContent && blogContent.length > 0 ? (
               <>

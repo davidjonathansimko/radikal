@@ -34,6 +34,7 @@ const ReadingProgress: React.FC<ReadingProgressProps> = ({
   // State for progress percentage / Status für Fortschrittsprozent
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const lastYRef = React.useRef(0);
 
   // Calculate scroll progress / Scroll-Fortschritt berechnen
   const calculateProgress = useCallback(() => {
@@ -64,8 +65,15 @@ const ReadingProgress: React.FC<ReadingProgressProps> = ({
     const percentage = total > 0 ? Math.min(100, Math.max(0, (scrolled / total) * 100)) : 0;
     setProgress(percentage);
     
-    // Show bar only when scrolled past certain point / Balken nur anzeigen wenn über bestimmten Punkt gescrollt
-    setIsVisible(window.scrollY > 100);
+    // Bara se vede doar cat timp derulezi in jos; la derulare in sus dispare.
+    const y = window.scrollY;
+    const d = y - lastYRef.current;
+    if (Math.abs(d) > 4) {
+      setIsVisible(y > 100 && d > 0);
+      lastYRef.current = y;
+    } else if (y <= 100) {
+      setIsVisible(false);
+    }
   }, [targetId]);
 
   // Add scroll listener / Scroll-Listener hinzufügen
