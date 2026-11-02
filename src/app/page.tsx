@@ -801,7 +801,8 @@ export default function HomePage() {
       {/* SECTION 5 - THANK YOU MESSAGE */}
       {/* ========================================================================== */}
       {featureFlags.homeThankyouSection && (
-      <section id="thankyou" className="flex min-h-[100svh] flex-col items-center justify-end px-4 pb-28 pt-36 sm:px-6 lg:px-8 lg:pb-16">
+      <section id="thankyou" className="flex min-h-[calc(100svh-6rem)] flex-col items-center justify-end px-4 pb-6 pt-28 sm:px-6 lg:min-h-[100svh] lg:px-8 lg:pb-16">
+        {/* 6rem = spatiul lasat de <main> (pb-24) pentru bara de jos: sectiunea incape exact in ultimul ecran, deasupra barii. */}
         <div className="max-w-4xl mx-auto w-full text-center">
           {/* Thank You Message */}
           <h2 className="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-6 animate-fadeIn leading-tight">

@@ -49,9 +49,9 @@ export default function ContinueReading({ className = '', scope, slim = false }:
 
   return (
     <div
-      className={`relative mx-auto w-full max-w-xs rounded-xl border border-black/10 bg-black/[0.03] px-9 ${slim ? 'py-0' : 'py-1.5'} text-center shadow-sm dark:border-white/15 dark:bg-white/[0.04] ${className}`}
+      className={`relative mx-auto min-h-[44px] w-full max-w-xs rounded-xl border border-black/10 bg-black/[0.03] pl-11 pr-12 ${slim ? 'py-0' : 'py-1.5'} text-center shadow-sm dark:border-white/15 dark:bg-white/[0.04] ${className}`}
     >
-      <Link href={item.href} className={`min-w-0 ${slim ? 'flex items-center justify-center gap-2 py-1.5' : 'block'}`}>
+      <Link href={item.href} className={`min-w-0 ${slim ? 'flex min-h-[44px] items-center justify-center gap-2 py-1.5' : 'flex min-h-[44px] flex-col justify-center'}`}>
         <span className="flex shrink-0 items-center justify-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
           {LABEL[language] ?? LABEL.de}
@@ -74,8 +74,9 @@ export default function ContinueReading({ className = '', scope, slim = false }:
           }
           setItem(null);
         }}
-        style={{ touchAction: 'manipulation', minHeight: 44, minWidth: 44 }}
-        className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[13px] text-black/50 hover:bg-black/10 dark:text-white/50 dark:hover:bg-white/10"
+        // Fara `translate`: regula globala button:active pune transform si muta butonul din loc (de aici „fuga" lui ✕).
+        style={{ touchAction: 'manipulation', transform: 'none' }}
+        className="absolute inset-y-0 right-0 z-10 flex w-12 items-center justify-center rounded-r-xl text-base text-black/55 active:bg-black/10 dark:text-white/55 dark:active:bg-white/10"
       >
         ✕
       </button>

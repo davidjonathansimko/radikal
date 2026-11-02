@@ -31,6 +31,7 @@ import { isAdminUser } from '@/lib/isAdmin';
 import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
 import RadikalSignature from '@/components/RadikalSignature';
 import { fetchCustomAudioForLang } from '@/lib/customAudio';
+import { wideArtwork, ARTWORK_SIZE } from '@/lib/mediaArtwork';
 import ImageEffectLayers, {
   effectsFilter,
   type ImageEffectSettings,
@@ -274,6 +275,17 @@ export default function PlayBlogModal({
   // Titlul articolului si butoanele play/pauza apar pe ecranul de blocare
   // al telefonului si in casti, exact ca la un podcast.
   // ------------------------------------------------------------------
+  // Coperta lata (umple tot cardul notificarii); pana e gata se foloseste imaginea originala.
+  const [wideArt, setWideArt] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setWideArt(null);
+    void wideArtwork(imageUrl).then((d) => alive && setWideArt(d));
+    return () => {
+      alive = false;
+    };
+  }, [imageUrl]);
+
   useEffect(() => {
     if (!isOpen || !isReady) return;
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
@@ -284,12 +296,14 @@ export default function PlayBlogModal({
         title,
         artist: 'RADIKAL.',
         album: 'Radikale Bibellehre',
-        artwork: imageUrl
+        artwork: wideArt
+          ? [{ src: wideArt, sizes: ARTWORK_SIZE, type: 'image/jpeg' }]
+          : imageUrl
           ? [
               { src: imageUrl, sizes: '512x512', type: 'image/jpeg' },
               { src: imageUrl, sizes: '256x256', type: 'image/jpeg' },
             ]
-          : [{ src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
+          : [{ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }],
       });
 
       ms.setActionHandler('play', () => toggle());
@@ -314,7 +328,7 @@ export default function PlayBlogModal({
         /* ignoram */
       }
     };
-  }, [isOpen, isReady, title, imageUrl, toggle, seek, requestClose]);
+  }, [isOpen, isReady, title, imageUrl, wideArt, toggle, seek, requestClose]);
 
   // Pozitia curenta, ca sa o poata folosi butoanele de pe ecranul de blocare
   const elapsedRef = useRef(0);

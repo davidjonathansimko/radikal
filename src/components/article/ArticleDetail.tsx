@@ -1490,6 +1490,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                 contentType={source.contentType}
                 blogTitle={displayTitle || post.title}
                 blogId={post.id}
+                imageUrl={post.image_url}
               />
             </div>
           </div>

@@ -1626,7 +1626,8 @@ body.intro-active div[data-mobile-nav] {
   /* Active state feedback for touch */
   button:active,
   [role="button"]:active {
-    transform: scale(0.97);
+    /* `scale` (nu `transform`): altfel butoanele pozitionate cu translate (de ex. ✕) sar din loc la atingere. */
+    scale: 0.97;
     opacity: 0.9;
   }
 }

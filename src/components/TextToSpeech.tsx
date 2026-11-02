@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { fetchCustomAudioForLang } from '@/lib/customAudio';
+import { wideArtwork, ARTWORK_SIZE } from '@/lib/mediaArtwork';
 
 // TTS Engine type — 'browser' = built-in SpeechSynthesis, 'google' = Google Cloud WaveNet
 type TTSEngine = 'browser' | 'google';
@@ -27,6 +28,8 @@ interface TextToSpeechProps {
    * ascultare pornea tot vocea artificiala — exact neconcordanta observata.
    */
   blogId?: string;
+  /** Imaginea articolului: apare ca fundal in notificarea media a telefonului. */
+  imageUrl?: string | null;
   /** 'blog' sau 'marturie' — doar ca sa se vada in Supabase de unde vine */
   contentType?: 'blog' | 'marturie' | 'andacht' | 'copii';
 }
@@ -289,6 +292,7 @@ export default function TextToSpeech({
   blogSlug,
   blogTitle,
   blogId,
+  imageUrl,
   contentType,
 }: TextToSpeechProps) {
   const { language } = useLanguage();
@@ -706,6 +710,15 @@ export default function TextToSpeech({
   // Set up Media Session API for lock screen controls
   const mediaTitleRef = useRef('');
   mediaTitleRef.current = blogTitle || '';
+  const mediaActionsRef = useRef({
+    play: () => {},
+    pause: () => {},
+    stop: () => {},
+    seekBy: (_delta: number) => {},
+    seekTo: (_t: number) => {},
+  });
+  // Coperta notificarii: imaginea articolului (lata, intunecata); pana e gata, imaginea originala sau logoul.
+  const artworkRef = useRef<{ src: string; sizes: string; type: string }[]>([{ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }]);
   const updateMediaSession = useCallback((playing: boolean, paused: boolean) => {
     if (!('mediaSession' in navigator)) return;
     try {
@@ -713,12 +726,27 @@ export default function TextToSpeech({
         title: mediaTitleRef.current || 'RADIKAL Blog',
         artist: 'RADIKAL.',
         album: 'Radikale Bibellehre',
+        artwork: artworkRef.current,
       });
       navigator.mediaSession.playbackState = playing ? (paused ? 'paused' : 'playing') : 'none';
     } catch (err) {
       console.log('[TTS] Media Session not available:', err);
     }
   }, []);
+
+  useEffect(() => {
+    if (!imageUrl) return;
+    let alive = true;
+    artworkRef.current = [{ src: imageUrl, sizes: '512x512', type: 'image/jpeg' }];
+    void wideArtwork(imageUrl).then((data) => {
+      if (!alive || !data) return;
+      artworkRef.current = [{ src: data, sizes: ARTWORK_SIZE, type: 'image/jpeg' }];
+      if (googleIsPlayingRef.current) updateMediaSession(true, googleIsPausedRef.current);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [imageUrl, updateMediaSession]);
 
   // Ref for startSpeaking to avoid circular dependency in visibility handler
   const startSpeakingRef = useRef<(fromPosition: number) => void>(() => {});
@@ -746,40 +774,30 @@ export default function TextToSpeech({
   }, [isPlaying, isPaused, currentPosition, requestWakeLock]);
 
   // Set up Media Session action handlers for lock screen controls
+  // (functiile reale sunt in `mediaActionsRef`, ca sa mearga la fel pentru vocea Google si pentru cea a browserului)
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
+    const ms = navigator.mediaSession;
     try {
-      navigator.mediaSession.setActionHandler('play', () => {
-        if (isPaused) {
-          speechSynthesis.resume();
-          setIsPaused(false);
-          updateMediaSession(true, false);
-        } else if (!isPlaying) {
-          startSpeakingRef.current(currentPosition);
-        }
-      });
-      navigator.mediaSession.setActionHandler('pause', () => {
-        if (isPlaying && !isPaused) {
-          speechSynthesis.pause();
-          setIsPaused(true);
-          updateMediaSession(true, true);
-        }
-      });
-      navigator.mediaSession.setActionHandler('stop', () => {
-        isSpeakingRef.current = false;
-        speechSynthesis.cancel();
-        setIsPlaying(false);
-        setIsPaused(false);
-        setProgress(0);
-        setCurrentPosition(0);
-        releaseWakeLock();
-        stopSilentAudio();
-        updateMediaSession(false, false);
+      ms.setActionHandler('play', () => mediaActionsRef.current.play());
+      ms.setActionHandler('pause', () => mediaActionsRef.current.pause());
+      ms.setActionHandler('stop', () => mediaActionsRef.current.stop());
+      ms.setActionHandler('seekbackward', () => mediaActionsRef.current.seekBy(-15));
+      ms.setActionHandler('seekforward', () => mediaActionsRef.current.seekBy(30));
+      ms.setActionHandler('seekto', (d) => {
+        if (typeof d.seekTime === 'number') mediaActionsRef.current.seekTo(d.seekTime);
       });
     } catch (err) {
       console.log('[TTS] Media Session handlers not supported:', err);
     }
-  }, [isPlaying, isPaused, currentPosition, updateMediaSession, releaseWakeLock, stopSilentAudio]);
+    return () => {
+      try {
+        (['play', 'pause', 'stop', 'seekbackward', 'seekforward', 'seekto'] as const).forEach((a) => ms.setActionHandler(a, null));
+      } catch {
+        /* ignorat */
+      }
+    };
+  }, []);
 
 
   // Chrome bug workaround: Chrome pauses speech after ~15 seconds
@@ -1196,6 +1214,24 @@ export default function TextToSpeech({
       updateMediaSession(false, false);
     };
 
+    // Pauza/reluarea facute din afara paginii (notificare, casti, alta aplicatie) tin starea butoanelor la zi.
+    audio.onpause = () => {
+      if (googleAudioRef.current !== audio || audio.ended) return;
+      if (googleIsPlayingRef.current && !googleIsPausedRef.current) {
+        googleIsPausedRef.current = true;
+        setIsPaused(true);
+        updateMediaSession(true, true);
+      }
+    };
+    audio.onplay = () => {
+      if (googleAudioRef.current !== audio) return;
+      if (googleIsPlayingRef.current && googleIsPausedRef.current) {
+        googleIsPausedRef.current = false;
+        setIsPaused(false);
+        updateMediaSession(true, false);
+      }
+    };
+
     audio.src = blobUrl;
 
     // If the user pressed Pause while the audio was still being built, respect
@@ -1413,6 +1449,26 @@ export default function TextToSpeech({
     } else {
       pauseSpeaking();
     }
+  };
+
+  // Butoanele din notificarea telefonului si de pe ecranul de blocare folosesc exact aceleasi functii ca butoanele din pagina.
+  mediaActionsRef.current = {
+    play: () => {
+      if (!isPlaying) togglePlayPause();
+      else if (isPaused) resumeSpeaking();
+    },
+    pause: () => {
+      if (isPlaying && !isPaused) pauseSpeaking();
+    },
+    stop: () => stopSpeaking(),
+    seekBy: (delta: number) => {
+      const a = googleAudioRef.current;
+      if (ttsEngine === 'google' && a && Number.isFinite(a.duration)) a.currentTime = Math.max(0, Math.min(a.duration, a.currentTime + delta));
+    },
+    seekTo: (t: number) => {
+      const a = googleAudioRef.current;
+      if (ttsEngine === 'google' && a && Number.isFinite(a.duration)) a.currentTime = Math.max(0, Math.min(a.duration, t));
+    },
   };
 
   // Seek functionality
