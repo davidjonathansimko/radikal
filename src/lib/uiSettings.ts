@@ -11,6 +11,8 @@ export type BarStyle = 'pill' | 'pillglass' | 'edge' | 'edgeglass' | 'glass' | '
 export type ThemeFx = 'fade' | 'circle' | 'iris' | 'wipe' | 'wipeR' | 'curtain' | 'rise' | 'split' | 'vsplit' | 'diagonal' | 'slide' | 'shake' | 'dissolve' | 'zoom' | 'flash';
 export type LangFx = 'shake' | 'fade' | 'blur' | 'rise' | 'none';
 export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line';
+/** Fereastra care se deschide la atingerea playerului mic. */
+export type MiniSheetStyle = 'classic' | 'modern' | 'cover' | 'compact';
 
 /** Functii care se pornesc sau se opresc din admin; oprit = exact ca inainte. */
 export type UiToggleKey = 'queue' | 'resumePos' | 'sleepTimer' | 'offlineAudio' | 'hideInlinePlayer' | 'todayStreak' | 'todayListen' | 'searchSuggest' | 'seriesProgress' | 'calmEffects';
@@ -24,6 +26,7 @@ export interface UiSettings extends Record<UiToggleKey, boolean> {
   barAnimated: boolean;
   /** Playerul mic care ramane pe ecran la schimbarea paginii (`off` = dezactivat). */
   miniPlayer: MiniPlayerStyle;
+  miniPlayerSheet: MiniSheetStyle;
 }
 
 export const UI_SETTINGS_KEY = 'ui_settings';
@@ -34,6 +37,7 @@ export const UI_DEFAULTS: UiSettings = {
   langFx: 'shake',
   barAnimated: false,
   miniPlayer: 'off',
+  miniPlayerSheet: 'classic',
   queue: false,
   resumePos: false,
   sleepTimer: false,
@@ -54,6 +58,13 @@ export const MINI_PLAYERS: { id: MiniPlayerStyle; title: string; text: string }[
   { id: 'glass', title: 'Sticlă mată', text: 'Pastilă transparentă cu blur, ca la Telegram.' },
   { id: 'minimal', title: 'Minimal', text: 'Doar titlul și play/pauză, fără copertă și fără fundal.' },
   { id: 'line', title: 'Linie de progres', text: 'Extrem de subțire: o linie de progres și un buton mic de play/pauză.' },
+];
+
+export const MINI_SHEETS: { id: MiniSheetStyle; title: string; text: string }[] = [
+  { id: 'classic', title: 'Clasic (cel vechi)', text: 'Fereastra de până acum: copertă mică, bară de progres, −15 / +30, temporizator și lista.' },
+  { id: 'modern', title: 'Modern', text: 'Copertă mare la mijloc, titlu care se mișcă dacă e lung, buton spre articol, înainte/înapoi (ține apăsat = derulare), opțiuni de redare, lista cu imagini și categorii, apoi recomandate, ultimele și serii.' },
+  { id: 'cover', title: 'Modern, fundal din copertă', text: 'La fel ca Modern, dar cu coperta încețoșată pe tot fundalul și text alb.' },
+  { id: 'compact', title: 'Modern compact', text: 'Fără copertă mare: un rând cu imaginea, titlul și butoanele, apoi aceleași liste. Ocupă puțin loc.' },
 ];
 
 export const UI_TOGGLES: { key: UiToggleKey; group: string; title: string; text: string }[] = [
@@ -129,6 +140,7 @@ function normalize(v: Partial<UiSettings> | null | undefined): UiSettings {
     langFx: ONE_OF(o.langFx, LANG_FX.map((x) => x.id), UI_DEFAULTS.langFx),
     barAnimated: typeof o.barAnimated === 'boolean' ? o.barAnimated : UI_DEFAULTS.barAnimated,
     miniPlayer: ONE_OF(o.miniPlayer, MINI_PLAYERS.map((x) => x.id), UI_DEFAULTS.miniPlayer),
+    miniPlayerSheet: ONE_OF(o.miniPlayerSheet, MINI_SHEETS.map((x) => x.id), UI_DEFAULTS.miniPlayerSheet),
     queue: o.queue === true,
     resumePos: o.resumePos === true,
     sleepTimer: o.sleepTimer === true,

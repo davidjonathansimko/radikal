@@ -13,7 +13,7 @@ export interface TourStep {
   target: string;
   title: Record<string, string>;
   text: Record<string, string>;
-  gesture: 'swipe' | 'tap';
+  gesture: 'swipe' | 'tap' | 'scroll';
   /** Pasul se arata doar daca elementul exista (de pilda butonul Serii, care apare doar daca exista serii). */
   optional?: boolean;
 }
@@ -66,10 +66,14 @@ export default function PageTour({ id, steps: allSteps }: { id: string; steps: T
         /* ignora */
       }
       if (!onboardingDone || document.querySelector('[role="dialog"]')) return;
+      const shown = (sel: string) => {
+        const el = document.querySelector(sel);
+        return Boolean(el && el.getBoundingClientRect().width > 0);
+      };
       const required = allSteps.filter((s) => !s.optional);
-      if (required.length > 0 && required.every((s) => document.querySelector(s.target))) {
+      if (required.length > 0 && required.every((s) => shown(s.target))) {
         window.clearInterval(timer);
-        setSteps(allSteps.filter((s) => !s.optional || document.querySelector(s.target)));
+        setSteps(allSteps.filter((s) => !s.optional || shown(s.target)));
         window.setTimeout(() => setIndex(0), 600);
       }
     }, 1000);
@@ -143,7 +147,7 @@ export default function PageTour({ id, steps: allSteps }: { id: string; steps: T
       />
       <span
         aria-hidden="true"
-        className={`pointer-events-none absolute ${step.gesture === 'swipe' ? 'tour-finger-swipe' : ''}`}
+        className={`pointer-events-none absolute ${step.gesture === 'swipe' ? 'tour-finger-swipe' : step.gesture === 'scroll' ? 'tour-finger-scroll' : ''}`}
         style={{
           top: fingerTop,
           left: fingerLeft,

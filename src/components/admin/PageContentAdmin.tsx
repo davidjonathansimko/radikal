@@ -18,6 +18,7 @@ import PushAdminPanel from '@/components/admin/PushAdminPanel';
 import BlogsHomeAdmin from '@/components/admin/BlogsHomeAdmin';
 import BlogSeriesAdmin from '@/components/admin/BlogSeriesAdmin';
 import UiSettingsAdmin from '@/components/admin/UiSettingsAdmin';
+import { TOUR_IDS } from '@/lib/tours';
 import ErrorLogAdmin from '@/components/admin/ErrorLogAdmin';
 import SignatureAdmin from '@/components/admin/SignatureAdmin';
 import {
@@ -539,8 +540,10 @@ export default function PageContentAdmin() {
           onClick={() => {
             try {
               localStorage.removeItem('radikalOnboardingDone');
-              localStorage.removeItem('radikalTour:blogs');
-              setNote('Tutorialul va apărea din nou la următoarea deschidere a paginii principale, pe acest dispozitiv.');
+              Object.keys(localStorage)
+                .filter((k) => k.startsWith('radikalTour:'))
+                .forEach((k) => localStorage.removeItem(k));
+              setNote('Tutorialul de la început și cele din pagini vor apărea din nou, pe acest dispozitiv.');
             } catch {
               setError('Nu am putut reseta tutorialul.');
             }
@@ -549,6 +552,28 @@ export default function PageContentAdmin() {
         >
           Arată din nou tutorialul (acest dispozitiv)
         </button>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {([
+            ['Tutorialul din pagina Blogs', TOUR_IDS.blogs],
+            ['Tutorialul din articol', TOUR_IDS.article],
+          ] as const).map(([label, id]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.removeItem(`radikalTour:${id}`);
+                  setNote(`${label}: va apărea din nou la următoarea deschidere a paginii, pe acest dispozitiv (telefon sau tabletă).`);
+                } catch {
+                  setError('Nu am putut reseta tutorialul.');
+                }
+              }}
+              className="btn-solid rounded-lg border border-black/15 px-3 py-1.5 text-xs font-semibold text-black dark:border-white/15 dark:text-white"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
           onClick={() => setPageId('onboarding')}

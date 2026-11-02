@@ -10,8 +10,11 @@ import { useSyncExternalStore } from 'react';
 import { getUiSettingsSync } from '@/lib/uiSettings';
 import { wideArtwork, ARTWORK_SIZE } from '@/lib/mediaArtwork';
 import { loadSpeechText, buildSpeechUrl } from '@/lib/blogSpeech';
+import { fetchCatalog, getCatalogSync } from '@/lib/audioCatalog';
 
-export type HubLang = 'de' | 'en' | 'ro' | 'ru';
+export type HubLang = 'de' | 'en' | 'ru' | 'ro';
+/** Ce se intampla cand se termina un blog: `stop` = ca pana acum (urmeaza lista, apoi gata), `continue` = urmatorul din lista oficiala, `repeat` = acelasi blog. */
+export type HubMode = 'stop' | 'continue' | 'repeat';
 
 export interface HubTrack {
   /** Cheia sub care se tine locul ramas si identitatea in lista (include prefixul rubricii). */
@@ -51,9 +54,15 @@ export interface HubState {
   display: { title: string; category: string } | null;
   /** Play Blog (modalul) este deschis. */
   external: boolean;
+  /** Audio-ul nu a putut fi pornit (nu exista fisier si nici text din care sa se construiasca). */
+  error: boolean;
+  /** Blogurile ascultate inainte de cel curent (pentru „anteriorul"). */
+  history: HubTrack[];
+  mode: HubMode;
 }
 
 const QUEUE_KEY = 'radikalAudioQueue';
+const MODE_KEY = 'radikalAudioMode';
 const LAST_KEY = 'radikalAudioLast';
 const POS_PREFIX = 'radikalAudioPos:';
 const OFFLINE_CACHE = 'radikal-audio-offline';
@@ -75,6 +84,9 @@ let state: HubState = {
   sleep: null,
   display: null,
   external: false,
+  error: false,
+  history: [],
+  mode: 'stop',
 };
 const listeners = new Set<() => void>();
 let sleepTimer: ReturnType<typeof setTimeout> | undefined;
@@ -94,9 +106,32 @@ function loadQueue() {
   try {
     const raw = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
     if (Array.isArray(raw)) state = { ...state, queue: raw.filter((x) => x && typeof x.slug === 'string' && typeof x.href === 'string') };
+    const m = localStorage.getItem(MODE_KEY);
+    if (m === 'continue' || m === 'repeat') state = { ...state, mode: m };
   } catch {
     /* ignorat */
   }
+}
+
+/** Anteriorul / urmatorul exista? Lista oficiala si istoricul se folosesc doar cu fereastra noua a playerului (nu cu cea clasica). */
+export function getNav(s: HubState): { hasNext: boolean; hasPrev: boolean } {
+  const ui = getUiSettingsSync();
+  const queued = ui.queue && s.queue.length > 0;
+  if (ui.miniPlayerSheet === 'classic') return { hasNext: queued, hasPrev: false };
+  const all = getCatalogSync()?.all ?? [];
+  const i = s.track ? all.findIndex((t) => t.slug === s.track!.slug) : -1;
+  return {
+    hasNext: queued || (i >= 0 && i < all.length - 1),
+    hasPrev: s.history.length > 0 || (!queued && i > 0),
+  };
+}
+
+function ensureCatalog() {
+  if (getUiSettingsSync().miniPlayerSheet === 'classic') return;
+  void fetchCatalog().then(() => {
+    emit({});
+    applyMediaSession();
+  });
 }
 
 function persistQueue() {
@@ -169,8 +204,9 @@ function applyMediaSession() {
     ms.setActionHandler('seekbackward', () => hub.seekBy(-15));
     ms.setActionHandler('seekforward', () => hub.seekBy(30));
     ms.setActionHandler('seekto', (d) => typeof d.seekTime === 'number' && hub.seek(d.seekTime));
-    ms.setActionHandler('nexttrack', getUiSettingsSync().queue && state.queue.length ? () => void hub.playNext() : null);
-    ms.setActionHandler('previoustrack', null);
+    const nav = getNav(state);
+    ms.setActionHandler('nexttrack', nav.hasNext ? () => void hub.next() : null);
+    ms.setActionHandler('previoustrack', nav.hasPrev ? () => void hub.prev() : null);
   } catch {
     /* ignorat */
   }
@@ -198,8 +234,18 @@ function bind(a: HTMLAudioElement) {
       emit({ sleep: null, playing: false });
       return;
     }
-    if (getUiSettingsSync().queue && state.queue.length) {
+    const ui = getUiSettingsSync();
+    if (ui.miniPlayerSheet !== 'classic' && state.mode === 'repeat') {
+      a.currentTime = 0;
+      void a.play().catch(() => {});
+      return;
+    }
+    if (ui.queue && state.queue.length) {
       void hub.playNext();
+      return;
+    }
+    if (ui.miniPlayerSheet !== 'classic' && state.mode === 'continue' && getNav(state).hasNext) {
+      void hub.next();
       return;
     }
     // Blogul s-a terminat si nu mai urmeaza altceva: playerul mic dispare.
@@ -258,8 +304,9 @@ export const hub = {
     audio = el;
     unbind(el);
     bind(el);
-    emit({ track, origin, background: origin === 'hub', restored: false, loading: false, buildPct: 0 });
+    emit({ track, origin, background: origin === 'hub', restored: false, loading: false, buildPct: 0, error: false });
     applyMediaSession();
+    ensureCatalog();
   },
 
   /** Pagina a fost parasita, dar audio-ul continua: playerul mic il preia. */
@@ -314,7 +361,7 @@ export const hub = {
     } catch {
       /* ignorat */
     }
-    emit({ track: null, origin: null, playing: false, position: 0, duration: 0, background: false, restored: false, loading: false, buildPct: 0, sleep: null });
+    emit({ track: null, origin: null, playing: false, position: 0, duration: 0, background: false, restored: false, loading: false, buildPct: 0, sleep: null, error: false, history: [] });
     try {
       navigator.mediaSession.metadata = null;
     } catch {
@@ -392,17 +439,33 @@ export const hub = {
    * Porneste un blog in limba aplicatiei: intai fisierul pregenerat, altfel vocea se construieste din text.
    * Orice alt sunet in curs se opreste inainte. Intoarce `false` daca nu se poate reda.
    */
-  async playBlog(track: HubTrack, opts: { resume?: 'auto' | 'force' | 'none' } = {}): Promise<boolean> {
+  async playBlog(track: Omit<HubTrack, 'lang'> & { lang?: string }, opts: { resume?: 'auto' | 'force' | 'none'; noHistory?: boolean } = {}): Promise<boolean> {
     loadQueue();
     if (state.external) return false;
     const t: HubTrack = { ...track, lang: hubLang };
     const token = ++playToken;
+    const previous = state.track && state.track.slug !== t.slug && !opts.noHistory ? state.track : null;
     dropAudio(true);
-    emit({ track: t, origin: 'hub', background: true, restored: false, loading: true, buildPct: 0, playing: false, position: 0, duration: 0, display: null });
+    emit({
+      track: t,
+      origin: 'hub',
+      background: true,
+      restored: false,
+      loading: true,
+      buildPct: 0,
+      playing: false,
+      position: 0,
+      duration: 0,
+      display: null,
+      error: false,
+      ...(previous ? { history: [...state.history, previous].slice(-30) } : {}),
+    });
     applyMediaSession();
+    ensureCatalog();
 
+    // Fara sunet disponibil playerul ramane vizibil, pe pauza, cu mesaj; un nou Play incearca din nou.
     const fail = () => {
-      if (token === playToken) emit({ track: null, origin: null, loading: false, buildPct: 0 });
+      if (token === playToken) emit({ loading: false, buildPct: 0, restored: true, error: true, playing: false });
       return false;
     };
     try {
@@ -435,6 +498,48 @@ export const hub = {
       return true;
     } catch {
       return fail();
+    }
+  },
+
+  /** Urmatorul: din lista de asteptare, altfel din lista oficiala de bloguri (doar cu fereastra noua). */
+  async next(): Promise<void> {
+    loadQueue();
+    if (state.external) return;
+    if (getUiSettingsSync().queue && state.queue.length) return hub.playNext();
+    if (getUiSettingsSync().miniPlayerSheet === 'classic') return;
+    const all = (await fetchCatalog()).all;
+    const i = all.findIndex((t) => t.slug === state.track?.slug);
+    if (i >= 0 && i < all.length - 1) await hub.playBlog(all[i + 1]);
+  },
+
+  /** Anteriorul: ultimul blog ascultat, altfel (fara lista de asteptare) cel dinainte in lista oficiala. */
+  async prev(): Promise<void> {
+    loadQueue();
+    if (state.external || getUiSettingsSync().miniPlayerSheet === 'classic') return;
+    const h = state.history;
+    if (h.length) {
+      emit({ history: h.slice(0, -1) });
+      await hub.playBlog(h[h.length - 1], { noHistory: true });
+      return;
+    }
+    if (getUiSettingsSync().queue && state.queue.length) return;
+    const all = (await fetchCatalog()).all;
+    const i = all.findIndex((t) => t.slug === state.track?.slug);
+    if (i > 0) await hub.playBlog(all[i - 1]);
+  },
+
+  async playRandom(): Promise<void> {
+    if (state.external) return;
+    const all = (await fetchCatalog()).all.filter((t) => t.slug !== state.track?.slug);
+    if (all.length) await hub.playBlog(all[Math.floor(Math.random() * all.length)]);
+  },
+
+  setMode(mode: HubMode) {
+    emit({ mode });
+    try {
+      localStorage.setItem(MODE_KEY, mode);
+    } catch {
+      /* ignorat */
     }
   },
 

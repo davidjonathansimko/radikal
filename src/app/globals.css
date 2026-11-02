@@ -2844,3 +2844,10 @@ body.intro-active .mini-player,
 body.reading-mode .mini-player,
 body.modal-active .mini-player { display: none !important; }
 @media (min-width: 1024px) { .mini-player { --bar-space: 16px; } }
+
+/* Pasul 021126D: titlu lung care se misca stanga-dreapta in bucla (fereastra playerului mic) */
+@keyframes miniMarquee { 0%, 15% { transform: translateX(0); } 85%, 100% { transform: translateX(var(--mq, 0)); } }
+.mini-marquee { animation: miniMarquee 10s ease-in-out infinite alternate; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .mini-marquee { animation: none; } }
+@keyframes tourFingerScroll { 0%, 10% { transform: translateY(30px); opacity: 0; } 25% { opacity: 1; } 75% { opacity: 1; } 90%, 100% { transform: translateY(-30px); opacity: 0; } }
+.tour-finger-scroll { animation: tourFingerScroll 1.8s ease-in-out infinite; }

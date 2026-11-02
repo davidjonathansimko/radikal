@@ -20,7 +20,8 @@ import SeriesButton from '@/components/SeriesButton';
 import BlogsBandsSkeleton from '@/components/BlogsBandsSkeleton';
 import HomeButtonGate from '@/components/HomeButtonGate';
 import PageTour from '@/components/PageTour';
-import { BLOGS_TOUR } from '@/lib/tours';
+import { getBlogsTour, TOUR_IDS } from '@/lib/tours';
+import { useUiSettings } from '@/lib/uiSettings';
 import ContinueReading from '@/components/ContinueReading';
 import NewsletterSubscribe from '@/components/NewsletterSubscribe';
 import { CircularReadingProgress } from '@/components/ReadingProgress';
@@ -39,6 +40,12 @@ function BlogsPageContent() {
   
   // Get language and theme context / Sprach- und Themenkontext abrufen / Obține contextul limbii și temei
   const { language } = useLanguage();
+  const uiSettings = useUiSettings();
+  const blogsTour = useMemo(
+    () => getBlogsTour(uiSettings),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [uiSettings.miniPlayer, uiSettings.queue, uiSettings.miniPlayerSheet],
+  );
   
   // Check if user is authenticated for newsletter / Prüfen ob Benutzer für Newsletter authentifiziert ist / Verifică dacă utilizatorul este autentificat pentru newsletter
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -205,7 +212,7 @@ function BlogsPageContent() {
           <ArchiveButton table="blog_posts" itemPath="/blogs" />
           <SeriesButton />
         </div>
-        <PageTour id="blogs-2" steps={BLOGS_TOUR} />
+        <PageTour id={TOUR_IDS.blogs} steps={blogsTour} />
 
         <HomeButtonGate>
           <BackToHome className="mt-8 flex justify-center" />

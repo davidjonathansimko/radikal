@@ -3,7 +3,6 @@
 // Playerul mic: apare cat timp se asculta ceva (si ramane cand schimbi pagina). Stilul si functiile se aleg din admin.
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { hub, useAudioHub } from '@/lib/audioHub';
@@ -11,40 +10,15 @@ import { useUiSettings } from '@/lib/uiSettings';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useTrackTitles, useCategories, categoryOf } from '@/hooks/useTrackTitles';
+import { Cover, PlayIcon, fmt } from '@/components/MiniPlayerParts';
+import ModernSheet from '@/components/MiniPlayerSheet';
 
 const T = {
-  de: { queue: 'Hörliste', sleep: 'Einschlafen', off: 'Aus', end: 'Bis zum Ende', offline: 'Offline speichern', offlineOn: 'Offline gespeichert', open: 'Artikel öffnen', stop: 'Beenden', empty: 'Die Liste ist leer.', min: 'Min.', next: 'Nächster', category: 'Kategorie', close: 'Schließen' },
-  en: { queue: 'Listening list', sleep: 'Sleep timer', off: 'Off', end: 'Until the end', offline: 'Save offline', offlineOn: 'Saved offline', open: 'Open article', stop: 'Stop', empty: 'The list is empty.', min: 'min', next: 'Next', category: 'Category', close: 'Close' },
-  ro: { queue: 'Lista de ascultare', sleep: 'Temporizator de somn', off: 'Oprit', end: 'Până la sfârșit', offline: 'Salvează pe telefon', offlineOn: 'Salvat pe telefon', open: 'Deschide articolul', stop: 'Oprește', empty: 'Lista este goală.', min: 'min', next: 'Următorul', category: 'Categorie', close: 'Închide' },
-  ru: { queue: 'Список прослушивания', sleep: 'Таймер сна', off: 'Выкл.', end: 'До конца', offline: 'Сохранить офлайн', offlineOn: 'Сохранено офлайн', open: 'Открыть статью', stop: 'Остановить', empty: 'Список пуст.', min: 'мин', next: 'Далее', category: 'Категория', close: 'Закрыть' },
+  de: { queue: 'Hörliste', sleep: 'Einschlafen', off: 'Aus', end: 'Bis zum Ende', offline: 'Offline speichern', offlineOn: 'Offline gespeichert', open: 'Artikel öffnen', stop: 'Beenden', empty: 'Die Liste ist leer.', min: 'Min.', next: 'Nächster', category: 'Kategorie', close: 'Schließen', unavailable: 'kein Audio' },
+  en: { queue: 'Listening list', sleep: 'Sleep timer', off: 'Off', end: 'Until the end', offline: 'Save offline', offlineOn: 'Saved offline', open: 'Open article', stop: 'Stop', empty: 'The list is empty.', min: 'min', next: 'Next', category: 'Category', close: 'Close', unavailable: 'no audio' },
+  ro: { queue: 'Lista de ascultare', sleep: 'Temporizator de somn', off: 'Oprit', end: 'Până la sfârșit', offline: 'Salvează pe telefon', offlineOn: 'Salvat pe telefon', open: 'Deschide articolul', stop: 'Oprește', empty: 'Lista este goală.', min: 'min', next: 'Următorul', category: 'Categorie', close: 'Închide', unavailable: 'fără audio' },
+  ru: { queue: 'Список прослушивания', sleep: 'Таймер сна', off: 'Выкл.', end: 'До конца', offline: 'Сохранить офлайн', offlineOn: 'Сохранено офлайн', open: 'Открыть статью', stop: 'Остановить', empty: 'Список пуст.', min: 'мин', next: 'Далее', category: 'Категория', close: 'Закрыть', unavailable: 'нет аудио' },
 } as const;
-
-const fmt = (s: number) => {
-  if (!Number.isFinite(s) || s < 0) return '0:00';
-  const m = Math.floor(s / 60);
-  return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-};
-
-function PlayIcon({ playing, size = 18 }: { playing: boolean; size?: number }) {
-  return playing ? (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <rect x="6" y="5" width="4" height="14" rx="1" />
-      <rect x="14" y="5" width="4" height="14" rx="1" />
-    </svg>
-  ) : (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function Cover({ src, size, round = false }: { src?: string | null; size: number; round?: boolean }) {
-  return (
-    <span className={`relative block shrink-0 overflow-hidden bg-black/20 ${round ? 'rounded-full' : 'rounded-md'}`} style={{ width: size, height: size }}>
-      {src ? <Image src={src} alt="" fill sizes={`${size}px`} className="object-cover" /> : <span className="flex h-full w-full items-center justify-center font-cinzel text-xs font-bold text-white/80">R.</span>}
-    </span>
-  );
-}
 
 function Sheet({ onClose }: { onClose: () => void }) {
   const s = useAudioHub();
@@ -251,6 +225,7 @@ export default function MiniPlayer() {
     <span className="block truncate text-[10px] text-black/55 dark:text-white/55">
       RADIKAL.{cat ? ` · ${t.category}: ${cat}` : ''}
       {s.loading ? ` · ${s.buildPct}%` : ''}
+      {s.error ? ` · ${t.unavailable}` : ''}
       {s.queue.length > 0 && ui.queue ? ` · +${s.queue.length}` : ''}
     </span>
   );
@@ -353,10 +328,10 @@ export default function MiniPlayer() {
 
   return (
     <>
-      <div className={`mini-player fixed z-[205] ${wrap}`} data-style={style} style={{ bottom: 'var(--bar-space, 12px)' }}>
+      <div className={`mini-player fixed z-[205] ${wrap}`} data-style={style} data-tour="mini-player" style={{ bottom: 'var(--bar-space, 12px)' }}>
         {body}
       </div>
-      {open && <Sheet onClose={() => setOpen(false)} />}
+      {open && (ui.miniPlayerSheet === 'classic' ? <Sheet onClose={() => setOpen(false)} /> : <ModernSheet variant={ui.miniPlayerSheet} onClose={() => setOpen(false)} />)}
     </>
   );
 }

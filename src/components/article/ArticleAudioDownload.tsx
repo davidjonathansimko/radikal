@@ -160,7 +160,7 @@ export default function ArticleAudioDownload({
   if (!isAdmin) return null;
 
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start gap-1" data-tour="art-mp3">
       <button
         onClick={handleDownload}
         disabled={busy}

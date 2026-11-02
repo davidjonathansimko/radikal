@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useReadItems } from '@/lib/readState';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const LAST_READ_KEY = 'radikalLastRead';
 
@@ -16,6 +17,10 @@ interface LastRead {
   href: string;
   title: string;
   at: number;
+  /** Limba in care a fost salvat `title`. */
+  lang?: string;
+  /** Titlurile cunoscute ale articolului, pe limbi. */
+  titles?: Record<string, string | undefined>;
 }
 
 const LABEL: Record<string, string> = {
@@ -30,6 +35,25 @@ export default function ContinueReading({ className = '', scope, slim = false }:
   const flags = useFeatureFlags();
   const { isRead } = useReadItems();
   const [item, setItem] = useState<LastRead | null>(null);
+  const { translateBatch } = useTranslation();
+  const [translated, setTranslated] = useState<{ key: string; text: string } | null>(null);
+
+  const known = item?.titles?.[language]?.trim() || (item && item.lang === language ? item.title : '');
+  const tKey = item ? `${item.href}:${language}` : '';
+
+  // Titlul salvat intr-o alta limba se traduce in limba curenta (DeepL, cu cache).
+  useEffect(() => {
+    if (!item || known || translated?.key === tKey) return;
+    let alive = true;
+    translateBatch([item.title], language, item.lang, !item.lang)
+      .catch(() => [] as string[])
+      .then((out) => alive && setTranslated({ key: tKey, text: (out[0] || '').trim() || item.title }));
+    return () => {
+      alive = false;
+    };
+  }, [item, known, translated, tKey, language, translateBatch]);
+
+  const shownTitle = known || (translated?.key === tKey ? translated.text : '');
 
   useEffect(() => {
     try {
@@ -57,7 +81,7 @@ export default function ContinueReading({ className = '', scope, slim = false }:
           {LABEL[language] ?? LABEL.de}
         </span>
         <span className={`block truncate font-cinzel text-[13px] font-normal text-black dark:text-white ${slim ? '' : 'mt-0.5'}`}>
-          {item.title}
+          {shownTitle || '\u00a0'}
         </span>
       </Link>
       <button

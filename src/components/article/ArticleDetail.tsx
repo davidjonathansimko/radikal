@@ -63,7 +63,7 @@ import { useBlogSeriesConfig, useSeriesTitle } from '@/lib/blogSeries';
 import QueueButton from '@/components/QueueButton';
 import { useUiSettings } from '@/lib/uiSettings';
 import PageTour from '@/components/PageTour';
-import { ARTICLE_TOUR } from '@/lib/tours';
+import { getArticleTour, TOUR_IDS } from '@/lib/tours';
 import { fetchGuestReadAllowed } from '@/lib/pageSettings';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
@@ -105,6 +105,11 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   const blogSeries = seriesConfig?.series ?? null;
   const seriesTitle = useSeriesTitle(blogSeries, language);
   const uiSettings = useUiSettings();
+  const articleTour = useMemo(
+    () => getArticleTour(uiSettings),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [uiSettings.miniPlayer, uiSettings.queue, uiSettings.miniPlayerSheet, uiSettings.hideInlinePlayer],
+  );
   const { theme } = useTheme();
   
   // 🔒 Store the ORIGINAL Romanian slug from the database — NEVER changes after first load
@@ -845,7 +850,13 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       if (saved) return;
       saved = true;
       try {
-        localStorage.setItem(LAST_READ_KEY, JSON.stringify({ href, title: displayTitle, at: Date.now() }));
+        localStorage.setItem(LAST_READ_KEY, JSON.stringify({
+          href,
+          title: displayTitle,
+          at: Date.now(),
+          lang: language,
+          titles: { ro: post.title, de: ownTitle('de'), en: ownTitle('en'), ru: ownTitle('ru'), [language]: displayTitle },
+        }));
       } catch {
         /* filă privată */
       }
@@ -867,7 +878,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       window.clearTimeout(saveTimer);
       window.removeEventListener('scroll', clearIfFinished);
     };
-  }, [post, displayTitle, isGuest, guestReadAllowed, source.basePath, source.requiresLogin]);
+  }, [post, displayTitle, language, isGuest, guestReadAllowed, source.basePath, source.requiresLogin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 🌐 Update URL slug to match translated title (cosmetic only — does NOT trigger navigation)
   // Uses window.history.replaceState which does NOT affect Next.js router or useParams
@@ -1309,7 +1320,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       <CircularReadingProgress />
 
       {/* Prezentarea articolului (o singura data, pe telefon) */}
-      <PageTour id="article-1" steps={ARTICLE_TOUR} />
+      <PageTour id={TOUR_IDS.article} steps={articleTour} />
 
       {/* Pasul 2208001 — modalul „Play Blog" pentru articolele dinamice */}
       {post.is_dynamic && (
@@ -1459,7 +1470,9 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
               </p>
             );
           })()}
-          <ReadToggle href={`${source.basePath}/${originalSlugRef.current || post.slug}`} />
+          <span data-tour="art-read" className="shrink-0">
+            <ReadToggle href={`${source.basePath}/${originalSlugRef.current || post.slug}`} />
+          </span>
         </div>
 
         {/* Post content with proper light/dark mode contrast and readable backdrop / Post-Inhalt mit richtigen Hell/Dunkel-Modus-Kontrast und lesbarem Hintergrund / Conținut postare cu contrast corect mod luminos/întunecat și fundal lizibil */}
@@ -1553,7 +1566,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                 // First paragraph gets drop cap effect / Erster Absatz bekommt Drop Cap Effekt / Primul paragraf primește efectul Drop Cap
                 if (index === 0 && paragraph.trim()) {
                   return (
-                    <p key={index} className="blog-drop-cap mb-6 text-justify">
+                    <p key={index} className="blog-drop-cap mb-6 text-justify" data-tour="art-text">
                       {highlightBibleReferences(paragraph)}
                     </p>
                   );
@@ -1616,7 +1629,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
           </div>
 
           {/* Share buttons with complete sentence / Teilen-Buttons mit vollständigem Satz / Butoane distribuire cu propoziție completă */}
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col gap-2 w-full" data-tour="art-share">
             <span className="text-gray-600 dark:text-white/60">
               {language === 'de' ? 'Teile diesen Artikel:' : 
                language === 'en' ? 'Share this article:' : 

@@ -8,6 +8,7 @@ import {
   BAR_STYLES,
   LANG_FX,
   MINI_PLAYERS,
+  MINI_SHEETS,
   THEME_FX,
   UI_DEFAULTS,
   UI_TOGGLES,
@@ -159,6 +160,11 @@ export default function UiSettingsAdmin() {
       <Sect title="Player mic (rămâne pe ecran când schimbi pagina)">
         <Choice name="mini-player" value={s.miniPlayer} options={MINI_PLAYERS} onChange={(v) => update({ ...s, miniPlayer: v })} />
         <p className="mt-2 text-xs text-black/55 dark:text-white/55">Se ascunde odată cu bara de jos, după comportamentul ales mai sus. Se vede doar cât timp se ascultă ceva.</p>
+      </Sect>
+
+      <Sect title="Player mic: fereastra care se deschide la atingere">
+        <Choice name="mini-sheet" value={s.miniPlayerSheet} options={MINI_SHEETS} onChange={(v) => update({ ...s, miniPlayerSheet: v })} />
+        <p className="mt-2 text-xs text-black/55 dark:text-white/55">Clasic = cum era. Se vede doar dacă playerul mic nu e dezactivat; atinge playerul pentru a-l încerca.</p>
       </Sect>
 
       {Array.from(new Set(UI_TOGGLES.map((t) => t.group))).map((group) => (
