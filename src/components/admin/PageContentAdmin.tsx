@@ -19,6 +19,15 @@ import BlogsHomeAdmin from '@/components/admin/BlogsHomeAdmin';
 import BlogSeriesAdmin from '@/components/admin/BlogSeriesAdmin';
 import UiSettingsAdmin from '@/components/admin/UiSettingsAdmin';
 import { TOUR_IDS } from '@/lib/tours';
+import { getSupabaseClient } from '@/lib/supabase';
+
+type TourPick = 'onboarding' | 'blogs' | 'article' | 'all';
+const TOUR_CHOICES: { id: TourPick; title: string; text: string }[] = [
+  { id: 'onboarding', title: 'Tutorialul de la început', text: 'Cel cu logo, meniu și bara de jos; te duce la pagina principală.' },
+  { id: 'blogs', title: 'Tutorialul din pagina Blogs', text: 'Categorii, rânduri de carduri, playerul mic, arhivă și serii.' },
+  { id: 'article', title: 'Tutorialul din articol', text: 'Play blog, marcat ca citit, instrumente de citit, ascultare, săgeata sus, MP3 și distribuire; te duce la cel mai nou articol.' },
+  { id: 'all', title: 'Toate tutorialele', text: 'Le resetează pe toate, apoi pornește de la început.' },
+];
 import ErrorLogAdmin from '@/components/admin/ErrorLogAdmin';
 import SignatureAdmin from '@/components/admin/SignatureAdmin';
 import {
@@ -134,6 +143,34 @@ export default function PageContentAdmin() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
+  const [tourPick, setTourPick] = useState<TourPick>('onboarding');
+
+  // Reseteaza tutorialul ales pentru acest dispozitiv si te duce unde porneste.
+  const playTour = async () => {
+    try {
+      let to = '/';
+      if (tourPick === 'onboarding') {
+        localStorage.removeItem('radikalOnboardingDone');
+      } else if (tourPick === 'blogs') {
+        localStorage.removeItem(`radikalTour:${TOUR_IDS.blogs}`);
+        to = '/blogs';
+      } else if (tourPick === 'article') {
+        localStorage.removeItem(`radikalTour:${TOUR_IDS.article}`);
+        const { data } = await getSupabaseClient().from('blog_posts').select('slug').eq('published', true).order('created_at', { ascending: false }).limit(1);
+        const slug = (data?.[0] as { slug?: string } | undefined)?.slug;
+        to = slug ? `/blogs/${slug}` : '/blogs';
+      } else {
+        localStorage.removeItem('radikalOnboardingDone');
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith('radikalTour:'))
+          .forEach((k) => localStorage.removeItem(k));
+      }
+      setNote('Tutorialul pornește pe acest dispozitiv.');
+      window.location.assign(to);
+    } catch {
+      setError('Nu am putut porni tutorialul.');
+    }
+  };
   // Textele originale se incarca la cerere (vezi `pageDefaults.ts`).
   const [defaultsReady, setDefaultsReady] = useState(false);
 
@@ -535,45 +572,27 @@ export default function PageContentAdmin() {
         <p className="text-xs text-black/60 dark:text-white/60">
           Apare o singură dată pe dispozitiv, la prima intrare. Alege mai jos pagina „Tutorial” ca să-i schimbi textele, în toate limbile.
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              localStorage.removeItem('radikalOnboardingDone');
-              Object.keys(localStorage)
-                .filter((k) => k.startsWith('radikalTour:'))
-                .forEach((k) => localStorage.removeItem(k));
-              setNote('Tutorialul de la început și cele din pagini vor apărea din nou, pe acest dispozitiv.');
-            } catch {
-              setError('Nu am putut reseta tutorialul.');
-            }
-          }}
-          className="btn-solid rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold text-black dark:border-white/15 dark:text-white"
-        >
-          Arată din nou tutorialul (acest dispozitiv)
-        </button>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {([
-            ['Tutorialul din pagina Blogs', TOUR_IDS.blogs],
-            ['Tutorialul din articol', TOUR_IDS.article],
-          ] as const).map(([label, id]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => {
-                try {
-                  localStorage.removeItem(`radikalTour:${id}`);
-                  setNote(`${label}: va apărea din nou la următoarea deschidere a paginii, pe acest dispozitiv (telefon sau tabletă).`);
-                } catch {
-                  setError('Nu am putut reseta tutorialul.');
-                }
-              }}
-              className="btn-solid rounded-lg border border-black/15 px-3 py-1.5 text-xs font-semibold text-black dark:border-white/15 dark:text-white"
-            >
-              {label}
-            </button>
+        <div className="space-y-2">
+          {TOUR_CHOICES.map((c) => (
+            <label key={c.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-black/10 p-2.5 dark:border-white/15">
+              <input type="radio" name="tour-pick" checked={tourPick === c.id} onChange={() => setTourPick(c.id)} className="mt-1" />
+              <span>
+                <span className="block text-sm font-semibold text-black dark:text-white">{c.title}</span>
+                <span className="block text-xs text-black/55 dark:text-white/55">{c.text}</span>
+              </span>
+            </label>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => void playTour()}
+          className="btn-solid mt-3 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+        >
+          Redă tutorialul ales pe acest dispozitiv
+        </button>
+        <p className="mt-2 text-xs text-black/55 dark:text-white/55">
+          Tutorialele din pagini se văd doar pe telefon sau tabletă (ecran îngust). Te ducem direct la pagina potrivită.
+        </p>
         <button
           type="button"
           onClick={() => setPageId('onboarding')}

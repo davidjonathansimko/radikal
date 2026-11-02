@@ -850,12 +850,14 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       if (saved) return;
       saved = true;
       try {
+        // Titlul poate fi inca cel romanesc (traducerea lipseste): atunci limba salvata este `ro`, nu cea citita.
+        const titleLang = language === 'ro' || displayTitle === post.title ? 'ro' : language;
         localStorage.setItem(LAST_READ_KEY, JSON.stringify({
           href,
           title: displayTitle,
           at: Date.now(),
-          lang: language,
-          titles: { ro: post.title, de: ownTitle('de'), en: ownTitle('en'), ru: ownTitle('ru'), [language]: displayTitle },
+          lang: titleLang,
+          titles: { ro: post.title, de: ownTitle('de'), en: ownTitle('en'), ru: ownTitle('ru'), ...(titleLang === language ? { [language]: displayTitle } : {}) },
         }));
       } catch {
         /* filă privată */
@@ -1505,7 +1507,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
               {/* Telefon: A-/A+ si trei butoane egale (icoana deasupra, textul dedesubt), mereu pe un rand. */}
               <div className="reading-row-mobile" data-tour="art-tools">
                 {featureFlags.fontControls && (
-                  <div className="rr-font">
+                  <div className="rr-font" data-tour="art-font">
                     <FontSizeControls />
                   </div>
                 )}

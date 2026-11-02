@@ -162,6 +162,7 @@ export function ReadingModeToggle() {
   return (
     <button
       onClick={toggleReadingMode}
+      data-tour="art-focus"
       className={`flex-shrink-0 flex items-center gap-0.5 xs:gap-1 px-1 xs:px-2 sm:px-2 py-0.5 xs:py-1 sm:py-1.5 rounded-lg transition-all duration-300 ${
         isReadingMode
           ? 'bg-blue-500 text-white shadow-lg'

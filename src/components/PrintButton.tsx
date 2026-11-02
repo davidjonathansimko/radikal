@@ -35,6 +35,7 @@ export default function PrintButton({ className = '', variant = 'button', showLa
     return (
       <button
         onClick={handlePrint}
+        data-tour="art-pdf"
         className={`flex-shrink-0 px-2 xs:px-2.5 sm:px-3 py-1 xs:py-1.5 sm:py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-all no-print flex items-center gap-1 xs:gap-1.5 ${className}`}
         title={t.saveAsPdf}
       >

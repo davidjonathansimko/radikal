@@ -57,6 +57,7 @@ export function EveningModeToggle() {
       type="button"
       onClick={toggle}
       aria-pressed={on}
+      data-tour="art-evening"
       title={EVENING_TITLE[language] ?? EVENING_TITLE.de}
       className={`flex flex-shrink-0 items-center gap-0.5 xs:gap-1 rounded-lg px-1 xs:px-2 py-0.5 xs:py-1 sm:py-1.5 transition-colors duration-300 ${
         on

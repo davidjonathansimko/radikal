@@ -11,15 +11,18 @@ export const fmt = (s: number) => {
   return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 };
 
+// Regula globala a temei luminoase coloreaza negru tot ce e in interiorul unui buton; aceste clase (cu „dark:text-") scot iconita din regula.
+const KEEP = 'text-inherit dark:text-inherit';
+
 export function PlayIcon({ playing, size = 18 }: { playing: boolean; size?: number }) {
   return playing ? (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <rect x="6" y="5" width="4" height="14" rx="1" />
-      <rect x="14" y="5" width="4" height="14" rx="1" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={KEEP}>
+      <rect x="6" y="5" width="4" height="14" rx="1" className={KEEP} />
+      <rect x="14" y="5" width="4" height="14" rx="1" className={KEEP} />
     </svg>
   ) : (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5v14l11-7z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" aria-hidden="true" className={KEEP}>
+      <path className={KEEP} d="M8 5.6v12.8a1 1 0 0 0 1.5.86l10.6-6.4a1 1 0 0 0 0-1.72L9.5 4.74A1 1 0 0 0 8 5.6z" />
     </svg>
   );
 }

@@ -2,7 +2,7 @@
 
 // Playerul mic: apare cat timp se asculta ceva (si ramane cand schimbi pagina). Stilul si functiile se aleg din admin.
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { hub, useAudioHub } from '@/lib/audioHub';
@@ -160,7 +160,7 @@ function Sheet({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        <button type="button" onClick={() => { hub.stop(); onClose(); }} className="mt-5 w-full rounded-xl border border-red-500/40 px-3 py-2.5 text-sm text-red-600 dark:text-red-400">
+        <button type="button" onClick={() => { hub.stop(); onClose(); }} className="mt-5 w-full rounded-xl border border-black/25 px-3 py-2.5 text-sm font-semibold text-black dark:border-white/30 dark:text-white">
           {t.stop}
         </button>
       </div>
@@ -180,6 +180,26 @@ export default function MiniPlayer() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const titleOf = useTrackTitles(s.track ? [s.track] : [], lang);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const visible = mounted && ui.miniPlayer !== 'off' && Boolean(s.track);
+
+  // Sageata „inapoi sus” si alte elemente fixe se ridica deasupra playerului (variabila --mini-raw).
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = wrapRef.current;
+    if (!visible || !el) {
+      root.style.removeProperty('--mini-raw');
+      return;
+    }
+    const measure = () => root.style.setProperty('--mini-raw', el.offsetHeight > 0 ? `${el.offsetHeight + 8}px` : '0px');
+    measure();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      root.style.removeProperty('--mini-raw');
+    };
+  }, [visible, ui.miniPlayer]);
 
   if (!mounted || ui.miniPlayer === 'off' || !s.track) return null;
   const track = s.track;
@@ -192,6 +212,10 @@ export default function MiniPlayer() {
     e.stopPropagation();
     hub.toggle();
   };
+  // „Insăla” e mereu închisă la culoare, deci textul ei e alb pe orice temă.
+  const dk = style === 'island';
+  const inkCls = dk ? 'text-white' : 'text-black dark:text-white';
+  const softCls = dk ? 'text-white/60' : 'text-black/55 dark:text-white/55';
   const closeBtn = (size = 30) => (
     <button
       type="button"
@@ -201,7 +225,7 @@ export default function MiniPlayer() {
       }}
       aria-label={t.close}
       style={{ width: size, height: size, minHeight: 0, minWidth: 0 }}
-      className="flex shrink-0 items-center justify-center rounded-full text-[15px] text-black/55 hover:bg-black/10 dark:text-white/55 dark:hover:bg-white/10"
+      className={`flex shrink-0 items-center justify-center rounded-full text-[15px] ${dk ? 'text-white/60 hover:bg-white/10' : 'text-black/55 hover:bg-black/10 dark:text-white/55 dark:hover:bg-white/10'}`}
     >
       ✕
     </button>
@@ -212,7 +236,7 @@ export default function MiniPlayer() {
       onClick={toggle}
       aria-label="Play/Pause"
       style={{ width: size, height: size, minHeight: 0, minWidth: 0 }}
-      className={`flex shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black ${extra}`}
+      className={`flex shrink-0 items-center justify-center rounded-full ${dk ? 'bg-white text-black' : 'bg-black text-white dark:bg-white dark:text-black'} ${extra}`}
     >
       {s.loading ? (
         <span className="block animate-spin rounded-full border-2 border-current border-t-transparent" style={{ width: Math.round(size * 0.45), height: Math.round(size * 0.45) }} />
@@ -222,7 +246,7 @@ export default function MiniPlayer() {
     </button>
   );
   const sub = (
-    <span className="block truncate text-[10px] text-black/55 dark:text-white/55">
+    <span className={`block truncate text-[10px] ${softCls}`}>
       RADIKAL.{cat ? ` · ${t.category}: ${cat}` : ''}
       {s.loading ? ` · ${s.buildPct}%` : ''}
       {s.error ? ` · ${t.unavailable}` : ''}
@@ -231,7 +255,7 @@ export default function MiniPlayer() {
   );
   const titleBtn = (cls = '') => (
     <button type="button" onClick={() => setOpen(true)} className={`min-w-0 flex-1 text-left ${cls}`} style={{ minHeight: 0, minWidth: 0 }}>
-      <span className="block truncate font-cinzel text-[13px] font-semibold text-black dark:text-white">{title}</span>
+      <span className={`block truncate font-cinzel text-[13px] font-semibold ${inkCls}`}>{title}</span>
       {sub}
     </button>
   );
@@ -310,6 +334,109 @@ export default function MiniPlayer() {
         </div>
       );
       break;
+    case 'island':
+      wrap = 'force-white-text left-1/2 w-[min(92vw,360px)] -translate-x-1/2 rounded-full border border-white/15 bg-black shadow-2xl';
+      body = (
+        <div className="relative flex items-center gap-2 overflow-hidden rounded-full p-1.5">
+          <Cover src={track.imageUrl} size={38} round />
+          {titleBtn()}
+          {playBtn(34)}
+          {closeBtn(28)}
+        </div>
+      );
+      break;
+    case 'equalizer':
+      wrap = 'left-1/2 w-[min(92vw,380px)] -translate-x-1/2 rounded-full border border-black/10 bg-white/90 shadow-lg backdrop-blur-xl dark:border-white/15 dark:bg-black/80';
+      body = (
+        <div className="relative flex items-center gap-2 overflow-hidden rounded-full p-1.5">
+          <span className={`mini-eq mx-2.5 shrink-0 text-black dark:text-white ${s.playing ? '' : 'paused'}`} aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+          {titleBtn()}
+          {playBtn(34)}
+          {closeBtn(28)}
+        </div>
+      );
+      break;
+    case 'outline':
+      wrap = 'left-1/2 w-[min(92vw,380px)] -translate-x-1/2 rounded-full border-[1.5px] border-black bg-white/55 backdrop-blur-md dark:border-white dark:bg-black/40';
+      body = (
+        <div className="relative flex items-center gap-2 overflow-hidden rounded-full p-1.5">
+          <Cover src={track.imageUrl} size={36} round />
+          {titleBtn()}
+          {playBtn(32)}
+          {closeBtn(28)}
+        </div>
+      );
+      break;
+    case 'tab':
+      wrap = 'right-3 rounded-full border border-black/10 bg-white/90 shadow-lg backdrop-blur-xl dark:border-white/15 dark:bg-black/80';
+      body = (
+        <div className="flex items-center gap-1.5 p-1.5">
+          <button type="button" onClick={() => setOpen(true)} aria-label={title} style={{ minHeight: 0, minWidth: 0 }} className="shrink-0">
+            <Cover src={track.imageUrl} size={40} round />
+          </button>
+          {playBtn(34)}
+          {closeBtn(26)}
+        </div>
+      );
+      break;
+    case 'ticket':
+      wrap = 'left-3 right-3 mx-auto max-w-md overflow-hidden rounded-xl border border-black/15 bg-white/95 shadow-lg dark:border-white/20 dark:bg-neutral-950/95';
+      body = (
+        <div className="relative flex items-stretch">
+          <div className="flex items-center border-r border-dashed border-black/25 px-2.5 py-2 dark:border-white/25">
+            <Cover src={track.imageUrl} size={44} radius={8} />
+          </div>
+          <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2">
+            {titleBtn()}
+            {playBtn(34)}
+            {closeBtn(26)}
+          </div>
+          <span className="absolute bottom-0 left-0 block h-[2px] bg-black dark:bg-white" style={{ width: `${pct}%` }} aria-hidden="true" />
+        </div>
+      );
+      break;
+    case 'disc':
+      wrap = 'right-3 h-[68px] w-[68px]';
+      body = (
+        <div className="relative h-full w-full">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label={title}
+            style={{ minHeight: 0, minWidth: 0 }}
+            className={`block h-full w-full overflow-hidden rounded-full border-2 border-black/20 shadow-xl dark:border-white/30 ${s.playing ? 'mini-spin' : 'mini-spin paused'}`}
+          >
+            <Cover src={track.imageUrl} size={64} round />
+          </button>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label="Play/Pause"
+            style={{ minHeight: 0, minWidth: 0 }}
+            className="force-white-text absolute inset-0 m-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur"
+          >
+            {s.loading ? <span className="block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <PlayIcon playing={s.playing} size={16} />}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              hub.stop();
+            }}
+            aria-label={t.close}
+            style={{ minHeight: 0, minWidth: 0 }}
+            className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border border-black/15 bg-white text-[12px] text-black dark:text-black"
+          >
+            ✕
+          </button>
+        </div>
+      );
+      break;
     default: // line
       wrap = 'left-0 right-0';
       body = (
@@ -328,7 +455,7 @@ export default function MiniPlayer() {
 
   return (
     <>
-      <div className={`mini-player fixed z-[205] ${wrap}`} data-style={style} data-tour="mini-player" style={{ bottom: 'var(--bar-space, 12px)' }}>
+      <div ref={wrapRef} className={`mini-player fixed z-[205] ${wrap}`} data-style={style} data-tour="mini-player" style={{ bottom: 'var(--bar-space, 12px)' }}>
         {body}
       </div>
       {open && (ui.miniPlayerSheet === 'classic' ? <Sheet onClose={() => setOpen(false)} /> : <ModernSheet variant={ui.miniPlayerSheet} onClose={() => setOpen(false)} />)}

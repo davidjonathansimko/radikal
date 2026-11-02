@@ -9,6 +9,7 @@ import {
   LANG_FX,
   MINI_PLAYERS,
   MINI_SHEETS,
+  MINI_SHEET_FX,
   THEME_FX,
   UI_DEFAULTS,
   UI_TOGGLES,
@@ -165,6 +166,11 @@ export default function UiSettingsAdmin() {
       <Sect title="Player mic: fereastra care se deschide la atingere">
         <Choice name="mini-sheet" value={s.miniPlayerSheet} options={MINI_SHEETS} onChange={(v) => update({ ...s, miniPlayerSheet: v })} />
         <p className="mt-2 text-xs text-black/55 dark:text-white/55">Clasic = cum era. Se vede doar dacă playerul mic nu e dezactivat; atinge playerul pentru a-l încerca.</p>
+      </Sect>
+
+      <Sect title="Player mic: efectul la deschiderea ferestrei">
+        <Choice name="mini-sheet-fx" value={s.miniSheetFx} options={MINI_SHEET_FX} onChange={(v) => update({ ...s, miniSheetFx: v })} />
+        <p className="mt-2 text-xs text-black/55 dark:text-white/55">Se vede când atingi playerul mic; schimbarea se previzualizează imediat.</p>
       </Sect>
 
       {Array.from(new Set(UI_TOGGLES.map((t) => t.group))).map((group) => (

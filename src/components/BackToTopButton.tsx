@@ -105,9 +105,8 @@ export default function BackToTopButton({
         // Bara (Limba/Cautare/Tema/Reels) sta la ~18px + inaltimea ei; la 18px
         // sageata o taia in doua (vezi Impressum/Datenschutz). 86px o aseaza
         // exact ca in articol.
-        'right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+86px)]',
-        // DESKTOP: dreapta-jos, fara bara de optiuni
-        'lg:right-8 lg:bottom-8',
+        // Pozitia verticala vine din `.back-top-pos`: deasupra barii de jos si a playerului mic.
+        'right-4 lg:right-8 back-top-pos',
       ].join(' ')}
       style={{
         zIndex,

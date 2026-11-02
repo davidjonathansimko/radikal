@@ -38,14 +38,17 @@ export default function ContinueReading({ className = '', scope, slim = false }:
   const { translateBatch } = useTranslation();
   const [translated, setTranslated] = useState<{ key: string; text: string } | null>(null);
 
-  const known = item?.titles?.[language]?.trim() || (item && item.lang === language ? item.title : '');
+  // Un titlu identic cu cel romanesc nu e o traducere: se traduce din nou.
+  const own = item?.titles?.[language]?.trim() || '';
+  const sameAsRo = Boolean(own && item?.titles?.ro && own === item.titles.ro.trim());
+  const known = (language === 'ro' ? item?.titles?.ro?.trim() || item?.title : '') || (own && !sameAsRo ? own : '') || (item && item.lang === language && item.lang !== 'ro' ? item.title : '');
   const tKey = item ? `${item.href}:${language}` : '';
 
-  // Titlul salvat intr-o alta limba se traduce in limba curenta (DeepL, cu cache).
+  // Titlul salvat intr-o alta limba se traduce in limba curenta (DeepL, cu cache; limba sursa se detecteaza singura).
   useEffect(() => {
     if (!item || known || translated?.key === tKey) return;
     let alive = true;
-    translateBatch([item.title], language, item.lang, !item.lang)
+    translateBatch([item.title], language, undefined, true)
       .catch(() => [] as string[])
       .then((out) => alive && setTranslated({ key: tKey, text: (out[0] || '').trim() || item.title }));
     return () => {

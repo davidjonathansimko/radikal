@@ -7,12 +7,14 @@ import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export type BarBehavior = 'always' | 'slide' | 'idle' | 'shrink' | 'fade' | 'articles';
-export type BarStyle = 'pill' | 'pillglass' | 'edge' | 'edgeglass' | 'glass' | 'floatbar' | 'invert' | 'minimal' | 'dock' | 'dockglass';
+export type BarStyle = 'pill' | 'pillglass' | 'edge' | 'edgeglass' | 'glass' | 'floatbar' | 'invert' | 'minimal' | 'dock' | 'dockglass' | 'bubble' | 'outline' | 'night' | 'paper' | 'island' | 'ribbon';
 export type ThemeFx = 'fade' | 'circle' | 'iris' | 'wipe' | 'wipeR' | 'curtain' | 'rise' | 'split' | 'vsplit' | 'diagonal' | 'slide' | 'shake' | 'dissolve' | 'zoom' | 'flash';
 export type LangFx = 'shake' | 'fade' | 'blur' | 'rise' | 'none';
-export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line';
+export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line' | 'island' | 'equalizer' | 'outline' | 'tab' | 'ticket' | 'disc';
 /** Fereastra care se deschide la atingerea playerului mic. */
-export type MiniSheetStyle = 'classic' | 'modern' | 'cover' | 'compact';
+export type MiniSheetStyle = 'classic' | 'modern' | 'cover' | 'compact' | 'vinyl' | 'poster' | 'quiet' | 'split' | 'glass' | 'paper';
+/** Efectul cu care se deschide fereastra playerului mic. */
+export type MiniSheetFx = 'none' | 'rise' | 'fade' | 'zoom' | 'blur' | 'spring' | 'curtain';
 
 /** Functii care se pornesc sau se opresc din admin; oprit = exact ca inainte. */
 export type UiToggleKey = 'queue' | 'resumePos' | 'sleepTimer' | 'offlineAudio' | 'hideInlinePlayer' | 'todayStreak' | 'todayListen' | 'searchSuggest' | 'seriesProgress' | 'calmEffects';
@@ -27,6 +29,7 @@ export interface UiSettings extends Record<UiToggleKey, boolean> {
   /** Playerul mic care ramane pe ecran la schimbarea paginii (`off` = dezactivat). */
   miniPlayer: MiniPlayerStyle;
   miniPlayerSheet: MiniSheetStyle;
+  miniSheetFx: MiniSheetFx;
 }
 
 export const UI_SETTINGS_KEY = 'ui_settings';
@@ -38,6 +41,7 @@ export const UI_DEFAULTS: UiSettings = {
   barAnimated: false,
   miniPlayer: 'off',
   miniPlayerSheet: 'classic',
+  miniSheetFx: 'none',
   queue: false,
   resumePos: false,
   sleepTimer: false,
@@ -58,6 +62,22 @@ export const MINI_PLAYERS: { id: MiniPlayerStyle; title: string; text: string }[
   { id: 'glass', title: 'Sticlă mată', text: 'Pastilă transparentă cu blur, ca la Telegram.' },
   { id: 'minimal', title: 'Minimal', text: 'Doar titlul și play/pauză, fără copertă și fără fundal.' },
   { id: 'line', title: 'Linie de progres', text: 'Extrem de subțire: o linie de progres și un buton mic de play/pauză.' },
+  { id: 'island', title: 'Insulă (mereu închisă la culoare)', text: 'Capsulă neagră cu copertă rotundă, titlu și play/pauză, la fel pe tema luminoasă și pe cea întunecată.' },
+  { id: 'equalizer', title: 'Egalizator', text: 'Pastilă cu patru bare mici care dansează în ritmul redării, titlu și play/pauză.' },
+  { id: 'outline', title: 'Contur', text: 'Fără fundal plin: doar un contur subțire în culoarea temei, cu titlu și play/pauză.' },
+  { id: 'tab', title: 'Pastilă mică în dreapta', text: 'Ocupă foarte puțin loc: copertă rotundă, play/pauză și ✕, lângă marginea din dreapta.' },
+  { id: 'ticket', title: 'Bilet', text: 'Dreptunghi cu colțuri fine: copertă în stânga, linie punctată, titlu și butoane în dreapta.' },
+  { id: 'disc', title: 'Disc', text: 'Un disc rotund care se învârtește cu coperta cât timp se redă; atingi discul pentru fereastra mare.' },
+];
+
+export const MINI_SHEET_FX: { id: MiniSheetFx; title: string; text: string }[] = [
+  { id: 'none', title: 'Fără efect (ca până acum)', text: 'Fereastra apare pe loc.' },
+  { id: 'rise', title: 'Urcare lină', text: 'Fereastra urcă de jos, cu o frână fină la final.' },
+  { id: 'fade', title: 'Estompare', text: 'Fereastra apare treptat.' },
+  { id: 'zoom', title: 'Zoom blând', text: 'Fereastra crește ușor din centru, cu o mică urcare.' },
+  { id: 'blur', title: 'Încețoșare → clar', text: 'Fereastra se limpezește din ceață, urcând puțin.' },
+  { id: 'spring', title: 'Arc', text: 'Urcă de jos, depășește puțin și se așază la loc.' },
+  { id: 'curtain', title: 'Perdea', text: 'Se deschide de jos în sus, ca o perdea.' },
 ];
 
 export const MINI_SHEETS: { id: MiniSheetStyle; title: string; text: string }[] = [
@@ -65,6 +85,12 @@ export const MINI_SHEETS: { id: MiniSheetStyle; title: string; text: string }[] 
   { id: 'modern', title: 'Modern', text: 'Copertă mare la mijloc, titlu care se mișcă dacă e lung, buton spre articol, înainte/înapoi (ține apăsat = derulare), opțiuni de redare, lista cu imagini și categorii, apoi recomandate, ultimele și serii.' },
   { id: 'cover', title: 'Modern, fundal din copertă', text: 'La fel ca Modern, dar cu coperta încețoșată pe tot fundalul și text alb.' },
   { id: 'compact', title: 'Modern compact', text: 'Fără copertă mare: un rând cu imaginea, titlul și butoanele, apoi aceleași liste. Ocupă puțin loc.' },
+  { id: 'vinyl', title: 'Vinil', text: 'Coperta e un disc rotund care se învârtește cât timp se redă.' },
+  { id: 'poster', title: 'Afiș', text: 'Coperta ocupă partea de sus pe toată lățimea, cu titlul scris peste ea.' },
+  { id: 'quiet', title: 'Liniștit', text: 'Fără copertă mare: titlul mare, scris ca într-o carte, apoi comenzile. Foarte curat.' },
+  { id: 'split', title: 'Împărțit', text: 'Coperta în stânga, iar titlul, categoria și butonul spre articol în dreapta; dedesubt, comenzile.' },
+  { id: 'glass', title: 'Sticlă', text: 'Fereastră translucidă, cu pagina încețoșată în spate și o lumină din copertă.' },
+  { id: 'paper', title: 'Hârtie', text: 'Ton cald de hârtie și literă cu serife, ca la lectura de seară, pe orice temă.' },
 ];
 
 export const UI_TOGGLES: { key: UiToggleKey; group: string; title: string; text: string }[] = [
@@ -100,6 +126,12 @@ export const BAR_STYLES: { id: BarStyle; title: string; text: string }[] = [
   { id: 'minimal', title: 'Minimală', text: 'Fără chenar și fără fundal: doar iconițele, cu o umbră fină.' },
   { id: 'dock', title: 'Doc compact', text: 'Doar iconițe, într-o pastilă mică, fără texte.' },
   { id: 'dockglass', title: 'Doc compact, sticlă mată', text: 'Doar iconițe, pastilă mică transparentă cu blur.' },
+  { id: 'bubble', title: 'Bulă', text: 'Plutitoare, fără chenar, cu o umbră largă și moale.' },
+  { id: 'outline', title: 'Contur', text: 'Fără fundal plin: doar un contur subțire în culoarea temei.' },
+  { id: 'night', title: 'Noapte (mereu închisă)', text: 'Pastilă neagră cu iconițe albe, la fel pe tema luminoasă și pe cea întunecată.' },
+  { id: 'paper', title: 'Hârtie', text: 'Ton cald de hârtie, cu text cu serife, ca la lectura de seară.' },
+  { id: 'island', title: 'Insulă', text: 'Capsulă mică, neagră, doar cu iconițe, ca un „dynamic island”.' },
+  { id: 'ribbon', title: 'Panglică', text: 'Pe toată lățimea, lipită de jos, cu colțurile de sus rotunjite și o umbră ușoară în sus.' },
 ];
 
 export const THEME_FX: { id: ThemeFx; title: string; text: string }[] = [
@@ -135,6 +167,7 @@ function normalize(v: Partial<UiSettings> | null | undefined): UiSettings {
   const o = v ?? {};
   return {
     barBehavior: ONE_OF(o.barBehavior, BAR_BEHAVIORS.map((x) => x.id), UI_DEFAULTS.barBehavior),
+    miniSheetFx: ONE_OF(o.miniSheetFx, MINI_SHEET_FX.map((x) => x.id), UI_DEFAULTS.miniSheetFx),
     barStyle: ONE_OF(o.barStyle, BAR_STYLES.map((x) => x.id), UI_DEFAULTS.barStyle),
     themeFx: ONE_OF(o.themeFx, THEME_FX.map((x) => x.id), UI_DEFAULTS.themeFx),
     langFx: ONE_OF(o.langFx, LANG_FX.map((x) => x.id), UI_DEFAULTS.langFx),

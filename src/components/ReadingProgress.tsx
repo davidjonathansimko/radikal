@@ -315,8 +315,9 @@ export const CircularReadingProgress: React.FC<CircularProgressProps> = ({
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'scale(1)' : 'scale(0.8)',
         pointerEvents: isVisible ? 'auto' : 'none',
-        bottom: `${bottomOffset}px`,
+        bottom: `calc(max(${bottomOffset}px, var(--bar-space, 0px) + 10px) + var(--mini-space, 0px))`,
       }}
+      data-back-to-top=""
       aria-hidden={!isVisible}
       tabIndex={isVisible ? 0 : -1}
       aria-label="Scroll to top"

@@ -10,6 +10,20 @@ import { getUiSettingsSync } from '@/lib/uiSettings';
 // Unde a atins cititorul ultima data: de acolo porneste efectul „cerc".
 const lastPoint = { x: 0, y: 0 };
 
+/** Culoarea barei de stare: toate meta-urile existente se actualizeaza pe loc (fara sa fie sterse, ca sa nu incurce Next). */
+function applyThemeColor(theme: Theme) {
+  const color = theme === 'dark' ? '#000000' : '#ffffff';
+  const list = document.querySelectorAll('meta[name="theme-color"]');
+  if (list.length === 0) {
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = color;
+    document.head.appendChild(meta);
+    return;
+  }
+  list.forEach((m) => m.setAttribute('content', color));
+}
+
 // Added 'bw' (black & white / Schwarz-Weiß / alb-negru) theme option
 export type Theme = 'dark' | 'light';
 
@@ -31,7 +45,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       lastPoint.y = e.clientY;
     };
     window.addEventListener('pointerdown', onDown, { passive: true, capture: true });
-    return () => window.removeEventListener('pointerdown', onDown, true);
+    // Bara de stare urmeaza mereu clasa reala a paginii (si dupa revenirea in aplicatie).
+    const html = document.documentElement;
+    const sync = () => applyThemeColor(html.classList.contains('light') ? 'light' : 'dark');
+    const mo = new MutationObserver(sync);
+    mo.observe(html, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('pageshow', sync);
+    document.addEventListener('visibilitychange', sync);
+    return () => {
+      window.removeEventListener('pointerdown', onDown, true);
+      mo.disconnect();
+      window.removeEventListener('pageshow', sync);
+      document.removeEventListener('visibilitychange', sync);
+    };
   }, []);
 
   // Load saved theme from localStorage immediately / Gespeichertes Theme sofort aus localStorage laden / Încărcă tema salvată din localStorage imediat
@@ -73,10 +99,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     
     // Update theme color for mobile browsers / Themenfarbe für mobile Browser aktualisieren / Actualizează culoarea temei pentru browsere mobile
-    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeColorMeta) {
-      themeColorMeta.setAttribute('content', theme === 'dark' ? '#000000' : '#ffffff');
-    }
+    applyThemeColor(theme);
   }, [theme, mounted]);
 
   // Schimbarea temei: fundal nou care apare lin peste cel vechi.
@@ -91,6 +114,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const transition = doc.startViewTransition(() => {
       document.documentElement.classList.remove('dark', 'light');
       document.documentElement.classList.add(next);
+      applyThemeColor(next);
       flushSync(() => setTheme(next));
     });
     transition.ready.then(() => {
