@@ -9,6 +9,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { fetchCustomAudioForLang } from '@/lib/customAudio';
 import { wideArtwork, ARTWORK_SIZE } from '@/lib/mediaArtwork';
+import { hub, getSavedRatio } from '@/lib/audioHub';
+import { getUiSettingsSync } from '@/lib/uiSettings';
 
 // TTS Engine type — 'browser' = built-in SpeechSynthesis, 'google' = Google Cloud WaveNet
 type TTSEngine = 'browser' | 'google';
@@ -639,9 +641,15 @@ export default function TextToSpeech({
       isSpeakingRef.current = false;
       googleIsPlayingRef.current = false;
       speechSynthesis.cancel();
-      // Stop Google audio on unmount
+      // Stop Google audio on unmount (cu playerul mic activ, audio-ul in curs continua in fundal)
       if (googleAudioRef.current) {
-        googleAudioRef.current.pause();
+        const a = googleAudioRef.current;
+        if (getUiSettingsSync().miniPlayer !== 'off' && !a.paused && !a.ended) {
+          hub.markBackground(a);
+        } else {
+          hub.detach(a);
+          a.pause();
+        }
         googleAudioRef.current = null;
       }
       // Release wake lock on unmount
@@ -734,6 +742,26 @@ export default function TextToSpeech({
     }
   }, []);
 
+  // Centrul audio: playerul mic, lista de asteptare, somnul si locul ramas lucreaza cu acest element <audio>.
+  const attachHub = useCallback(
+    (audio: HTMLAudioElement) => {
+      hub.attach(audio, {
+        slug: blogSlug || 'tts',
+        audioSlug: blogSlug,
+        lang: voiceLanguage,
+        title: blogTitle || 'RADIKAL',
+        href: typeof window !== 'undefined' ? window.location.pathname : '/',
+        imageUrl,
+      });
+    },
+    [blogSlug, voiceLanguage, blogTitle, imageUrl],
+  );
+
+  // Daca ne intoarcem la articolul al carui audio rula in fundal, il oprim aici (locul ramane salvat).
+  useEffect(() => {
+    if (blogSlug) hub.takeBack(blogSlug);
+  }, [blogSlug]);
+
   useEffect(() => {
     if (!imageUrl) return;
     let alive = true;
@@ -791,11 +819,15 @@ export default function TextToSpeech({
       console.log('[TTS] Media Session handlers not supported:', err);
     }
     return () => {
-      try {
-        (['play', 'pause', 'stop', 'seekbackward', 'seekforward', 'seekto'] as const).forEach((a) => ms.setActionHandler(a, null));
-      } catch {
-        /* ignorat */
-      }
+      // Daca playerul mic preia audio-ul, el isi pune singur butoanele; altfel le scoatem.
+      window.setTimeout(() => {
+        if (hub.getState().track) return;
+        try {
+          (['play', 'pause', 'stop', 'seekbackward', 'seekforward', 'seekto'] as const).forEach((a) => ms.setActionHandler(a, null));
+        } catch {
+          /* ignorat */
+        }
+      }, 0);
     };
   }, []);
 
@@ -1074,7 +1106,10 @@ export default function TextToSpeech({
     // Increment session to invalidate any previous build/playback
     const session = ++googleSessionRef.current;
     const wantKey = googleAudioKey(cleanedText);
-    const ratio = cleanedText.length > 0
+    const savedRatio = fromPosition === 0 && blogSlug && getUiSettingsSync().resumePos ? getSavedRatio(blogSlug, voiceLanguage) : 0;
+    const ratio = savedRatio > 0
+      ? savedRatio
+      : cleanedText.length > 0
       ? Math.min(0.999, Math.max(0, fromPosition / cleanedText.length))
       : 0;
 
@@ -1093,6 +1128,7 @@ export default function TextToSpeech({
       setGoogleLoading(false);
       requestWakeLock();
       updateMediaSession(true, false);
+      attachHub(existing);
       existing.play().catch(() => {});
       return;
     }
@@ -1233,6 +1269,7 @@ export default function TextToSpeech({
     };
 
     audio.src = blobUrl;
+    attachHub(audio);
 
     // If the user pressed Pause while the audio was still being built, respect
     // it: load the file but do not start it. Resume will play it.
@@ -1246,7 +1283,7 @@ export default function TextToSpeech({
     audio.play().catch((playErr) => {
       console.warn('[Google TTS] play() rejected:', playErr?.message);
     });
-  }, [text, cleanText, googleAudioKey, googleBuildFullAudio, requestWakeLock, releaseWakeLock, updateMediaSession, blogId, voiceLanguage]);
+  }, [text, cleanText, googleAudioKey, googleBuildFullAudio, requestWakeLock, releaseWakeLock, updateMediaSession, blogId, voiceLanguage, blogSlug, attachHub]);
 
   const stopGoogleSpeaking = useCallback(() => {
     // Invalidate any build in progress
@@ -1256,6 +1293,7 @@ export default function TextToSpeech({
     // Keep the assembled audio element alive: pressing Play again then costs
     // nothing and starts instantly.
     if (googleAudioRef.current) {
+      hub.detach(googleAudioRef.current);
       googleAudioRef.current.pause();
       try { googleAudioRef.current.currentTime = 0; } catch { /* not seekable yet */ }
     }

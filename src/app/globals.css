@@ -2835,3 +2835,12 @@ html.dark [data-bar-style="dockglass"] > .bar-inner {
   margin-left: 6px;
   transform-origin: bottom left;
 }
+
+/* Pasul 021126 - playerul mic: se aseaza deasupra barii de jos si se ascunde odata cu ea. */
+.mini-player { transition: translate 0.3s ease, opacity 0.3s ease; }
+html[data-bar-state="hidden"] .mini-player { translate: 0 220%; }
+html[data-bar-state="faded"] .mini-player { opacity: 0.25; }
+body.intro-active .mini-player,
+body.reading-mode .mini-player,
+body.modal-active .mini-player { display: none !important; }
+@media (min-width: 1024px) { .mini-player { --bar-space: 16px; } }

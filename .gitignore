@@ -139,3 +139,7 @@ NOTITE_*.md
 *.orig
 *.rej
 .history/
+
+# Playwright
+/test-results/
+/playwright-report/

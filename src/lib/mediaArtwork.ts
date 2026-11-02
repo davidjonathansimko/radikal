@@ -1,9 +1,9 @@
-// Coperta pentru notificarea media (ecran de blocare, panoul de notificari): imaginea articolului, taiata
-// in format lat (ca pastila notificarii) si putin intunecata, ca sa umple tot cardul.
+// Coperta pentru notificarea media (ecran de blocare, panoul de notificari): imaginea articolului, taiata patrat
+// (centrat), ca sa umple complet cercul/patratul din notificare.
 
 const cache = new Map<string, Promise<string | null>>();
 
-export const ARTWORK_SIZE = '1200x500';
+export const ARTWORK_SIZE = '640x640';
 
 function load(url: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -31,8 +31,8 @@ export function wideArtwork(url: string | null | undefined): Promise<string | nu
     const img = await load(url);
     if (!img) return null;
     try {
-      const W = 1200;
-      const H = 500;
+      const W = 640;
+      const H = 640;
       const canvas = document.createElement('canvas');
       canvas.width = W;
       canvas.height = H;
@@ -42,9 +42,7 @@ export function wideArtwork(url: string | null | undefined): Promise<string | nu
       const w = img.width * scale;
       const h = img.height * scale;
       ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
-      ctx.fillStyle = 'rgba(0,0,0,0.38)';
-      ctx.fillRect(0, 0, W, H);
-      return canvas.toDataURL('image/jpeg', 0.82);
+      return canvas.toDataURL('image/jpeg', 0.85);
     } catch {
       return null;
     }

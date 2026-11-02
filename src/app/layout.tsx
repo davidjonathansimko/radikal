@@ -28,6 +28,8 @@ const ToastProvider = dynamic(() => import('@/components/ToastNotifications'));
 const InstallAppPrompt = dynamic(() => import('@/components/InstallAppPrompt'));
 const StandaloneGuard = dynamic(() => import('@/components/StandaloneGuard'));
 const PushSync = dynamic(() => import('@/components/PushSync'));
+const MiniPlayer = dynamic(() => import('@/components/MiniPlayer'));
+const ErrorReporter = dynamic(() => import('@/components/ErrorReporter'));
 
 // BackgroundAnimation commented out for restoration later / BackgroundAnimation auskommentiert für spätere Wiederherstellung / BackgroundAnimation comentat pentru restaurare ulterioară
 // import BackgroundAnimation from '@/components/BackgroundAnimation';
@@ -277,6 +279,8 @@ export default function RootLayout({
                   <InstallAppPrompt />
                   <StandaloneGuard />
                   <PushSync />
+                  <MiniPlayer />
+                  <ErrorReporter />
                   
                   {/* Organization Schema for SEO / Organisations-Schema für SEO / Schema Organizație pentru SEO */}
                   <OrganizationSchema />

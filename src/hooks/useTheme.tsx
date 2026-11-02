@@ -93,7 +93,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.add(next);
       flushSync(() => setTheme(next));
     });
-    transition.ready.then(() => runThemeFx(getUiSettingsSync().themeFx, lastPoint.x || lastPoint.y ? lastPoint : { x: window.innerWidth / 2, y: window.innerHeight - 60 })).catch(() => {});
+    transition.ready.then(() => {
+      const ui = getUiSettingsSync();
+      runThemeFx(ui.calmEffects ? 'fade' : ui.themeFx, lastPoint.x || lastPoint.y ? lastPoint : { x: window.innerWidth / 2, y: window.innerHeight - 60 });
+    }).catch(() => {});
   };
   const contextValue: ThemeContextType = {
     theme,

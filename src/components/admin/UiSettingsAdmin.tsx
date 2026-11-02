@@ -7,8 +7,10 @@ import {
   BAR_BEHAVIORS,
   BAR_STYLES,
   LANG_FX,
+  MINI_PLAYERS,
   THEME_FX,
   UI_DEFAULTS,
+  UI_TOGGLES,
   fetchUiSettings,
   saveUiSettings,
   setUiPreview,
@@ -144,6 +146,29 @@ export default function UiSettingsAdmin() {
         <p className={h}>Schimbarea limbii</p>
         <Choice name="lang-fx" value={s.langFx} options={LANG_FX} onChange={(v) => update({ ...s, langFx: v }, 'lang')} />
       </section>
+
+      <section>
+        <p className={h}>Player mic (rămâne pe ecran când schimbi pagina)</p>
+        <Choice name="mini-player" value={s.miniPlayer} options={MINI_PLAYERS} onChange={(v) => update({ ...s, miniPlayer: v })} />
+        <p className="mt-2 text-xs text-black/55 dark:text-white/55">Se ascunde odată cu bara de jos, după comportamentul ales mai sus. Se vede doar cât timp se ascultă ceva.</p>
+      </section>
+
+      {Array.from(new Set(UI_TOGGLES.map((t) => t.group))).map((group) => (
+        <section key={group}>
+          <p className={h}>{group}</p>
+          <div className="space-y-2">
+            {UI_TOGGLES.filter((t) => t.group === group).map((t) => (
+              <label key={t.key} className="flex cursor-pointer items-start gap-3 rounded-lg border border-black/10 p-2.5 dark:border-white/15">
+                <input type="checkbox" checked={s[t.key]} onChange={(e) => update({ ...s, [t.key]: e.target.checked })} className="mt-1" />
+                <span>
+                  <span className="block text-sm font-semibold text-black dark:text-white">{t.title}</span>
+                  <span className="block text-xs text-black/55 dark:text-white/55">{t.text}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+      ))}
 
       <div className="sticky bottom-24 flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white/90 p-2 backdrop-blur dark:border-white/15 dark:bg-black/80">
         <button type="button" disabled={busy || !dirty} onClick={() => void save()} className="btn-solid rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-black">

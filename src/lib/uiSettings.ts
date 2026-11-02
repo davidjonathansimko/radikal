@@ -10,18 +10,62 @@ export type BarBehavior = 'always' | 'slide' | 'idle' | 'shrink' | 'fade' | 'art
 export type BarStyle = 'pill' | 'pillglass' | 'edge' | 'edgeglass' | 'glass' | 'floatbar' | 'invert' | 'minimal' | 'dock' | 'dockglass';
 export type ThemeFx = 'fade' | 'circle' | 'iris' | 'wipe' | 'wipeR' | 'curtain' | 'rise' | 'split' | 'vsplit' | 'diagonal' | 'slide' | 'shake' | 'dissolve' | 'zoom' | 'flash';
 export type LangFx = 'shake' | 'fade' | 'blur' | 'rise' | 'none';
+export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line';
 
-export interface UiSettings {
+/** Functii care se pornesc sau se opresc din admin; oprit = exact ca inainte. */
+export type UiToggleKey = 'queue' | 'resumePos' | 'sleepTimer' | 'offlineAudio' | 'todayStreak' | 'todayListen' | 'searchSuggest' | 'seriesProgress' | 'calmEffects';
+
+export interface UiSettings extends Record<UiToggleKey, boolean> {
   barBehavior: BarBehavior;
   barStyle: BarStyle;
   themeFx: ThemeFx;
   langFx: LangFx;
   /** Iconitele din bara de jos se misca (soare care se invarte, steag care flutura...). */
   barAnimated: boolean;
+  /** Playerul mic care ramane pe ecran la schimbarea paginii (`off` = dezactivat). */
+  miniPlayer: MiniPlayerStyle;
 }
 
 export const UI_SETTINGS_KEY = 'ui_settings';
-export const UI_DEFAULTS: UiSettings = { barBehavior: 'always', barStyle: 'pill', themeFx: 'fade', langFx: 'shake', barAnimated: false };
+export const UI_DEFAULTS: UiSettings = {
+  barBehavior: 'always',
+  barStyle: 'pill',
+  themeFx: 'fade',
+  langFx: 'shake',
+  barAnimated: false,
+  miniPlayer: 'off',
+  queue: false,
+  resumePos: false,
+  sleepTimer: false,
+  offlineAudio: false,
+  todayStreak: false,
+  todayListen: false,
+  searchSuggest: false,
+  seriesProgress: false,
+  calmEffects: false,
+};
+
+export const MINI_PLAYERS: { id: MiniPlayerStyle; title: string; text: string }[] = [
+  { id: 'off', title: 'Dezactivat (ca până acum)', text: 'Când schimbi pagina, audio-ul simplu se oprește, ca în prezent.' },
+  { id: 'bar', title: 'Bară subțire deasupra meniului', text: 'Pe toată lățimea: copertă mică, titlu, play/pauză și o linie de progres (ca la YouTube Music).' },
+  { id: 'pill', title: 'Pastilă plutitoare', text: 'Rotunjită, centrată, cu copertă rotundă, titlu și play/pauză.' },
+  { id: 'card', title: 'Card mai mare', text: 'Copertă mai mare, titlu pe două rânduri, butoane înainte/înapoi și bară de progres.' },
+  { id: 'glass', title: 'Sticlă mată', text: 'Pastilă transparentă cu blur, ca la Telegram.' },
+  { id: 'minimal', title: 'Minimal', text: 'Doar titlul și play/pauză, fără copertă și fără fundal.' },
+  { id: 'line', title: 'Linie de progres', text: 'Extrem de subțire: o linie de progres și un buton mic de play/pauză.' },
+];
+
+export const UI_TOGGLES: { key: UiToggleKey; group: string; title: string; text: string }[] = [
+  { key: 'queue', group: 'Ascultare', title: 'Listă de așteptare', text: 'Buton „În lista de ascultare” la blog; la sfârșit pornește următorul (merge cu blogurile care au audio pregenerat).' },
+  { key: 'resumePos', group: 'Ascultare', title: 'Memorarea locului unde ai rămas (la fiecare blog)', text: 'La Play, audio-ul continuă de unde a fost oprit data trecută, separat pentru fiecare blog.' },
+  { key: 'sleepTimer', group: 'Ascultare', title: 'Temporizator de somn', text: 'Din playerul mic: 15 / 30 / 45 / 60 min sau până la sfârșitul blogului.' },
+  { key: 'offlineAudio', group: 'Ascultare', title: 'Ascultare offline', text: '„Salvează pe telefon” pentru audio-ul pregenerat, ca să meargă fără internet (se salvează în aplicație).' },
+  { key: 'todayStreak', group: 'Pagina principală', title: 'Contor de zile la rând (discret)', text: 'O linie mică în cardul „Azi”: „3 zile la rând”. Fără presiune, nu apare niciun mesaj negativ.' },
+  { key: 'todayListen', group: 'Pagina principală', title: 'Buton „Ascultă” în cardul „Azi”', text: 'Ultimul blog cu audio pregenerat, cu un buton care îl pornește direct în playerul mic.' },
+  { key: 'searchSuggest', group: 'Căutare', title: 'Căutare cu sugestii', text: 'Când căutarea e goală: serii, categorii și etichete populare, ca să ating și să caute.' },
+  { key: 'seriesProgress', group: 'Serii', title: 'Progres în serii + pagină pentru fiecare serie', text: 'Câte bloguri din serie ai citit („3 din 7”), cu bară de progres, și o pagină a seriei cu buton „Continuă”.' },
+  { key: 'calmEffects', group: 'Efecte', title: 'Efecte liniștite (fără glitch)', text: 'Oprește tremurul de la schimbarea temei/limbii: tema se schimbă întotdeauna lin, iar limba fie lin, fie pe loc.' },
+];
 
 export const BAR_BEHAVIORS: { id: BarBehavior; title: string; text: string }[] = [
   { id: 'always', title: 'Mereu vizibilă', text: 'Bara rămâne pe ecran tot timpul, ca până acum.' },
@@ -82,6 +126,16 @@ function normalize(v: Partial<UiSettings> | null | undefined): UiSettings {
     themeFx: ONE_OF(o.themeFx, THEME_FX.map((x) => x.id), UI_DEFAULTS.themeFx),
     langFx: ONE_OF(o.langFx, LANG_FX.map((x) => x.id), UI_DEFAULTS.langFx),
     barAnimated: typeof o.barAnimated === 'boolean' ? o.barAnimated : UI_DEFAULTS.barAnimated,
+    miniPlayer: ONE_OF(o.miniPlayer, MINI_PLAYERS.map((x) => x.id), UI_DEFAULTS.miniPlayer),
+    queue: o.queue === true,
+    resumePos: o.resumePos === true,
+    sleepTimer: o.sleepTimer === true,
+    offlineAudio: o.offlineAudio === true,
+    todayStreak: o.todayStreak === true,
+    todayListen: o.todayListen === true,
+    searchSuggest: o.searchSuggest === true,
+    seriesProgress: o.seriesProgress === true,
+    calmEffects: o.calmEffects === true,
   };
 }
 

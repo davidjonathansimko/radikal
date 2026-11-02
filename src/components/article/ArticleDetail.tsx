@@ -60,6 +60,7 @@ const BlogIntroModal = dynamic(() => import('@/components/BlogIntroModal'), { ss
 import GuestLoginGate from '@/components/GuestLoginGate';
 import { ReadToggle } from '@/components/ReadMark';
 import { useBlogSeriesConfig, useSeriesTitle } from '@/lib/blogSeries';
+import QueueButton from '@/components/QueueButton';
 import { fetchGuestReadAllowed } from '@/lib/pageSettings';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
@@ -1491,6 +1492,15 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
                 blogTitle={displayTitle || post.title}
                 blogId={post.id}
                 imageUrl={post.image_url}
+              />
+              <QueueButton
+                track={{
+                  slug: `${source.audioPrefix}${post.slug}`,
+                  audioSlug: `${source.audioPrefix}${post.slug}`,
+                  title: displayTitle || post.title,
+                  href: typeof window !== 'undefined' ? window.location.pathname : `${source.basePath}/${post.slug}`,
+                  imageUrl: post.image_url || null,
+                }}
               />
             </div>
           </div>

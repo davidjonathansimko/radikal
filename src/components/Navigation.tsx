@@ -583,13 +583,35 @@ export default function Navigation() {
     };
   }, [uiSettings.barBehavior, isArticlePage]);
 
+  // Playerul mic se aseaza deasupra barii si se ascunde odata cu ea.
+  useEffect(() => {
+    document.documentElement.dataset.barState = barState;
+  }, [barState]);
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = document.querySelector<HTMLElement>('[data-mobile-nav="bottom"] .bar-inner');
+    const measure = () => {
+      const r = el?.getBoundingClientRect();
+      if (!el || !r || r.width === 0) root.style.removeProperty('--bar-space');
+      else root.style.setProperty('--bar-space', `${Math.round(window.innerHeight - r.top + 8)}px`);
+    };
+    measure();
+    const ro = el && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (el && ro) ro.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [uiSettings.barStyle, canSeeNav, isMobileMenuOpen, pathname]);
+
   // Handle language change with persistence
   const handleLanguageChange = async (newLang: 'de' | 'en' | 'ro' | 'ru') => {
     // Limba se schimba pe loc; textele tremura scurt, ca la tema.
     setLanguage(newLang);
     setShowLanguageDropdown(false);
     setShowMobileLanguageDropdown(false);
-    if (newLang !== language) runLangFx(uiSettings.langFx);
+    if (newLang !== language) runLangFx(uiSettings.calmEffects && uiSettings.langFx === 'shake' ? 'fade' : uiSettings.langFx);
     
     // Save language based on authentication status
     try {
@@ -691,7 +713,7 @@ export default function Navigation() {
     {/* Visible for logged-in users AND for guests / Sichtbar für eingeloggte Benutzer UND Gäste */}
     {/* Vizibil pentru utilizatorii logați ȘI pentru vizitatori */}
     {canSeeNav && (
-    <div className={`fixed top-0 left-0 right-0 z-[210] lg:hidden transition-transform duration-300 ease-out ${navHidden ? '-translate-y-full' : ''}`} data-mobile-nav="top">
+    <div className={`fixed top-0 left-0 right-0 z-[210] lg:hidden transition-[transform,opacity] duration-300 ease-out ${navHidden || (barState === 'hidden' && !isMobileMenuOpen) ? '-translate-y-full' : ''}`} style={{ opacity: barState === 'faded' && !isMobileMenuOpen ? 0.22 : undefined }} data-mobile-nav="top">
       {/* Pasul 2102001: Blurred dark background bar — extends edge-to-edge, thin compact bar */}
       <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-black/10 dark:border-white/10" />
       {/* Pasul 2202000: zero vertical padding — header height comes only from logo+hamburger intrinsic size */}

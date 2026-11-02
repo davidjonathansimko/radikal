@@ -12,6 +12,8 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useBlogSeries, useSeriesTitle, type BlogSeries } from '@/lib/blogSeries';
+import { useUiSettings } from '@/lib/uiSettings';
+import { useReadItems } from '@/lib/readState';
 
 interface Row {
   id: string;
@@ -66,6 +68,8 @@ function SeriesSheet({ series, onClose }: { series: BlogSeries[]; onClose: () =>
 
   const titleOf = useRowTitles(rows, lang);
   const seriesTitle = useSeriesTitle(series, lang);
+  const ui = useUiSettings();
+  const { isRead } = useReadItems();
   const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   return createPortal(
@@ -99,7 +103,12 @@ function SeriesSheet({ series, onClose }: { series: BlogSeries[]; onClose: () =>
                 return (
                   <details key={s.id} open={si === 0} className="rounded-2xl border border-black/10 dark:border-white/10">
                     <summary className="cursor-pointer select-none px-4 py-3 font-cinzel text-lg font-bold">
-                      {seriesTitle(s) || '\u00a0'} <span className="text-sm font-normal text-black/40 dark:text-white/40">({list.length})</span>
+                      {seriesTitle(s) || '\u00a0'} <span className="text-sm font-normal text-black/40 dark:text-white/40">({ui.seriesProgress ? `${list.filter((r) => isRead(`/blogs/${r.slug}`)).length}/${list.length}` : list.length})</span>
+                      {ui.seriesProgress && (
+                        <span className="mt-1.5 block h-[3px] w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/15" aria-hidden="true">
+                          <span className="block h-full bg-black dark:bg-white" style={{ width: `${(list.filter((r) => isRead(`/blogs/${r.slug}`)).length / list.length) * 100}%` }} />
+                        </span>
+                      )}
                     </summary>
                     <ol className="divide-y divide-black/10 px-2 pb-2 dark:divide-white/10">
                       {list.map((r, i) => (
@@ -117,6 +126,11 @@ function SeriesSheet({ series, onClose }: { series: BlogSeries[]; onClose: () =>
                         </li>
                       ))}
                     </ol>
+                    {ui.seriesProgress && (
+                      <Link href={`/blogs/serie/${s.id}`} onClick={onClose} className="block px-5 pb-3 pt-1 text-xs font-semibold text-black/60 underline dark:text-white/60">
+                        {lang === 'de' ? 'Zur Serie' : lang === 'ro' ? 'Pagina seriei' : lang === 'ru' ? 'Страница серии' : 'Series page'} →
+                      </Link>
+                    )}
                   </details>
                 );
               })}

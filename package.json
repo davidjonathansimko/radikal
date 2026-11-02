@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
+    "test:e2e": "playwright test",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "icons": "node scripts/generate-icons.js"
@@ -34,6 +35,7 @@
     "web-vitals": "^5.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^14.2.0",
     "@types/jest": "^29.5.0",
@@ -56,3 +58,4 @@
     "@next/swc-win32-x64-msvc": "15.5.11"
   }
 }
+

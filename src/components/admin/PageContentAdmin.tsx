@@ -18,6 +18,7 @@ import PushAdminPanel from '@/components/admin/PushAdminPanel';
 import BlogsHomeAdmin from '@/components/admin/BlogsHomeAdmin';
 import BlogSeriesAdmin from '@/components/admin/BlogSeriesAdmin';
 import UiSettingsAdmin from '@/components/admin/UiSettingsAdmin';
+import ErrorLogAdmin from '@/components/admin/ErrorLogAdmin';
 import SignatureAdmin from '@/components/admin/SignatureAdmin';
 import {
   EDITABLE_PAGES,
@@ -515,6 +516,10 @@ export default function PageContentAdmin() {
 
       <AdminGroup title="Semnătura RADIKAL." summary="Reels și Play Blog">
         <SignatureAdmin />
+      </AdminGroup>
+
+      <AdminGroup title="Erori din aplicație" summary="Monitorizare automată">
+        <ErrorLogAdmin />
       </AdminGroup>
 
       <AdminGroup title="Notificări push" summary="Test și trimitere manuală">

@@ -15,7 +15,9 @@ import { FaSearch, FaTimes, FaSpinner, FaClock, FaFire, FaArrowRight } from 'rea
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 import CategoryPicker from '@/components/CategoryPicker';
-import { fetchCategories, type Category } from '@/lib/categories';
+import { fetchCategories, categoryName, type Category } from '@/lib/categories';
+import { useUiSettings } from '@/lib/uiSettings';
+import { useBlogSeries, useSeriesTitle } from '@/lib/blogSeries';
 import { fetchEnabledPages } from '@/lib/pageSettings';
 import { CONTENT_KINDS } from '@/lib/contentKinds';
 
@@ -121,6 +123,9 @@ interface SearchModalProps {
 
 const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const { language } = useLanguage();
+  const uiSettings = useUiSettings();
+  const searchSeries = useBlogSeries();
+  const searchSeriesTitle = useSeriesTitle(searchSeries, language);
   const { translateBatch } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
@@ -851,6 +856,36 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                 )}
+
+                {/* Sugestii (pornite din admin): serii si categorii, ca sa cauti dintr-o atingere */}
+                {uiSettings.searchSuggest && (() => {
+                  const chips = [
+                    ...(searchSeries ?? []).map((s) => searchSeriesTitle(s)),
+                    ...categories.map((c) => categoryName(c, language)),
+                  ].filter((x, i, a) => x && a.indexOf(x) === i).slice(0, 14);
+                  if (chips.length === 0) return null;
+                  return (
+                    <div>
+                      <p className="mb-3 px-2 text-sm text-gray-500 dark:text-white/40">
+                        {language === 'de' ? 'Vorschläge' : language === 'ro' ? 'Sugestii' : language === 'ru' ? 'Подсказки' : 'Suggestions'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {chips.map((c) => (
+                          <button
+                            key={c}
+                            onClick={() => {
+                              setQuery(c);
+                              performSearch(c);
+                            }}
+                            className="rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-200 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10"
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Hint / Hinweis */}
                 <div className="text-center py-8">
