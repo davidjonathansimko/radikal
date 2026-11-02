@@ -12,7 +12,8 @@ import { fetchItems, pickContentText } from '@/lib/contentPublic';
 import ContinueReading from '@/components/ContinueReading';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useUiSettings } from '@/lib/uiSettings';
-import { hub } from '@/lib/audioHub';
+import { hub, type HubTrack } from '@/lib/audioHub';
+import { useTrackTitles } from '@/hooks/useTrackTitles';
 import { touchStreak } from '@/lib/streak';
 
 const STREAK: Record<string, (n: number) => string> = {
@@ -43,7 +44,9 @@ export default function TodayCard({ enabledPages }: Props) {
   const flags = useFeatureFlags();
   const ui = useUiSettings();
   const [streak, setStreak] = useState(0);
-  const [listen, setListen] = useState<{ slug: string; title: string; imageUrl: string | null } | null>(null);
+  const [listen, setListen] = useState<Omit<HubTrack, 'lang'> | null>(null);
+  const listenTitleOf = useTrackTitles(listen ? [{ ...listen, lang }] : [], lang);
+  const listenTitle = listen ? listenTitleOf({ ...listen, lang }) : '';
 
   useEffect(() => {
     if (ui.todayStreak) setStreak(touchStreak());
@@ -60,17 +63,27 @@ export default function TodayCard({ enabledPages }: Props) {
       try {
         const { data } = await getSupabaseClient()
           .from('blog_posts')
-          .select('slug, title, title_de, title_en, title_ru, image_url')
+          .select('slug, title, title_de, title_en, title_ru, image_url, category_ids')
           .eq('published', true)
           .order('created_at', { ascending: false })
           .limit(6);
-        for (const row of (data ?? []) as unknown as Record<string, string | null>[]) {
+        for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
           const r = await fetch(`/api/blog-audio?slug=${encodeURIComponent(row.slug as string)}&language=${lang}`);
           const d = await r.json();
           if (d?.audioUrl) {
-            const own = (row[`title_${lang}`] ?? '').trim();
-            const title = lang !== 'ro' && own && own !== row.title ? own : (row.title as string);
-            if (alive) setListen({ slug: row.slug as string, title, imageUrl: row.image_url });
+            if (alive) {
+              setListen({
+                slug: row.slug as string,
+                audioSlug: row.slug as string,
+                rawSlug: row.slug as string,
+                table: 'blog_posts',
+                title: row.title as string,
+                titles: { de: row.title_de as string, en: row.title_en as string, ru: row.title_ru as string },
+                categoryIds: (row.category_ids as string[] | null) ?? [],
+                href: `/blogs/${row.slug}`,
+                imageUrl: (row.image_url as string | null) ?? null,
+              });
+            }
             return;
           }
         }
@@ -141,7 +154,7 @@ export default function TodayCard({ enabledPages }: Props) {
       {listen && (
         <button
           type="button"
-          onClick={() => void hub.playPrebuilt({ slug: listen.slug, audioSlug: listen.slug, lang, title: listen.title, href: `/blogs/${listen.slug}`, imageUrl: listen.imageUrl })}
+          onClick={() => void hub.playBlog({ ...listen, lang })}
           className={`${rowClass} flex w-full items-center gap-3`}
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black" aria-hidden="true">
@@ -149,7 +162,7 @@ export default function TodayCard({ enabledPages }: Props) {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-black/50 dark:text-white/50">{LISTEN[lang]}</span>
-            <span className="mt-0.5 block truncate font-cinzel text-sm text-black dark:text-white">{listen.title}</span>
+            <span className="mt-0.5 block truncate font-cinzel text-sm text-black dark:text-white">{listenTitle || '\u00a0'}</span>
           </span>
         </button>
       )}

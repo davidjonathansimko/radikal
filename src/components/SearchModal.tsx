@@ -691,7 +691,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Results area / Ergebnisbereich */}
-          <div ref={resultsRef} className="min-h-0 max-h-[60vh] overflow-y-auto p-4">
+          <div ref={resultsRef} className="scrollbar-hide min-h-0 max-h-[60vh] overflow-y-auto overscroll-contain p-4" style={{ scrollbarWidth: 'none' }}>
             {/* Loading state / Ladezustand */}
             {loading && (
               <div className="flex items-center justify-center py-8">

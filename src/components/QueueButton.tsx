@@ -1,8 +1,8 @@
 'use client';
 
-// „În lista de ascultare": apare doar daca functia e pornita din admin si blogul are audio pregenerat in limba curenta.
+// Butoanele „Ascultă acum" si „În lista de ascultare" din articol (playerul mic le foloseste pe amandoua).
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { hub, useAudioHub, type HubTrack } from '@/lib/audioHub';
 import { useUiSettings } from '@/lib/uiSettings';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -19,43 +19,28 @@ export default function QueueButton({ track }: { track: Omit<HubTrack, 'lang'> }
   const { language } = useLanguage();
   const lang = (['de', 'en', 'ro', 'ru'].includes(language) ? language : 'de') as keyof typeof LABEL;
   const s = useAudioHub();
-  const [available, setAvailable] = useState(false);
 
-  useEffect(() => {
-    if (!ui.queue) return;
-    let alive = true;
-    void fetch(`/api/blog-audio?slug=${encodeURIComponent(track.audioSlug ?? track.slug)}&language=${lang}`)
-      .then((r) => r.json())
-      .then((d) => alive && setAvailable(Boolean(d?.audioUrl)))
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [ui.queue, track.audioSlug, track.slug, lang]);
-
-  if (!ui.queue || !available) return null;
+  if (ui.miniPlayer === 'off' && !ui.queue) return null;
   const full: HubTrack = { ...track, lang };
-  const queued = s.queue.some((q) => q.slug === full.slug && q.lang === lang);
+  const queued = s.queue.some((q) => q.slug === full.slug);
   const t = LABEL[lang];
+  const cls = 'rounded-full border border-black/15 px-3 py-1.5 text-xs font-medium text-black/75 dark:border-white/20 dark:text-white/75';
 
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      <button
-        type="button"
-        onClick={() => (queued ? hub.removeFromQueue(s.queue.findIndex((q) => q.slug === full.slug && q.lang === lang)) : hub.enqueue(full))}
-        className="rounded-full border border-black/15 px-3 py-1.5 text-xs font-medium text-black/75 dark:border-white/20 dark:text-white/75"
-        style={{ minHeight: 0 }}
-      >
-        {queued ? t.added : t.add}
-      </button>
+    <div className="mt-2 flex flex-wrap gap-2" data-tour="listen-buttons">
       {ui.miniPlayer !== 'off' && (
+        <button type="button" onClick={() => void hub.playBlog(full)} className={cls} style={{ minHeight: 0 }}>
+          ▶ {t.now}
+        </button>
+      )}
+      {ui.queue && (
         <button
           type="button"
-          onClick={() => void hub.playPrebuilt(full)}
-          className="rounded-full border border-black/15 px-3 py-1.5 text-xs font-medium text-black/75 dark:border-white/20 dark:text-white/75"
+          onClick={() => (queued ? hub.removeFromQueue(s.queue.findIndex((q) => q.slug === full.slug)) : hub.enqueue(full))}
+          className={cls}
           style={{ minHeight: 0 }}
         >
-          ▶ {t.now}
+          {queued ? t.added : t.add}
         </button>
       )}
     </div>

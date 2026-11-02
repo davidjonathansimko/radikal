@@ -1,47 +1,87 @@
 'use client';
 
-// Centrul audio al aplicatiei: stie ce se asculta acum (un element <audio>), chiar daca pagina care l-a pornit
-// a fost parasita. Il folosesc playerul mic, lista de asteptare, temporizatorul de somn, memorarea locului si ascultarea offline.
+// Centrul audio al aplicatiei. Regula de baza: UN SINGUR sunet odata.
+//  - „Playerul mic" = ascultarea simpla (butonul Play din articol, „Jetzt hören", lista de asteptare).
+//  - „Play Blog" (modalul dinamic) este separat: cat timp e deschis, playerul mic se opreste din redat si isi
+//    reia locul cand modalul se inchide (vezi `beginExternal` / `endExternal`).
 // Totul se activeaza din admin (vezi `uiSettings`); fara ele, nimic din asta nu ruleaza.
 
 import { useSyncExternalStore } from 'react';
 import { getUiSettingsSync } from '@/lib/uiSettings';
 import { wideArtwork, ARTWORK_SIZE } from '@/lib/mediaArtwork';
+import { loadSpeechText, buildSpeechUrl } from '@/lib/blogSpeech';
+
+export type HubLang = 'de' | 'en' | 'ro' | 'ru';
 
 export interface HubTrack {
-  /** Cheia sub care se tine locul ramas (la TextToSpeech include prefixul rubricii). */
+  /** Cheia sub care se tine locul ramas si identitatea in lista (include prefixul rubricii). */
   slug: string;
   /** Slug-ul pentru fisierul pregenerat (`/api/blog-audio`). */
   audioSlug?: string;
+  /** Limba in care este incarcat audio-ul acum. */
   lang: string;
+  /** Titlul original (romana); cele traduse sunt in `titles`. */
   title: string;
+  titles?: Partial<Record<HubLang, string>>;
+  categoryIds?: string[];
   href: string;
   imageUrl?: string | null;
+  /** Doar `blog_posts` poate fi construit din text (daca nu exista audio pregenerat). */
+  table?: 'blog_posts';
+  rawSlug?: string;
 }
 
 export interface HubState {
   track: HubTrack | null;
+  /** 'page' = pornit de ascultarea simpla din articol; 'hub' = pornit de playerul mic. */
+  origin: 'page' | 'hub' | null;
   playing: boolean;
   position: number;
   duration: number;
   /** Pagina care a pornit audio-ul nu mai exista: playerul mic il preia. */
   background: boolean;
+  /** Piesa e afisata, dar nu are inca sunet incarcat (dupa repornirea aplicatiei sau dupa schimbarea limbii). */
+  restored: boolean;
+  loading: boolean;
+  buildPct: number;
   queue: HubTrack[];
   /** Momentul (ms) la care se opreste somnul, sau `'end'` = la sfarsitul blogului. */
   sleep: number | 'end' | null;
-  loading: boolean;
+  /** Titlul si categoria in limba cititorului (le completeaza `AudioHubSync`). */
+  display: { title: string; category: string } | null;
+  /** Play Blog (modalul) este deschis. */
+  external: boolean;
 }
 
 const QUEUE_KEY = 'radikalAudioQueue';
+const LAST_KEY = 'radikalAudioLast';
 const POS_PREFIX = 'radikalAudioPos:';
 const OFFLINE_CACHE = 'radikal-audio-offline';
 
 let audio: HTMLAudioElement | null = null;
-let state: HubState = { track: null, playing: false, position: 0, duration: 0, background: false, queue: [], sleep: null, loading: false };
+let hubLang: string = 'de';
+let playToken = 0;
+let state: HubState = {
+  track: null,
+  origin: null,
+  playing: false,
+  position: 0,
+  duration: 0,
+  background: false,
+  restored: false,
+  loading: false,
+  buildPct: 0,
+  queue: [],
+  sleep: null,
+  display: null,
+  external: false,
+};
 const listeners = new Set<() => void>();
 let sleepTimer: ReturnType<typeof setTimeout> | undefined;
 let lastSave = 0;
 let queueLoaded = false;
+
+type Bound = HTMLAudioElement & { __hubUnbind?: () => void };
 
 function emit(patch: Partial<HubState>) {
   state = { ...state, ...patch };
@@ -67,9 +107,7 @@ function persistQueue() {
   }
 }
 
-const posKey = (t: HubTrack) => `${POS_PREFIX}${t.slug}:${t.lang}`;
-
-/** Locul ramas (0..1) pentru un blog, sau 0. */
+/** Locul ramas (0..1) pentru un blog in limba data, sau 0. */
 export function getSavedRatio(slug: string, lang: string): number {
   try {
     const v = Number(localStorage.getItem(`${POS_PREFIX}${slug}:${lang}`));
@@ -80,7 +118,9 @@ export function getSavedRatio(slug: string, lang: string): number {
 }
 
 function savePosition(force = false) {
-  if (!audio || !state.track || !getUiSettingsSync().resumePos) return;
+  if (!audio || !state.track) return;
+  const ui = getUiSettingsSync();
+  if (!ui.resumePos && ui.miniPlayer === 'off') return;
   const d = audio.duration;
   if (!Number.isFinite(d) || d <= 0) return;
   const now = Date.now();
@@ -88,8 +128,15 @@ function savePosition(force = false) {
   lastSave = now;
   try {
     const ratio = audio.currentTime / d;
-    if (ratio >= 0.97) localStorage.removeItem(posKey(state.track));
-    else localStorage.setItem(posKey(state.track), String(ratio));
+    const t = state.track;
+    if (ratio >= 0.97) {
+      localStorage.removeItem(`${POS_PREFIX}${t.slug}:${t.lang}`);
+      localStorage.removeItem(LAST_KEY);
+    } else {
+      localStorage.setItem(`${POS_PREFIX}${t.slug}:${t.lang}`, String(ratio));
+      // Pentru „reintru in aplicatie si playerul mic e unde l-am lasat".
+      if (state.origin !== null && ui.miniPlayer !== 'off') localStorage.setItem(LAST_KEY, JSON.stringify({ track: t, ratio }));
+    }
   } catch {
     /* ignorat */
   }
@@ -97,11 +144,13 @@ function savePosition(force = false) {
 
 // ---- Media Session (notificare, ecran de blocare) ---------------------------------------------------
 function applyMediaSession() {
-  if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !state.track) return;
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !state.track || state.external) return;
   const t = state.track;
+  const title = state.display?.title || t.titles?.[hubLang as HubLang] || t.title;
+  const album = state.display?.category || 'Radikale Bibellehre';
   const set = (art: { src: string; sizes: string; type: string }[]) => {
     try {
-      navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: 'RADIKAL.', album: 'Radikale Bibellehre', artwork: art });
+      navigator.mediaSession.metadata = new MediaMetadata({ title, artist: 'RADIKAL.', album, artwork: art });
     } catch {
       /* ignorat */
     }
@@ -109,7 +158,7 @@ function applyMediaSession() {
   set(t.imageUrl ? [{ src: t.imageUrl, sizes: '512x512', type: 'image/jpeg' }] : [{ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }]);
   if (t.imageUrl) {
     void wideArtwork(t.imageUrl).then((d) => {
-      if (d && state.track === t) set([{ src: d, sizes: ARTWORK_SIZE, type: 'image/jpeg' }]);
+      if (d && state.track === t && !state.external) set([{ src: d, sizes: ARTWORK_SIZE, type: 'image/jpeg' }]);
     });
   }
   try {
@@ -120,7 +169,8 @@ function applyMediaSession() {
     ms.setActionHandler('seekbackward', () => hub.seekBy(-15));
     ms.setActionHandler('seekforward', () => hub.seekBy(30));
     ms.setActionHandler('seekto', (d) => typeof d.seekTime === 'number' && hub.seek(d.seekTime));
-    ms.setActionHandler('nexttrack', state.queue.length ? () => void hub.playNext() : null);
+    ms.setActionHandler('nexttrack', getUiSettingsSync().queue && state.queue.length ? () => void hub.playNext() : null);
+    ms.setActionHandler('previoustrack', null);
   } catch {
     /* ignorat */
   }
@@ -133,26 +183,39 @@ function bind(a: HTMLAudioElement) {
     emit({ position: a.currentTime || 0, duration: Number.isFinite(a.duration) ? a.duration : 0 });
     savePosition();
   };
+  const onPause = () => {
+    savePosition(true);
+    sync();
+  };
   const onEnded = () => {
     savePosition(true);
-    emit({ playing: false });
+    try {
+      localStorage.removeItem(LAST_KEY);
+    } catch {
+      /* ignorat */
+    }
     if (state.sleep === 'end') {
-      emit({ sleep: null });
+      emit({ sleep: null, playing: false });
       return;
     }
-    if (getUiSettingsSync().queue && state.queue.length) void hub.playNext();
+    if (getUiSettingsSync().queue && state.queue.length) {
+      void hub.playNext();
+      return;
+    }
+    // Blogul s-a terminat si nu mai urmeaza altceva: playerul mic dispare.
+    unbind(a);
+    if (audio === a) audio = null;
+    emit({ track: null, origin: null, playing: false, position: 0, duration: 0, background: false, restored: false });
   };
   a.addEventListener('timeupdate', onTime);
   a.addEventListener('play', sync);
-  a.addEventListener('pause', () => {
-    savePosition(true);
-    sync();
-  });
+  a.addEventListener('pause', onPause);
   a.addEventListener('durationchange', sync);
   a.addEventListener('ended', onEnded);
-  (a as HTMLAudioElement & { __hubUnbind?: () => void }).__hubUnbind = () => {
+  (a as Bound).__hubUnbind = () => {
     a.removeEventListener('timeupdate', onTime);
     a.removeEventListener('play', sync);
+    a.removeEventListener('pause', onPause);
     a.removeEventListener('durationchange', sync);
     a.removeEventListener('ended', onEnded);
   };
@@ -160,7 +223,8 @@ function bind(a: HTMLAudioElement) {
 }
 
 function unbind(a: HTMLAudioElement | null) {
-  (a as (HTMLAudioElement & { __hubUnbind?: () => void }) | null)?.__hubUnbind?.();
+  (a as Bound | null)?.__hubUnbind?.();
+  if (a) (a as Bound).__hubUnbind = undefined;
 }
 
 async function resolveUrl(url: string): Promise<string> {
@@ -175,20 +239,26 @@ async function resolveUrl(url: string): Promise<string> {
   return url;
 }
 
+function dropAudio(pause = true) {
+  if (!audio) return;
+  savePosition(true);
+  unbind(audio);
+  if (pause) audio.pause();
+  audio = null;
+}
+
 export const hub = {
   getState: () => state,
+  getLang: () => hubLang,
 
-  /** Preia un element audio pornit de o pagina (de ex. ascultarea simpla din articol). */
-  attach(el: HTMLAudioElement, track: HubTrack, background = false) {
+  /** Preia un element audio pornit de o pagina (ascultarea simpla din articol). Orice alt sunet in curs se opreste. */
+  attach(el: HTMLAudioElement, track: HubTrack, origin: 'page' | 'hub' = 'page') {
     loadQueue();
-    if (audio && audio !== el) {
-      unbind(audio);
-      if (state.background) audio.pause();
-    }
+    if (audio && audio !== el) dropAudio(true);
     audio = el;
     unbind(el);
     bind(el);
-    emit({ track, background, loading: false });
+    emit({ track, origin, background: origin === 'hub', restored: false, loading: false, buildPct: 0 });
     applyMediaSession();
   },
 
@@ -202,24 +272,24 @@ export const hub = {
 
   detach(el: HTMLAudioElement) {
     if (audio !== el) return;
-    savePosition(true);
-    unbind(el);
-    audio = null;
-    emit({ track: null, playing: false, position: 0, duration: 0, background: false });
+    dropAudio(false);
+    emit({ track: null, origin: null, playing: false, position: 0, duration: 0, background: false, restored: false });
   },
 
-  /** Cititorul s-a intors la articolul al carui audio ruleaza in fundal: il oprim, locul ramane salvat. */
+  /** Cititorul s-a intors la articolul al carui audio (pornit din pagina) ruleaza in fundal: il oprim, locul ramane salvat. */
   takeBack(slug: string) {
-    if (audio && state.track?.slug === slug && state.background) {
-      savePosition(true);
-      audio.pause();
-      unbind(audio);
-      audio = null;
-      emit({ track: null, playing: false, position: 0, duration: 0, background: false });
+    if (audio && state.track?.slug === slug && state.origin === 'page' && state.background) {
+      dropAudio(true);
+      emit({ track: null, origin: null, playing: false, position: 0, duration: 0, background: false, restored: false });
     }
   },
 
   toggle(play?: boolean) {
+    if (state.external) return;
+    if (state.restored && state.track) {
+      if (play !== false) void hub.playBlog(state.track, { resume: 'force' });
+      return;
+    }
     if (!audio) return;
     const want = play ?? audio.paused;
     if (want) void audio.play().catch(() => {});
@@ -234,16 +304,63 @@ export const hub = {
     if (audio) hub.seek(audio.currentTime + d);
   },
 
+  /** Inchide playerul mic: se opreste sunetul si dispare (lista de asteptare ramane). */
   stop() {
-    if (!audio) return;
-    savePosition(true);
-    audio.pause();
-    unbind(audio);
-    audio = null;
+    ++playToken;
+    dropAudio(true);
     clearTimeout(sleepTimer);
-    emit({ track: null, playing: false, position: 0, duration: 0, background: false, sleep: null });
+    try {
+      localStorage.removeItem(LAST_KEY);
+    } catch {
+      /* ignorat */
+    }
+    emit({ track: null, origin: null, playing: false, position: 0, duration: 0, background: false, restored: false, loading: false, buildPct: 0, sleep: null });
     try {
       navigator.mediaSession.metadata = null;
+    } catch {
+      /* ignorat */
+    }
+  },
+
+  // ---- Play Blog (modal) ----
+  /** Se deschide Play Blog: playerul mic se opreste din redat; notificarea apartine acum modalului. */
+  beginExternal() {
+    if (audio && !audio.paused) audio.pause();
+    emit({ external: true });
+  },
+  endExternal() {
+    emit({ external: false });
+    applyMediaSession();
+  },
+
+  // ---- afisare in limba cititorului ----
+  setDisplay(display: { title: string; category: string } | null) {
+    emit({ display });
+    applyMediaSession();
+  },
+
+  /** Limba aplicatiei s-a schimbat: titlurile se adapteaza, iar blogul care ruleaza reincepe de la inceput in limba noua. */
+  setLanguage(lang: string) {
+    if (lang === hubLang) return;
+    hubLang = lang;
+    const tr = state.track;
+    if (!tr || tr.lang === lang) return;
+    const wasActive = state.playing || state.loading;
+    ++playToken;
+    dropAudio(true);
+    emit({ playing: false, position: 0, duration: 0, loading: false, buildPct: 0, display: null });
+    if (wasActive && !state.external) void hub.playBlog(tr, { resume: 'none' });
+    else emit({ track: { ...tr, lang }, restored: true, background: true, origin: 'hub' });
+  },
+
+  /** Dupa repornirea aplicatiei: playerul mic apare din nou, in pauza, de unde a ramas. */
+  restoreLast() {
+    loadQueue();
+    if (state.track || typeof window === 'undefined' || getUiSettingsSync().miniPlayer === 'off') return;
+    try {
+      const raw = JSON.parse(localStorage.getItem(LAST_KEY) || 'null') as { track?: HubTrack; ratio?: number } | null;
+      if (!raw?.track?.slug) return;
+      emit({ track: { ...raw.track, lang: hubLang }, origin: 'hub', background: true, restored: true, playing: false, position: 0, duration: 0, display: null });
     } catch {
       /* ignorat */
     }
@@ -252,7 +369,7 @@ export const hub = {
   // ---- lista de asteptare ----
   enqueue(track: HubTrack) {
     loadQueue();
-    if (state.queue.some((q) => q.slug === track.slug && q.lang === track.lang)) return;
+    if (state.queue.some((q) => q.slug === track.slug)) return;
     emit({ queue: [...state.queue, track] });
     persistQueue();
   },
@@ -260,41 +377,75 @@ export const hub = {
     emit({ queue: state.queue.filter((_, k) => k !== i) });
     persistQueue();
   },
-  isQueued: (slug: string, lang: string) => state.queue.some((q) => q.slug === slug && q.lang === lang),
+  isQueued: (slug: string) => state.queue.some((q) => q.slug === slug),
 
-  /** Porneste un blog cu audio pregenerat (cautat dupa `audioSlug`). Intoarce `false` daca nu exista fisier. */
-  async playPrebuilt(track: HubTrack): Promise<boolean> {
+  /** Porneste acum un element din lista de asteptare. */
+  async playQueueIndex(i: number): Promise<void> {
+    const item = state.queue[i];
+    if (!item) return;
+    emit({ queue: state.queue.filter((_, k) => k !== i) });
+    persistQueue();
+    await hub.playBlog(item);
+  },
+
+  /**
+   * Porneste un blog in limba aplicatiei: intai fisierul pregenerat, altfel vocea se construieste din text.
+   * Orice alt sunet in curs se opreste inainte. Intoarce `false` daca nu se poate reda.
+   */
+  async playBlog(track: HubTrack, opts: { resume?: 'auto' | 'force' | 'none' } = {}): Promise<boolean> {
     loadQueue();
-    emit({ loading: true });
+    if (state.external) return false;
+    const t: HubTrack = { ...track, lang: hubLang };
+    const token = ++playToken;
+    dropAudio(true);
+    emit({ track: t, origin: 'hub', background: true, restored: false, loading: true, buildPct: 0, playing: false, position: 0, duration: 0, display: null });
+    applyMediaSession();
+
+    const fail = () => {
+      if (token === playToken) emit({ track: null, origin: null, loading: false, buildPct: 0 });
+      return false;
+    };
     try {
-      const r = await fetch(`/api/blog-audio?slug=${encodeURIComponent(track.audioSlug ?? track.slug)}&language=${track.lang}`);
-      const d = await r.json();
-      if (!d?.audioUrl) {
-        emit({ loading: false });
-        return false;
+      let url: string | null = null;
+      try {
+        const r = await fetch(`/api/blog-audio?slug=${encodeURIComponent(t.audioSlug ?? t.slug)}&language=${t.lang}`);
+        const d = await r.json();
+        if (d?.audioUrl) url = await resolveUrl(d.audioUrl as string);
+      } catch {
+        /* cadem pe constructia din text */
       }
-      const el = new Audio(await resolveUrl(d.audioUrl as string));
+      if (token !== playToken) return false;
+      if (!url && t.table === 'blog_posts' && t.rawSlug) {
+        const text = await loadSpeechText(t.rawSlug, t.lang);
+        if (token !== playToken) return false;
+        if (text) {
+          url = await buildSpeechUrl(text, t.lang, { slug: t.slug, title: t.title }, (pct) => token === playToken && emit({ buildPct: pct }), () => token !== playToken);
+        }
+      }
+      if (token !== playToken) return false;
+      if (!url) return fail();
+
+      const el = new Audio(url);
       el.preload = 'auto';
-      hub.attach(el, track, true);
-      if (getUiSettingsSync().resumePos) {
-        const ratio = getSavedRatio(track.slug, track.lang);
-        if (ratio > 0) el.addEventListener('loadedmetadata', () => (el.currentTime = ratio * el.duration), { once: true });
-      }
+      hub.attach(el, t, 'hub');
+      const mode = opts.resume ?? 'auto';
+      const ratio = mode === 'none' ? 0 : mode === 'force' || getUiSettingsSync().resumePos ? getSavedRatio(t.slug, t.lang) : 0;
+      if (ratio > 0) el.addEventListener('loadedmetadata', () => (el.currentTime = ratio * el.duration), { once: true });
       await el.play().catch(() => {});
       return true;
     } catch {
-      emit({ loading: false });
-      return false;
+      return fail();
     }
   },
 
   async playNext(): Promise<void> {
     loadQueue();
+    if (state.external) return;
     while (state.queue.length) {
       const [next, ...rest] = state.queue;
       emit({ queue: rest });
       persistQueue();
-      if (await hub.playPrebuilt(next)) return;
+      if (await hub.playBlog(next)) return;
     }
   },
 
@@ -307,7 +458,6 @@ export const hub = {
     }
     emit({ sleep: Date.now() + minutes * 60000 });
     sleepTimer = setTimeout(() => {
-      // coborare lina a volumului, apoi pauza
       const a = audio;
       if (!a) return emit({ sleep: null });
       const start = a.volume;

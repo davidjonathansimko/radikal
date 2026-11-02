@@ -13,7 +13,7 @@ export type LangFx = 'shake' | 'fade' | 'blur' | 'rise' | 'none';
 export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line';
 
 /** Functii care se pornesc sau se opresc din admin; oprit = exact ca inainte. */
-export type UiToggleKey = 'queue' | 'resumePos' | 'sleepTimer' | 'offlineAudio' | 'todayStreak' | 'todayListen' | 'searchSuggest' | 'seriesProgress' | 'calmEffects';
+export type UiToggleKey = 'queue' | 'resumePos' | 'sleepTimer' | 'offlineAudio' | 'hideInlinePlayer' | 'todayStreak' | 'todayListen' | 'searchSuggest' | 'seriesProgress' | 'calmEffects';
 
 export interface UiSettings extends Record<UiToggleKey, boolean> {
   barBehavior: BarBehavior;
@@ -38,6 +38,7 @@ export const UI_DEFAULTS: UiSettings = {
   resumePos: false,
   sleepTimer: false,
   offlineAudio: false,
+  hideInlinePlayer: false,
   todayStreak: false,
   todayListen: false,
   searchSuggest: false,
@@ -60,6 +61,7 @@ export const UI_TOGGLES: { key: UiToggleKey; group: string; title: string; text:
   { key: 'resumePos', group: 'Ascultare', title: 'Memorarea locului unde ai rămas (la fiecare blog)', text: 'La Play, audio-ul continuă de unde a fost oprit data trecută, separat pentru fiecare blog.' },
   { key: 'sleepTimer', group: 'Ascultare', title: 'Temporizator de somn', text: 'Din playerul mic: 15 / 30 / 45 / 60 min sau până la sfârșitul blogului.' },
   { key: 'offlineAudio', group: 'Ascultare', title: 'Ascultare offline', text: '„Salvează pe telefon” pentru audio-ul pregenerat, ca să meargă fără internet (se salvează în aplicație).' },
+  { key: 'hideInlinePlayer', group: 'Ascultare', title: 'Ascunde playerul din articol (rămâne doar „Ascultă acum”)', text: 'Funcționează doar cu playerul mic pornit: bara cu Play, progres și viteză din articol dispare, iar „Ascultă acum” construiește singur audio-ul (ca Play-ul simplu). Play Blog rămâne.' },
   { key: 'todayStreak', group: 'Pagina principală', title: 'Contor de zile la rând (discret)', text: 'O linie mică în cardul „Azi”: „3 zile la rând”. Fără presiune, nu apare niciun mesaj negativ.' },
   { key: 'todayListen', group: 'Pagina principală', title: 'Buton „Ascultă” în cardul „Azi”', text: 'Ultimul blog cu audio pregenerat, cu un buton care îl pornește direct în playerul mic.' },
   { key: 'searchSuggest', group: 'Căutare', title: 'Căutare cu sugestii', text: 'Când căutarea e goală: serii, categorii și etichete populare, ca să ating și să caute.' },
@@ -131,6 +133,7 @@ function normalize(v: Partial<UiSettings> | null | undefined): UiSettings {
     resumePos: o.resumePos === true,
     sleepTimer: o.sleepTimer === true,
     offlineAudio: o.offlineAudio === true,
+    hideInlinePlayer: o.hideInlinePlayer === true,
     todayStreak: o.todayStreak === true,
     todayListen: o.todayListen === true,
     searchSuggest: o.searchSuggest === true,

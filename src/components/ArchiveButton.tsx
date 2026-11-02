@@ -121,7 +121,7 @@ function ArchiveSheet({ table, kind, itemPath, onClose }: Omit<Props, 'className
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6 pt-3">
+        <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-6 pt-3" style={{ scrollbarWidth: 'none' }}>
           {loading ? (
             <p className="py-10 text-center text-black/50 dark:text-white/50">…</p>
           ) : tree.length === 0 ? (

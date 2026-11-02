@@ -591,9 +591,10 @@ export default function Navigation() {
     const root = document.documentElement;
     const el = document.querySelector<HTMLElement>('[data-mobile-nav="bottom"] .bar-inner');
     const measure = () => {
-      const r = el?.getBoundingClientRect();
-      if (!el || !r || r.width === 0) root.style.removeProperty('--bar-space');
-      else root.style.setProperty('--bar-space', `${Math.round(window.innerHeight - r.top + 8)}px`);
+      // `offsetHeight` nu tine cont de transform: masuram corect si cand bara e ascunsa sau in miscare.
+      const outer = el?.closest<HTMLElement>('[data-mobile-nav="bottom"]');
+      if (!el || !outer || outer.offsetWidth === 0) root.style.removeProperty('--bar-space');
+      else root.style.setProperty('--bar-space', `${outer.offsetHeight + 8}px`);
     };
     measure();
     const ro = el && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;

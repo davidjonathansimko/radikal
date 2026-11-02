@@ -5,17 +5,18 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { hub, useAudioHub } from '@/lib/audioHub';
 import { useUiSettings } from '@/lib/uiSettings';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useTrackTitles, useCategories, categoryOf } from '@/hooks/useTrackTitles';
 
 const T = {
-  de: { queue: 'Hörliste', sleep: 'Einschlafen', off: 'Aus', end: 'Bis zum Ende', offline: 'Offline speichern', offlineOn: 'Offline gespeichert', open: 'Artikel öffnen', stop: 'Beenden', empty: 'Die Liste ist leer.', min: 'Min.', next: 'Nächster' },
-  en: { queue: 'Listening list', sleep: 'Sleep timer', off: 'Off', end: 'Until the end', offline: 'Save offline', offlineOn: 'Saved offline', open: 'Open article', stop: 'Stop', empty: 'The list is empty.', min: 'min', next: 'Next' },
-  ro: { queue: 'Lista de ascultare', sleep: 'Temporizator de somn', off: 'Oprit', end: 'Până la sfârșit', offline: 'Salvează pe telefon', offlineOn: 'Salvat pe telefon', open: 'Deschide articolul', stop: 'Oprește', empty: 'Lista este goală.', min: 'min', next: 'Următorul' },
-  ru: { queue: 'Список прослушивания', sleep: 'Таймер сна', off: 'Выкл.', end: 'До конца', offline: 'Сохранить офлайн', offlineOn: 'Сохранено офлайн', open: 'Открыть статью', stop: 'Остановить', empty: 'Список пуст.', min: 'мин', next: 'Далее' },
+  de: { queue: 'Hörliste', sleep: 'Einschlafen', off: 'Aus', end: 'Bis zum Ende', offline: 'Offline speichern', offlineOn: 'Offline gespeichert', open: 'Artikel öffnen', stop: 'Beenden', empty: 'Die Liste ist leer.', min: 'Min.', next: 'Nächster', category: 'Kategorie', close: 'Schließen' },
+  en: { queue: 'Listening list', sleep: 'Sleep timer', off: 'Off', end: 'Until the end', offline: 'Save offline', offlineOn: 'Saved offline', open: 'Open article', stop: 'Stop', empty: 'The list is empty.', min: 'min', next: 'Next', category: 'Category', close: 'Close' },
+  ro: { queue: 'Lista de ascultare', sleep: 'Temporizator de somn', off: 'Oprit', end: 'Până la sfârșit', offline: 'Salvează pe telefon', offlineOn: 'Salvat pe telefon', open: 'Deschide articolul', stop: 'Oprește', empty: 'Lista este goală.', min: 'min', next: 'Următorul', category: 'Categorie', close: 'Închide' },
+  ru: { queue: 'Список прослушивания', sleep: 'Таймер сна', off: 'Выкл.', end: 'До конца', offline: 'Сохранить офлайн', offlineOn: 'Сохранено офлайн', open: 'Открыть статью', stop: 'Остановить', empty: 'Список пуст.', min: 'мин', next: 'Далее', category: 'Категория', close: 'Закрыть' },
 } as const;
 
 const fmt = (s: number) => {
@@ -49,14 +50,18 @@ function Sheet({ onClose }: { onClose: () => void }) {
   const s = useAudioHub();
   const ui = useUiSettings();
   const { language } = useLanguage();
-  const t = T[(['de', 'en', 'ro', 'ru'].includes(language) ? language : 'de') as keyof typeof T];
+  const lang = (['de', 'en', 'ro', 'ru'].includes(language) ? language : 'de') as keyof typeof T;
+  const t = T[lang];
   const [offline, setOffline] = useState<'idle' | 'busy' | 'saved'>('idle');
   const track = s.track;
+  const cats = useCategories();
+  const titleOf = useTrackTitles(track ? [track, ...s.queue] : s.queue, lang);
+  useBodyScrollLock(true);
 
   useEffect(() => {
     if (!track || !ui.offlineAudio) return;
     let alive = true;
-    void fetch(`/api/blog-audio?slug=${encodeURIComponent(track.audioSlug ?? track.slug)}&language=${track.lang}`)
+    void fetch(`/api/blog-audio?slug=${encodeURIComponent(track.audioSlug ?? track.slug)}&language=${lang}`)
       .then((r) => r.json())
       .then((d) => (d?.audioUrl ? hub.isOffline(d.audioUrl) : false))
       .then((v) => alive && setOffline(v ? 'saved' : 'idle'))
@@ -64,7 +69,7 @@ function Sheet({ onClose }: { onClose: () => void }) {
     return () => {
       alive = false;
     };
-  }, [track, ui.offlineAudio]);
+  }, [track, ui.offlineAudio, lang]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -74,18 +79,22 @@ function Sheet({ onClose }: { onClose: () => void }) {
 
   if (!track) return null;
   const btn = 'flex h-11 min-w-11 items-center justify-center rounded-full border border-black/15 px-3 text-sm font-semibold text-black dark:border-white/20 dark:text-white';
+  const cat = categoryOf(cats, track, lang);
 
   return createPortal(
     <div className="fixed inset-0 z-[9992] flex items-end justify-center p-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] sm:items-center" role="dialog" aria-modal="true">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm" />
-      <div className="relative max-h-[82vh] w-full max-w-md overflow-y-auto rounded-3xl border border-black/10 bg-white p-4 text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white">
+      <button type="button" aria-label={t.close} onClick={onClose} className="absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm" />
+      <div className="scrollbar-hide relative max-h-[82vh] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl border border-black/10 bg-white p-4 text-black shadow-2xl dark:border-white/15 dark:bg-neutral-950 dark:text-white" style={{ scrollbarWidth: 'none' }}>
         <div className="flex items-center gap-3">
           <Cover src={track.imageUrl} size={64} />
           <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 font-cinzel text-base font-bold leading-snug">{track.title}</p>
+            <p className="line-clamp-2 font-cinzel text-base font-bold leading-snug">{titleOf(track) || '\u00a0'}</p>
+            <p className="truncate text-[11px] text-black/55 dark:text-white/55">
+              RADIKAL.{cat ? ` · ${t.category}: ${cat}` : ''}
+            </p>
             <Link href={track.href} onClick={onClose} className="text-xs text-black/55 underline dark:text-white/55">{t.open}</Link>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="h-11 w-11 rounded-full text-lg text-black/55 dark:text-white/55">✕</button>
+          <button type="button" onClick={onClose} aria-label={t.close} className="h-11 w-11 rounded-full text-lg text-black/55 dark:text-white/55">✕</button>
         </div>
 
         <div className="mt-4">
@@ -97,10 +106,11 @@ function Sheet({ onClose }: { onClose: () => void }) {
             onChange={(e) => hub.seek(Number(e.target.value))}
             className="w-full accent-black dark:accent-white"
             aria-label="Seek"
+            disabled={s.loading || s.restored}
           />
           <div className="flex justify-between text-[11px] tabular-nums text-black/55 dark:text-white/55">
             <span>{fmt(s.position)}</span>
-            <span>{fmt(s.duration)}</span>
+            <span>{s.loading ? `${s.buildPct}%` : fmt(s.duration)}</span>
           </div>
         </div>
 
@@ -142,12 +152,12 @@ function Sheet({ onClose }: { onClose: () => void }) {
             disabled={offline === 'busy'}
             onClick={async () => {
               if (offline === 'saved') {
-                await hub.removeOffline(track.audioSlug ?? track.slug, track.lang);
+                await hub.removeOffline(track.audioSlug ?? track.slug, lang);
                 setOffline('idle');
                 return;
               }
               setOffline('busy');
-              setOffline((await hub.saveOffline(track.audioSlug ?? track.slug, track.lang)) ? 'saved' : 'idle');
+              setOffline((await hub.saveOffline(track.audioSlug ?? track.slug, lang)) ? 'saved' : 'idle');
             }}
             className="mt-5 w-full rounded-xl border border-black/15 px-3 py-2.5 text-sm dark:border-white/20"
           >
@@ -163,10 +173,12 @@ function Sheet({ onClose }: { onClose: () => void }) {
             ) : (
               <ol className="space-y-1">
                 {s.queue.map((q, i) => (
-                  <li key={`${q.slug}-${q.lang}`} className="flex items-center gap-2 rounded-lg border border-black/10 px-2 py-1.5 dark:border-white/15">
-                    <span className="w-5 text-center text-xs text-black/50 dark:text-white/50">{i + 1}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm">{q.title}</span>
-                    <button type="button" onClick={() => hub.removeFromQueue(i)} className="h-8 w-8 text-black/50 dark:text-white/50" aria-label="Remove">✕</button>
+                  <li key={q.slug} className="flex items-center gap-1 rounded-lg border border-black/10 dark:border-white/15">
+                    <button type="button" onClick={() => { void hub.playQueueIndex(i); onClose(); }} className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left" style={{ minHeight: 0 }}>
+                      <span className="w-5 text-center text-xs text-black/50 dark:text-white/50">{i + 1}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm">{titleOf(q) || '\u00a0'}</span>
+                    </button>
+                    <button type="button" onClick={() => hub.removeFromQueue(i)} className="h-9 w-9 text-black/50 dark:text-white/50" aria-label="Remove">✕</button>
                   </li>
                 ))}
               </ol>
@@ -186,21 +198,40 @@ function Sheet({ onClose }: { onClose: () => void }) {
 export default function MiniPlayer() {
   const s = useAudioHub();
   const ui = useUiSettings();
-  const pathname = usePathname();
+  const { language } = useLanguage();
+  const lang = (['de', 'en', 'ro', 'ru'].includes(language) ? language : 'de') as keyof typeof T;
+  const t = T[lang];
+  const cats = useCategories();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const titleOf = useTrackTitles(s.track ? [s.track] : [], lang);
 
   if (!mounted || ui.miniPlayer === 'off' || !s.track) return null;
   const track = s.track;
   const style = ui.miniPlayer;
   const pct = s.duration > 0 ? Math.min(100, (s.position / s.duration) * 100) : 0;
-  void pathname;
+  const title = titleOf(track) || '\u00a0';
+  const cat = categoryOf(cats, track, lang);
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     hub.toggle();
   };
+  const closeBtn = (size = 30) => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        hub.stop();
+      }}
+      aria-label={t.close}
+      style={{ width: size, height: size, minHeight: 0, minWidth: 0 }}
+      className="flex shrink-0 items-center justify-center rounded-full text-[15px] text-black/55 hover:bg-black/10 dark:text-white/55 dark:hover:bg-white/10"
+    >
+      ✕
+    </button>
+  );
   const playBtn = (size = 34, extra = '') => (
     <button
       type="button"
@@ -209,13 +240,24 @@ export default function MiniPlayer() {
       style={{ width: size, height: size, minHeight: 0, minWidth: 0 }}
       className={`flex shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black ${extra}`}
     >
-      <PlayIcon playing={s.playing} size={Math.round(size * 0.5)} />
+      {s.loading ? (
+        <span className="block animate-spin rounded-full border-2 border-current border-t-transparent" style={{ width: Math.round(size * 0.45), height: Math.round(size * 0.45) }} />
+      ) : (
+        <PlayIcon playing={s.playing} size={Math.round(size * 0.5)} />
+      )}
     </button>
+  );
+  const sub = (
+    <span className="block truncate text-[10px] text-black/55 dark:text-white/55">
+      RADIKAL.{cat ? ` · ${t.category}: ${cat}` : ''}
+      {s.loading ? ` · ${s.buildPct}%` : ''}
+      {s.queue.length > 0 && ui.queue ? ` · +${s.queue.length}` : ''}
+    </span>
   );
   const titleBtn = (cls = '') => (
     <button type="button" onClick={() => setOpen(true)} className={`min-w-0 flex-1 text-left ${cls}`} style={{ minHeight: 0, minWidth: 0 }}>
-      <span className="block truncate font-cinzel text-[13px] font-semibold text-black dark:text-white">{track.title}</span>
-      <span className="block truncate text-[10px] text-black/55 dark:text-white/55">RADIKAL.{s.queue.length > 0 && ui.queue ? ` · +${s.queue.length}` : ''}</span>
+      <span className="block truncate font-cinzel text-[13px] font-semibold text-black dark:text-white">{title}</span>
+      {sub}
     </button>
   );
   const bar = (h: string) => (
@@ -235,26 +277,29 @@ export default function MiniPlayer() {
           <Cover src={track.imageUrl} size={38} />
           {titleBtn()}
           {playBtn(36)}
+          {closeBtn(30)}
         </div>
       );
       break;
     case 'pill':
       wrap = 'left-1/2 w-[min(92vw,380px)] -translate-x-1/2 rounded-full border border-black/10 bg-white/90 shadow-lg backdrop-blur-xl dark:border-white/15 dark:bg-black/80';
       body = (
-        <div className="relative flex items-center gap-2.5 overflow-hidden rounded-full p-1.5 pr-2.5">
+        <div className="relative flex items-center gap-2 overflow-hidden rounded-full p-1.5 pr-1.5">
           <Cover src={track.imageUrl} size={38} round />
           {titleBtn()}
           {playBtn(34)}
+          {closeBtn(28)}
         </div>
       );
       break;
     case 'glass':
       wrap = 'left-1/2 w-[min(92vw,380px)] -translate-x-1/2 rounded-full border border-white/20 bg-white/35 shadow-lg backdrop-blur-2xl dark:border-white/10 dark:bg-black/35';
       body = (
-        <div className="relative flex items-center gap-2.5 overflow-hidden rounded-full p-1.5 pr-2.5">
+        <div className="relative flex items-center gap-2 overflow-hidden rounded-full p-1.5 pr-1.5">
           <Cover src={track.imageUrl} size={38} round />
           {titleBtn()}
           {playBtn(34)}
+          {closeBtn(28)}
         </div>
       );
       break;
@@ -265,12 +310,14 @@ export default function MiniPlayer() {
           <div className="flex items-center gap-3">
             <Cover src={track.imageUrl} size={56} />
             <button type="button" onClick={() => setOpen(true)} className="min-w-0 flex-1 text-left" style={{ minHeight: 0, minWidth: 0 }}>
-              <span className="line-clamp-2 font-cinzel text-[13px] font-semibold leading-snug text-black dark:text-white">{track.title}</span>
+              <span className="line-clamp-2 font-cinzel text-[13px] font-semibold leading-snug text-black dark:text-white">{title}</span>
+              {sub}
               <span className="block text-[10px] tabular-nums text-black/55 dark:text-white/55">{fmt(s.position)} / {fmt(s.duration)}</span>
             </button>
             <button type="button" onClick={(e) => { e.stopPropagation(); hub.seekBy(-15); }} aria-label="-15" className="text-[11px] font-semibold text-black/70 dark:text-white/70" style={{ minHeight: 0, minWidth: 0 }}>−15</button>
             {playBtn(40)}
             <button type="button" onClick={(e) => { e.stopPropagation(); hub.seekBy(30); }} aria-label="+30" className="text-[11px] font-semibold text-black/70 dark:text-white/70" style={{ minHeight: 0, minWidth: 0 }}>+30</button>
+            {closeBtn(28)}
           </div>
           <span className="relative mt-2 block h-[3px] w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/15" aria-hidden="true">
             <span className="block h-full bg-black dark:bg-white" style={{ width: `${pct}%` }} />
@@ -284,6 +331,7 @@ export default function MiniPlayer() {
         <div className="flex items-center gap-2 px-2 py-1" style={{ filter: 'drop-shadow(0 1px 4px rgba(128,128,128,0.5))' }}>
           {titleBtn()}
           {playBtn(30)}
+          {closeBtn(26)}
         </div>
       );
       break;
@@ -291,7 +339,11 @@ export default function MiniPlayer() {
       wrap = 'left-0 right-0';
       body = (
         <div className="relative">
-          <div className="flex justify-end px-3 pb-1">{playBtn(32, 'shadow-md')}</div>
+          <div className="flex items-center justify-end gap-2 px-3 pb-1">
+            <button type="button" onClick={() => setOpen(true)} className="min-w-0 flex-1 truncate text-left font-cinzel text-[11px] font-semibold text-black/80 dark:text-white/80" style={{ minHeight: 0, minWidth: 0 }}>{title}</button>
+            {playBtn(32, 'shadow-md')}
+            {closeBtn(26)}
+          </div>
           <span className="relative block h-[3px] w-full bg-black/10 dark:bg-white/15" aria-hidden="true">
             <span className="block h-full bg-black dark:bg-white" style={{ width: `${pct}%` }} />
           </span>

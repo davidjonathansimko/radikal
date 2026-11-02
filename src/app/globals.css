@@ -2838,7 +2838,7 @@ html.dark [data-bar-style="dockglass"] > .bar-inner {
 
 /* Pasul 021126 - playerul mic: se aseaza deasupra barii de jos si se ascunde odata cu ea. */
 .mini-player { transition: translate 0.3s ease, opacity 0.3s ease; }
-html[data-bar-state="hidden"] .mini-player { translate: 0 220%; }
+html[data-bar-state="hidden"] .mini-player { translate: 0 calc(100% + var(--bar-space, 12px) + 24px); }
 html[data-bar-state="faded"] .mini-player { opacity: 0.25; }
 body.intro-active .mini-player,
 body.reading-mode .mini-player,

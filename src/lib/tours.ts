@@ -49,3 +49,54 @@ export const BLOGS_TOUR: TourStep[] = [
     },
   },
 ];
+
+// Prezentarea paginii unui articol (se arata o singura data, pe telefon).
+export const ARTICLE_TOUR: TourStep[] = [
+  {
+    target: '[data-tour="art-play-blog"]',
+    gesture: 'tap',
+    optional: true,
+    title: { de: 'Blog abspielen', en: 'Play blog', ro: 'Redă blogul', ru: 'Слушать блог' },
+    text: {
+      de: 'Der Text läuft im Takt der Stimme mit, wie ein Lied zum Mitlesen. Mit dem X oben rechts schließt du ihn.',
+      en: 'The text follows the voice word by word, like a song you can read along. Close it with the X at the top right.',
+      ro: 'Textul curge odată cu vocea, cuvânt cu cuvânt. Îl închizi cu X-ul din dreapta sus.',
+      ru: 'Текст идёт вместе с голосом, слово за словом. Закройте его крестиком справа вверху.',
+    },
+  },
+  {
+    target: '[data-tour="art-tools"]',
+    gesture: 'tap',
+    title: { de: 'Lesewerkzeuge', en: 'Reading tools', ro: 'Unelte de citit', ru: 'Инструменты чтения' },
+    text: {
+      de: 'A− / A+ ändert die Schriftgröße. PDF speichert den Artikel. Abend schont die Augen mit warmen Farben. Fokus blendet alles außer dem Text aus. Der Pfeil unten rechts bringt dich beim Scrollen wieder nach oben.',
+      en: 'A− / A+ changes the text size. PDF saves the article. Evening is gentle on the eyes with warm colors. Focus hides everything but the text. The arrow at the bottom right takes you back up when you scroll.',
+      ro: 'A− / A+ schimbă mărimea textului. PDF salvează articolul. Seara folosește culori calde, blânde cu ochii. Focus ascunde tot, în afară de text. Săgeata din dreapta jos te duce înapoi sus când derulezi.',
+      ru: 'A− / A+ меняет размер текста. PDF сохраняет статью. «Вечер» — тёплые цвета, щадящие глаза. «Фокус» скрывает всё, кроме текста. Стрелка справа внизу возвращает вверх при прокрутке.',
+    },
+  },
+  {
+    target: '[data-tour="art-tts"]',
+    gesture: 'tap',
+    optional: true,
+    title: { de: 'Vorlesen', en: 'Read aloud', ro: 'Ascultare', ru: 'Прослушивание' },
+    text: {
+      de: 'Play liest den Artikel vor. Mit dem Balken springst du zu einer Stelle, mit 1x änderst du die Geschwindigkeit.',
+      en: 'Play reads the article aloud. Drag the bar to jump to a spot; 1x changes the speed.',
+      ro: 'Play citește articolul cu voce tare. Cu bara sari la un loc anume, iar 1x schimbă viteza.',
+      ru: 'Play читает статью вслух. Полоса — перемотка, 1x — скорость.',
+    },
+  },
+  {
+    target: '[data-tour="listen-buttons"]',
+    gesture: 'tap',
+    optional: true,
+    title: { de: 'Jetzt hören und Hörliste', en: 'Listen now and list', ro: 'Ascultă acum și listă', ru: 'Слушать и список' },
+    text: {
+      de: 'Jetzt hören startet den Mini-Player, der bleibt, wenn du die Seite wechselst. In die Hörliste legt den Artikel in die Warteschlange: danach spielt der nächste von selbst.',
+      en: 'Listen now starts the mini player, which stays when you change pages. Add to the listening list queues the article; the next one then plays by itself.',
+      ro: 'Ascultă acum pornește playerul mic, care rămâne când schimbi pagina. „În lista de ascultare” pune articolul la coadă: apoi pornește singur următorul.',
+      ru: '«Слушать» запускает мини-плеер, который остаётся при смене страницы. «В список» ставит статью в очередь — следующая включится сама.',
+    },
+  },
+];

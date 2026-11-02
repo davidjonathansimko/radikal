@@ -22,6 +22,9 @@ const translations = {
     subtitle: 'Zuletzt aktualisiert: August 2026',
     
     // 1. Introduction
+    summaryTitle: 'Kurz zusammengefasst',
+    summaryItems: ['Wir verarbeiten nur die Daten, die für den Betrieb der Seite und der App nötig sind.', 'Wir verkaufen Ihre Daten nicht.', 'Einstellungen wie Sprache, Design und Lesemodus bleiben lokal auf Ihrem Gerät.', 'Für Übersetzung und Vorlesen wird nur der Beitragstext an Dienstleister gesendet, keine personenbezogenen Daten.', 'Sie haben Rechte auf Auskunft, Berichtigung und Löschung: schreiben Sie uns über die Kontaktseite.'],
+    summaryNote: 'Darunter folgt die vollständige Datenschutzerklärung.',
     introTitle: '1. Einleitung',
     introText: 'Mit der folgenden Datenschutzerklärung möchten wir Sie darüber aufklären, welche Arten Ihrer personenbezogenen Daten (nachfolgend auch kurz als "Daten" bezeichnet) wir zu welchen Zwecken und in welchem Umfang verarbeiten. Die Datenschutzerklärung gilt für alle von uns durchgeführten Verarbeitungen personenbezogener Daten, sowohl im Rahmen der Erbringung unserer Leistungen als auch insbesondere auf unserer Webseite.',
     
@@ -117,6 +120,9 @@ const translations = {
     titleLine2: 'POLICY',
     subtitle: 'Last updated: August 2026',
     
+    summaryTitle: 'In short',
+    summaryItems: ['We only process the data needed to run the website and the app.', 'We do not sell your data.', 'Settings such as language, theme and reading mode stay local on your device.', 'For translation and read-aloud, only the article text is sent to service providers, never personal data.', 'You have the right to access, correct and delete your data: write to us via the contact page.'],
+    summaryNote: 'The full privacy policy follows below.',
     introTitle: '1. Introduction',
     introText: 'With the following privacy policy, we would like to inform you about the types of your personal data (hereinafter also referred to as "data") that we process, for what purposes and to what extent. The privacy policy applies to all processing of personal data carried out by us, both in the context of providing our services and in particular on our website.',
     
@@ -199,6 +205,9 @@ const translations = {
     titleLine2: 'CONFIDENȚIALITATE',
     subtitle: 'Ultima actualizare: August 2026',
     
+    summaryTitle: 'Pe scurt',
+    summaryItems: ['Prelucrăm doar datele necesare funcționării site-ului și a aplicației.', 'Nu vindem datele dumneavoastră.', 'Setările, precum limba, tema și modul de citire, rămân local pe dispozitivul dumneavoastră.', 'Pentru traducere și citirea cu voce tare se trimite furnizorilor doar textul articolului, nu date personale.', 'Aveți dreptul la acces, rectificare și ștergere: scrieți-ne prin pagina de contact.'],
+    summaryNote: 'Mai jos urmează politica de confidențialitate completă.',
     introTitle: '1. Introducere',
     introText: 'Cu următoarea politică de confidențialitate, dorim să vă informăm despre tipurile de date personale (denumite în continuare și "date") pe care le procesăm, în ce scopuri și în ce măsură. Politica de confidențialitate se aplică tuturor procesărilor de date personale efectuate de noi, atât în contextul furnizării serviciilor noastre, cât și în special pe site-ul nostru.',
     
@@ -281,6 +290,9 @@ const translations = {
     titleLine2: 'КОНФИДЕНЦИАЛЬНОСТИ',
     subtitle: 'Последнее обновление: Август 2026',
     
+    summaryTitle: 'Коротко',
+    summaryItems: ['Мы обрабатываем только данные, необходимые для работы сайта и приложения.', 'Мы не продаём ваши данные.', 'Настройки, такие как язык, тема и режим чтения, остаются локально на вашем устройстве.', 'Для перевода и озвучивания поставщикам услуг отправляется только текст статьи, без персональных данных.', 'Вы имеете право на доступ, исправление и удаление данных: напишите нам через страницу контактов.'],
+    summaryNote: 'Ниже следует полная политика конфиденциальности.',
     introTitle: '1. Введение',
     introText: 'В следующей политике конфиденциальности мы хотели бы проинформировать вас о типах ваших персональных данных (далее также называемых "данными"), которые мы обрабатываем, в каких целях и в каком объёме. Политика конфиденциальности применяется ко всей обработке персональных данных, осуществляемой нами, как в контексте предоставления наших услуг, так и особенно на нашем веб-сайте.',
     
@@ -397,6 +409,17 @@ export default function DatenschutzPage() {
 
         {/* Content */}
         <div className="prose prose-lg dark:prose-invert max-w-none">
+
+          {/* Rezumat scurt, deasupra politicii complete */}
+          <section className="mb-12 rounded-lg border border-red-600/30 bg-red-600/5 p-6" data-testid="privacy-summary">
+            <h2 className="mt-0 mb-3 text-2xl font-cinzel font-bold text-red-600 dark:text-red-500">{t.summaryTitle}</h2>
+            <ul className="mb-3 list-disc space-y-1 pl-5 text-gray-700 dark:text-gray-300">
+              {(Array.isArray(t.summaryItems) ? t.summaryItems : []).map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+            <p className="m-0 text-sm text-gray-600 dark:text-gray-400">{t.summaryNote}</p>
+          </section>
           
           {/* 1. Introduction */}
           <section className="mb-12">

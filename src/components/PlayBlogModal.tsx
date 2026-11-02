@@ -32,6 +32,7 @@ import { useAppFullscreen, useCleanScreen } from '@/lib/appFullscreen';
 import RadikalSignature from '@/components/RadikalSignature';
 import { fetchCustomAudioForLang } from '@/lib/customAudio';
 import { wideArtwork, ARTWORK_SIZE } from '@/lib/mediaArtwork';
+import { hub } from '@/lib/audioHub';
 import ImageEffectLayers, {
   effectsFilter,
   type ImageEffectSettings,
@@ -314,6 +315,9 @@ export default function PlayBlogModal({
         if (typeof d.seekTime === 'number') seek(d.seekTime);
       });
       ms.setActionHandler('stop', () => requestClose());
+      // Fara „urmatorul” din playerul mic: altfel un al doilea blog ar porni peste Play Blog.
+      ms.setActionHandler('nexttrack', null);
+      ms.setActionHandler('previoustrack', null);
     } catch {
       /* browserele vechi nu au MediaMetadata */
     }
@@ -345,6 +349,14 @@ export default function PlayBlogModal({
       /* ignoram */
     }
   }, [isPlaying]);
+
+  // Cat timp Play Blog e deschis, playerul mic sta pe pauza (un singur sunet odata); la inchidere notificarea revine la el.
+  // Declarat DUPA efectul de media session, ca la inchidere sa ruleze ultimul.
+  useEffect(() => {
+    if (!isOpen) return;
+    hub.beginExternal();
+    return () => hub.endExternal();
+  }, [isOpen]);
 
   // Esc inchide modalul
   useEffect(() => {

@@ -66,7 +66,8 @@ export default function PageTour({ id, steps: allSteps }: { id: string; steps: T
         /* ignora */
       }
       if (!onboardingDone || document.querySelector('[role="dialog"]')) return;
-      if (allSteps.filter((s) => !s.optional).every((s) => document.querySelector(s.target))) {
+      const required = allSteps.filter((s) => !s.optional);
+      if (required.length > 0 && required.every((s) => document.querySelector(s.target))) {
         window.clearInterval(timer);
         setSteps(allSteps.filter((s) => !s.optional || document.querySelector(s.target)));
         window.setTimeout(() => setIndex(0), 600);

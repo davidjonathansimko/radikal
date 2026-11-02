@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { fetchCustomAudioForLang } from '@/lib/customAudio';
 import { wideArtwork, ARTWORK_SIZE } from '@/lib/mediaArtwork';
-import { hub, getSavedRatio } from '@/lib/audioHub';
+import { hub, getSavedRatio, type HubTrack } from '@/lib/audioHub';
 import { getUiSettingsSync } from '@/lib/uiSettings';
 
 // TTS Engine type — 'browser' = built-in SpeechSynthesis, 'google' = Google Cloud WaveNet
@@ -32,6 +32,8 @@ interface TextToSpeechProps {
   blogId?: string;
   /** Imaginea articolului: apare ca fundal in notificarea media a telefonului. */
   imageUrl?: string | null;
+  /** Datele articolului pentru playerul mic (titluri pe limbi, categorii, adresa). */
+  hubTrack?: Omit<HubTrack, 'lang'>;
   /** 'blog' sau 'marturie' — doar ca sa se vada in Supabase de unde vine */
   contentType?: 'blog' | 'marturie' | 'andacht' | 'copii';
 }
@@ -295,6 +297,7 @@ export default function TextToSpeech({
   blogTitle,
   blogId,
   imageUrl,
+  hubTrack,
   contentType,
 }: TextToSpeechProps) {
   const { language } = useLanguage();
@@ -445,6 +448,7 @@ export default function TextToSpeech({
         googleIsPlayingRef.current = false;
         googleIsPausedRef.current = false;
         if (googleAudioRef.current) {
+          hub.detach(googleAudioRef.current);
           googleAudioRef.current.onended = null;
           googleAudioRef.current.onerror = null;
           googleAudioRef.current.pause();
@@ -480,6 +484,7 @@ export default function TextToSpeech({
       googleIsPlayingRef.current = false;
       googleIsPausedRef.current = false;
       if (googleAudioRef.current) {
+        hub.detach(googleAudioRef.current);
         googleAudioRef.current.onended = null;
         googleAudioRef.current.onerror = null;
         googleAudioRef.current.pause();
@@ -743,15 +748,18 @@ export default function TextToSpeech({
   }, []);
 
   // Centrul audio: playerul mic, lista de asteptare, somnul si locul ramas lucreaza cu acest element <audio>.
+  const hubTrackRef = useRef(hubTrack);
+  hubTrackRef.current = hubTrack;
   const attachHub = useCallback(
     (audio: HTMLAudioElement) => {
       hub.attach(audio, {
         slug: blogSlug || 'tts',
         audioSlug: blogSlug,
-        lang: voiceLanguage,
         title: blogTitle || 'RADIKAL',
         href: typeof window !== 'undefined' ? window.location.pathname : '/',
         imageUrl,
+        ...hubTrackRef.current,
+        lang: voiceLanguage,
       });
     },
     [blogSlug, voiceLanguage, blogTitle, imageUrl],

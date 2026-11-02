@@ -61,6 +61,9 @@ import GuestLoginGate from '@/components/GuestLoginGate';
 import { ReadToggle } from '@/components/ReadMark';
 import { useBlogSeriesConfig, useSeriesTitle } from '@/lib/blogSeries';
 import QueueButton from '@/components/QueueButton';
+import { useUiSettings } from '@/lib/uiSettings';
+import PageTour from '@/components/PageTour';
+import { ARTICLE_TOUR } from '@/lib/tours';
 import { fetchGuestReadAllowed } from '@/lib/pageSettings';
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false });
 // BookmarkButton commented out - replaced by Liked Posts / BookmarkButton auskommentiert - ersetzt durch Liked Posts / BookmarkButton comentat - înlocuit cu Liked Posts
@@ -101,6 +104,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   const seriesConfig = useBlogSeriesConfig();
   const blogSeries = seriesConfig?.series ?? null;
   const seriesTitle = useSeriesTitle(blogSeries, language);
+  const uiSettings = useUiSettings();
   const { theme } = useTheme();
   
   // 🔒 Store the ORIGINAL Romanian slug from the database — NEVER changes after first load
@@ -798,6 +802,25 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
   const displayExcerpt = language === 'ro'
     ? post?.excerpt
     : (translatedExcerpt || (waitingForTranslation ? '' : post?.excerpt));
+
+  // Titlul pentru audio: NICIODATA romana cand cititorul e in alta limba (cat se traduce, ramane gol).
+  const ownTitle = (l: string): string | undefined => {
+    const v = post ? (post as unknown as Record<string, unknown>)[`title_${l}`] : undefined;
+    return typeof v === 'string' && v.trim() ? v.trim() : undefined;
+  };
+  const modalTitle = language === 'ro' ? (post?.title ?? '') : (displayTitle || ownTitle(language) || '');
+  const hubTrack = post
+    ? {
+        slug: `${source.audioPrefix}${post.slug}`,
+        audioSlug: `${source.audioPrefix}${post.slug}`,
+        title: post.title,
+        titles: { de: ownTitle('de'), en: ownTitle('en'), ru: ownTitle('ru') },
+        categoryIds: (post as unknown as { category_ids?: string[] | null }).category_ids ?? [],
+        href: `${source.basePath}/${originalSlugRef.current || post.slug}`,
+        imageUrl: post.image_url || null,
+        ...(source.table === 'blog_posts' ? { table: 'blog_posts' as const, rawSlug: originalSlugRef.current || post.slug } : {}),
+      }
+    : null;
   const displayTags = language === 'ro' ? (post?.tags || []) : (translatedTags.length > 0 ? translatedTags : (post?.tags || []));
 
   // Update browser tab title with translated blog title
@@ -1285,12 +1308,15 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
       {/* Circular Progress with Back to Top / Kreisförmiger Fortschritt mit Zurück nach oben / Progres circular cu Înapoi sus */}
       <CircularReadingProgress />
 
+      {/* Prezentarea articolului (o singura data, pe telefon) */}
+      <PageTour id="article-1" steps={ARTICLE_TOUR} />
+
       {/* Pasul 2208001 — modalul „Play Blog" pentru articolele dinamice */}
       {post.is_dynamic && (
         <PlayBlogModal
           isOpen={isPlayOpen}
           onClose={() => setIsPlayOpen(false)}
-          title={displayTitle || post.title}
+          title={modalTitle}
           text={displayContent || post.content || ''}
           imageUrl={post.image_url || null}
           slug={`${source.audioPrefix}${originalSlugRef.current || post.slug}`}
@@ -1359,6 +1385,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             <div className="mb-5 animate-fadeIn" style={{ animationDelay: '0.25s' }}>
               <button
                 type="button"
+                data-tour="art-play-blog"
                 onClick={() => setIsPlayOpen(true)}
                 aria-label={(PLAY_LABELS[source.contentType] ?? PLAY_LABELS.blog)[language] ?? PLAY_LABELS.blog.de}
                 className="play-strip force-white-text bg-neutral-900"
@@ -1463,7 +1490,7 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
             {/* Mobile layout: responsive rows */}
             <div className="md:hidden flex flex-col gap-2 mb-2">
               {/* Telefon: A-/A+ si trei butoane egale (icoana deasupra, textul dedesubt), mereu pe un rand. */}
-              <div className="reading-row-mobile">
+              <div className="reading-row-mobile" data-tour="art-tools">
                 {featureFlags.fontControls && (
                   <div className="rr-font">
                     <FontSizeControls />
@@ -1484,24 +1511,22 @@ export default function ArticleDetail({ source = BLOG_SOURCE }: { source?: Artic
 
             {/* Pasul 2102003: TTS — SINGLE shared instance for both mobile and desktop (prevents double playback) */}
             <div className="w-full mt-2 md:mt-0">
-              <TextToSpeech 
-                text={displayContent || post.content || ''} 
-                compact
-                blogSlug={`${source.audioPrefix}${post.slug}`}
-                contentType={source.contentType}
-                blogTitle={displayTitle || post.title}
-                blogId={post.id}
-                imageUrl={post.image_url}
-              />
-              <QueueButton
-                track={{
-                  slug: `${source.audioPrefix}${post.slug}`,
-                  audioSlug: `${source.audioPrefix}${post.slug}`,
-                  title: displayTitle || post.title,
-                  href: typeof window !== 'undefined' ? window.location.pathname : `${source.basePath}/${post.slug}`,
-                  imageUrl: post.image_url || null,
-                }}
-              />
+              {/* Playerul de aici se poate ascunde din admin; ramane doar „Ascultă acum” (playerul mic), dacă acesta e pornit. */}
+              {!(uiSettings.hideInlinePlayer && uiSettings.miniPlayer !== 'off') && (
+                <div data-tour="art-tts">
+                  <TextToSpeech
+                    text={displayContent || post.content || ''}
+                    compact
+                    blogSlug={`${source.audioPrefix}${post.slug}`}
+                    contentType={source.contentType}
+                    blogTitle={displayTitle || ownTitle(language) || post.title}
+                    blogId={post.id}
+                    imageUrl={post.image_url}
+                    hubTrack={hubTrack ?? undefined}
+                  />
+                </div>
+              )}
+              {hubTrack && <QueueButton track={hubTrack} />}
             </div>
           </div>
           
