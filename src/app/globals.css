@@ -6,6 +6,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Pasul 041126: paleta de baza (clasic = valorile de la inceput) */
+:root {
+  --c-black: 0 0 0;
+  --c-white: 255 255 255;
+  --c-ink: 26 26 26;
+  --gray-50: 249 250 251;
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 156 163 175;
+  --gray-500: 107 114 128;
+  --gray-600: 75 85 99;
+  --gray-700: 55 65 81;
+  --gray-800: 31 41 55;
+  --gray-900: 17 24 39;
+  --gray-950: 3 7 18;
+  --neutral-50: 250 250 250;
+  --neutral-100: 245 245 245;
+  --neutral-200: 229 229 229;
+  --neutral-300: 212 212 212;
+  --neutral-400: 163 163 163;
+  --neutral-500: 115 115 115;
+  --neutral-600: 82 82 82;
+  --neutral-700: 64 64 64;
+  --neutral-800: 38 38 38;
+  --neutral-900: 23 23 23;
+  --neutral-950: 10 10 10;
+  --zinc-50: 250 250 250;
+  --zinc-100: 244 244 245;
+  --zinc-200: 228 228 231;
+  --zinc-300: 212 212 216;
+  --zinc-400: 161 161 170;
+  --zinc-500: 113 113 122;
+  --zinc-600: 82 82 91;
+  --zinc-700: 63 63 70;
+  --zinc-800: 39 39 42;
+  --zinc-900: 24 24 27;
+  --zinc-950: 9 9 11;
+}
+
 /* ===== Pasul 1302000: PWA FULLSCREEN MODE ===== */
 /* When running as installed PWA app — disable zoom, use safe areas */
 /* Wenn als installierte PWA-App ausgeführt — Zoom deaktivieren, sichere Bereiche verwenden */
@@ -81,14 +121,14 @@ body.search-modal-open {
 /* Custom CSS variables for consistent theming / Benutzerdefinierte CSS-Variablen für konsistente Themenerstellung */
 /* Dark theme (default) */
 :root {
-  --primary-color: #ffffff;
-  --secondary-color: #f3f4f6;
+  --primary-color: rgb(var(--c-white));
+  --secondary-color: rgb(var(--gray-100));
   --accent-color: #3b82f6;
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.8);
-  --background-overlay: rgba(0, 0, 0, 0.4);
-  --bg-color: #000000;
-  --fg-color: #ffffff;
+  --text-primary: rgb(var(--c-white));
+  --text-secondary: rgb(var(--c-white) / 0.8);
+  --background-overlay: rgb(var(--c-black) / 0.4);
+  --bg-color: rgb(var(--c-black));
+  --fg-color: rgb(var(--c-white));
   --font-cinzel: 'Cinzel', Georgia, 'Times New Roman', serif;
   --font-body: 'EB Garamond', Georgia, 'Times New Roman', serif;
   --font-blog: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -96,14 +136,14 @@ body.search-modal-open {
 
 /* Light theme */
 .light {
-  --primary-color: #000000;
-  --secondary-color: #1f2937;
+  --primary-color: rgb(var(--c-black));
+  --secondary-color: rgb(var(--gray-800));
   --accent-color: #2563eb;
-  --text-primary: #000000;
-  --text-secondary: rgba(0, 0, 0, 0.8);
-  --background-overlay: rgba(255, 255, 255, 0.4);
-  --bg-color: #ffffff;
-  --fg-color: #000000;
+  --text-primary: rgb(var(--c-black));
+  --text-secondary: rgb(var(--c-black) / 0.8);
+  --background-overlay: rgb(var(--c-white) / 0.4);
+  --bg-color: rgb(var(--c-white));
+  --fg-color: rgb(var(--c-black));
 }
 
 /* Base styles / Grundstile */
@@ -225,7 +265,7 @@ p, li, span, div {
 /* Bibelreferenz-Hervorhebung — weiß + fett / Evidențiere referințe biblice — alb + bold */
 .bible-ref {
   font-weight: 700;
-  color: #ffffff;
+  color: rgb(var(--c-white));
   transition: color 0.2s ease;
 }
 
@@ -415,7 +455,7 @@ blockquote, .verse, .bible-verse {
     ellipse at 50% 42%,
     rgba(255, 238, 210, 0.16) 0%,
     rgba(255, 226, 190, 0.07) 38%,
-    rgba(0, 0, 0, 0) 70%
+    rgb(var(--c-black) / 0) 70%
   );
   animation: cineBloomBreathe 7s ease-in-out infinite;
 }
@@ -435,7 +475,7 @@ blockquote, .verse, .bible-verse {
     115deg,
     rgba(255, 176, 102, 0.22) 0%,
     rgba(255, 140, 80, 0.10) 18%,
-    rgba(0, 0, 0, 0) 42%
+    rgb(var(--c-black) / 0) 42%
   );
   animation: cineLeakDrift 14s ease-in-out infinite;
 }
@@ -638,14 +678,14 @@ a {
 /* Dark theme (default) body colors */
 html:not(.light) body,
 html.dark body {
-  background-color: #000000;
-  color: #ffffff;
+  background-color: rgb(var(--c-black));
+  color: rgb(var(--c-white));
 }
 
 /* Light theme body colors */
 html.light body {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgb(var(--c-white));
+  color: rgb(var(--c-black));
 }
 
 /* Custom scrollbar styling / Benutzerdefinierte Scrollbar-Gestaltung */
@@ -654,29 +694,29 @@ html.light body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgb(var(--c-black) / 0.3);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(var(--c-white) / 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgb(var(--c-white) / 0.5);
 }
 
 /* Light theme scrollbar */
 .light ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(var(--c-white) / 0.3);
 }
 
 .light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgb(var(--c-black) / 0.3);
 }
 
 .light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(var(--c-black) / 0.5);
 }
 
 /* Noise/Grain texture overlay - like insurrection.photo */
@@ -949,16 +989,16 @@ html.light body {
 
 /* Text background shadow for readability over images */
 .text-shadow-readable {
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 20px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 8px rgb(var(--c-black) / 0.5), 0 4px 20px rgb(var(--c-black) / 0.3);
 }
 
 .light .text-shadow-readable {
-  text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8), 0 4px 20px rgba(255, 255, 255, 0.6);
+  text-shadow: 0 2px 8px rgb(var(--c-white) / 0.8), 0 4px 20px rgb(var(--c-white) / 0.6);
 }
 
 /* Blog content backdrop for better readability - more transparent / lesbarer Hintergrund - transparenter / fundal citibil - mai transparent */
 .blog-content-backdrop {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.55));
+  background: linear-gradient(to bottom, rgb(var(--c-black) / 0.4), rgb(var(--c-black) / 0.55));
   backdrop-filter: blur(2px);
   border-radius: 1rem;
   padding: 1rem 0.75rem;
@@ -970,45 +1010,45 @@ html.light body {
 }
 
 .light .blog-content-backdrop {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.7));
+  background: linear-gradient(to bottom, rgb(var(--c-white) / 0.55), rgb(var(--c-white) / 0.7));
 }
 
 /* Glass morphism effect / Glasmorphismus-Effekt */
 /* Updated: Dark blue-black shadow for better consistency in dark/light mode */
 .glass-effect {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--c-white) / 0.1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgb(var(--c-white) / 0.2);
   box-shadow: 0 8px 32px 0 rgba(10, 15, 30, 0.5), 0 4px 16px 0 rgba(20, 30, 60, 0.3);
 }
 
 /* Light mode glass effect */
 .light .glass-effect {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgb(var(--c-white) / 0.85);
+  border: 1px solid rgb(var(--c-black) / 0.1);
   box-shadow: 0 8px 32px 0 rgba(10, 15, 40, 0.15), 0 4px 16px 0 rgba(20, 30, 60, 0.1);
 }
 
 /* Text selection styling / Textauswahl-Gestaltung */
 ::selection {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
+  background: rgb(var(--c-white) / 0.3);
+  color: rgb(var(--c-white));
 }
 
 ::-moz-selection {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
+  background: rgb(var(--c-white) / 0.3);
+  color: rgb(var(--c-white));
 }
 
 /* Light theme text selection */
 .light ::selection {
-  background: rgba(0, 0, 0, 0.3);
-  color: black;
+  background: rgb(var(--c-black) / 0.3);
+  color: rgb(var(--c-black));
 }
 
 .light ::-moz-selection {
-  background: rgba(0, 0, 0, 0.3);
-  color: black;
+  background: rgb(var(--c-black) / 0.3);
+  color: rgb(var(--c-black));
 }
 
 /* Focus styles for accessibility / Fokusstile für Barrierefreiheit */
@@ -1037,7 +1077,7 @@ html.light body {
 
 /* Typography enhancements / Typografie-Verbesserungen */
 .text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+  background: linear-gradient(135deg, rgb(var(--c-white)) 0%, rgb(var(--gray-100)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1047,7 +1087,7 @@ html.light body {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
+  border: 4px solid rgb(var(--c-white) / 0.3);
   border-top: 4px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1121,7 +1161,7 @@ html.light body {
 /* High contrast mode support / Unterstützung für hohen Kontrast */
 @media (prefers-contrast: high) {
   .glass-effect {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgb(var(--c-black) / 0.8);
     border: 2px solid white;
   }
 }
@@ -1153,26 +1193,26 @@ html.light body {
 
 /* Dark theme (default) / Dunkles Theme (Standard) */
 .dark {
-  --bg-primary: #000000;
-  --bg-secondary: #1a1a1a;
+  --bg-primary: rgb(var(--c-black));
+  --bg-secondary: rgb(var(--c-ink));
   --bg-glass: rgba(31, 41, 55, 0.3);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.8);
-  --text-muted: rgba(255, 255, 255, 0.6);
-  --border-color: rgba(255, 255, 255, 0.2);
-  --overlay-bg: rgba(0, 0, 0, 0.4);
+  --text-primary: rgb(var(--c-white));
+  --text-secondary: rgb(var(--c-white) / 0.8);
+  --text-muted: rgb(var(--c-white) / 0.6);
+  --border-color: rgb(var(--c-white) / 0.2);
+  --overlay-bg: rgb(var(--c-black) / 0.4);
 }
 
 /* Light theme / Helles Theme */
 .light {
-  --bg-primary: #ffffff;
+  --bg-primary: rgb(var(--c-white));
   --bg-secondary: #f8fafc;
-  --bg-glass: rgba(0, 0, 0, 0.05);
-  --text-primary: #1a1a1a;
-  --text-secondary: rgba(0, 0, 0, 0.8);
-  --text-muted: rgba(0, 0, 0, 0.6);
-  --border-color: rgba(0, 0, 0, 0.2);
-  --overlay-bg: rgba(255, 255, 255, 0.4);
+  --bg-glass: rgb(var(--c-black) / 0.05);
+  --text-primary: rgb(var(--c-ink));
+  --text-secondary: rgb(var(--c-black) / 0.8);
+  --text-muted: rgb(var(--c-black) / 0.6);
+  --border-color: rgb(var(--c-black) / 0.2);
+  --overlay-bg: rgb(var(--c-white) / 0.4);
 }
 
 /* Apply theme variables to body */
@@ -1184,11 +1224,11 @@ body {
 
 /* Light theme text overrides for better visibility */
 .light {
-  color: #1a1a1a !important;
+  color: rgb(var(--c-ink)) !important;
 }
 
 .light h1, .light h2, .light h3, .light h4, .light h5, .light h6 {
-  color: #1a1a1a !important;
+  color: rgb(var(--c-ink)) !important;
 }
 
 /* =====================================================================
@@ -1216,7 +1256,7 @@ body {
 .light a:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not(.btn-primary):not([class*="dark:text-"]),
 .light button:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not(.btn-primary):not([class*="dark:text-"]),
 .light label:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not([class*="dark:text-"]) {
-  color: rgba(0, 0, 0, 0.9) !important;
+  color: rgb(var(--c-black) / 0.9) !important;
 }
 
 /* Force ALL text colors in light mode */
@@ -1229,14 +1269,14 @@ body {
 .light .text-white\/40:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not([class*="dark:text-"]),
 .light .text-white\/30:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not([class*="dark:text-"]),
 .light .text-white\/20:not(.mobile-menu-container *):not(.force-white-text *):not(.force-white-text):not(.btn-solid):not(.btn-solid *):not([class*="dark:text-"]) {
-  color: #1a1a1a !important;
+  color: rgb(var(--c-ink)) !important;
 }
 
 /* Elements with force-white-text class keep white text in light mode */
 /* Used for overlays on dark images (e.g., reading time badge on blog cards) */
 .force-white-text,
 .force-white-text * {
-  color: white !important;
+  color: rgb(var(--c-white)) !important;
 }
 
 /*
@@ -1248,7 +1288,7 @@ body {
 */
 .force-white-text .text-black,
 .force-white-text .text-black * {
-  color: #000000 !important;
+  color: rgb(var(--c-black)) !important;
 }
 
 /*
@@ -1264,12 +1304,12 @@ body {
 /* Plasa de siguranta: culoarea ceruta explicit in componenta castiga mereu. */
 .light .btn-solid.text-white,
 .light .btn-solid .text-white {
-  color: #ffffff !important;
+  color: rgb(var(--c-white)) !important;
 }
 
 .light .btn-solid.text-black,
 .light .btn-solid .text-black {
-  color: #000000 !important;
+  color: rgb(var(--c-black)) !important;
 }
 
 /*
@@ -1280,7 +1320,7 @@ body {
 */
 .light .btn-primary,
 .light .btn-primary * {
-  color: #ffffff !important;
+  color: rgb(var(--c-white)) !important;
 }
 
 /* Light theme specific text overrides */
@@ -1293,51 +1333,51 @@ body {
 }
 
 .light .text-gray-400 {
-  color: #6b7280 !important;
+  color: rgb(var(--gray-500)) !important;
 }
 
 .light .text-gray-300 {
-  color: #9ca3af !important;
+  color: rgb(var(--gray-400)) !important;
 }
 
 /* Navigation and interactive elements */
 .light nav:not(.force-white-text):not(.force-white-text *),
 .light nav *:not(.force-white-text):not(.force-white-text *):not(.btn-solid):not(.btn-solid *):not(.btn-primary):not([class*="dark:text-"]) {
-  color: rgba(0, 0, 0, 0.9) !important;
+  color: rgb(var(--c-black) / 0.9) !important;
 }
 
 .light button:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *):not(.btn-solid):not(.btn-solid *):not(.btn-primary):not([class*="dark:text-"]),
 .light button:not(.mobile-menu-container *):not(.force-white-text):not(.force-white-text *):not(.btn-solid):not(.btn-primary):not([class*="dark:text-"]) *:not(.force-white-text):not(.force-white-text *):not(.btn-solid *):not([class*="dark:text-"]) {
-  color: rgba(0, 0, 0, 0.9) !important;
+  color: rgb(var(--c-black) / 0.9) !important;
 }
 
 /* Placeholder text in light mode */
 .light .placeholder-white\/40,
 .light .placeholder-white\/50,
 .light .placeholder-white\/60 {
-  color: rgba(0, 0, 0, 0.5) !important;
+  color: rgb(var(--c-black) / 0.5) !important;
 }
 
 .light input::placeholder,
 .light textarea::placeholder {
-  color: rgba(0, 0, 0, 0.5) !important;
+  color: rgb(var(--c-black) / 0.5) !important;
 }
 
 /* Light theme navigation colors */
 .light .bg-black\/40 {
-  background-color: rgba(255, 255, 255, 0.9) !important;
+  background-color: rgb(var(--c-white) / 0.9) !important;
 }
 
 /* Light theme glass effects - updated with dark blue-black shadow */
 .light .glass-effect {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgb(var(--c-white) / 0.85);
+  border: 1px solid rgb(var(--c-black) / 0.1);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px 0 rgba(10, 15, 40, 0.15), 0 4px 16px 0 rgba(20, 30, 60, 0.1);
 }
 
 .light .glass-effect:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgb(var(--c-white) / 0.9);
   box-shadow: 0 12px 40px 0 rgba(10, 15, 40, 0.2), 0 6px 20px 0 rgba(20, 30, 60, 0.12);
 }
 
@@ -1349,8 +1389,8 @@ body {
   bottom: 20px;
   right: 20px;
   z-index: 60;
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgb(var(--c-black) / 0.4);
+  border: 1px solid rgb(var(--c-white) / 0.2);
   backdrop-filter: blur(15px); /* Increased from 12px to 15px (25% more blur) */
   border-radius: 9999px;
   transition: all 0.25s ease;
@@ -1373,14 +1413,14 @@ body {
 }
 
 .global-music-player:hover {
-  background: rgba(0,0,0,0.55);
+  background: rgb(var(--c-black) / 0.55);
   backdrop-filter: blur(18px); /* Increased hover blur as well */
-  box-shadow: 0 4px 16px -2px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 16px -2px rgb(var(--c-black) / 0.5);
 }
 
 .music-icon {
   font-size: 16px;
-  color: rgba(255,255,255,0.85);
+  color: rgb(var(--c-white) / 0.85);
   font-weight: bold;
 }
 
@@ -1409,7 +1449,7 @@ body {
   background: transparent;
   border: none;
   cursor: pointer;
-  color: rgba(255,255,255,0.85);
+  color: rgb(var(--c-white) / 0.85);
   width: 28px;
   height: 28px;
   border-radius: 9999px;
@@ -1417,8 +1457,8 @@ body {
 }
 
 .global-music-player button:hover:not(:disabled) {
-  background: rgba(255,255,255,0.12);
-  color: #fff;
+  background: rgb(var(--c-white) / 0.12);
+  color: rgb(var(--c-white));
 }
 
 .global-music-player .play-btn {
@@ -1491,14 +1531,14 @@ audio {
 
 /* Glass effect with theme support - updated with dark blue-black shadow */
 .glass-effect {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--c-white) / 0.1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgb(var(--c-white) / 0.2);
   box-shadow: 0 8px 32px 0 rgba(10, 15, 30, 0.5), 0 4px 16px 0 rgba(20, 30, 60, 0.3);
 }
 
 .glass-effect:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgb(var(--c-white) / 0.15);
   backdrop-filter: blur(15px);
   box-shadow: 0 12px 40px 0 rgba(10, 15, 30, 0.6), 0 6px 20px 0 rgba(20, 30, 60, 0.35);
 }
@@ -1507,63 +1547,63 @@ audio {
    Pasul 2508000 — BUTOANE IN STIL RADIKAL, pe ambele teme.
    ---------------------------------------------------------------------
    Inainte, pe tema luminoasa butoanele deveneau albastre (#3b82f6) sau
-   gri (#6b7280). Albastrul nu are ce cauta intr-un site alb-negru si, pe
+   gri (rgb(var(--gray-500))). Albastrul nu are ce cauta intr-un site alb-negru si, pe
    fundal alb, textul negru de pe el aproape nu se citea.
    Acum: plin = negru cu alb, secundar = contur negru pe alb.
    Pe tema intunecata: plin = alb cu negru, secundar = contur alb.
    ===================================================================== */
 .btn-primary {
   padding: 0.75rem 1.5rem;
-  background-color: #1f2937;
-  color: #ffffff !important;
+  background-color: rgb(var(--gray-800));
+  color: rgb(var(--c-white)) !important;
   font-weight: 600;
   border: 1px solid transparent;
   border-radius: 0.5rem;
   transition: all 0.3s ease;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px rgb(var(--c-black) / 0.1);
 }
 
 .btn-primary:hover {
-  background-color: #111827;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  background-color: rgb(var(--gray-900));
+  box-shadow: 0 20px 25px -5px rgb(var(--c-black) / 0.1);
 }
 
 .btn-secondary {
   padding: 0.5rem 1rem;
   background-color: transparent;
-  color: #ffffff;
+  color: rgb(var(--c-white));
   font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgb(var(--c-white) / 0.35);
   border-radius: 0.5rem;
   transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.6);
+  background-color: rgb(var(--c-white) / 0.1);
+  border-color: rgb(var(--c-white) / 0.6);
 }
 
 /* Light theme specific overrides */
 .light .btn-primary {
-  background-color: #000000;
+  background-color: rgb(var(--c-black));
   /* `!important` pentru ca regulile generale de mai sus folosesc tot `!important` */
-  color: #ffffff !important;
-  border-color: #000000;
+  color: rgb(var(--c-white)) !important;
+  border-color: rgb(var(--c-black));
 }
 
 .light .btn-primary:hover {
-  background-color: #1f2937;
+  background-color: rgb(var(--gray-800));
 }
 
 .light .btn-secondary {
   background-color: transparent;
-  color: #000000 !important;
-  border-color: rgba(0, 0, 0, 0.3);
+  color: rgb(var(--c-black)) !important;
+  border-color: rgb(var(--c-black) / 0.3);
 }
 
 .light .btn-secondary:hover {
-  background-color: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.6);
+  background-color: rgb(var(--c-black) / 0.06);
+  border-color: rgb(var(--c-black) / 0.6);
 }
 
 /* Animation for floating geometric shapes */
@@ -1646,7 +1686,7 @@ body.intro-active div[data-mobile-nav] {
   top: 0;
   left: 0;
   pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
+  background-image: radial-gradient(circle, rgb(var(--c-white) / 0.3) 10%, transparent 10.01%);
   background-repeat: no-repeat;
   background-position: 50%;
   transform: scale(10, 10);
@@ -1673,9 +1713,9 @@ body.intro-active div[data-mobile-nav] {
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
+    rgb(var(--c-white) / 0.05) 25%,
+    rgb(var(--c-white) / 0.1) 50%,
+    rgb(var(--c-white) / 0.05) 75%
   );
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
@@ -1684,9 +1724,9 @@ body.intro-active div[data-mobile-nav] {
 .light .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.05) 25%,
-    rgba(0, 0, 0, 0.1) 50%,
-    rgba(0, 0, 0, 0.05) 75%
+    rgb(var(--c-black) / 0.05) 25%,
+    rgb(var(--c-black) / 0.1) 50%,
+    rgb(var(--c-black) / 0.05) 75%
   );
   background-size: 200% 100%;
 }
@@ -1854,11 +1894,11 @@ body.intro-active div[data-mobile-nav] {
 
 .hover-lift:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 40px -12px rgb(var(--c-black) / 0.25);
 }
 
 .dark .hover-lift:hover {
-  box-shadow: 0 12px 40px -12px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px -12px rgb(var(--c-white) / 0.1);
 }
 
 /* Glow effect */
@@ -1946,7 +1986,7 @@ body.intro-active div[data-mobile-nav] {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.2),
+    rgb(var(--c-white) / 0.2),
     transparent
   );
   transition: left 0.5s ease-out;
@@ -1969,13 +2009,13 @@ body.intro-active div[data-mobile-nav] {
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   :root {
-    --text-primary: #ffffff;
-    --text-secondary: #ffffff;
+    --text-primary: rgb(var(--c-white));
+    --text-secondary: rgb(var(--c-white));
   }
   
   .light {
-    --text-primary: #000000;
-    --text-secondary: #000000;
+    --text-primary: rgb(var(--c-black));
+    --text-secondary: rgb(var(--c-black));
   }
 }
 
@@ -2120,9 +2160,9 @@ html.modal-open {
 .skeleton-wave {
   background: linear-gradient(
     90deg,
-    rgba(0,0,0,0.04) 25%,
-    rgba(0,0,0,0.08) 50%,
-    rgba(0,0,0,0.04) 75%
+    rgb(var(--c-black) / 0.04) 25%,
+    rgb(var(--c-black) / 0.08) 50%,
+    rgb(var(--c-black) / 0.04) 75%
   );
   background-size: 200% 100%;
   animation: skeleton-wave 1.8s ease-in-out infinite;
@@ -2130,9 +2170,9 @@ html.modal-open {
 .dark .skeleton-wave {
   background: linear-gradient(
     90deg,
-    rgba(255,255,255,0.04) 25%,
-    rgba(255,255,255,0.10) 50%,
-    rgba(255,255,255,0.04) 75%
+    rgb(var(--c-white) / 0.04) 25%,
+    rgb(var(--c-white) / 0.10) 50%,
+    rgb(var(--c-white) / 0.04) 75%
   );
   background-size: 200% 100%;
 }
@@ -2160,7 +2200,7 @@ html.modal-open {
 .light .force-white-text h2,
 .light .force-white-text h3,
 .light .force-white-text h4 {
-  color: #ffffff !important;
+  color: rgb(var(--c-white)) !important;
 }
 
 /* Pasul 2210012 - tranzitie de tema (val din butonul apasat) + liste care se deschid fin + bara de derulare ascunsa pe telefon. */
@@ -2174,37 +2214,37 @@ html.modal-open {
   z-index: 2147483646;
   /* Fum: pete moi care cresc din colturi, margini si interior pana acopera ecranul nou. */
   mask-image:
-    radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 28%)),
-    radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 24%)),
-    radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 20%)),
-    radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 26%)),
-    radial-gradient(circle at 50% 45%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 16%)),
-    radial-gradient(circle at 16% 58%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 18%)),
-    radial-gradient(circle at 84% 38%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 18%)),
-    radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 22%)),
-    radial-gradient(circle at 50% 100%, #000 calc(var(--smoke) * 0.85 + -5%), transparent calc(var(--smoke) * 0.85 + 23%)),
-    radial-gradient(circle at 0% 50%, #000 calc(var(--smoke) * 0.7 + -9%), transparent calc(var(--smoke) * 0.7 + 19%)),
-    radial-gradient(circle at 100% 55%, #000 calc(var(--smoke) * 0.78 + -7%), transparent calc(var(--smoke) * 0.78 + 21%)),
-    radial-gradient(circle at 30% 20%, #000 calc(var(--smoke) * 0.55 + -14%), transparent calc(var(--smoke) * 0.55 + 14%)),
-    radial-gradient(circle at 70% 80%, #000 calc(var(--smoke) * 0.6 + -12%), transparent calc(var(--smoke) * 0.6 + 16%)),
-    radial-gradient(circle at 25% 85%, #000 calc(var(--smoke) * 0.5 + -16%), transparent calc(var(--smoke) * 0.5 + 12%)),
-    radial-gradient(circle at 78% 12%, #000 calc(var(--smoke) * 0.58 + -15%), transparent calc(var(--smoke) * 0.58 + 13%));
+    radial-gradient(circle at 0% 0%, rgb(var(--c-black)) calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 28%)),
+    radial-gradient(circle at 100% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 24%)),
+    radial-gradient(circle at 0% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 20%)),
+    radial-gradient(circle at 100% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 26%)),
+    radial-gradient(circle at 50% 45%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 16%)),
+    radial-gradient(circle at 16% 58%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 18%)),
+    radial-gradient(circle at 84% 38%, rgb(var(--c-black)) calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 18%)),
+    radial-gradient(circle at 50% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 22%)),
+    radial-gradient(circle at 50% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.85 + -5%), transparent calc(var(--smoke) * 0.85 + 23%)),
+    radial-gradient(circle at 0% 50%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -9%), transparent calc(var(--smoke) * 0.7 + 19%)),
+    radial-gradient(circle at 100% 55%, rgb(var(--c-black)) calc(var(--smoke) * 0.78 + -7%), transparent calc(var(--smoke) * 0.78 + 21%)),
+    radial-gradient(circle at 30% 20%, rgb(var(--c-black)) calc(var(--smoke) * 0.55 + -14%), transparent calc(var(--smoke) * 0.55 + 14%)),
+    radial-gradient(circle at 70% 80%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -12%), transparent calc(var(--smoke) * 0.6 + 16%)),
+    radial-gradient(circle at 25% 85%, rgb(var(--c-black)) calc(var(--smoke) * 0.5 + -16%), transparent calc(var(--smoke) * 0.5 + 12%)),
+    radial-gradient(circle at 78% 12%, rgb(var(--c-black)) calc(var(--smoke) * 0.58 + -15%), transparent calc(var(--smoke) * 0.58 + 13%));
   -webkit-mask-image:
-    radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 28%)),
-    radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 24%)),
-    radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 20%)),
-    radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 26%)),
-    radial-gradient(circle at 50% 45%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 16%)),
-    radial-gradient(circle at 16% 58%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 18%)),
-    radial-gradient(circle at 84% 38%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 18%)),
-    radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 22%)),
-    radial-gradient(circle at 50% 100%, #000 calc(var(--smoke) * 0.85 + -5%), transparent calc(var(--smoke) * 0.85 + 23%)),
-    radial-gradient(circle at 0% 50%, #000 calc(var(--smoke) * 0.7 + -9%), transparent calc(var(--smoke) * 0.7 + 19%)),
-    radial-gradient(circle at 100% 55%, #000 calc(var(--smoke) * 0.78 + -7%), transparent calc(var(--smoke) * 0.78 + 21%)),
-    radial-gradient(circle at 30% 20%, #000 calc(var(--smoke) * 0.55 + -14%), transparent calc(var(--smoke) * 0.55 + 14%)),
-    radial-gradient(circle at 70% 80%, #000 calc(var(--smoke) * 0.6 + -12%), transparent calc(var(--smoke) * 0.6 + 16%)),
-    radial-gradient(circle at 25% 85%, #000 calc(var(--smoke) * 0.5 + -16%), transparent calc(var(--smoke) * 0.5 + 12%)),
-    radial-gradient(circle at 78% 12%, #000 calc(var(--smoke) * 0.58 + -15%), transparent calc(var(--smoke) * 0.58 + 13%));
+    radial-gradient(circle at 0% 0%, rgb(var(--c-black)) calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 28%)),
+    radial-gradient(circle at 100% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 24%)),
+    radial-gradient(circle at 0% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 20%)),
+    radial-gradient(circle at 100% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 26%)),
+    radial-gradient(circle at 50% 45%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 16%)),
+    radial-gradient(circle at 16% 58%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 18%)),
+    radial-gradient(circle at 84% 38%, rgb(var(--c-black)) calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 18%)),
+    radial-gradient(circle at 50% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 22%)),
+    radial-gradient(circle at 50% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.85 + -5%), transparent calc(var(--smoke) * 0.85 + 23%)),
+    radial-gradient(circle at 0% 50%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -9%), transparent calc(var(--smoke) * 0.7 + 19%)),
+    radial-gradient(circle at 100% 55%, rgb(var(--c-black)) calc(var(--smoke) * 0.78 + -7%), transparent calc(var(--smoke) * 0.78 + 21%)),
+    radial-gradient(circle at 30% 20%, rgb(var(--c-black)) calc(var(--smoke) * 0.55 + -14%), transparent calc(var(--smoke) * 0.55 + 14%)),
+    radial-gradient(circle at 70% 80%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -12%), transparent calc(var(--smoke) * 0.6 + 16%)),
+    radial-gradient(circle at 25% 85%, rgb(var(--c-black)) calc(var(--smoke) * 0.5 + -16%), transparent calc(var(--smoke) * 0.5 + 12%)),
+    radial-gradient(circle at 78% 12%, rgb(var(--c-black)) calc(var(--smoke) * 0.58 + -15%), transparent calc(var(--smoke) * 0.58 + 13%));
 }
 @property --smoke {
   syntax: '<percentage>';
@@ -2214,18 +2254,18 @@ html.modal-open {
 
 /* Meniul de limba se formeaza din colturi, din monocrom in culori, cu despartire rosu/cian (glitch). */
 @keyframes glitchPanel {
-  0%   { opacity: 0; clip-path: inset(0 88% 88% 0); filter: grayscale(1) contrast(1.5) blur(5px) drop-shadow(-3px 0 rgba(255,255,255,0.55)) drop-shadow(3px 0 rgba(120,120,120,0.7)); transform: translateX(-5px); }
-  14%  { opacity: 1; clip-path: inset(0 45% 72% 0);  filter: grayscale(1) contrast(1.4) blur(4px) drop-shadow(3px 0 rgba(255,255,255,0.5)) drop-shadow(-3px 0 rgba(120,120,120,0.7)); transform: translateX(4px); }
-  28%  { clip-path: inset(62% 0 0 58%);              filter: grayscale(1) blur(3px) drop-shadow(-2px 0 rgba(255,255,255,0.45)) drop-shadow(2px 0 rgba(120,120,120,0.6)); transform: translateX(-3px); }
-  42%  { clip-path: inset(0 0 48% 30%);              filter: grayscale(1) blur(2.5px) drop-shadow(2px 0 rgba(255,255,255,0.4)) drop-shadow(-2px 0 rgba(120,120,120,0.6)); transform: translateX(3px); }
-  58%  { clip-path: inset(38% 22% 0 0);              filter: grayscale(0.7) blur(1.5px) drop-shadow(-2px 0 rgba(255,255,255,0.3)) drop-shadow(2px 0 rgba(120,120,120,0.5)); transform: translateX(-2px); }
-  74%  { clip-path: inset(0 0 0 0);                  filter: grayscale(0.3) blur(0.6px) drop-shadow(1px 0 rgba(255,255,255,0.25)); transform: translateX(1px); }
+  0%   { opacity: 0; clip-path: inset(0 88% 88% 0); filter: grayscale(1) contrast(1.5) blur(5px) drop-shadow(-3px 0 rgb(var(--c-white) / 0.55)) drop-shadow(3px 0 rgba(120,120,120,0.7)); transform: translateX(-5px); }
+  14%  { opacity: 1; clip-path: inset(0 45% 72% 0);  filter: grayscale(1) contrast(1.4) blur(4px) drop-shadow(3px 0 rgb(var(--c-white) / 0.5)) drop-shadow(-3px 0 rgba(120,120,120,0.7)); transform: translateX(4px); }
+  28%  { clip-path: inset(62% 0 0 58%);              filter: grayscale(1) blur(3px) drop-shadow(-2px 0 rgb(var(--c-white) / 0.45)) drop-shadow(2px 0 rgba(120,120,120,0.6)); transform: translateX(-3px); }
+  42%  { clip-path: inset(0 0 48% 30%);              filter: grayscale(1) blur(2.5px) drop-shadow(2px 0 rgb(var(--c-white) / 0.4)) drop-shadow(-2px 0 rgba(120,120,120,0.6)); transform: translateX(3px); }
+  58%  { clip-path: inset(38% 22% 0 0);              filter: grayscale(0.7) blur(1.5px) drop-shadow(-2px 0 rgb(var(--c-white) / 0.3)) drop-shadow(2px 0 rgba(120,120,120,0.5)); transform: translateX(-2px); }
+  74%  { clip-path: inset(0 0 0 0);                  filter: grayscale(0.3) blur(0.6px) drop-shadow(1px 0 rgb(var(--c-white) / 0.25)); transform: translateX(1px); }
   100% { clip-path: inset(0 0 0 0);                  filter: none; transform: none; opacity: 1; }
 }
 @keyframes glitchItem {
-  0%   { opacity: 0; filter: blur(3px); text-shadow: -2px 0 rgba(255,255,255,0.7), 2px 0 rgba(120,120,120,0.8); transform: translateX(-8px) skewX(-10deg); }
-  35%  { opacity: 1; filter: blur(1.5px); text-shadow: 2px 0 rgba(255,255,255,0.6), -2px 0 rgba(120,120,120,0.7); transform: translateX(5px) skewX(6deg); }
-  65%  { opacity: .7; filter: blur(0.5px); text-shadow: -1px 0 rgba(255,255,255,0.4), 1px 0 rgba(120,120,120,0.5); transform: translateX(-3px); }
+  0%   { opacity: 0; filter: blur(3px); text-shadow: -2px 0 rgb(var(--c-white) / 0.7), 2px 0 rgba(120,120,120,0.8); transform: translateX(-8px) skewX(-10deg); }
+  35%  { opacity: 1; filter: blur(1.5px); text-shadow: 2px 0 rgb(var(--c-white) / 0.6), -2px 0 rgba(120,120,120,0.7); transform: translateX(5px) skewX(6deg); }
+  65%  { opacity: .7; filter: blur(0.5px); text-shadow: -1px 0 rgb(var(--c-white) / 0.4), 1px 0 rgba(120,120,120,0.5); transform: translateX(-3px); }
   100% { opacity: 1; filter: none; text-shadow: none; transform: none; }
 }
 .animate-dropdown-up   { transform-origin: bottom center; animation: glitchPanel 560ms steps(14, end) backwards; }
@@ -2280,8 +2320,8 @@ html.modal-open {
 
 /* Simbolul „curge" de sus in jos, ca o cerneala care se asterne (masca moale care coboara). */
 .scroll-reveal section[data-reveal] > div > div svg {
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 60%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 60%);
+  -webkit-mask-image: linear-gradient(180deg, rgb(var(--c-black)) 0%, rgb(var(--c-black)) 45%, transparent 60%);
+  mask-image: linear-gradient(180deg, rgb(var(--c-black)) 0%, rgb(var(--c-black)) 45%, transparent 60%);
   -webkit-mask-size: 100% 260%;
   mask-size: 100% 260%;
   -webkit-mask-repeat: no-repeat;
@@ -2362,8 +2402,8 @@ html.kids-read .blog-body-text p { margin-bottom: 1.6em; }
   will-change: opacity, transform, filter;
 }
 .scroll-reveal section[data-reveal] > div > h2 {
-  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 42%, transparent 58%);
-  mask-image: linear-gradient(90deg, #000 0%, #000 42%, transparent 58%);
+  -webkit-mask-image: linear-gradient(90deg, rgb(var(--c-black)) 0%, rgb(var(--c-black)) 42%, transparent 58%);
+  mask-image: linear-gradient(90deg, rgb(var(--c-black)) 0%, rgb(var(--c-black)) 42%, transparent 58%);
   -webkit-mask-size: 280% 100%;
   mask-size: 280% 100%;
   -webkit-mask-position: 0 0;
@@ -2376,8 +2416,8 @@ html.kids-read .blog-body-text p { margin-bottom: 1.6em; }
   transform: translateY(26px) scale(0.97);
 }
 .scroll-reveal section[data-reveal] > div > p {
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 56%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 56%);
+  -webkit-mask-image: linear-gradient(180deg, rgb(var(--c-black)) 0%, rgb(var(--c-black)) 40%, transparent 56%);
+  mask-image: linear-gradient(180deg, rgb(var(--c-black)) 0%, rgb(var(--c-black)) 40%, transparent 56%);
   -webkit-mask-size: 100% 320%;
   mask-size: 100% 320%;
   -webkit-mask-position: 0 0;
@@ -2403,8 +2443,8 @@ html.kids-read .blog-body-text p { margin-bottom: 1.6em; }
 }
 .tour-text-in {
   display: inline-block;
-  -webkit-mask-image: linear-gradient(90deg, #000 40%, transparent 60%);
-  mask-image: linear-gradient(90deg, #000 40%, transparent 60%);
+  -webkit-mask-image: linear-gradient(90deg, rgb(var(--c-black)) 40%, transparent 60%);
+  mask-image: linear-gradient(90deg, rgb(var(--c-black)) 40%, transparent 60%);
   -webkit-mask-size: 260% 100%;
   mask-size: 260% 100%;
   animation: tourTextIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -2511,7 +2551,7 @@ html.text-protect .blog-body-text * {
   70%  { opacity: 1; transform: translateY(5px); }
   100% { opacity: 0; transform: translateY(10px); }
 }
-.tour-arrow-wrap { animation: tourArrowIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35)); }
+.tour-arrow-wrap { animation: tourArrowIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; filter: drop-shadow(0 0 6px rgb(var(--c-white) / 0.35)); }
 .tour-chev { animation: tourChevron 1.4s ease-in-out infinite; }
 .tour-chev:nth-child(2) { animation-delay: 0.3s; }
 @media (prefers-reduced-motion: reduce) { .tour-arrow-wrap, .tour-chev { animation: none; } }
@@ -2536,9 +2576,9 @@ html.text-protect .blog-body-text * {
 
 /* Pasul 231026d - meniul de limba: se formeaza din fum cald, moale, fara salturi; steagurile se asaza pe rand. */
 @keyframes smokePanel {
-  from { --smoke: -25%; opacity: 0; filter: blur(10px) saturate(0.4); transform: translateY(6px) scale(0.97); mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); -webkit-mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); }
+  from { --smoke: -25%; opacity: 0; filter: blur(10px) saturate(0.4); transform: translateY(6px) scale(0.97); mask-image: radial-gradient(circle at 0% 0%, rgb(var(--c-black)) calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, rgb(var(--c-black)) calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); -webkit-mask-image: radial-gradient(circle at 0% 0%, rgb(var(--c-black)) calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, rgb(var(--c-black)) calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); }
   60%  { opacity: 1; filter: blur(3px) saturate(0.8); }
-  to   { --smoke: 150%; opacity: 1; filter: none; transform: none; mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); -webkit-mask-image: radial-gradient(circle at 0% 0%, #000 calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, #000 calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, #000 calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, #000 calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, #000 calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, #000 calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, #000 calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, #000 calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); }
+  to   { --smoke: 150%; opacity: 1; filter: none; transform: none; mask-image: radial-gradient(circle at 0% 0%, rgb(var(--c-black)) calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, rgb(var(--c-black)) calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); -webkit-mask-image: radial-gradient(circle at 0% 0%, rgb(var(--c-black)) calc(var(--smoke) * 1 + 0%), transparent calc(var(--smoke) * 1 + 30%)), radial-gradient(circle at 100% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.9 + -4%), transparent calc(var(--smoke) * 0.9 + 26%)), radial-gradient(circle at 0% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.8 + -8%), transparent calc(var(--smoke) * 0.8 + 22%)), radial-gradient(circle at 100% 100%, rgb(var(--c-black)) calc(var(--smoke) * 0.95 + -2%), transparent calc(var(--smoke) * 0.95 + 28%)), radial-gradient(circle at 50% 50%, rgb(var(--c-black)) calc(var(--smoke) * 0.7 + -12%), transparent calc(var(--smoke) * 0.7 + 18%)), radial-gradient(circle at 20% 60%, rgb(var(--c-black)) calc(var(--smoke) * 0.6 + -10%), transparent calc(var(--smoke) * 0.6 + 20%)), radial-gradient(circle at 80% 40%, rgb(var(--c-black)) calc(var(--smoke) * 0.65 + -10%), transparent calc(var(--smoke) * 0.65 + 20%)), radial-gradient(circle at 50% 0%, rgb(var(--c-black)) calc(var(--smoke) * 0.75 + -6%), transparent calc(var(--smoke) * 0.75 + 24%)); }
 }
 @keyframes smokeItem {
   from { opacity: 0; filter: blur(6px); transform: translateY(8px); }
@@ -2721,12 +2761,12 @@ html.text-protect .blog-body-text * {
   box-shadow: none !important;
   padding: 6px 12px calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
 }
-[data-bar-style="edge"] > .bar-inner { background-color: rgba(255, 255, 255, 0.98) !important; backdrop-filter: none !important; }
+[data-bar-style="edge"] > .bar-inner { background-color: rgb(var(--c-white) / 0.98) !important; backdrop-filter: none !important; }
 html.dark [data-bar-style="edge"] > .bar-inner { background-color: #0a0a0a !important; }
 
 /* Lipita de margini, sticla mata */
 [data-bar-style="edgeglass"] > .bar-inner {
-  background-color: rgba(255, 255, 255, 0.55) !important;
+  background-color: rgb(var(--c-white) / 0.55) !important;
   backdrop-filter: blur(24px) saturate(1.5) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
 }
@@ -2738,14 +2778,14 @@ html.dark [data-bar-style="edgeglass"] > .bar-inner { background-color: rgba(10,
   max-width: min(92vw, 400px) !important;
   border-radius: 26px !important;
   padding: 4px 8px !important;
-  background-color: rgba(255, 255, 255, 0.38) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background-color: rgb(var(--c-white) / 0.38) !important;
+  border-color: rgb(var(--c-black) / 0.08) !important;
   backdrop-filter: blur(30px) saturate(1.6) !important;
   -webkit-backdrop-filter: blur(30px) saturate(1.6) !important;
 }
 html.dark [data-bar-style="glass"] > .bar-inner {
   background-color: rgba(30, 30, 30, 0.38) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgb(var(--c-white) / 0.14) !important;
 }
 
 /* Minimala: doar iconitele */
@@ -2758,8 +2798,8 @@ html.dark [data-bar-style="glass"] > .bar-inner {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-[data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0 1px 4px rgba(255, 255, 255, 0.85)); }
-html.dark [data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.8)); }
+[data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0 1px 4px rgb(var(--c-white) / 0.85)); }
+html.dark [data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0 1px 4px rgb(var(--c-black) / 0.8)); }
 
 /* Doc compact: doar iconite */
 [data-bar-style="dock"] > .bar-inner {
@@ -2775,14 +2815,14 @@ html.dark [data-bar-style="minimal"] > .bar-inner button { filter: drop-shadow(0
 
 /* Pastila plutitoare, sticla mata (marimea pastr ata de pastila actuala) */
 [data-bar-style="pillglass"] > .bar-inner {
-  background-color: rgba(255, 255, 255, 0.35) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background-color: rgb(var(--c-white) / 0.35) !important;
+  border-color: rgb(var(--c-black) / 0.08) !important;
   backdrop-filter: blur(26px) saturate(1.6) !important;
   -webkit-backdrop-filter: blur(26px) saturate(1.6) !important;
 }
 html.dark [data-bar-style="pillglass"] > .bar-inner {
   background-color: rgba(20, 20, 20, 0.35) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgb(var(--c-white) / 0.14) !important;
 }
 
 /* Bara lata plutitoare, solida */
@@ -2797,16 +2837,16 @@ html.dark [data-bar-style="pillglass"] > .bar-inner {
 /* Contrast inversat */
 [data-bar-style="invert"] > .bar-inner {
   background-color: rgba(12, 12, 12, 0.92) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgb(var(--c-white) / 0.12) !important;
 }
 [data-bar-style="invert"] > .bar-inner > button,
-[data-bar-style="invert"] > .bar-inner .language-dropdown > button { color: rgba(255, 255, 255, 0.82) !important; }
+[data-bar-style="invert"] > .bar-inner .language-dropdown > button { color: rgb(var(--c-white) / 0.82) !important; }
 html.dark [data-bar-style="invert"] > .bar-inner {
   background-color: rgba(244, 244, 244, 0.94) !important;
-  border-color: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgb(var(--c-black) / 0.1) !important;
 }
 html.dark [data-bar-style="invert"] > .bar-inner > button,
-html.dark [data-bar-style="invert"] > .bar-inner .language-dropdown > button { color: rgba(0, 0, 0, 0.82) !important; }
+html.dark [data-bar-style="invert"] > .bar-inner .language-dropdown > button { color: rgb(var(--c-black) / 0.82) !important; }
 
 /* Doc compact, sticla mata */
 [data-bar-style="dockglass"] > .bar-inner {
@@ -2815,14 +2855,14 @@ html.dark [data-bar-style="invert"] > .bar-inner .language-dropdown > button { c
   border-radius: 999px !important;
   padding: 6px 8px !important;
   gap: 4px !important;
-  background-color: rgba(255, 255, 255, 0.35) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background-color: rgb(var(--c-white) / 0.35) !important;
+  border-color: rgb(var(--c-black) / 0.08) !important;
   backdrop-filter: blur(26px) saturate(1.6) !important;
   -webkit-backdrop-filter: blur(26px) saturate(1.6) !important;
 }
 html.dark [data-bar-style="dockglass"] > .bar-inner {
   background-color: rgba(20, 20, 20, 0.35) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgb(var(--c-white) / 0.14) !important;
 }
 
 /* Meniul de limba: porneste de la marginea butonului, cu spatiu fata de marginea ecranului, ca sa nu iasa din ecran. */
@@ -2892,29 +2932,29 @@ html[data-bar-state="hidden"] { --mini-space: 0px; }
 [data-bar-style="bubble"] > .bar-inner {
   border-color: transparent !important;
   border-radius: 30px !important;
-  background-color: rgba(255, 255, 255, 0.97) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  background-color: rgb(var(--c-white) / 0.97) !important;
+  box-shadow: 0 10px 30px rgb(var(--c-black) / 0.18), 0 2px 6px rgb(var(--c-black) / 0.08) !important;
 }
 html.dark [data-bar-style="bubble"] > .bar-inner {
   background-color: rgba(20, 20, 20, 0.97) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 10px 30px rgb(var(--c-black) / 0.7), 0 0 0 1px rgb(var(--c-white) / 0.06) !important;
 }
 [data-bar-style="outline"] > .bar-inner {
   background-color: transparent !important;
-  border: 1.5px solid rgba(0, 0, 0, 0.75) !important;
+  border: 1.5px solid rgb(var(--c-black) / 0.75) !important;
   box-shadow: none !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
 }
-html.dark [data-bar-style="outline"] > .bar-inner { border-color: rgba(255, 255, 255, 0.8) !important; }
+html.dark [data-bar-style="outline"] > .bar-inner { border-color: rgb(var(--c-white) / 0.8) !important; }
 [data-bar-style="night"] > .bar-inner {
   background-color: #0b0b0b !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgb(var(--c-white) / 0.14) !important;
 }
 [data-bar-style="night"] > .bar-inner > button,
 [data-bar-style="night"] > .bar-inner .language-dropdown > button,
 [data-bar-style="island"] > .bar-inner > button,
-[data-bar-style="island"] > .bar-inner .language-dropdown > button { color: rgba(255, 255, 255, 0.86) !important; }
+[data-bar-style="island"] > .bar-inner .language-dropdown > button { color: rgb(var(--c-white) / 0.86) !important; }
 [data-bar-style="paper"] > .bar-inner {
   background-color: #f3ead7 !important;
   border-color: rgba(60, 40, 20, 0.25) !important;
@@ -2928,8 +2968,8 @@ html.dark [data-bar-style="outline"] > .bar-inner { border-color: rgba(255, 255,
   border-radius: 999px !important;
   padding: 6px 10px !important;
   gap: 6px !important;
-  background-color: #000 !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
+  background-color: rgb(var(--c-black)) !important;
+  border-color: rgb(var(--c-white) / 0.16) !important;
 }
 [data-mobile-nav="bottom"][data-bar-style="ribbon"] { padding: 0; }
 [data-bar-style="ribbon"] > .bar-inner {
@@ -2938,7 +2978,7 @@ html.dark [data-bar-style="outline"] > .bar-inner { border-color: rgba(255, 255,
   max-width: none !important;
   border-radius: 24px 24px 0 0 !important;
   border-width: 1px 0 0 0 !important;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 -8px 24px rgb(var(--c-black) / 0.12) !important;
   padding: 8px 14px calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
 }
 [data-bar-style="ribbon"] .language-dropdown > .animate-dropdown-up,
@@ -2951,3 +2991,279 @@ html.dark [data-bar-style="outline"] > .bar-inner { border-color: rgba(255, 255,
 /* Pasul 021126E: sageata "inapoi sus" sta deasupra barii de jos si a playerului mic */
 .back-top-pos { bottom: calc(max(env(safe-area-inset-bottom, 0px) + 86px, var(--bar-space, 0px) + 10px) + var(--mini-space, 0px)); }
 @media (min-width: 1024px) { .back-top-pos { bottom: calc(32px + var(--mini-space, 0px)); } }
+
+/* ===== Pasul 041126: teme (stiluri de culoare) — alese din admin, valabile in toata aplicatia =====
+   Culorile Tailwind black/white/gray/neutral/zinc si culorile fixe de mai sus citesc aceste variabile.
+   „clasic" = valorile de la inceput. Fiecare stil are varianta intunecata si cea luminoasa. */
+html[data-theme-style="paper"] {
+  --gray-50: 249 248 245;
+  --neutral-50: 249 248 245;
+  --zinc-50: 249 248 245;
+  --gray-100: 244 240 236;
+  --neutral-100: 244 240 236;
+  --zinc-100: 244 240 236;
+  --gray-200: 232 226 216;
+  --neutral-200: 232 226 216;
+  --zinc-200: 232 226 216;
+  --gray-300: 213 202 184;
+  --neutral-300: 213 202 184;
+  --zinc-300: 213 202 184;
+  --gray-400: 183 163 133;
+  --neutral-400: 183 163 133;
+  --zinc-400: 183 163 133;
+  --gray-500: 154 129 91;
+  --neutral-500: 154 129 91;
+  --zinc-500: 154 129 91;
+  --gray-600: 116 97 68;
+  --neutral-600: 116 97 68;
+  --zinc-600: 116 97 68;
+  --gray-700: 84 70 49;
+  --neutral-700: 84 70 49;
+  --zinc-700: 84 70 49;
+  --gray-800: 55 46 32;
+  --neutral-800: 55 46 32;
+  --zinc-800: 55 46 32;
+  --gray-900: 32 27 19;
+  --neutral-900: 32 27 19;
+  --zinc-900: 32 27 19;
+  --gray-950: 19 16 11;
+  --neutral-950: 19 16 11;
+  --zinc-950: 19 16 11;
+}
+html[data-theme-style="paper"].dark {
+  --c-black: 26 18 11;
+  --c-white: 243 234 215;
+  --c-ink: 44 32 21;
+  color-scheme: dark;
+}
+html[data-theme-style="paper"].light {
+  --c-black: 58 44 28;
+  --c-white: 243 234 215;
+  --c-ink: 46 34 22;
+  color-scheme: light;
+}
+html[data-theme-style="midnight"] {
+  --gray-50: 246 247 249;
+  --neutral-50: 246 247 249;
+  --zinc-50: 246 247 249;
+  --gray-100: 236 238 243;
+  --neutral-100: 236 238 243;
+  --zinc-100: 236 238 243;
+  --gray-200: 217 222 232;
+  --neutral-200: 217 222 232;
+  --zinc-200: 217 222 232;
+  --gray-300: 185 194 212;
+  --neutral-300: 185 194 212;
+  --zinc-300: 185 194 212;
+  --gray-400: 135 150 181;
+  --neutral-400: 135 150 181;
+  --zinc-400: 135 150 181;
+  --gray-500: 93 113 152;
+  --neutral-500: 93 113 152;
+  --zinc-500: 93 113 152;
+  --gray-600: 70 84 114;
+  --neutral-600: 70 84 114;
+  --zinc-600: 70 84 114;
+  --gray-700: 50 61 82;
+  --neutral-700: 50 61 82;
+  --zinc-700: 50 61 82;
+  --gray-800: 33 40 54;
+  --neutral-800: 33 40 54;
+  --zinc-800: 33 40 54;
+  --gray-900: 19 23 32;
+  --neutral-900: 19 23 32;
+  --zinc-900: 19 23 32;
+  --gray-950: 12 14 19;
+  --neutral-950: 12 14 19;
+  --zinc-950: 12 14 19;
+}
+html[data-theme-style="midnight"].dark {
+  --c-black: 10 16 32;
+  --c-white: 232 237 247;
+  --c-ink: 20 29 52;
+  color-scheme: dark;
+}
+html[data-theme-style="midnight"].light {
+  --c-black: 20 33 58;
+  --c-white: 242 245 250;
+  --c-ink: 16 27 48;
+  color-scheme: light;
+}
+html[data-theme-style="forest"] {
+  --gray-50: 246 249 247;
+  --neutral-50: 246 249 247;
+  --zinc-50: 246 249 247;
+  --gray-100: 237 242 239;
+  --neutral-100: 237 242 239;
+  --zinc-100: 237 242 239;
+  --gray-200: 220 229 223;
+  --neutral-200: 220 229 223;
+  --zinc-200: 220 229 223;
+  --gray-300: 190 208 196;
+  --neutral-300: 190 208 196;
+  --zinc-300: 190 208 196;
+  --gray-400: 143 174 153;
+  --neutral-400: 143 174 153;
+  --zinc-400: 143 174 153;
+  --gray-500: 103 142 116;
+  --neutral-500: 103 142 116;
+  --zinc-500: 103 142 116;
+  --gray-600: 77 106 87;
+  --neutral-600: 77 106 87;
+  --zinc-600: 77 106 87;
+  --gray-700: 56 77 63;
+  --neutral-700: 56 77 63;
+  --zinc-700: 56 77 63;
+  --gray-800: 36 50 41;
+  --neutral-800: 36 50 41;
+  --zinc-800: 36 50 41;
+  --gray-900: 21 30 24;
+  --neutral-900: 21 30 24;
+  --zinc-900: 21 30 24;
+  --gray-950: 13 18 14;
+  --neutral-950: 13 18 14;
+  --zinc-950: 13 18 14;
+}
+html[data-theme-style="forest"].dark {
+  --c-black: 12 23 18;
+  --c-white: 228 239 231;
+  --c-ink: 22 38 30;
+  color-scheme: dark;
+}
+html[data-theme-style="forest"].light {
+  --c-black: 27 51 37;
+  --c-white: 239 244 238;
+  --c-ink: 22 42 30;
+  color-scheme: light;
+}
+html[data-theme-style="stone"] {
+  --gray-50: 248 248 247;
+  --neutral-50: 248 248 247;
+  --zinc-50: 248 248 247;
+  --gray-100: 241 240 239;
+  --neutral-100: 241 240 239;
+  --zinc-100: 241 240 239;
+  --gray-200: 227 225 222;
+  --neutral-200: 227 225 222;
+  --zinc-200: 227 225 222;
+  --gray-300: 203 200 195;
+  --neutral-300: 203 200 195;
+  --zinc-300: 203 200 195;
+  --gray-400: 165 160 151;
+  --neutral-400: 165 160 151;
+  --zinc-400: 165 160 151;
+  --gray-500: 131 125 114;
+  --neutral-500: 131 125 114;
+  --zinc-500: 131 125 114;
+  --gray-600: 98 94 85;
+  --neutral-600: 98 94 85;
+  --zinc-600: 98 94 85;
+  --gray-700: 71 68 62;
+  --neutral-700: 71 68 62;
+  --zinc-700: 71 68 62;
+  --gray-800: 46 44 40;
+  --neutral-800: 46 44 40;
+  --zinc-800: 46 44 40;
+  --gray-900: 27 26 24;
+  --neutral-900: 27 26 24;
+  --zinc-900: 27 26 24;
+  --gray-950: 16 16 14;
+  --neutral-950: 16 16 14;
+  --zinc-950: 16 16 14;
+}
+html[data-theme-style="stone"].dark {
+  --c-black: 23 22 20;
+  --c-white: 236 235 232;
+  --c-ink: 38 36 33;
+  color-scheme: dark;
+}
+html[data-theme-style="stone"].light {
+  --c-black: 37 35 31;
+  --c-white: 239 238 234;
+  --c-ink: 33 31 27;
+  color-scheme: light;
+}
+html[data-theme-style="glass"] {
+  --gray-50: 246 246 249;
+  --neutral-50: 246 246 249;
+  --zinc-50: 246 246 249;
+  --gray-100: 236 238 243;
+  --neutral-100: 236 238 243;
+  --zinc-100: 236 238 243;
+  --gray-200: 218 220 231;
+  --neutral-200: 218 220 231;
+  --zinc-200: 218 220 231;
+  --gray-300: 187 191 211;
+  --neutral-300: 187 191 211;
+  --zinc-300: 187 191 211;
+  --gray-400: 137 145 179;
+  --neutral-400: 137 145 179;
+  --zinc-400: 137 145 179;
+  --gray-500: 95 106 149;
+  --neutral-500: 95 106 149;
+  --zinc-500: 95 106 149;
+  --gray-600: 72 80 112;
+  --neutral-600: 72 80 112;
+  --zinc-600: 72 80 112;
+  --gray-700: 52 58 81;
+  --neutral-700: 52 58 81;
+  --zinc-700: 52 58 81;
+  --gray-800: 34 38 53;
+  --neutral-800: 34 38 53;
+  --zinc-800: 34 38 53;
+  --gray-900: 20 22 31;
+  --neutral-900: 20 22 31;
+  --zinc-900: 20 22 31;
+  --gray-950: 12 13 19;
+  --neutral-950: 12 13 19;
+  --zinc-950: 12 13 19;
+}
+html[data-theme-style="glass"].dark {
+  --c-black: 9 12 28;
+  --c-white: 230 236 255;
+  --c-ink: 22 28 56;
+  color-scheme: dark;
+}
+html[data-theme-style="glass"].light {
+  --c-black: 22 30 60;
+  --c-white: 238 243 255;
+  --c-ink: 18 24 48;
+  color-scheme: light;
+}
+
+/* Logoul are fundal propriu: pe hartie se incalzeste, ca sa nu iasa o pata alba. */
+html[data-theme-style="paper"] img[src*="radikal.logo"],
+html[data-theme-style="stone"] img[src*="radikal.logo"] { filter: sepia(0.4) saturate(0.9); }
+
+/* Sticla: fundal cu lumina difuza; paginile devin transparente, iar cardurile rotunjite se incetosaza. */
+html[data-theme-style="glass"].dark body {
+  background:
+    radial-gradient(1100px 760px at 12% -8%, rgba(110, 140, 255, 0.38), transparent 60%),
+    radial-gradient(900px 700px at 105% 8%, rgba(175, 120, 255, 0.30), transparent 58%),
+    radial-gradient(900px 900px at 50% 112%, rgba(50, 190, 220, 0.26), transparent 60%),
+    rgb(var(--c-black));
+  background-attachment: fixed;
+}
+html[data-theme-style="glass"].light body {
+  background:
+    radial-gradient(1100px 760px at 12% -8%, rgba(120, 150, 255, 0.35), transparent 60%),
+    radial-gradient(900px 700px at 105% 8%, rgba(190, 140, 255, 0.28), transparent 58%),
+    radial-gradient(900px 900px at 50% 112%, rgba(70, 200, 225, 0.25), transparent 60%),
+    rgb(var(--c-white));
+  background-attachment: fixed;
+}
+html[data-theme-style="glass"] :is([class~="bg-black"], [class~="dark:bg-black"], [class~="bg-white"], [class~="dark:bg-neutral-950"]):is(.min-h-screen, main, section) {
+  background-color: transparent !important;
+}
+html[data-theme-style="glass"].dark :is([class~="bg-gray-900"], [class~="dark:bg-gray-900"], [class~="bg-gray-800"], [class~="dark:bg-gray-800"], [class~="bg-neutral-900"], [class~="bg-neutral-950"], [class~="dark:bg-neutral-950"], [class~="bg-black"], [class~="dark:bg-black"])[class*="rounded"]:not(.fixed) {
+  background-color: rgb(var(--c-black) / 0.45) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-color: rgb(var(--c-white) / 0.14) !important;
+}
+html[data-theme-style="glass"].light :is([class~="bg-white"], [class~="bg-gray-50"], [class~="bg-gray-100"], [class~="dark:bg-gray-900"])[class*="rounded"]:not(.fixed) {
+  background-color: rgb(var(--c-white) / 0.55) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-color: rgb(var(--c-black) / 0.1) !important;
+}

@@ -5,14 +5,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { runThemeFx } from '@/lib/glitchEffects';
-import { getUiSettingsSync } from '@/lib/uiSettings';
+import { getUiSettingsSync, useUiSettings, themeColorFor } from '@/lib/uiSettings';
 
 // Unde a atins cititorul ultima data: de acolo porneste efectul „cerc".
 const lastPoint = { x: 0, y: 0 };
 
 /** Culoarea barei de stare: toate meta-urile existente se actualizeaza pe loc (fara sa fie sterse, ca sa nu incurce Next). */
 function applyThemeColor(theme: Theme) {
-  const color = theme === 'dark' ? '#000000' : '#ffffff';
+  const color = themeColorFor(document.documentElement.dataset.themeStyle, theme);
   const list = document.querySelectorAll('meta[name="theme-color"]');
   if (list.length === 0) {
     const meta = document.createElement('meta');
@@ -38,6 +38,12 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
   const [mounted, setMounted] = useState(false);
+  const { themeStyle } = useUiSettings();
+
+  // Stilul de culoare ales din admin (clasic, hartie, ...) se aplica pe <html>; culorile vin din globals.css.
+  useEffect(() => {
+    document.documentElement.dataset.themeStyle = themeStyle;
+  }, [themeStyle]);
 
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
@@ -49,7 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const html = document.documentElement;
     const sync = () => applyThemeColor(html.classList.contains('light') ? 'light' : 'dark');
     const mo = new MutationObserver(sync);
-    mo.observe(html, { attributes: true, attributeFilter: ['class'] });
+    mo.observe(html, { attributes: true, attributeFilter: ['class', 'data-theme-style'] });
     window.addEventListener('pageshow', sync);
     document.addEventListener('visibilitychange', sync);
     return () => {

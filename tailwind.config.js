@@ -1,4 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+const themeScale = (name) =>
+  Object.fromEntries([50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((s) => [s, `rgb(var(--${name}-${s}) / <alpha-value>)`]));
+
 module.exports = {
   // STEP 1012004: Enable dark mode using class strategy
   darkMode: 'class',
@@ -18,6 +21,15 @@ module.exports = {
       '2xl': '1536px',
     },
     extend: {
+      // Pasul 041126: culorile negru/alb/gri citesc variabile CSS, ca temele (hartie, noapte albastra...) sa se aplice in toata aplicatia.
+      // Valorile implicite (stilul „clasic") sunt cele din Tailwind; vezi `globals.css`.
+      colors: {
+        black: 'rgb(var(--c-black) / <alpha-value>)',
+        white: 'rgb(var(--c-white) / <alpha-value>)',
+        gray: themeScale('gray'),
+        neutral: themeScale('neutral'),
+        zinc: themeScale('zinc'),
+      },
       // Typography system / Typografiesystem / Sistem tipografie
       // Cinzel for headings only, Cormorant Garamond for body text (has proper lowercase)
       // Cinzel nur für Überschriften, Cormorant Garamond für Fließtext (hat echte Kleinbuchstaben)

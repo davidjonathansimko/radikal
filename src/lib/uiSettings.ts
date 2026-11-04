@@ -6,13 +6,16 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
+/** Stilul de culoare al intregii aplicatii (fiecare are varianta intunecata si cea luminoasa). */
+export type ThemeStyle = 'classic' | 'paper' | 'midnight' | 'forest' | 'stone' | 'glass';
+
 export type BarBehavior = 'always' | 'slide' | 'idle' | 'shrink' | 'fade' | 'articles';
 export type BarStyle = 'pill' | 'pillglass' | 'edge' | 'edgeglass' | 'glass' | 'floatbar' | 'invert' | 'minimal' | 'dock' | 'dockglass' | 'bubble' | 'outline' | 'night' | 'paper' | 'island' | 'ribbon';
 export type ThemeFx = 'fade' | 'circle' | 'iris' | 'wipe' | 'wipeR' | 'curtain' | 'rise' | 'split' | 'vsplit' | 'diagonal' | 'slide' | 'shake' | 'dissolve' | 'zoom' | 'flash';
 export type LangFx = 'shake' | 'fade' | 'blur' | 'rise' | 'none';
 export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line' | 'island' | 'equalizer' | 'outline' | 'tab' | 'ticket' | 'disc';
 /** Fereastra care se deschide la atingerea playerului mic. */
-export type MiniSheetStyle = 'classic' | 'modern' | 'cover' | 'compact' | 'vinyl' | 'poster' | 'quiet' | 'split' | 'glass' | 'paper';
+export type MiniSheetStyle = 'classic' | 'modern' | 'cover' | 'compact' | 'vinyl' | 'poster' | 'quiet' | 'split' | 'glass' | 'paper' | 'frost' | 'mist' | 'pearl' | 'smoke';
 /** Efectul cu care se deschide fereastra playerului mic. */
 export type MiniSheetFx = 'none' | 'rise' | 'fade' | 'zoom' | 'blur' | 'spring' | 'curtain';
 
@@ -20,6 +23,7 @@ export type MiniSheetFx = 'none' | 'rise' | 'fade' | 'zoom' | 'blur' | 'spring' 
 export type UiToggleKey = 'queue' | 'resumePos' | 'sleepTimer' | 'offlineAudio' | 'hideInlinePlayer' | 'todayStreak' | 'todayListen' | 'searchSuggest' | 'seriesProgress' | 'calmEffects';
 
 export interface UiSettings extends Record<UiToggleKey, boolean> {
+  themeStyle: ThemeStyle;
   barBehavior: BarBehavior;
   barStyle: BarStyle;
   themeFx: ThemeFx;
@@ -34,6 +38,7 @@ export interface UiSettings extends Record<UiToggleKey, boolean> {
 
 export const UI_SETTINGS_KEY = 'ui_settings';
 export const UI_DEFAULTS: UiSettings = {
+  themeStyle: 'classic',
   barBehavior: 'always',
   barStyle: 'pill',
   themeFx: 'fade',
@@ -53,6 +58,21 @@ export const UI_DEFAULTS: UiSettings = {
   seriesProgress: false,
   calmEffects: false,
 };
+
+export const THEME_STYLES: { id: ThemeStyle; title: string; text: string; bg: { dark: string; light: string } }[] = [
+  { id: 'classic', title: 'Clasic (ca până acum)', text: 'Negru cu text alb și alb cu text negru.', bg: { dark: '#000000', light: '#ffffff' } },
+  { id: 'paper', title: 'Hârtie', text: 'Pe tema întunecată: maro închis cu text crem. Pe cea luminoasă: hârtie crem cu text maro închis.', bg: { dark: '#1a120b', light: '#f3ead7' } },
+  { id: 'midnight', title: 'Noapte albastră', text: 'Albastru-negru cu text rece, aproape alb; pe lumină, alb-albăstrui cu text bleumarin.', bg: { dark: '#0a1020', light: '#f2f5fa' } },
+  { id: 'forest', title: 'Pădure', text: 'Verde foarte închis cu text crem-verzui; pe lumină, alb-verzui cu text verde închis.', bg: { dark: '#0c1712', light: '#eff4ee' } },
+  { id: 'stone', title: 'Piatră', text: 'Gri cald, sobru: antracit cu text deschis; pe lumină, gri-bej cu text aproape negru.', bg: { dark: '#171614', light: '#efeeea' } },
+  { id: 'glass', title: 'Sticlă', text: 'Fundal cu lumină difuză (albastru, mov, turcoaz), pagini transparente și carduri din sticlă mată.', bg: { dark: '#090c1c', light: '#eef3ff' } },
+];
+
+/** Culoarea barei de stare a telefonului pentru un stil și o temă. */
+export function themeColorFor(style: ThemeStyle | string | undefined, mode: 'dark' | 'light'): string {
+  const s = THEME_STYLES.find((x) => x.id === style) ?? THEME_STYLES[0];
+  return s.bg[mode];
+}
 
 export const MINI_PLAYERS: { id: MiniPlayerStyle; title: string; text: string }[] = [
   { id: 'off', title: 'Dezactivat (ca până acum)', text: 'Când schimbi pagina, audio-ul simplu se oprește, ca în prezent.' },
@@ -91,6 +111,10 @@ export const MINI_SHEETS: { id: MiniSheetStyle; title: string; text: string }[] 
   { id: 'split', title: 'Împărțit', text: 'Coperta în stânga, iar titlul, categoria și butonul spre articol în dreapta; dedesubt, comenzile.' },
   { id: 'glass', title: 'Sticlă', text: 'Fereastră translucidă, cu pagina încețoșată în spate și o lumină din copertă.' },
   { id: 'paper', title: 'Hârtie', text: 'Ton cald de hârtie și literă cu serife, ca la lectura de seară, pe orice temă.' },
+  { id: 'frost', title: 'Sticlă mată (puțin transparentă)', text: 'Ca Sticla, dar mult mai opacă: pagina din spate abia se ghicește, textele rămân foarte clare.' },
+  { id: 'mist', title: 'Ceață (transparență medie)', text: 'Între Sticlă și Sticlă mată: pagina încețoșată se vede discret, cu o lumină din copertă.' },
+  { id: 'pearl', title: 'Perlă', text: 'Sticlă lăptoasă, deschisă la culoare pe orice temă, cu o strălucire fină din copertă.' },
+  { id: 'smoke', title: 'Fum (sticlă închisă)', text: 'Sticlă afumată, mereu închisă la culoare, cu text alb, pe orice temă.' },
 ];
 
 export const UI_TOGGLES: { key: UiToggleKey; group: string; title: string; text: string }[] = [
@@ -166,6 +190,7 @@ const ONE_OF = <T extends string>(v: unknown, list: readonly T[], fallback: T): 
 function normalize(v: Partial<UiSettings> | null | undefined): UiSettings {
   const o = v ?? {};
   return {
+    themeStyle: ONE_OF(o.themeStyle, THEME_STYLES.map((x) => x.id), UI_DEFAULTS.themeStyle),
     barBehavior: ONE_OF(o.barBehavior, BAR_BEHAVIORS.map((x) => x.id), UI_DEFAULTS.barBehavior),
     miniSheetFx: ONE_OF(o.miniSheetFx, MINI_SHEET_FX.map((x) => x.id), UI_DEFAULTS.miniSheetFx),
     barStyle: ONE_OF(o.barStyle, BAR_STYLES.map((x) => x.id), UI_DEFAULTS.barStyle),

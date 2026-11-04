@@ -10,6 +10,7 @@ import {
   MINI_PLAYERS,
   MINI_SHEETS,
   MINI_SHEET_FX,
+  THEME_STYLES,
   THEME_FX,
   UI_DEFAULTS,
   UI_TOGGLES,
@@ -131,6 +132,11 @@ export default function UiSettingsAdmin() {
       <p className="rounded-lg border border-black/10 bg-black/[0.03] p-2.5 text-xs text-black/65 dark:border-white/15 dark:bg-white/[0.05] dark:text-white/65">
         Ce alegi se vede imediat, ca previzualizare. Rămâne doar dacă apeși <strong>Salvează</strong>; dacă ieși din admin fără să salvezi, revine la setările de dinainte. La temă și la limbă, efectul se arată o dată la alegere (tema se schimbă și revine singură).
       </p>
+
+      <Sect title="Tema aplicației: stil de culoare (hârtie, noapte albastrăsticlă...)">
+        <Choice name="theme-style" value={s.themeStyle} options={THEME_STYLES} onChange={(v) => update({ ...s, themeStyle: v })} />
+        <p className="mt-2 text-xs text-black/55 dark:text-white/55">Se aplică în toată aplicația și se previzualizează imediat. Fiecare stil are varianta întunecată și cea luminoasă; butonul Temă din bară comută între ele. Culoarea de sus (ceas, baterie) urmează stilul; bara de jos a telefonului și-o alege sistemul.</p>
+      </Sect>
 
       <Sect title="Bara de jos (telefon): comportament la derulare">
         <Choice name="bar-behavior" value={s.barBehavior} options={BAR_BEHAVIORS} onChange={(v) => update({ ...s, barBehavior: v })} />

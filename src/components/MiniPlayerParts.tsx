@@ -2,8 +2,40 @@
 
 // Piese comune ale playerului mic (bara si ferestrele lui).
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import Image from 'next/image';
+
+/** Glisarea in jos din mijlocul de sus al ferestrei o inchide (ca butonul ✕). */
+export function useSheetDrag(onClose: () => void) {
+  const [dy, setDy] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const start = useRef<{ y: number; t: number } | null>(null);
+  const finish = (e: React.PointerEvent) => {
+    const s = start.current;
+    start.current = null;
+    setDragging(false);
+    if (!s) return;
+    const d = Math.max(0, e.clientY - s.y);
+    const v = d / Math.max(1, Date.now() - s.t);
+    if (d > 110 || (d > 40 && v > 0.6)) {
+      setDy(window.innerHeight);
+      window.setTimeout(onClose, 180);
+    } else setDy(0);
+  };
+  const handlers = {
+    onPointerDown: (e: React.PointerEvent) => {
+      start.current = { y: e.clientY, t: Date.now() };
+      setDragging(true);
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (start.current) setDy(Math.max(0, e.clientY - start.current.y));
+    },
+    onPointerUp: finish,
+    onPointerCancel: finish,
+  };
+  return { dy, dragging, handlers };
+}
 
 export const fmt = (s: number) => {
   if (!Number.isFinite(s) || s < 0) return '0:00';

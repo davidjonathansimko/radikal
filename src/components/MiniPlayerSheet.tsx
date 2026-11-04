@@ -16,7 +16,7 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useTrackTitles, useCategories, categoryOf } from '@/hooks/useTrackTitles';
 import { useSeriesTitle } from '@/lib/blogSeries';
 import AnimatedPlayIcon from '@/components/AnimatedPlayIcon';
-import { Cover, PlayIcon, fmt } from '@/components/MiniPlayerParts';
+import { Cover, PlayIcon, fmt, useSheetDrag } from '@/components/MiniPlayerParts';
 
 const T = {
   de: { queue: 'Hörliste', recommended: 'Empfohlene Blogs', latest: 'Letzte Blogs', series: 'Serie', random: 'Zufälligen Artikel wiedergeben', stop: 'Beenden', open: 'Zum Artikel', close: 'Schließen', sleep: 'Einschlafen', off: 'Aus', end: 'Bis zum Ende', min: 'Min.', offline: 'Offline speichern', offlineOn: 'Offline gespeichert', empty: 'Keine Audiodatei verfügbar. Tippe auf Play, um es erneut zu versuchen.', modeStop: 'Danach Ende', modeContinue: 'Weiter abspielen', modeRepeat: 'Artikel wiederholen', prev: 'Zurück', next: 'Weiter', hold: 'Gedrückt halten zum Spulen' },
@@ -27,42 +27,26 @@ const T = {
 
 type Variant = Exclude<MiniSheetStyle, 'classic'>;
 
-/** Culorile ferestrei: totul monocrom, adaptat temei (hartie = ton cald fix; cover = mereu inchis). */
-function palette(variant: Variant) {
-  if (variant === 'cover') {
-    return {
-      forced: true,
-      panel: 'bg-neutral-950 text-white border-white/10',
-      ink: 'text-white',
-      soft: 'text-white/65',
-      card: 'bg-white/10',
-      line: 'border-white/15',
-      primary: 'bg-white text-black',
-      activeRow: 'border-white/60 bg-white/15',
-      idleRow: 'border-white/10 bg-white/[0.06]',
-      seg: 'bg-white/10',
-      accent: '#ffffff',
-    };
-  }
-  if (variant === 'paper') {
-    return {
-      forced: false,
-      panel: 'bg-[#f3ead7] text-[#3a2c1c] dark:text-[#3a2c1c] border-[#3a2c1c]/15 font-serif',
-      ink: 'text-[#3a2c1c] dark:text-[#3a2c1c]',
-      soft: 'text-[#3a2c1c]/65 dark:text-[#3a2c1c]/65',
-      card: 'bg-[#3a2c1c]/[0.08]',
-      line: 'border-[#3a2c1c]/25',
-      primary: 'bg-[#3a2c1c] text-[#f3ead7] dark:text-[#f3ead7]',
-      activeRow: 'border-[#3a2c1c]/60 bg-[#3a2c1c]/10',
-      idleRow: 'border-[#3a2c1c]/15 bg-[#3a2c1c]/[0.04]',
-      seg: 'bg-[#3a2c1c]/[0.08]',
-      accent: '#3a2c1c',
-    };
-  }
-  const glass = variant === 'glass';
+/** Culorile ferestrei: totul monocrom, adaptat temei (hartie = ton cald fix; cover si smoke = mereu inchise). */
+function darkPal(panel: string) {
+  return {
+    forced: true,
+    panel: `${panel} text-white border-white/10`,
+    ink: 'text-white',
+    soft: 'text-white/65',
+    card: 'bg-white/10',
+    line: 'border-white/15',
+    primary: 'bg-white text-black',
+    activeRow: 'border-white/60 bg-white/15',
+    idleRow: 'border-white/10 bg-white/[0.06]',
+    seg: 'bg-white/10',
+    accent: '#ffffff',
+  };
+}
+function lightPal(panel: string) {
   return {
     forced: false,
-    panel: `${glass ? 'bg-white/60 dark:bg-black/45 backdrop-blur-2xl backdrop-saturate-150' : 'bg-white dark:bg-neutral-950'} text-black dark:text-white border-black/10 dark:border-white/15`,
+    panel: `${panel} text-black dark:text-white border-black/10 dark:border-white/15`,
     ink: 'text-black dark:text-white',
     soft: 'text-black/55 dark:text-white/55',
     card: 'bg-black/[0.05] dark:bg-white/10',
@@ -74,7 +58,43 @@ function palette(variant: Variant) {
     accent: '',
   };
 }
+
+function palette(variant: Variant) {
+  switch (variant) {
+    case 'cover':
+      return darkPal('bg-neutral-950');
+    case 'smoke':
+      return darkPal('bg-neutral-950/80 backdrop-blur-2xl backdrop-saturate-150');
+    case 'glass':
+      return lightPal('bg-white/60 dark:bg-black/45 backdrop-blur-2xl backdrop-saturate-150');
+    case 'frost':
+      return lightPal('bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl backdrop-saturate-150');
+    case 'mist':
+      return lightPal('bg-white/72 dark:bg-black/60 backdrop-blur-2xl backdrop-saturate-150');
+    case 'pearl':
+      return lightPal('bg-white/80 dark:bg-white/[0.12] backdrop-blur-2xl backdrop-saturate-150');
+    case 'paper':
+      return {
+        forced: false,
+        panel: 'bg-[#f3ead7] text-[#3a2c1c] dark:text-[#3a2c1c] border-[#3a2c1c]/15 font-serif',
+        ink: 'text-[#3a2c1c] dark:text-[#3a2c1c]',
+        soft: 'text-[#3a2c1c]/65 dark:text-[#3a2c1c]/65',
+        card: 'bg-[#3a2c1c]/[0.08]',
+        line: 'border-[#3a2c1c]/25',
+        primary: 'bg-[#3a2c1c] text-[#f3ead7] dark:text-[#f3ead7]',
+        activeRow: 'border-[#3a2c1c]/60 bg-[#3a2c1c]/10',
+        idleRow: 'border-[#3a2c1c]/15 bg-[#3a2c1c]/[0.04]',
+        seg: 'bg-[#3a2c1c]/[0.08]',
+        accent: '#3a2c1c',
+      };
+    default:
+      return lightPal('bg-white dark:bg-neutral-950');
+  }
+}
 type Pal = ReturnType<typeof palette>;
+
+/** Lumina din copertă care se vede prin sticlă (opacitatea ei). */
+const GLOW: Partial<Record<Variant, number>> = { cover: 0.45, glass: 0.25, mist: 0.35, pearl: 0.3, smoke: 0.25, frost: 0.12 };
 
 /** Titlul pe un rand; daca e mai lung decat spatiul, se misca stanga-dreapta in bucla. */
 function Marquee({ text, className = '' }: { text: string; className?: string }) {
@@ -216,6 +236,7 @@ export default function ModernSheet({ onClose, variant }: { onClose: () => void;
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [offline, setOffline] = useState<'idle' | 'busy' | 'saved'>('idle');
   useBodyScrollLock(true);
+  const drag = useSheetDrag(onClose);
 
   useEffect(() => {
     let alive = true;
@@ -402,17 +423,25 @@ export default function ModernSheet({ onClose, variant }: { onClose: () => void;
   return createPortal(
     <div className="fixed inset-0 z-[9992] flex items-end justify-center" role="dialog" aria-modal="true">
       <button type="button" aria-label={t.close} onClick={onClose} className={`absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm ${fx !== 'none' ? 'mini-sheet-back' : ''}`} />
+      <div className="relative w-full max-w-md" style={{ transform: `translateY(${drag.dy}px)`, transition: drag.dragging ? 'none' : 'transform 0.25s ease' }}>
       <div
-        className={`relative flex max-h-[94vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border shadow-2xl ${pal.panel} ${pal.forced ? 'force-white-text' : ''} ${fx !== 'none' ? `mini-sheet-fx-${fx}` : ''}`}
+        className={`relative flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-3xl border shadow-2xl ${pal.panel} ${pal.forced ? 'force-white-text' : ''} ${fx !== 'none' ? `mini-sheet-fx-${fx}` : ''}`}
       >
-        {(variant === 'cover' || variant === 'glass') && track.imageUrl && (
+        {GLOW[variant] !== undefined && track.imageUrl && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <Image src={track.imageUrl} alt="" fill sizes="448px" className={`scale-150 object-cover blur-3xl ${variant === 'glass' ? 'opacity-25' : 'opacity-45'}`} />
+            <Image src={track.imageUrl} alt="" fill sizes="448px" className="scale-150 object-cover blur-3xl" style={{ opacity: GLOW[variant] }} />
             {variant === 'cover' && <span className="absolute inset-0 bg-black/55" />}
           </div>
         )}
         <div className="scrollbar-hide relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-2" style={{ scrollbarWidth: 'none' }}>
-          {variant !== 'poster' && <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-current opacity-25" aria-hidden="true" />}
+          {/* Zona de sus: glisata in jos, inchide fereastra. */}
+          <div
+            {...drag.handlers}
+            className={`${variant === 'poster' ? 'absolute inset-x-0 top-0 z-10 h-10' : '-mx-4 -mt-2 mb-1 flex h-9 justify-center pt-2'} cursor-grab touch-none`}
+            aria-hidden="true"
+          >
+            {variant !== 'poster' && <div className="h-1 w-10 rounded-full bg-current opacity-25" />}
+          </div>
           <div className={variant === 'poster' ? 'absolute right-2 top-2 z-10' : 'flex justify-end'}>
             <button type="button" onClick={onClose} aria-label={t.close} className={`h-10 w-10 rounded-full text-lg ${variant === 'poster' ? 'bg-black/40 text-white' : pal.soft}`}>✕</button>
           </div>
@@ -587,6 +616,7 @@ export default function ModernSheet({ onClose, variant }: { onClose: () => void;
             {t.stop}
           </button>
         </div>
+      </div>
       </div>
     </div>,
     document.body,

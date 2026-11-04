@@ -129,6 +129,11 @@ export default function RootLayout({
                 if (savedLang) {
                   document.documentElement.lang = savedLang;
                 }
+                // Stilul de culoare (admin) inainte de prima desenare, ca sa nu clipeasca.
+                try {
+                  var ui = JSON.parse(localStorage.getItem('radikalUiSettings') || '{}');
+                  if (ui && typeof ui.themeStyle === 'string') document.documentElement.setAttribute('data-theme-style', ui.themeStyle);
+                } catch (e) {}
               })();
             `,
           }}
