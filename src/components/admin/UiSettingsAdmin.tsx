@@ -127,13 +127,29 @@ export default function UiSettingsAdmin() {
     setMsg('Revenit la setările salvate.');
   };
 
+  const saveBar = (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white p-2 dark:border-white/15 dark:bg-black">
+      <button type="button" disabled={busy || !dirty} onClick={() => void save()} className="btn-solid rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-black">
+        Salvează
+      </button>
+      <button type="button" disabled={busy || !dirty} onClick={revert} className="rounded-lg border border-black/15 px-3 py-2 text-sm text-black disabled:opacity-40 dark:border-white/20 dark:text-white">
+        Renunță
+      </button>
+      <span className="text-xs text-black/60 dark:text-white/60" role="status">
+        {msg || (dirty ? 'Previzualizare, nesalvată.' : '')}
+      </span>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <p className="rounded-lg border border-black/10 bg-black/[0.03] p-2.5 text-xs text-black/65 dark:border-white/15 dark:bg-white/[0.05] dark:text-white/65">
         Ce alegi se vede imediat, ca previzualizare. Rămâne doar dacă apeși <strong>Salvează</strong>; dacă ieși din admin fără să salvezi, revine la setările de dinainte. La temă și la limbă, efectul se arată o dată la alegere (tema se schimbă și revine singură).
       </p>
 
-      <Sect title="Tema aplicației: stil de culoare (hârtie, noapte albastrăsticlă...)">
+      {saveBar}
+
+      <Sect title="Tema aplicației: stil de culoare (hârtie, noapte albastră, sticlă...)">
         <Choice name="theme-style" value={s.themeStyle} options={THEME_STYLES} onChange={(v) => update({ ...s, themeStyle: v })} />
         <p className="mt-2 text-xs text-black/55 dark:text-white/55">Se aplică în toată aplicația și se previzualizează imediat. Fiecare stil are varianta întunecată și cea luminoasă; butonul Temă din bară comută între ele. Culoarea de sus (ceas, baterie) urmează stilul; bara de jos a telefonului și-o alege sistemul.</p>
       </Sect>
@@ -195,17 +211,7 @@ export default function UiSettingsAdmin() {
         </Sect>
       ))}
 
-      <div className="sticky bottom-24 flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white/90 p-2 backdrop-blur dark:border-white/15 dark:bg-black/80">
-        <button type="button" disabled={busy || !dirty} onClick={() => void save()} className="btn-solid rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-black">
-          Salvează
-        </button>
-        <button type="button" disabled={busy || !dirty} onClick={revert} className="rounded-lg border border-black/15 px-3 py-2 text-sm text-black disabled:opacity-40 dark:border-white/20 dark:text-white">
-          Renunță
-        </button>
-        <span className="text-xs text-black/60 dark:text-white/60" role="status">
-          {msg || (dirty ? 'Previzualizare, nesalvată.' : '')}
-        </span>
-      </div>
+      {saveBar}
     </div>
   );
 }

@@ -66,13 +66,13 @@ function palette(variant: Variant) {
     case 'smoke':
       return darkPal('bg-neutral-950/80 backdrop-blur-2xl backdrop-saturate-150');
     case 'glass':
-      return lightPal('bg-white/60 dark:bg-black/45 backdrop-blur-2xl backdrop-saturate-150');
+      return lightPal('bg-white/70 dark:bg-black/50 backdrop-blur-2xl backdrop-saturate-150');
     case 'frost':
-      return lightPal('bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl backdrop-saturate-150');
+      return lightPal('bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl backdrop-saturate-150');
     case 'mist':
-      return lightPal('bg-white/72 dark:bg-black/60 backdrop-blur-2xl backdrop-saturate-150');
+      return lightPal('bg-white/80 dark:bg-black/65 backdrop-blur-2xl backdrop-saturate-150');
     case 'pearl':
-      return lightPal('bg-white/80 dark:bg-white/[0.12] backdrop-blur-2xl backdrop-saturate-150');
+      return lightPal('bg-white/85 dark:bg-white/[0.14] backdrop-blur-2xl backdrop-saturate-150');
     case 'paper':
       return {
         forced: false,
@@ -422,7 +422,7 @@ export default function ModernSheet({ onClose, variant }: { onClose: () => void;
 
   return createPortal(
     <div className="fixed inset-0 z-[9992] flex items-end justify-center" role="dialog" aria-modal="true">
-      <button type="button" aria-label={t.close} onClick={onClose} className={`absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm ${fx !== 'none' ? 'mini-sheet-back' : ''}`} />
+      <button type="button" aria-label={t.close} onClick={onClose} className={`absolute inset-0 h-full w-full cursor-default ${GLOW[variant] !== undefined && variant !== 'cover' ? 'bg-black/25 backdrop-blur-2xl dark:bg-black/45' : 'bg-black/60 backdrop-blur-sm'} ${fx !== 'none' ? 'mini-sheet-back' : ''}`} />
       <div className="relative w-full max-w-md" style={{ transform: `translateY(${drag.dy}px)`, transition: drag.dragging ? 'none' : 'transform 0.25s ease' }}>
       <div
         className={`relative flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-3xl border shadow-2xl ${pal.panel} ${pal.forced ? 'force-white-text' : ''} ${fx !== 'none' ? `mini-sheet-fx-${fx}` : ''}`}

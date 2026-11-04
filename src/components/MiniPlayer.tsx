@@ -385,7 +385,11 @@ export default function MiniPlayer() {
       );
       break;
     case 'ticket':
-      wrap = 'left-3 right-3 mx-auto max-w-md overflow-hidden rounded-xl border border-black/15 bg-white/95 shadow-lg dark:border-white/20 dark:bg-neutral-950/95';
+    case 'ticketglass':
+      wrap =
+        style === 'ticketglass'
+          ? 'left-3 right-3 mx-auto max-w-md overflow-hidden rounded-xl border border-black/10 bg-white/60 shadow-lg backdrop-blur-2xl backdrop-saturate-150 dark:border-white/15 dark:bg-black/45'
+          : 'left-3 right-3 mx-auto max-w-md overflow-hidden rounded-xl border border-black/15 bg-white/95 shadow-lg dark:border-white/20 dark:bg-neutral-950/95';
       body = (
         <div className="relative flex items-stretch">
           <div className="flex items-center border-r border-dashed border-black/25 px-2.5 py-2 dark:border-white/25">

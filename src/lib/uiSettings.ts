@@ -7,13 +7,13 @@ import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 
 /** Stilul de culoare al intregii aplicatii (fiecare are varianta intunecata si cea luminoasa). */
-export type ThemeStyle = 'classic' | 'paper' | 'midnight' | 'forest' | 'stone' | 'glass';
+export type ThemeStyle = 'classic' | 'paper' | 'midnight' | 'forest' | 'stone' | 'glass' | 'ocean' | 'lavender' | 'sand' | 'rose' | 'graphite' | 'ember';
 
 export type BarBehavior = 'always' | 'slide' | 'idle' | 'shrink' | 'fade' | 'articles';
 export type BarStyle = 'pill' | 'pillglass' | 'edge' | 'edgeglass' | 'glass' | 'floatbar' | 'invert' | 'minimal' | 'dock' | 'dockglass' | 'bubble' | 'outline' | 'night' | 'paper' | 'island' | 'ribbon';
 export type ThemeFx = 'fade' | 'circle' | 'iris' | 'wipe' | 'wipeR' | 'curtain' | 'rise' | 'split' | 'vsplit' | 'diagonal' | 'slide' | 'shake' | 'dissolve' | 'zoom' | 'flash';
 export type LangFx = 'shake' | 'fade' | 'blur' | 'rise' | 'none';
-export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line' | 'island' | 'equalizer' | 'outline' | 'tab' | 'ticket' | 'disc';
+export type MiniPlayerStyle = 'off' | 'bar' | 'pill' | 'card' | 'glass' | 'minimal' | 'line' | 'island' | 'equalizer' | 'outline' | 'tab' | 'ticket' | 'ticketglass' | 'disc';
 /** Fereastra care se deschide la atingerea playerului mic. */
 export type MiniSheetStyle = 'classic' | 'modern' | 'cover' | 'compact' | 'vinyl' | 'poster' | 'quiet' | 'split' | 'glass' | 'paper' | 'frost' | 'mist' | 'pearl' | 'smoke';
 /** Efectul cu care se deschide fereastra playerului mic. */
@@ -65,7 +65,13 @@ export const THEME_STYLES: { id: ThemeStyle; title: string; text: string; bg: { 
   { id: 'midnight', title: 'Noapte albastră', text: 'Albastru-negru cu text rece, aproape alb; pe lumină, alb-albăstrui cu text bleumarin.', bg: { dark: '#0a1020', light: '#f2f5fa' } },
   { id: 'forest', title: 'Pădure', text: 'Verde foarte închis cu text crem-verzui; pe lumină, alb-verzui cu text verde închis.', bg: { dark: '#0c1712', light: '#eff4ee' } },
   { id: 'stone', title: 'Piatră', text: 'Gri cald, sobru: antracit cu text deschis; pe lumină, gri-bej cu text aproape negru.', bg: { dark: '#171614', light: '#efeeea' } },
-  { id: 'glass', title: 'Sticlă', text: 'Fundal cu lumină difuză (albastru, mov, turcoaz), pagini transparente și carduri din sticlă mată.', bg: { dark: '#090c1c', light: '#eef3ff' } },
+  { id: 'glass', title: 'Sticlă', text: 'Fundal cu lumină difuză (albastru, mov, turcoaz), pagini transparente și carduri din sticlă mată.', bg: { dark: '#090c1c', light: '#e2eaff' } },
+  { id: 'ocean', title: 'Ocean', text: 'Albastru-verzui adânc cu text albăstrui-pal; pe lumină, alb marin cu text petrol.', bg: { dark: '#06141c', light: '#eaf6f9' } },
+  { id: 'lavender', title: 'Lavandă', text: 'Violet-negru cu text lila deschis; pe lumină, alb-lila cu text violet închis.', bg: { dark: '#100c1c', light: '#f3f0fc' } },
+  { id: 'sand', title: 'Nisip', text: 'Espresso cu text de nisip; pe lumină, nisip deschis cu text teracotă închisă.', bg: { dark: '#1e110c', light: '#f8ecdc' } },
+  { id: 'rose', title: 'Trandafir', text: 'Prună foarte închis cu text roz-pal; pe lumină, alb-roz cu text vișiniu închis.', bg: { dark: '#1b0e14', light: '#fcf0f4' } },
+  { id: 'graphite', title: 'Grafit', text: 'Gri rece, modern: grafit cu text clar; pe lumină, gri-argintiu cu text antracit.', bg: { dark: '#121417', light: '#eceff3' } },
+  { id: 'ember', title: 'Jar', text: 'Brun-negru cald cu text de chihlimbar deschis; pe lumină, crem-auriu cu text brun adânc.', bg: { dark: '#180e08', light: '#fdf4e2' } },
 ];
 
 /** Culoarea barei de stare a telefonului pentru un stil și o temă. */
@@ -87,6 +93,7 @@ export const MINI_PLAYERS: { id: MiniPlayerStyle; title: string; text: string }[
   { id: 'outline', title: 'Contur', text: 'Fără fundal plin: doar un contur subțire în culoarea temei, cu titlu și play/pauză.' },
   { id: 'tab', title: 'Pastilă mică în dreapta', text: 'Ocupă foarte puțin loc: copertă rotundă, play/pauză și ✕, lângă marginea din dreapta.' },
   { id: 'ticket', title: 'Bilet', text: 'Dreptunghi cu colțuri fine: copertă în stânga, linie punctată, titlu și butoane în dreapta.' },
+  { id: 'ticketglass', title: 'Bilet din sticlă mată', text: 'La fel ca Bilet, dar translucid, cu pagina încețoșată în spate, ca bara de jos din sticlă.' },
   { id: 'disc', title: 'Disc', text: 'Un disc rotund care se învârtește cu coperta cât timp se redă; atingi discul pentru fereastra mare.' },
 ];
 
